@@ -52,4 +52,4 @@ updated: 2026-10-24
 - Product / Project / Task в CompanyOS — сущности Agno, не проект книги.
 
 ## Bad example
-> TODO: реальный PR/коммит как bad example — у lehard.
+`examples/approve-route.md` (раздел «Плохо») — нарушает п.2, 3, 11, 19, 26 и не ставит флаги пересмотра.

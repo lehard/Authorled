@@ -27,5 +27,5 @@ updated: 2026-10-24
 - 05-security-and-compliance.md — данные, 152-ФЗ, LLM, зоны без автономии (не согласовано с ИБ)
 - 06-testing-and-quality.md — pytest для ядра, evals для агента
 - 07-anti-patterns.md — 29 запретов и на чём спотыкаются
-- examples/ — пока пусто
+- examples/ — good/bad: утверждение документа (approve-route.md)
 - failure-log.md — ошибки агента → правки контекста
