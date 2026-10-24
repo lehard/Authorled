@@ -26,6 +26,14 @@
 - WHEN выполняется `docker compose -f compose.yaml -f compose.prod.yaml up -d --build`
 - THEN `agentos-api` MUST работать с включённой авторизацией
 
+### Requirement: Адреса привязки
+`python -m app.main` MUST запускать `agent_os.serve(app="app.main:app", host="127.0.0.1", port=8000, reload=False)`: локальный loopback — намеренно. Контейнер `agentos` MUST слушать `0.0.0.0:8000` (CMD образа); доступность снаружи ограничивает compose-публикация порта только на `127.0.0.1:8000`. Различие `127.0.0.1` / `0.0.0.0` задумано и MUST NOT считаться дефектом.
+
+#### Scenario: Запуск через python -m app.main
+- GIVEN API запущен командой `python -m app.main`
+- WHEN клиент обращается с другой машины
+- THEN соединение MUST быть невозможно, так как сервер слушает только `127.0.0.1`
+
 ### Requirement: Образы
 `Dockerfile` MUST собирать общую базу `agnohq/python:3.14` с `uv pip sync requirements.txt` и цели `agentos` (по умолчанию; entrypoint `scripts/entrypoint.sh`, CMD `uvicorn app.main:app --host 0.0.0.0 --port 8000`) и `sandbox` (пользователь UID 1000, порт 8080, `python -I -m agno.sandbox.agentcore.server serve`). `.dockerignore` MUST исключать `.env*`, `.claude/`, `.codex/`, `tmp/` и MUST оставлять `.agents/skills/`.
 

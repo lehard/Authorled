@@ -25,6 +25,56 @@ CompanyOS: Products, Projects и Tasks. Объявления в `app/company.py`
 - WHEN клиент передаёт `target`, отсутствующий в перечислении
 - THEN система MUST вернуть `422`
 
+Таблица допустимых переходов Task (источник: `agno/db/schemas/tasks.py:6-13`; live-проверено на Agno 3.1.10, кроме помеченных «source»). Новый Task создаётся в `backlog`. Переход вне таблицы MUST отклоняться `409` с detail `Invalid task transition from <from> to <target>` (`tasks.py:54-55`; `409` для transition — `os/routers/company/tasks.py:61-64`).
+
+| Из статуса | Допустимые `target` |
+| --- | --- |
+| `backlog` | `ready`, `cancelled` |
+| `ready` | `in_progress`, `backlog`, `cancelled` |
+| `in_progress` | `in_review`, `backlog`, `cancelled` (source) |
+| `in_review` | `done`, `in_progress`, `backlog`, `cancelled` (source) |
+| `done` | нет (терминальный) |
+| `cancelled` | нет (терминальный) |
+
+#### Scenario: Недопустимый переход Task
+- GIVEN Task в статусе `backlog`
+- WHEN клиент выполняет `POST /company/tasks/{task_id}/transitions` с `target` `done` (или `in_review`, или `backlog`)
+- THEN система MUST вернуть `409` с detail `Invalid task transition from backlog to done` (live)
+
+#### Scenario: Терминальный статус Task
+- GIVEN Task в статусе `cancelled` (или `done`)
+- WHEN клиент передаёт любой `target`, включая `backlog`, `ready` и `cancelled`
+- THEN система MUST вернуть `409` `Invalid task transition from cancelled to <target>` (live для `cancelled`; `done` — source)
+
+#### Scenario: Вход в in_progress только через запуск
+- GIVEN Task в статусе `ready`
+- WHEN клиент передаёт `target` `in_progress`
+- THEN система MUST вернуть `409` с detail `Start a run with POST /company/tasks/{task_id}/runs to enter In progress` (live; `os/routers/company/tasks.py:148-152`)
+- AND таблица не применяется: `in_progress` достижим только запуском `POST /company/tasks/{task_id}/runs` (`db/schemas/tasks.py:100-143`, source), а `in_review` и `done` в этой проверке достижимы только после запуска (live не проверялось: требует вызовов модели)
+
+#### Scenario: Ready требует исполнителя
+- GIVEN Task в статусе `backlog`
+- WHEN клиент передаёт `target` `ready` без `executor_type` и `executor_id`
+- THEN система MUST вернуть `422` `Ready requires an executor type and id` (live; `os/routers/company/schema.py:208-212`)
+- AND при `target` `ready` с `executor_id`, которого нет в реестре, MUST вернуться `409` `Task executor is missing from the registry` (live)
+- AND при `target` не `ready` с `executor_type`/`executor_id` MUST вернуться `422` `Only Ready can set an executor` (live)
+
+#### Scenario: Возврат в backlog
+- GIVEN Task в статусе `ready`
+- WHEN клиент передаёт `target` `backlog`
+- THEN система MUST вернуть `200`
+- AND исполнитель и принятие (`executor_type`, `executor_id`, `accepted_by`, `accepted_at`) MUST быть сброшены (source: `tasks.py:68-69`)
+
+#### Scenario: Пустой reason
+- GIVEN Task существует
+- WHEN `reason` отсутствует
+- THEN система MUST вернуть `422`
+- AND при `reason` из пробелов MUST вернуться `422` `A transition requires a non-empty reason` (live)
+
+#### Scenario: Несуществующий Task
+- WHEN клиент выполняет переход для неизвестного `task_id`
+- THEN система MUST вернуть `404` `Task not found` (live)
+
 ### Requirement: Переходы Project
 Переход Project (`POST /company/projects/{project_id}/transitions`) MUST принимать `target` из `proposed`, `active`, `done`, `cancelled` и обязательный `reason`.
 
@@ -32,6 +82,37 @@ CompanyOS: Products, Projects и Tasks. Объявления в `app/company.py`
 - GIVEN Project существует
 - WHEN клиент передаёт тело без `reason`
 - THEN система MUST вернуть `422`
+
+Таблица допустимых переходов Project (источник: `agno/db/schemas/projects.py:6-11`; live-проверено на Agno 3.1.10). Новый Project создаётся в `proposed`. Переход вне таблицы MUST отклоняться `409` с detail `Invalid project transition from <from> to <target>` (`projects.py:39-40`; `409` — `os/routers/company/projects.py:66-67`).
+
+| Из статуса | Допустимые `target` |
+| --- | --- |
+| `proposed` | `active`, `cancelled` |
+| `active` | `done`, `cancelled` |
+| `done` | нет (терминальный) |
+| `cancelled` | нет (терминальный) |
+
+#### Scenario: Недопустимый переход Project
+- GIVEN Project в статусе `proposed`
+- WHEN клиент передаёт `target` `done` (или `proposed`)
+- THEN система MUST вернуть `409` `Invalid project transition from proposed to done` (live)
+- AND из `active` в `proposed` MUST вернуться `409` (live)
+
+#### Scenario: Терминальный статус Project
+- GIVEN Project в статусе `done` или `cancelled`
+- WHEN клиент передаёт любой `target` (например `active`, `cancelled`)
+- THEN система MUST вернуть `409` `Invalid project transition from done to active` (live)
+
+#### Scenario: Завершение Project с открытыми Tasks
+- GIVEN Project в статусе `active` с Task в статусе, отличном от `done`/`cancelled`
+- WHEN клиент передаёт `target` `done`
+- THEN система MUST вернуть `409` `Project has open Tasks: <title> (<id>)` (live; `db/schemas/projects.py:41-42,52-57`)
+- AND после перевода всех Tasks в `done`/`cancelled` переход в `done` MUST вернуть `200` (live)
+
+#### Scenario: Новый Task в завершённом Project
+- GIVEN Project в статусе `done` или `cancelled`
+- WHEN клиент выполняет `POST /company/tasks` для этого Project
+- THEN система MUST вернуть `422` `Cannot add open work to a completed or cancelled Project` (live)
 
 ### Requirement: GET /company/products
 Система MUST возвращать операцию «List Products» по запросу `GET /company/products` (operationId `list_products_company_products_get`).

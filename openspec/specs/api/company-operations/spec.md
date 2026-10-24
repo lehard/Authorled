@@ -295,6 +295,15 @@ Product `this-agentos` MUST иметь Source `website` `https://github.com/agno
 - WHEN клиент выполняет `POST /company/setup`
 - THEN система MUST вернуть `422`
 
+### Requirement: Переходы Task и запуск
+Переход в `in_progress` через `POST /company/tasks/{task_id}/transitions` MUST отклоняться `409`; вход выполняется только запуском `POST /company/tasks/{task_id}/runs`. Полная таблица переходов Task и Project — в спецификации `api/company` (Requirement «Переходы Task» и «Переходы Project»).
+
+#### Scenario: Запуск вместо перехода
+- GIVEN Task в статусе `ready`
+- WHEN клиент передаёт `target` `in_progress` в `transitions`
+- THEN система MUST вернуть `409` с указанием использовать `/company/tasks/{task_id}/runs` (live, `agno/os/routers/company/tasks.py:148-152`)
+- AND запуск допустим только из `ready`, `in_progress`, `in_review` при заданном исполнителе (source: `agno/db/schemas/tasks.py:112-113`); сам запуск live не проверялся (вызовы модели)
+
 ### Requirement: POST /company/tasks/{task_id}/runs
 Система MUST выполнять операцию «Start» по запросу `POST /company/tasks/{task_id}/runs` (operationId `start_company_tasks__task_id__runs_post`).
 Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.

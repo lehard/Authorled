@@ -8,7 +8,7 @@
 ## Requirements
 
 ### Requirement: Модель Approval
-Approval MUST содержать `id`, `run_id`, `session_id`, `status` и `source_type`. Разрешение (`ApprovalResolve`) MUST принимать обязательный `status` и MAY принимать `resolved_by` и `resolution_data`.
+Approval MUST содержать `id`, `run_id`, `session_id`, `status` и `source_type`. Разрешение (`ApprovalResolve`) MUST принимать обязательный `status` со значением строго `approved` или `rejected` (регулярное выражение `^(approved|rejected)$`, регистр важен) и MAY принимать `resolved_by` (до 255 символов) и `resolution_data`. Фильтр `GET /approvals?status=` допускает `pending`, `approved`, `rejected`, `expired`, `cancelled`; `expired` и `cancelled` в resolve недопустимы.
 
 #### Scenario: Пустой список
 - GIVEN приостановленных ходов нет
@@ -123,9 +123,11 @@ Approval MUST содержать `id`, `run_id`, `session_id`, `status` и `sour
 - `approval_id` (path, string, обязательный)
 
 Тело запроса (`application/json`, схема `ApprovalResolve`):
-- `status`: string, обязательное
+- `status`: string (`approved` | `rejected`, pattern `^(approved|rejected)$`), обязательное
 - `resolved_by`: string | null
 - `resolution_data`: object | null
+
+Источник: `agno/os/routers/approvals/schema.py:10-15`, `router.py:164-210` (live OpenAPI содержит `pattern`, хотя тип — свободная строка).
 
 #### Scenario: Успешный запрос
 - GIVEN платформа запущена, а клиент имеет доступ к маршруту
@@ -137,3 +139,28 @@ Approval MUST содержать `id`, `run_id`, `session_id`, `status` и `sour
 - GIVEN выполняется условие ошибки «Validation Error»
 - WHEN клиент выполняет `POST /approvals/{approval_id}/resolve`
 - THEN система MUST вернуть `422`
+
+#### Scenario: Недопустимый status
+- GIVEN Approval существует
+- WHEN клиент передаёт `status` `expired`, `cancelled`, `pending`, `APPROVED`, `foo` или пустую строку
+- THEN система MUST вернуть `422` `String should match pattern '^(approved|rejected)$'` (live)
+- AND тело без `status` MUST вернуть `422` `Field required` (live)
+
+#### Scenario: Разрешение pending Approval
+- GIVEN Approval в статусе `pending`
+- WHEN клиент передаёт `status` `approved` (или `rejected`)
+- THEN система MUST вернуть `200` со статусом из запроса и заполненными `resolved_by`, `resolved_at` (live)
+
+#### Scenario: Повторное разрешение
+- GIVEN Approval уже в статусе `approved` или `rejected`
+- WHEN клиент повторно выполняет `POST /approvals/{approval_id}/resolve` с любым `status`
+- THEN система MUST вернуть `409` `Approval is already 'approved' and cannot be resolved` (live; `router.py:199-210`: условное обновление `expected_status="pending"`)
+
+#### Scenario: Неизвестный Approval
+- WHEN клиент передаёт допустимый `status` для несуществующего `approval_id`
+- THEN система MUST вернуть `404` `Approval not found` (live)
+
+#### Scenario: Изоляция пользователей
+- GIVEN включена `user_isolation`, а вызывающий — не администратор
+- WHEN клиент выполняет resolve
+- THEN система MUST вернуть `404` `Approval not found` (source: `router.py:172-173`; live не проверялось, в проверке авторизация выключена)

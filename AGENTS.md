@@ -11,6 +11,9 @@ generic manager behavior belongs in Agno. `CLAUDE.md` links to this file.
   Company Manager (`company-manager-internal`), authorization, durable execution and sandbox lifecycle.
   Configure `OSManager(root=agentos_root)` in `app/main.py`; do not recreate these components
   or add application-owned queues, lifecycle code or Company state machines.
+- Application-owned HTTP routes are allowed only for product actions that do not call an LLM,
+  mounted through the AgentOS `base_app` (see `openspec/context/ADR/ADR-002-own-routes-via-base-app.md`).
+  Every other API surface stays with Agno; none ship in the template until the product core exists.
 - Check framework behavior against the Agno version pinned in `pyproject.toml`.
   Do not bypass framework rejections or add compatibility adapters to this template.
 - Keep the starter lean. Add abstractions, tests and infrastructure only for a concrete

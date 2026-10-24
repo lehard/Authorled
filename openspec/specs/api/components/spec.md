@@ -394,6 +394,7 @@
 ### Requirement: GET /components/{component_id}/configs/{version}
 Система MUST возвращать операцию «Get Config Version» по запросу `GET /components/{component_id}/configs/{version}` (operationId `get_config`).
 Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+Факт Agno 3.1.10 (`agno/os/routers/components/components.py`): функция `get_config_version` объявлена с operationId `get_config`, который уже занят `GET /config` (домен core); FastAPI предупреждает `Duplicate Operation ID get_config`, идентификатор в OpenAPI не уникален, генераторы клиентов по схеме будут конфликтовать. Не исправляется в коде приложения.
 
 Параметры:
 - `component_id` (path, string, обязательный)
