@@ -4,9 +4,9 @@ from functools import cache
 
 from agno.db.postgres import PostgresDb
 from agno.knowledge import Knowledge
-from agno.knowledge.embedder.openai import OpenAIEmbedder
 from agno.vectordb.pgvector import PgVector, SearchType
 
+from app.settings import embedder
 from db.url import db_url
 
 __all__ = ["create_knowledge", "db_url", "get_postgres_db"]
@@ -29,7 +29,7 @@ def create_knowledge(name: str, table_name: str) -> Knowledge:
             db_url=db_url,
             table_name=table_name,
             search_type=SearchType.hybrid,
-            embedder=OpenAIEmbedder(id="text-embedding-3-small"),
+            embedder=embedder(),
         ),
         contents_db=PostgresDb(
             id=f"{DB_ID}-{contents_table}",

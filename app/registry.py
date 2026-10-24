@@ -15,7 +15,7 @@ from agno.tools.mcp import MCPTools
 from agno.tools.parallel import ParallelTools
 from agno.workflow.functions import content_to_file, csv_to_markdown_table, extract_json, extract_urls, json_to_csv
 
-from app.settings import default_model
+from app.settings import default_model, manager_model
 from db import create_knowledge, get_postgres_db
 
 # Code-level setting, not environment-switched. "sdk" uses ParallelTools and requires
@@ -62,7 +62,7 @@ registry = Registry(
         FileGenerationTools(enable_pdf_generation=False, enable_docx_generation=False),
         CalculatorTools(),
     ],
-    models=[default_model()],
+    models=[default_model(), manager_model()],
     functions=[
         extract_json,
         extract_urls,
