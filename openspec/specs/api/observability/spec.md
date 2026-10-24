@@ -1,522 +1,574 @@
-# API `observability` Specification
+# Observability API Specification
 
 ## Purpose
-Оценки качества (evals), метрики и трассировки запусков (`tracing=True`).
+Трассировка (`tracing=True`), метрики (`agno_metrics`) и результаты evals (`agno_eval_runs`).
 
-Эндпоинты этого домена не реализованы в коде репозитория: их предоставляет runtime `agno.os.AgentOS` (agno 3.1.10), создаваемый в `app/main.py`. Требования ниже восстановлены по OpenAPI-схеме работающего инстанса (`GET /openapi.json`, заголовок «Agno AgentOS», версия API `1.0.0`).
-
-Общее требование: если `authorization` включена (в `app/main.py` это `RUNTIME_ENV != "dev"`), каждый эндпоинт домена MUST требовать заголовок `Authorization: Bearer <JWT>` (схема безопасности `HTTPBearer` в OpenAPI), а запрос без валидного токена MUST завершаться статусом `401`. В режиме `RUNTIME_ENV=dev` (compose.yaml) `GET /info` возвращает `auth_mode: "none"` и эндпоинты доступны без токена.
+Домен содержит 13 операций HTTP (теги OpenAPI: Traces, Metrics, Evals). Все они предоставляются runtime Agno `AgentOS`; в коде репозитория маршрутов нет.
 
 ## Requirements
 
-### Requirement: GET /eval-runs — List Evaluation Runs
-Система MUST предоставлять эндпоинт `GET /eval-runs` (operationId `get_eval_runs`, раздел OpenAPI «Evals»).
+### Requirement: GET /traces
+Система MUST возвращать операцию «List Traces» по запросу `GET /traces` (operationId `get_traces`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve paginated evaluation runs with filtering and sorting options. Filter by agent, team, workflow, model, or evaluation type.»
+Параметры:
+- `run_id` (query, string | null, необязательный)
+- `session_id` (query, string | null, необязательный)
+- `user_id` (query, string | null, необязательный)
+- `agent_id` (query, string | null, необязательный)
+- `team_id` (query, string | null, необязательный)
+- `workflow_id` (query, string | null, необязательный)
+- `status` (query, string | null, необязательный)
+- `start_time` (query, string | null, необязательный)
+- `end_time` (query, string | null, необязательный)
+- `page` (query, integer, необязательный)
+- `limit` (query, integer, необязательный)
+- `db_id` (query, string | null, необязательный)
 
-Query-параметры: `agent_id`, `team_id`, `workflow_id`, `model_id`, `type`, `limit`, `page`, `sort_by`, `sort_order`, `db_id`, `table`, `eval_types`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /eval-runs` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Evaluation runs retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
-
-#### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
-
-#### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-#### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
-
-### Requirement: DELETE /eval-runs — Delete Evaluation Runs
-Система MUST предоставлять эндпоинт `DELETE /eval-runs` (operationId `delete_eval_runs`, раздел OpenAPI «Evals»).
-
-Описание в OpenAPI: «Delete multiple evaluation runs by their IDs. This action cannot be undone.»
-
-Query-параметры: `db_id`, `table`.
-
-Тело запроса: `application/json`, схема `DeleteEvalRunsRequest`, обязательное. Поля: `eval_run_ids` (обязательное).
-
-#### Scenario: Успешный ответ 204
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `DELETE /eval-runs` с корректными параметрами
-- THEN система MUST вернуть статус `204` («Successful Response»)
-- AND формат содержимого ответа: без тела
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /traces` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `PaginatedResponse_TraceSummary_`
+- AND тело MUST содержать поля `data`, `meta`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /traces`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /traces`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `GET /traces`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /traces`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Failed to delete evaluation runs»
-- THEN система MUST вернуть статус `500` («Failed to delete evaluation runs»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /traces`
+- THEN система MUST вернуть `500`
 
-### Requirement: POST /eval-runs — Execute Evaluation
-Система MUST предоставлять эндпоинт `POST /eval-runs` (operationId `run_eval`, раздел OpenAPI «Evals»).
+### Requirement: GET /traces/filter-schema
+Система MUST возвращать операцию «Get Trace Filter Schema» по запросу `GET /traces/filter-schema` (operationId `get_traces_filter_schema`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Run evaluation tests on agents or teams. Supports accuracy, agent-as-judge, performance, and reliability evaluations. Requires either agent_id or team_id, but not both.»
-
-Query-параметры: `db_id`, `table`.
-
-Тело запроса: `application/json`, схема `EvalRunInput`, обязательное. Поля: `agent_id`, `team_id`, `model_id`, `model_provider`, `eval_type` (обязательное), `input` (обязательное), `additional_guidelines`, `additional_context`, `num_iterations`, `name`, `expected_output`, `criteria`, `scoring_strategy`, `threshold`, `warmup_runs`, `expected_tool_calls`, `allow_additional_tool_calls`, `expected_tool_call_arguments`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /eval-runs` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Evaluation executed successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /traces/filter-schema` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `FilterSchemaResponse`
+- AND тело MUST содержать поля `fields`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Invalid request - provide either agent_id or team_id»
-- THEN система MUST вернуть статус `400` («Invalid request - provide either agent_id or team_id»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /traces/filter-schema`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /traces/filter-schema`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Agent or team not found»
-- THEN система MUST вернуть статус `404` («Agent or team not found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `GET /traces/filter-schema`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /traces/filter-schema`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /traces/filter-schema`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /eval-runs/{eval_run_id} — Get Evaluation Run
-Система MUST предоставлять эндпоинт `GET /eval-runs/{eval_run_id}` (operationId `get_eval_run`, раздел OpenAPI «Evals»).
+### Requirement: GET /traces/{trace_id}
+Система MUST возвращать операцию «Get Trace or Span Detail» по запросу `GET /traces/{trace_id}` (operationId `get_trace`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve detailed results and metrics for a specific evaluation run.»
+Параметры:
+- `trace_id` (path, string, обязательный)
+- `span_id` (query, string | null, необязательный)
+- `run_id` (query, string | null, необязательный)
+- `db_id` (query, string | null, необязательный)
 
-Path-параметры: `eval_run_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `db_id`, `table`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /eval-runs/{eval_run_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Evaluation run details retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /traces/{trace_id}` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /traces/{trace_id}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /traces/{trace_id}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Evaluation run not found»
-- THEN система MUST вернуть статус `404` («Evaluation run not found»)
+- GIVEN выполняется условие ошибки «Trace or span not found»
+- WHEN клиент выполняет `GET /traces/{trace_id}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /traces/{trace_id}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /traces/{trace_id}`
+- THEN система MUST вернуть `500`
 
-### Requirement: PATCH /eval-runs/{eval_run_id} — Update Evaluation Run
-Система MUST предоставлять эндпоинт `PATCH /eval-runs/{eval_run_id}` (operationId `update_eval_run`, раздел OpenAPI «Evals»).
+### Requirement: GET /trace_session_stats
+Система MUST возвращать операцию «Get Trace Statistics by Session» по запросу `GET /trace_session_stats` (operationId `get_trace_stats`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Update the name or other properties of an existing evaluation run.»
+Параметры:
+- `user_id` (query, string | null, необязательный)
+- `agent_id` (query, string | null, необязательный)
+- `team_id` (query, string | null, необязательный)
+- `workflow_id` (query, string | null, необязательный)
+- `start_time` (query, string | null, необязательный)
+- `end_time` (query, string | null, необязательный)
+- `page` (query, integer, необязательный)
+- `limit` (query, integer, необязательный)
+- `db_id` (query, string | null, необязательный)
 
-Path-параметры: `eval_run_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `db_id`, `table`.
-
-Тело запроса: `application/json`, схема `UpdateEvalRunRequest`, обязательное. Поля: `name` (обязательное).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `PATCH /eval-runs/{eval_run_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Evaluation run updated successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /trace_session_stats` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `PaginatedResponse_TraceSessionStats_`
+- AND тело MUST содержать поля `data`, `meta`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /trace_session_stats`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /trace_session_stats`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Evaluation run not found»
-- THEN система MUST вернуть статус `404` («Evaluation run not found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `GET /trace_session_stats`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /trace_session_stats`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Failed to update evaluation run»
-- THEN система MUST вернуть статус `500` («Failed to update evaluation run»)
+- GIVEN выполняется условие ошибки «Failed to retrieve statistics»
+- WHEN клиент выполняет `GET /trace_session_stats`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /metrics — Get AgentOS Metrics
-Система MUST предоставлять эндпоинт `GET /metrics` (operationId `get_metrics`, раздел OpenAPI «Metrics»).
+### Requirement: POST /traces/search
+Система MUST выполнять операцию «Search Traces with Advanced Filters» по запросу `POST /traces/search` (operationId `search_traces`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve AgentOS metrics and analytics data for a specified date range. If no date range is specified, returns all available metrics.»
+Параметры:
+- `db_id` (query, string | null, необязательный)
 
-Query-параметры: `starting_date`, `ending_date`, `user_id`, `db_id`, `table`.
+Тело запроса (`application/json`, схема `TraceSearchRequest`):
+- `filter`: object | null
+- `group_by`: TraceSearchGroupBy (run | session), по умолчанию `"run"`
+- `page`: integer, по умолчанию `1`
+- `limit`: integer, по умолчанию `20`
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /metrics` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Metrics retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /traces/search` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Invalid date range parameters»
-- THEN система MUST вернуть статус `400` («Invalid date range parameters»)
+- GIVEN выполняется условие ошибки «Invalid filter expression»
+- WHEN клиент выполняет `POST /traces/search`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /traces/search`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `POST /traces/search`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /traces/search`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Failed to retrieve metrics»
-- THEN система MUST вернуть статус `500` («Failed to retrieve metrics»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `POST /traces/search`
+- THEN система MUST вернуть `500`
 
-### Requirement: POST /metrics/refresh — Refresh Metrics
-Система MUST предоставлять эндпоинт `POST /metrics/refresh` (operationId `refresh_metrics`, раздел OpenAPI «Metrics»).
+### Requirement: GET /metrics
+Система MUST возвращать операцию «Get AgentOS Metrics» по запросу `GET /metrics` (operationId `get_metrics`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Manually trigger recalculation of system metrics from raw data. This operation analyzes system activity logs and regenerates aggregated metrics. Useful for ensuring metrics are up-to-date or after system maintenance. By default the refresh runs synchronously and returns the refreshed metrics. Pass b…»
+Параметры:
+- `starting_date` (query, string | null, необязательный)
+- `ending_date` (query, string | null, необязательный)
+- `user_id` (query, string | null, необязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Query-параметры: `db_id`, `table`, `user_id`, `background`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /metrics/refresh` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Metrics refreshed successfully»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Успешный ответ 202
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /metrics/refresh` с корректными параметрами
-- THEN система MUST вернуть статус `202` («Background refresh started»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /metrics` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `MetricsResponse`
+- AND тело MUST содержать поля `metrics`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Invalid date range parameters»
+- WHEN клиент выполняет `GET /metrics`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /metrics`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `GET /metrics`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /metrics`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Failed to refresh metrics»
-- THEN система MUST вернуть статус `500` («Failed to refresh metrics»)
+- GIVEN выполняется условие ошибки «Failed to retrieve metrics»
+- WHEN клиент выполняет `GET /metrics`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /metrics/refresh/status — Get Metrics Refresh Status
-Система MUST предоставлять эндпоинт `GET /metrics/refresh/status` (operationId `get_metrics_refresh_status`, раздел OpenAPI «Metrics»).
+### Requirement: POST /metrics/refresh
+Система MUST выполнять операцию «Refresh Metrics» по запросу `POST /metrics/refresh` (operationId `refresh_metrics`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Get the status of the most recent metrics refresh for the target database. Returns 'running' while a refresh is in progress, then 'completed' or 'failed' with the finish timestamp — the state updates even when a refresh completes without writing new data. Returns 'idle' if no refresh has been trigge…»
+Параметры:
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
+- `user_id` (query, string | null, необязательный)
+- `background` (query, boolean, необязательный)
 
-Query-параметры: `db_id`, `table`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /metrics/refresh/status` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Current refresh status»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /metrics/refresh` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Invalid request»
-- THEN система MUST вернуть статус `400` («Invalid request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `POST /metrics/refresh`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /metrics/refresh`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Database not found»
-- THEN система MUST вернуть статус `404` («Database not found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `POST /metrics/refresh`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /metrics/refresh`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Failed to get refresh status»
-- THEN система MUST вернуть статус `500` («Failed to get refresh status»)
+- GIVEN выполняется условие ошибки «Failed to refresh metrics»
+- WHEN клиент выполняет `POST /metrics/refresh`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /traces — List Traces
-Система MUST предоставлять эндпоинт `GET /traces` (operationId `get_traces`, раздел OpenAPI «Traces»).
+### Requirement: GET /metrics/refresh/status
+Система MUST возвращать операцию «Get Metrics Refresh Status» по запросу `GET /metrics/refresh/status` (operationId `get_metrics_refresh_status`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve a paginated list of execution traces with optional filtering.»
+Параметры:
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Query-параметры: `run_id`, `session_id`, `user_id`, `agent_id`, `team_id`, `workflow_id`, `status`, `start_time`, `end_time`, `page`, `limit`, `db_id`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /traces` с корректными параметрами
-- THEN система MUST вернуть статус `200` («List of traces retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /metrics/refresh/status` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `MetricsRefreshStatusResponse`
+- AND тело MUST содержать поля `status`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Invalid request»
+- WHEN клиент выполняет `GET /metrics/refresh/status`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /metrics/refresh/status`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Database not found»
+- WHEN клиент выполняет `GET /metrics/refresh/status`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /metrics/refresh/status`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Failed to get refresh status»
+- WHEN клиент выполняет `GET /metrics/refresh/status`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /traces/filter-schema — Get Trace Filter Schema
-Система MUST предоставлять эндпоинт `GET /traces/filter-schema` (operationId `get_traces_filter_schema`, раздел OpenAPI «Traces»).
+### Requirement: GET /eval-runs
+Система MUST возвращать операцию «List Evaluation Runs» по запросу `GET /eval-runs` (operationId `get_eval_runs`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Returns the available filterable fields, their types, valid operators, and enum values.»
+Параметры:
+- `agent_id` (query, string | null, необязательный)
+- `team_id` (query, string | null, необязательный)
+- `workflow_id` (query, string | null, необязательный)
+- `model_id` (query, string | null, необязательный)
+- `type` (query, EvalFilterType (agent | team | workflow) | null, необязательный)
+- `limit` (query, integer | null, необязательный)
+- `page` (query, integer | null, необязательный)
+- `sort_by` (query, string | null, необязательный)
+- `sort_order` (query, SortOrder (asc | desc) | null, необязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
+- `eval_types` (query, string | null, необязательный)
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /traces/filter-schema` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /eval-runs` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `PaginatedResponse_EvalSchema_`
+- AND тело MUST содержать поля `data`, `meta`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /eval-runs`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /eval-runs`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `GET /eval-runs`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /eval-runs`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /eval-runs`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /traces/{trace_id} — Get Trace or Span Detail
-Система MUST предоставлять эндпоинт `GET /traces/{trace_id}` (operationId `get_trace`, раздел OpenAPI «Traces»).
+### Requirement: DELETE /eval-runs
+Система MUST удалять операцию «Delete Evaluation Runs» по запросу `DELETE /eval-runs` (operationId `delete_eval_runs`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve detailed trace information with hierarchical span tree, or a specific span within the trace.»
+Параметры:
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Path-параметры: `trace_id` — MUST быть заданы (обязательные).
+Тело запроса (`application/json`, схема `DeleteEvalRunsRequest`):
+- `eval_run_ids`: array[string], обязательное
 
-Query-параметры: `span_id`, `run_id`, `db_id`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /traces/{trace_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Trace or span detail retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `DELETE /eval-runs` с корректными параметрами
+- THEN система MUST вернуть `204`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `DELETE /eval-runs`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `DELETE /eval-runs`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Trace or span not found»
-- THEN система MUST вернуть статус `404` («Trace or span not found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `DELETE /eval-runs`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `DELETE /eval-runs`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Failed to delete evaluation runs»
+- WHEN клиент выполняет `DELETE /eval-runs`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /trace_session_stats — Get Trace Statistics by Session
-Система MUST предоставлять эндпоинт `GET /trace_session_stats` (operationId `get_trace_stats`, раздел OpenAPI «Traces»).
+### Requirement: POST /eval-runs
+Система MUST выполнять операцию «Execute Evaluation» по запросу `POST /eval-runs` (operationId `run_eval`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve aggregated trace statistics grouped by session ID with pagination.»
+Параметры:
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Query-параметры: `user_id`, `agent_id`, `team_id`, `workflow_id`, `start_time`, `end_time`, `page`, `limit`, `db_id`.
+Тело запроса (`application/json`, схема `EvalRunInput`):
+- `agent_id`: string | null
+- `team_id`: string | null
+- `model_id`: string | null
+- `model_provider`: string | null
+- `eval_type`: EvalType (accuracy | agent_as_judge | performance | reliability), обязательное
+- `input`: string, обязательное
+- `additional_guidelines`: string | null
+- `additional_context`: string | null
+- `num_iterations`: integer, по умолчанию `1`
+- `name`: string | null
+- `expected_output`: string | null
+- `criteria`: string | null
+- `scoring_strategy`: string (numeric | binary) | null, по умолчанию `"binary"`
+- `threshold`: integer | null, по умолчанию `7`
+- `warmup_runs`: integer, по умолчанию `0`
+- `expected_tool_calls`: array[string] | null
+- `allow_additional_tool_calls`: boolean, по умолчанию `false`
+- `expected_tool_call_arguments`: object | null
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /trace_session_stats` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Trace statistics retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /eval-runs` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `EvalSchema`
+- AND тело MUST содержать поля `id`, `eval_type`, `eval_data`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Invalid request - provide either agent_id or team_id»
+- WHEN клиент выполняет `POST /eval-runs`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /eval-runs`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Agent or team not found»
+- WHEN клиент выполняет `POST /eval-runs`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /eval-runs`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Failed to retrieve statistics»
-- THEN система MUST вернуть статус `500` («Failed to retrieve statistics»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `POST /eval-runs`
+- THEN система MUST вернуть `500`
 
-### Requirement: POST /traces/search — Search Traces with Advanced Filters
-Система MUST предоставлять эндпоинт `POST /traces/search` (operationId `search_traces`, раздел OpenAPI «Traces»).
+### Requirement: GET /eval-runs/{eval_run_id}
+Система MUST возвращать операцию «Get Evaluation Run» по запросу `GET /eval-runs/{eval_run_id}` (operationId `get_eval_run`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Search traces using the FilterExpr DSL for complex, composable queries.»
+Параметры:
+- `eval_run_id` (path, string, обязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Query-параметры: `db_id`.
-
-Тело запроса: `application/json`, схема `TraceSearchRequest`, обязательное. Поля: `filter`, `group_by`, `page`, `limit`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /traces/search` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /eval-runs/{eval_run_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `EvalSchema`
+- AND тело MUST содержать поля `id`, `eval_type`, `eval_data`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Invalid filter expression»
-- THEN система MUST вернуть статус `400` («Invalid filter expression»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /eval-runs/{eval_run_id}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /eval-runs/{eval_run_id}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Evaluation run not found»
+- WHEN клиент выполняет `GET /eval-runs/{eval_run_id}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /eval-runs/{eval_run_id}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /eval-runs/{eval_run_id}`
+- THEN система MUST вернуть `500`
+
+### Requirement: PATCH /eval-runs/{eval_run_id}
+Система MUST обновлять операцию «Update Evaluation Run» по запросу `PATCH /eval-runs/{eval_run_id}` (operationId `update_eval_run`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `eval_run_id` (path, string, обязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
+
+Тело запроса (`application/json`, схема `UpdateEvalRunRequest`):
+- `name`: string, обязательное
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `PATCH /eval-runs/{eval_run_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `EvalSchema`
+- AND тело MUST содержать поля `id`, `eval_type`, `eval_data`
+
+#### Scenario: Ответ 400
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `PATCH /eval-runs/{eval_run_id}`
+- THEN система MUST вернуть `400`
+
+#### Scenario: Ответ 401
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `PATCH /eval-runs/{eval_run_id}`
+- THEN система MUST вернуть `401`
+
+#### Scenario: Ответ 404
+- GIVEN выполняется условие ошибки «Evaluation run not found»
+- WHEN клиент выполняет `PATCH /eval-runs/{eval_run_id}`
+- THEN система MUST вернуть `404`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `PATCH /eval-runs/{eval_run_id}`
+- THEN система MUST вернуть `422`
+
+#### Scenario: Ответ 500
+- GIVEN выполняется условие ошибки «Failed to update evaluation run»
+- WHEN клиент выполняет `PATCH /eval-runs/{eval_run_id}`
+- THEN система MUST вернуть `500`

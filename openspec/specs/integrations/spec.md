@@ -1,75 +1,62 @@
 # Integrations Specification
 
 ## Purpose
-Внешние сервисы, с которыми взаимодействует платформа (по коду `app/`, `agents/`, `db/`, `example.env`): LLM-провайдеры, Slack, Parallel, GitHub, Docker/AWS sandbox, внешний AgentOS UI.
+Внешние сервисы, с которыми работает текущий код. Ключи передаются через переменные окружения (`example.env`); значения MUST NOT храниться в коде.
 
 ## Requirements
 
-### Requirement: Anthropic (Claude)
-Система MUST использовать Anthropic API для `default_model()`, `manager_model()` и модели агента `company-manager-internal` через `agno.models.anthropic.Claude`; для `claude-engineer` — через `claude-agent-sdk`. Аутентификация MUST выполняться через `ANTHROPIC_API_KEY`; `claude-engineer` MAY использовать `CLAUDE_CODE_OAUTH_TOKEN`.
+### Requirement: Anthropic
+Система MUST обращаться к Anthropic API за моделями `claude-sonnet-5-5` и `claude-opus-5-5` (`agno.models.anthropic.Claude`) и через `claude-agent-sdk` для `claude-engineer`. Аутентификация MUST идти через `ANTHROPIC_API_KEY` или `CLAUDE_CODE_OAUTH_TOKEN` (для Claude Code).
 
-#### Scenario: Ключ задан
-- GIVEN `ANTHROPIC_API_KEY` задан в `.env`
-- WHEN OS Manager получает запрос
-- THEN вызов модели `claude-opus-5-5` MUST выполняться в Anthropic API
+#### Scenario: Модели в конфигурации
+- GIVEN платформа запущена
+- WHEN клиент выполняет `GET /registry`
+- THEN ответ MUST содержать модели `claude-opus-5-5` и `claude-sonnet-5-5`
 
 ### Requirement: OpenAI
-Система MUST использовать `OPENAI_API_KEY` для эмбеддингов `text-embedding-3-small` базы знаний и для агента `codex-engineer` (`gpt-6.1-sol`).
+Система MUST использовать OpenAI для эмбеддингов `text-embedding-3-small` (`OpenAIEmbedder`) и для `codex-engineer` (`gpt-6.1-sol`). Аутентификация MUST идти через `OPENAI_API_KEY`.
 
-#### Scenario: Поиск по знаниям
-- GIVEN в базе знаний есть контент и задан `OPENAI_API_KEY`
-- WHEN клиент вызывает `POST /knowledge/search`
-- THEN система MUST получить эмбеддинг запроса у OpenAI и выполнить гибридный поиск в pgvector
+#### Scenario: Эмбеддинг знаний
+- GIVEN в `shared-knowledge` загружается контент
+- WHEN строится векторный индекс
+- THEN эмбеддинги MUST запрашиваться у OpenAI моделью `text-embedding-3-small`
+
+### Requirement: Parallel
+Веб-инструмент MUST быть `ParallelTools()` при заданном `PARALLEL_API_KEY`; иначе MUST использоваться бесключевой MCP-сервер `https://search.parallel.ai/mcp`.
+
+#### Scenario: Без ключа
+- GIVEN `PARALLEL_API_KEY` не задан
+- WHEN клиент выполняет `GET /registry`
+- THEN ответ MUST содержать инструмент `parallel_tools`
 
 ### Requirement: Slack
-Если заданы оба параметра `SLACK_BOT_TOKEN` и `SLACK_SIGNING_SECRET`, `attach_interfaces()` MUST добавить в `agent_os.interfaces` интерфейс `Slack(team=manager, token, signing_secret, streaming=True, resolve_user_identity=True, loading_text="Pulling the thread...")`. Если задан только один из параметров или ни одного, Slack MUST NOT подключаться, и ошибка MUST NOT выбрасываться.
+При заданных `SLACK_BOT_TOKEN` и `SLACK_SIGNING_SECRET` система MUST подключать `Slack(team=manager, streaming=True, resolve_user_identity=True, loading_text="Pulling the thread...")`. Если задана только одна переменная, Slack MUST NOT подключаться.
 
-#### Scenario: Slack подключён
-- GIVEN заданы оба параметра
-- WHEN приложение стартует
-- THEN в `GET /config` раздел `interfaces` MUST содержать Slack
+#### Scenario: Одна переменная Slack
+- GIVEN задан только `SLACK_BOT_TOKEN`
+- WHEN вызывается `attach_interfaces`
+- THEN `agent_os.interfaces` MUST остаться без Slack
 
-#### Scenario: Задан только токен
-- GIVEN задан `SLACK_BOT_TOKEN`, но нет `SLACK_SIGNING_SECRET`
-- WHEN приложение стартует
-- THEN интерфейс Slack MUST NOT быть подключён
+### Requirement: GitHub releases Agno
+Product `this-agentos` MUST содержать Source `website` `https://github.com/agno-agi/agno/releases`, который читает Routine `agentos-maintenance`.
 
-### Requirement: Parallel (веб-поиск)
-Система MUST выполнять веб-поиск через Parallel: SDK (`ParallelTools`) при заданном `PARALLEL_API_KEY`, иначе через `https://search.parallel.ai/mcp` по `streamable-http` с таймаутом 30 секунд.
+#### Scenario: Source в списке
+- GIVEN платформа запущена
+- WHEN клиент выполняет `GET /company/sources`
+- THEN ответ MUST содержать этот Source
 
-#### Scenario: Недоступность MCP Parallel
-- GIVEN `PARALLEL_API_KEY` не задан и сервис Parallel недоступен
-- WHEN агент вызывает веб-инструмент
-- THEN инструмент MUST вернуть ошибку вызова (поведение `MCPTools`)
+### Requirement: AgentOS UI и JWT
+При включённой авторизации система MUST проверять JWT ключом из `JWT_VERIFICATION_KEY` (PEM) или `JWT_JWKS_FILE`. Ключ для AgentOS UI генерируется на `os.agno.com`.
 
-### Requirement: GitHub и git-источники
-CompanyOS MUST использовать источники Product `this-agentos`: `https://github.com/agno-agi/agno/releases` (`website`) и локальный git-репозиторий проекта (`git`). Sandbox MAY клонировать `REPOSITORY` (по умолчанию `None`).
+#### Scenario: Токен не подписан ключом
+- GIVEN `RUNTIME_ENV=prd` с заданным ключом
+- WHEN клиент передаёт токен, подписанный другим ключом
+- THEN система MUST вернуть `401`
 
-#### Scenario: Репозиторий sandbox не задан
-- GIVEN `REPOSITORY is None`
-- WHEN формируется список источников
-- THEN в нём MUST быть ровно два источника
+### Requirement: AWS AgentCore
+`agentcore_sandbox` MUST использовать `AgentCoreSandbox(runtime_arn=...)` с регионом из ARN и checkpoints в `/data/checkpoints`. Учётные данные AWS хоста MUST NOT передаваться в sandbox.
 
-### Requirement: Docker и AWS AgentCore sandbox
-Docker sandbox MAY запускаться из образа `agno-sandbox:local` (target `sandbox` в `Dockerfile`); AgentCore sandbox MAY использоваться с `runtime_arn` и постоянным томом `/data`. По умолчанию `sandbox_provider()` MUST возвращать `None`.
-
-#### Scenario: Поведение по умолчанию
-- GIVEN конфигурация не изменялась
-- WHEN запускаются агенты-инженеры
-- THEN они MUST работать в каталоге проекта без sandbox
-
-### Requirement: Внешний AgentOS UI
-Система MUST предоставлять REST API для управляющего UI `os.agno.com` и SHOULD проверять JWT для авторизации (ключ `JWT_VERIFICATION_KEY` генерируется на `os.agno.com`, см. `example.env`).
-
-#### Scenario: Подключение локального инстанса
-- GIVEN платформа запущена на `http://localhost:8000`
-- WHEN пользователь добавляет инстанс в AgentOS UI
-- THEN UI MUST обращаться к `GET /config`, `GET /agents`, `GET /teams` и другим эндпоинтам, описанным в `openspec/specs/api/` (точный набор запросов UI не проверялся)
-
-### Requirement: Документация Agno для coding-агентов
-Файл `.mcp.json` MUST регистрировать HTTP MCP-сервер `agno-docs` по адресу `https://docs.agno.com/mcp` для coding-агентов.
-
-#### Scenario: Открытие проекта в Claude Code
-- GIVEN проект открыт в Claude Code
-- WHEN читается `.mcp.json`
-- THEN доступен MCP-сервер `agno-docs`
+#### Scenario: Выбор провайдера
+- GIVEN `sandbox_provider()` возвращает `None`
+- WHEN платформа стартует
+- THEN AgentCore MUST NOT использоваться

@@ -1,68 +1,282 @@
-# API `core` Specification
+# Core API Specification
 
 ## Purpose
-Базовые служебные эндпоинты AgentOS: проверка здоровья, информация об инстансе и конфигурация.
+Служебные маршруты AgentOS: проверка здоровья, сведения об инстансе, конфигурация для AgentOS UI,
+реестр компонентов Studio, миграции таблиц Agno и выдача медиа сессий.
 
-Эндпоинты этого домена не реализованы в коде репозитория: их предоставляет runtime `agno.os.AgentOS` (agno 3.1.10), создаваемый в `app/main.py`. Требования ниже восстановлены по OpenAPI-схеме работающего инстанса (`GET /openapi.json`, заголовок «Agno AgentOS», версия API `1.0.0`).
-
-Общее требование: если `authorization` включена (в `app/main.py` это `RUNTIME_ENV != "dev"`), каждый эндпоинт домена MUST требовать заголовок `Authorization: Bearer <JWT>` (схема безопасности `HTTPBearer` в OpenAPI), а запрос без валидного токена MUST завершаться статусом `401`. В режиме `RUNTIME_ENV=dev` (compose.yaml) `GET /info` возвращает `auth_mode: "none"` и эндпоинты доступны без токена.
+Домен содержит 7 операций HTTP (теги OpenAPI: Core, Health, Registry, Database, Media). Все они предоставляются runtime Agno `AgentOS`; в коде репозитория маршрутов нет.
 
 ## Requirements
 
-### Requirement: GET /health — Health Check
-Система MUST предоставлять эндпоинт `GET /health` (operationId `health_check`, раздел OpenAPI «Health»).
+### Requirement: Аутентификация защищённых маршрутов
+При `RUNTIME_ENV`, отличном от `dev`, система MUST включать авторизацию (`authorization=runtime_env != "dev"` в `app/main.py`) и MUST отклонять запросы к защищённым маршрутам без валидного Bearer-токена кодом `401`. Маршруты `GET /health` и `GET /info` MUST оставаться доступными без токена.
 
-Описание в OpenAPI: «Check the health status of the AgentOS API. Returns a simple status indicator.»
+#### Scenario: Запрос без токена в prd
+- GIVEN приложение запущено с `RUNTIME_ENV=prd` и заданным `JWT_VERIFICATION_KEY`
+- WHEN клиент выполняет `GET /agents` без заголовка `Authorization`
+- THEN система MUST вернуть `401` с телом `{"detail":"Authorization header missing"}`
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /health` с корректными параметрами
-- THEN система MUST вернуть статус `200` («API is healthy and operational»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Невалидный токен в prd
+- GIVEN приложение запущено с `RUNTIME_ENV=prd`
+- WHEN клиент передаёт заголовок `Authorization: Bearer` с токеном, не подписанным ключом проверки
+- THEN система MUST вернуть `401`
 
-### Requirement: GET /info — Get OS Info
-Система MUST предоставлять эндпоинт `GET /info` (operationId `get_info`, раздел OpenAPI «Core»).
+#### Scenario: Публичные маршруты в prd
+- GIVEN приложение запущено с `RUNTIME_ENV=prd`
+- WHEN клиент выполняет `GET /health` или `GET /info` без токена
+- THEN система MUST вернуть `200`
+- AND `GET /info` MUST вернуть `auth_mode: "jwt"`
 
-Описание в OpenAPI: «Return lightweight, unauthenticated metadata about this AgentOS instance.»
+#### Scenario: Режим разработки
+- GIVEN приложение запущено с `RUNTIME_ENV=dev` (так задаёт `compose.yaml`)
+- WHEN клиент выполняет любой маршрут без токена
+- THEN система MUST обработать запрос без проверки токена
+- AND `GET /info` MUST вернуть `auth_mode: "none"` и `user_isolation: true`
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /info` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+### Requirement: Отказ старта без ключа проверки JWT
+При включённой авторизации система MUST NOT стартовать без `JWT_VERIFICATION_KEY` или `JWT_JWKS_FILE`.
 
-### Requirement: GET /config — Get OS Configuration
-Система MUST предоставлять эндпоинт `GET /config` (operationId `get_config`, раздел OpenAPI «Core»).
+#### Scenario: prd без ключа
+- GIVEN `RUNTIME_ENV=prd`, а `JWT_VERIFICATION_KEY` и `JWT_JWKS_FILE` пусты
+- WHEN запускается `uvicorn app.main:app`
+- THEN старт MUST завершиться ошибкой `ValueError: AgentOS(authorization=True) requires a JWT verification key`
 
-Описание в OpenAPI: «Retrieve the complete configuration of the AgentOS instance, including:»
+### Requirement: Сведения об инстансе
+`GET /info` MUST возвращать `agno_version` `3.1.10`, `agent_count` `3`, `team_count` `1`, `workflow_count` `0` и блок `mcp` с `enabled: true` и `path: "/mcp"`. `GET /config` MUST возвращать `os_database: "agentos-db"`, единственную БД `agentos-db` в `databases`, `queue` с `durable: true` и `queue_per_session: true`, `interfaces: []` без Slack и `manifest` с описаниями и quick prompts из `app/config.yaml` для `os-manager-internal`, `company-manager-internal`, `claude-engineer`, `codex-engineer`.
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /config` с корректными параметрами
-- THEN система MUST вернуть статус `200` («OS configuration retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Конфигурация для UI
+- GIVEN платформа запущена из репозитория без переменных Slack
+- WHEN клиент выполняет `GET /config`
+- THEN `manifest` MUST содержать 4 компонента из `app/config.yaml`
+- AND `available_models` MUST содержать `claude-opus-5-5` (провайдер `Anthropic`)
+
+### Requirement: Состав реестра
+`GET /registry` MUST возвращать 16 элементов, объявленных в `app/registry.py` и `app/main.py`: агенты `Claude Engineer` и `Codex Engineer`, БД `agentos-db`, функции `content_to_file`, `csv_to_markdown_table`, `extract_json`, `extract_urls`, `json_to_csv`, знание `shared-knowledge`, learning `shared-learning`, модели `claude-opus-5-5` и `claude-sonnet-5-5`, инструменты `calculator`, `file_generation`, `filesystem`, `parallel_tools`.
+
+#### Scenario: Веб-инструменты без ключа Parallel
+- GIVEN `PARALLEL_API_KEY` не задан
+- WHEN строится реестр
+- THEN инструмент `parallel_tools` MUST быть `MCPTools` на `https://search.parallel.ai/mcp` (streamable-http, таймаут 30 с)
+
+#### Scenario: Веб-инструменты с ключом Parallel
+- GIVEN `PARALLEL_API_KEY` задан
+- WHEN строится реестр
+- THEN система MUST использовать `ParallelTools()`
+
+### Requirement: GET /info
+Система MUST возвращать операцию «Get OS Info» по запросу `GET /info` (operationId `get_info`).
+В OpenAPI для маршрута не объявлена схема безопасности.
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /info` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `InfoResponse`
+- AND тело MUST содержать поля `os_id`, `os_version`, `agno_version`
+
+### Requirement: GET /config
+Система MUST возвращать операцию «Get OS Configuration» по запросу `GET /config` (operationId `get_config`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /config` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ConfigResponse`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /config`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /config`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `GET /config`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /config`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /config`
+- THEN система MUST вернуть `500`
+
+### Requirement: GET /health
+Система MUST возвращать операцию «Health Check» по запросу `GET /health` (operationId `health_check`).
+В OpenAPI для маршрута не объявлена схема безопасности.
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /health` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `HealthResponse`
+- AND тело MUST содержать поля `status`, `instantiated_at`
+
+### Requirement: GET /registry
+Система MUST возвращать операцию «List Registry» по запросу `GET /registry` (operationId `list_registry`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `resource_type` (query, RegistryResourceType (tool | model | db | vector_db | schema | function | agent | team | workflow | knowledge | memory_manager | session_summary_manager | learning) | null, необязательный)
+- `name` (query, string | null, необязательный)
+- `page` (query, integer, необязательный)
+- `limit` (query, integer, необязательный)
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /registry` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `PaginatedResponse_RegistryContentResponse_`
+- AND тело MUST содержать поля `data`, `meta`
+
+#### Scenario: Ответ 400
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /registry`
+- THEN система MUST вернуть `400`
+
+#### Scenario: Ответ 401
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /registry`
+- THEN система MUST вернуть `401`
+
+#### Scenario: Ответ 404
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `GET /registry`
+- THEN система MUST вернуть `404`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /registry`
+- THEN система MUST вернуть `422`
+
+#### Scenario: Ответ 500
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /registry`
+- THEN система MUST вернуть `500`
+
+### Requirement: POST /databases/all/migrate
+Система MUST выполнять операцию «Migrate All Databases» по запросу `POST /databases/all/migrate` (operationId `migrate_all_databases`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `target_version` (query, string | null, необязательный)
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /databases/all/migrate` с корректными параметрами
+- THEN система MUST вернуть `200`
+
+#### Scenario: Ответ 400
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `POST /databases/all/migrate`
+- THEN система MUST вернуть `400`
+
+#### Scenario: Ответ 401
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /databases/all/migrate`
+- THEN система MUST вернуть `401`
+
+#### Scenario: Ответ 404
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `POST /databases/all/migrate`
+- THEN система MUST вернуть `404`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /databases/all/migrate`
+- THEN система MUST вернуть `422`
+
+#### Scenario: Ответ 500
+- GIVEN выполняется условие ошибки «Failed to migrate databases»
+- WHEN клиент выполняет `POST /databases/all/migrate`
+- THEN система MUST вернуть `500`
+
+### Requirement: POST /databases/{db_id}/migrate
+Система MUST выполнять операцию «Migrate Database» по запросу `POST /databases/{db_id}/migrate` (operationId `migrate_database`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `db_id` (path, string, обязательный)
+- `target_version` (query, string | null, необязательный)
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /databases/{db_id}/migrate` с корректными параметрами
+- THEN система MUST вернуть `200`
+
+#### Scenario: Ответ 400
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `POST /databases/{db_id}/migrate`
+- THEN система MUST вернуть `400`
+
+#### Scenario: Ответ 401
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /databases/{db_id}/migrate`
+- THEN система MUST вернуть `401`
+
+#### Scenario: Ответ 404
+- GIVEN выполняется условие ошибки «Database not found»
+- WHEN клиент выполняет `POST /databases/{db_id}/migrate`
+- THEN система MUST вернуть `404`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /databases/{db_id}/migrate`
+- THEN система MUST вернуть `422`
+
+#### Scenario: Ответ 500
+- GIVEN выполняется условие ошибки «Failed to migrate database»
+- WHEN клиент выполняет `POST /databases/{db_id}/migrate`
+- THEN система MUST вернуть `500`
+
+### Requirement: GET /sessions/{session_id}/media/{storage_key}
+Система MUST возвращать операцию «Fetch stored media for a session» по запросу `GET /sessions/{session_id}/media/{storage_key}` (operationId `get_session_media`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `session_id` (path, string, обязательный)
+- `storage_key` (path, string, обязательный)
+- `type` (query, SessionType (agent | team | workflow) | null, необязательный)
+- `user_id` (query, string | null, необязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
+- `redirect` (query, boolean, необязательный)
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /sessions/{session_id}/media/{storage_key}` с корректными параметрами
+- THEN система MUST вернуть `200`
+
+#### Scenario: Ответ 401
+- GIVEN выполняется условие ошибки «Unauthenticated»
+- WHEN клиент выполняет `GET /sessions/{session_id}/media/{storage_key}`
+- THEN система MUST вернуть `401`
+
+#### Scenario: Ответ 404
+- GIVEN выполняется условие ошибки «Session or media not found»
+- WHEN клиент выполняет `GET /sessions/{session_id}/media/{storage_key}`
+- THEN система MUST вернуть `404`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /sessions/{session_id}/media/{storage_key}`
+- THEN система MUST вернуть `422`
+
+#### Scenario: Ответ 500
+- GIVEN выполняется условие ошибки «Media storage could not be reached»
+- WHEN клиент выполняет `GET /sessions/{session_id}/media/{storage_key}`
+- THEN система MUST вернуть `500`
+
+#### Scenario: Ответ 501
+- GIVEN выполняется условие ошибки «Remote databases are not supported»
+- WHEN клиент выполняет `GET /sessions/{session_id}/media/{storage_key}`
+- THEN система MUST вернуть `501`
+
+#### Scenario: Ответ 503
+- GIVEN выполняется условие ошибки «Media storage is not configured»
+- WHEN клиент выполняет `GET /sessions/{session_id}/media/{storage_key}`
+- THEN система MUST вернуть `503`

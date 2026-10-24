@@ -1,108 +1,139 @@
-# API `approvals` Specification
+# Approvals API Specification
 
 ## Purpose
-Запросы на подтверждение действий человеком (human approval).
+Запросы подтверждения человеком (human-in-the-loop) для приостановленных ходов.
 
-Эндпоинты этого домена не реализованы в коде репозитория: их предоставляет runtime `agno.os.AgentOS` (agno 3.1.10), создаваемый в `app/main.py`. Требования ниже восстановлены по OpenAPI-схеме работающего инстанса (`GET /openapi.json`, заголовок «Agno AgentOS», версия API `1.0.0`).
-
-Общее требование: если `authorization` включена (в `app/main.py` это `RUNTIME_ENV != "dev"`), каждый эндпоинт домена MUST требовать заголовок `Authorization: Bearer <JWT>` (схема безопасности `HTTPBearer` в OpenAPI), а запрос без валидного токена MUST завершаться статусом `401`. В режиме `RUNTIME_ENV=dev` (compose.yaml) `GET /info` возвращает `auth_mode: "none"` и эндпоинты доступны без токена.
+Домен содержит 6 операций HTTP (теги OpenAPI: Approvals). Все они предоставляются runtime Agno `AgentOS`; в коде репозитория маршрутов нет.
 
 ## Requirements
 
-### Requirement: GET /approvals — List Approvals
-Система MUST предоставлять эндпоинт `GET /approvals` (operationId `list_approvals_approvals_get`, раздел OpenAPI «Approvals»).
+### Requirement: Модель Approval
+Approval MUST содержать `id`, `run_id`, `session_id`, `status` и `source_type`. Разрешение (`ApprovalResolve`) MUST принимать обязательный `status` и MAY принимать `resolved_by` и `resolution_data`.
 
-Query-параметры: `status`, `source_type`, `approval_type`, `pause_type`, `agent_id`, `team_id`, `workflow_id`, `user_id`, `schedule_id`, `run_id`, `limit`, `page`.
+#### Scenario: Пустой список
+- GIVEN приостановленных ходов нет
+- WHEN клиент выполняет `GET /approvals`
+- THEN система MUST вернуть `200` с пустым `data` и `meta` пагинации
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /approvals` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+### Requirement: GET /approvals
+Система MUST возвращать операцию «List Approvals» по запросу `GET /approvals` (operationId `list_approvals_approvals_get`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+Параметры:
+- `status` (query, string (pending | approved | rejected | expired | cancelled) | null, необязательный)
+- `source_type` (query, string | null, необязательный)
+- `approval_type` (query, string (required | audit) | null, необязательный)
+- `pause_type` (query, string | null, необязательный)
+- `agent_id` (query, string | null, необязательный)
+- `team_id` (query, string | null, необязательный)
+- `workflow_id` (query, string | null, необязательный)
+- `user_id` (query, string | null, необязательный)
+- `schedule_id` (query, string | null, необязательный)
+- `run_id` (query, string | null, необязательный)
+- `limit` (query, integer, необязательный)
+- `page` (query, integer, необязательный)
 
-### Requirement: GET /approvals/count — Get Approval Count
-Система MUST предоставлять эндпоинт `GET /approvals/count` (operationId `get_approval_count_approvals_count_get`, раздел OpenAPI «Approvals»).
-
-Query-параметры: `user_id`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /approvals/count` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: GET /approvals/{approval_id}/status — Get Approval Status
-Система MUST предоставлять эндпоинт `GET /approvals/{approval_id}/status` (operationId `get_approval_status_approvals__approval_id__status_get`, раздел OpenAPI «Approvals»).
-
-Path-параметры: `approval_id` — MUST быть заданы (обязательные).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /approvals/{approval_id}/status` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /approvals` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `PaginatedResponse_ApprovalResponse_`
+- AND тело MUST содержать поля `data`, `meta`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /approvals`
+- THEN система MUST вернуть `422`
 
-### Requirement: GET /approvals/{approval_id} — Get Approval
-Система MUST предоставлять эндпоинт `GET /approvals/{approval_id}` (operationId `get_approval_approvals__approval_id__get`, раздел OpenAPI «Approvals»).
+### Requirement: GET /approvals/count
+Система MUST возвращать операцию «Get Approval Count» по запросу `GET /approvals/count` (operationId `get_approval_count_approvals_count_get`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Path-параметры: `approval_id` — MUST быть заданы (обязательные).
+Параметры:
+- `user_id` (query, string | null, необязательный)
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /approvals/{approval_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: DELETE /approvals/{approval_id} — Delete Approval
-Система MUST предоставлять эндпоинт `DELETE /approvals/{approval_id}` (operationId `delete_approval_approvals__approval_id__delete`, раздел OpenAPI «Approvals»).
-
-Path-параметры: `approval_id` — MUST быть заданы (обязательные).
-
-#### Scenario: Успешный ответ 204
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `DELETE /approvals/{approval_id}` с корректными параметрами
-- THEN система MUST вернуть статус `204` («Successful Response»)
-- AND формат содержимого ответа: без тела
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /approvals/count` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ApprovalCountResponse`
+- AND тело MUST содержать поля `count`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /approvals/count`
+- THEN система MUST вернуть `422`
 
-### Requirement: POST /approvals/{approval_id}/resolve — Resolve Approval
-Система MUST предоставлять эндпоинт `POST /approvals/{approval_id}/resolve` (operationId `resolve_approval_approvals__approval_id__resolve_post`, раздел OpenAPI «Approvals»).
+### Requirement: GET /approvals/{approval_id}/status
+Система MUST возвращать операцию «Get Approval Status» по запросу `GET /approvals/{approval_id}/status` (operationId `get_approval_status_approvals__approval_id__status_get`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Path-параметры: `approval_id` — MUST быть заданы (обязательные).
+Параметры:
+- `approval_id` (path, string, обязательный)
 
-Тело запроса: `application/json`, схема `ApprovalResolve`, обязательное. Поля: `status` (обязательное), `resolved_by`, `resolution_data`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /approvals/{approval_id}/resolve` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /approvals/{approval_id}/status` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ApprovalStatusResponse`
+- AND тело MUST содержать поля `approval_id`, `status`, `run_id`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /approvals/{approval_id}/status`
+- THEN система MUST вернуть `422`
+
+### Requirement: GET /approvals/{approval_id}
+Система MUST возвращать операцию «Get Approval» по запросу `GET /approvals/{approval_id}` (operationId `get_approval_approvals__approval_id__get`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `approval_id` (path, string, обязательный)
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /approvals/{approval_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ApprovalResponse`
+- AND тело MUST содержать поля `id`, `run_id`, `session_id`, `status`, `source_type`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /approvals/{approval_id}`
+- THEN система MUST вернуть `422`
+
+### Requirement: DELETE /approvals/{approval_id}
+Система MUST удалять операцию «Delete Approval» по запросу `DELETE /approvals/{approval_id}` (operationId `delete_approval_approvals__approval_id__delete`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `approval_id` (path, string, обязательный)
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `DELETE /approvals/{approval_id}` с корректными параметрами
+- THEN система MUST вернуть `204`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `DELETE /approvals/{approval_id}`
+- THEN система MUST вернуть `422`
+
+### Requirement: POST /approvals/{approval_id}/resolve
+Система MUST выполнять операцию «Resolve Approval» по запросу `POST /approvals/{approval_id}/resolve` (operationId `resolve_approval_approvals__approval_id__resolve_post`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `approval_id` (path, string, обязательный)
+
+Тело запроса (`application/json`, схема `ApprovalResolve`):
+- `status`: string, обязательное
+- `resolved_by`: string | null
+- `resolution_data`: object | null
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /approvals/{approval_id}/resolve` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ApprovalResponse`
+- AND тело MUST содержать поля `id`, `run_id`, `session_id`, `status`, `source_type`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /approvals/{approval_id}/resolve`
+- THEN система MUST вернуть `422`

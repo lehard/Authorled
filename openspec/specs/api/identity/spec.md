@@ -1,166 +1,197 @@
-# API `identity` Specification
+# Identity API Specification
 
 ## Purpose
-Сервисные аккаунты и каталог пользователей (`user_directory=True`).
+Каталог пользователей (`user_directory=True`) и сервисные учётные записи.
 
-Эндпоинты этого домена не реализованы в коде репозитория: их предоставляет runtime `agno.os.AgentOS` (agno 3.1.10), создаваемый в `app/main.py`. Требования ниже восстановлены по OpenAPI-схеме работающего инстанса (`GET /openapi.json`, заголовок «Agno AgentOS», версия API `1.0.0`).
-
-Общее требование: если `authorization` включена (в `app/main.py` это `RUNTIME_ENV != "dev"`), каждый эндпоинт домена MUST требовать заголовок `Authorization: Bearer <JWT>` (схема безопасности `HTTPBearer` в OpenAPI), а запрос без валидного токена MUST завершаться статусом `401`. В режиме `RUNTIME_ENV=dev` (compose.yaml) `GET /info` возвращает `auth_mode: "none"` и эндпоинты доступны без токена.
+Домен содержит 9 операций HTTP (теги OpenAPI: User directory, Service Accounts). Все они предоставляются runtime Agno `AgentOS`; в коде репозитория маршрутов нет.
 
 ## Requirements
 
-### Requirement: POST /service-accounts — Create Service Account
-Система MUST предоставлять эндпоинт `POST /service-accounts` (operationId `create_service_account_service_accounts_post`, раздел OpenAPI «Service Accounts»).
+### Requirement: Защита каталога пользователей
+Маршруты `/users*` MUST требовать аутентификацию при включённой авторизации, несмотря на то что OpenAPI не объявляет для них схему безопасности.
 
-Описание в OpenAPI: «Mint a service account token. The plaintext token is returned exactly once.»
+#### Scenario: Каталог без токена в prd
+- GIVEN приложение запущено с `RUNTIME_ENV=prd`
+- WHEN клиент выполняет `GET`, `POST`, `PATCH` или `DELETE` на `/users` или `/users/{user_id}` без токена
+- THEN система MUST вернуть `401`
 
-Тело запроса: `application/json`, схема `ServiceAccountCreate`, обязательное. Поля: `name` (обязательное), `scopes`, `expires_in_days`, `never_expires`, `allow_privileged_scopes`.
+### Requirement: GET /users
+Система MUST возвращать операцию «List Users» по запросу `GET /users` (operationId `list_users_users_get`).
+В OpenAPI для маршрута не объявлена схема безопасности.
 
-#### Scenario: Успешный ответ 201
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /service-accounts` с корректными параметрами
-- THEN система MUST вернуть статус `201` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+Параметры:
+- `include_disabled` (query, boolean, необязательный)
+- `limit` (query, integer, необязательный)
+- `page` (query, integer, необязательный)
+- `search` (query, string | null, необязательный)
+- `sort_by` (query, string, необязательный)
+- `sort_order` (query, SortOrder (asc | desc), необязательный)
 
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: GET /service-accounts — List Service Accounts
-Система MUST предоставлять эндпоинт `GET /service-accounts` (operationId `list_service_accounts_service_accounts_get`, раздел OpenAPI «Service Accounts»).
-
-Описание в OpenAPI: «List service accounts. Returns metadata and display prefixes only - never hashes or plaintext.»
-
-Query-параметры: `include_revoked`, `limit`, `page`, `sort_by`, `sort_order`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /service-accounts` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /users` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `PaginatedResponse_UserSchema_`
+- AND тело MUST содержать поля `data`, `meta`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /users`
+- THEN система MUST вернуть `422`
 
-### Requirement: DELETE /service-accounts/{service_account_id} — Revoke Service Account
-Система MUST предоставлять эндпоинт `DELETE /service-accounts/{service_account_id}` (operationId `revoke_service_account_service_accounts__service_account_id__delete`, раздел OpenAPI «Service Accounts»).
+### Requirement: POST /users
+Система MUST выполнять операцию «Create User» по запросу `POST /users` (operationId `create_user_users_post`).
+В OpenAPI для маршрута не объявлена схема безопасности.
 
-Описание в OpenAPI: «Revoke a service account. Idempotent.»
+Тело запроса (`application/json`, схема `CreateUserRequest`):
+- `id`: string, обязательное
+- `email`: string | null
+- `name`: string | null
 
-Path-параметры: `service_account_id` — MUST быть заданы (обязательные).
-
-#### Scenario: Успешный ответ 204
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `DELETE /service-accounts/{service_account_id}` с корректными параметрами
-- THEN система MUST вернуть статус `204` («Successful Response»)
-- AND формат содержимого ответа: без тела
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: GET /users — List Users
-Система MUST предоставлять эндпоинт `GET /users` (operationId `list_users_users_get`, раздел OpenAPI «User directory»).
-
-Query-параметры: `include_disabled`, `limit`, `page`, `search`, `sort_by`, `sort_order`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /users` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /users` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `UserSchema`
+- AND тело MUST содержать поля `id`, `status`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /users`
+- THEN система MUST вернуть `422`
 
-### Requirement: POST /users — Create User
-Система MUST предоставлять эндпоинт `POST /users` (operationId `create_user_users_post`, раздел OpenAPI «User directory»).
+### Requirement: GET /users/metrics
+Система MUST возвращать операцию «Get User Metrics» по запросу `GET /users/metrics` (operationId `get_user_metrics_users_metrics_get`).
+В OpenAPI для маршрута не объявлена схема безопасности.
 
-Тело запроса: `application/json`, схема `CreateUserRequest`, обязательное. Поля: `id` (обязательное), `email`, `name`.
+Параметры:
+- `starting_date` (query, string | null, необязательный)
+- `ending_date` (query, string | null, необязательный)
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /users` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: GET /users/metrics — Get User Metrics
-Система MUST предоставлять эндпоинт `GET /users/metrics` (operationId `get_user_metrics_users_metrics_get`, раздел OpenAPI «User directory»).
-
-Описание в OpenAPI: «Directory size (total, active, disabled), users created per UTC day, and, when a role store is configured, users per role and how many hold none. The date range bounds only the per-day series. Served through the async store path so it works whether the directory is bound to a sync or an async databa…»
-
-Query-параметры: `starting_date`, `ending_date`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /users/metrics` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /users/metrics` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `UserManagementMetrics`
+- AND тело MUST содержать поля `total`, `active`, `disabled`, `created_per_day`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /users/metrics`
+- THEN система MUST вернуть `422`
 
-### Requirement: GET /users/{user_id} — Get User
-Система MUST предоставлять эндпоинт `GET /users/{user_id}` (operationId `get_user_users__user_id__get`, раздел OpenAPI «User directory»).
+### Requirement: GET /users/{user_id}
+Система MUST возвращать операцию «Get User» по запросу `GET /users/{user_id}` (operationId `get_user_users__user_id__get`).
+В OpenAPI для маршрута не объявлена схема безопасности.
 
-Path-параметры: `user_id` — MUST быть заданы (обязательные).
+Параметры:
+- `user_id` (path, string, обязательный)
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /users/{user_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: PATCH /users/{user_id} — Update User
-Система MUST предоставлять эндпоинт `PATCH /users/{user_id}` (operationId `update_user_users__user_id__patch`, раздел OpenAPI «User directory»).
-
-Описание в OpenAPI: «Update a user. ``disabled`` is the revocation kill-switch: a disabled user is denied at the enforcement point on their next request, even with a still-valid token.»
-
-Path-параметры: `user_id` — MUST быть заданы (обязательные).
-
-Тело запроса: `application/json`, схема `UpdateUserRequest`, обязательное. Поля: `email`, `name`, `disabled`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `PATCH /users/{user_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /users/{user_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `UserSchema`
+- AND тело MUST содержать поля `id`, `status`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /users/{user_id}`
+- THEN система MUST вернуть `422`
 
-### Requirement: DELETE /users/{user_id} — Delete User
-Система MUST предоставлять эндпоинт `DELETE /users/{user_id}` (operationId `delete_user_users__user_id__delete`, раздел OpenAPI «User directory»).
+### Requirement: PATCH /users/{user_id}
+Система MUST обновлять операцию «Update User» по запросу `PATCH /users/{user_id}` (operationId `update_user_users__user_id__patch`).
+В OpenAPI для маршрута не объявлена схема безопасности.
 
-Path-параметры: `user_id` — MUST быть заданы (обязательные).
+Параметры:
+- `user_id` (path, string, обязательный)
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `DELETE /users/{user_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+Тело запроса (`application/json`, схема `UpdateUserRequest`):
+- `email`: string | null
+- `name`: string | null
+- `disabled`: boolean | null
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `PATCH /users/{user_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `UserSchema`
+- AND тело MUST содержать поля `id`, `status`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `PATCH /users/{user_id}`
+- THEN система MUST вернуть `422`
+
+### Requirement: DELETE /users/{user_id}
+Система MUST удалять операцию «Delete User» по запросу `DELETE /users/{user_id}` (operationId `delete_user_users__user_id__delete`).
+В OpenAPI для маршрута не объявлена схема безопасности.
+
+Параметры:
+- `user_id` (path, string, обязательный)
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `DELETE /users/{user_id}` с корректными параметрами
+- THEN система MUST вернуть `200`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `DELETE /users/{user_id}`
+- THEN система MUST вернуть `422`
+
+### Requirement: POST /service-accounts
+Система MUST выполнять операцию «Create Service Account» по запросу `POST /service-accounts` (operationId `create_service_account_service_accounts_post`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Тело запроса (`application/json`, схема `ServiceAccountCreate`):
+- `name`: string, обязательное
+- `scopes`: array[ScopeItem] | null
+- `expires_in_days`: integer | null, по умолчанию `90`
+- `never_expires`: boolean, по умолчанию `false`
+- `allow_privileged_scopes`: boolean, по умолчанию `false`
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /service-accounts` с корректными параметрами
+- THEN система MUST вернуть `201` с телом по схеме `ServiceAccountCreateResponse`
+- AND тело MUST содержать поля `id`, `name`, `principal`, `token_prefix`, `created_at`, `token`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /service-accounts`
+- THEN система MUST вернуть `422`
+
+### Requirement: GET /service-accounts
+Система MUST возвращать операцию «List Service Accounts» по запросу `GET /service-accounts` (operationId `list_service_accounts_service_accounts_get`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `include_revoked` (query, boolean, необязательный)
+- `limit` (query, integer, необязательный)
+- `page` (query, integer, необязательный)
+- `sort_by` (query, string, необязательный)
+- `sort_order` (query, string, необязательный)
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /service-accounts` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `PaginatedResponse_ServiceAccountResponse_`
+- AND тело MUST содержать поля `data`, `meta`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /service-accounts`
+- THEN система MUST вернуть `422`
+
+### Requirement: DELETE /service-accounts/{service_account_id}
+Система MUST удалять операцию «Revoke Service Account» по запросу `DELETE /service-accounts/{service_account_id}` (operationId `revoke_service_account_service_accounts__service_account_id__delete`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `service_account_id` (path, string, обязательный)
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `DELETE /service-accounts/{service_account_id}` с корректными параметрами
+- THEN система MUST вернуть `204`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `DELETE /service-accounts/{service_account_id}`
+- THEN система MUST вернуть `422`

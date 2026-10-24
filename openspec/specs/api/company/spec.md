@@ -1,776 +1,451 @@
-# API `company` Specification
+# Company API Specification
 
 ## Purpose
-CompanyOS: продукты, источники, рутины, проекты, задачи, wiki, решения и исполнение задач агентами.
+CompanyOS: Products, Projects и Tasks. Объявления в `app/company.py`, хранение в `agno_company_*`.
 
-Эндпоинты этого домена не реализованы в коде репозитория: их предоставляет runtime `agno.os.AgentOS` (agno 3.1.10), создаваемый в `app/main.py`. Требования ниже восстановлены по OpenAPI-схеме работающего инстанса (`GET /openapi.json`, заголовок «Agno AgentOS», версия API `1.0.0`).
-
-Общее требование: если `authorization` включена (в `app/main.py` это `RUNTIME_ENV != "dev"`), каждый эндпоинт домена MUST требовать заголовок `Authorization: Bearer <JWT>` (схема безопасности `HTTPBearer` в OpenAPI), а запрос без валидного токена MUST завершаться статусом `401`. В режиме `RUNTIME_ENV=dev` (compose.yaml) `GET /info` возвращает `auth_mode: "none"` и эндпоинты доступны без токена.
+Домен содержит 20 операций HTTP (теги OpenAPI: Products, Projects, Tasks). Все они предоставляются runtime Agno `AgentOS`; в коде репозитория маршрутов нет.
 
 ## Requirements
 
-### Requirement: GET /company/products — List Products
-Система MUST предоставлять эндпоинт `GET /company/products` (operationId `list_products_company_products_get`, раздел OpenAPI «Products»).
+### Requirement: Объявленный Product
+Система MUST объявлять Product `this-agentos` (`name` `AgentOS`, `purpose` «Improve this AgentOS by scanning this codebase and agno releases.») и MUST засевать его при старте.
 
-Query-параметры: `limit`, `page`, `include_deleted`, `sort_by`, `sort_order`.
+#### Scenario: Список Products
+- GIVEN платформа запущена на чистой БД
+- WHEN клиент выполняет `GET /company/products`
+- THEN ответ MUST содержать Product `this-agentos`
+- AND `metadata` MUST содержать `routine_ids` и `archive_window_days: 14`
+- AND `counts.tasks` MUST содержать счётчики `backlog`, `ready`, `in_progress`, `in_review`, `done`, `cancelled`
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /company/products` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+### Requirement: Переходы Task
+Переход Task (`POST /company/tasks/{task_id}/transitions`) MUST принимать `target` из `backlog`, `ready`, `in_progress`, `in_review`, `done`, `cancelled` и обязательный `reason`; MAY принимать `executor_type` и `executor_id`.
 
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+#### Scenario: Недопустимый target
+- GIVEN Task существует
+- WHEN клиент передаёт `target`, отсутствующий в перечислении
+- THEN система MUST вернуть `422`
 
-### Requirement: POST /company/products — Create Product
-Система MUST предоставлять эндпоинт `POST /company/products` (operationId `create_product_company_products_post`, раздел OpenAPI «Products»).
+### Requirement: Переходы Project
+Переход Project (`POST /company/projects/{project_id}/transitions`) MUST принимать `target` из `proposed`, `active`, `done`, `cancelled` и обязательный `reason`.
 
-Тело запроса: `application/json`, схема `ProductCreate`, обязательное. Поля: `name` (обязательное), `purpose`, `metadata`.
+#### Scenario: Переход без reason
+- GIVEN Project существует
+- WHEN клиент передаёт тело без `reason`
+- THEN система MUST вернуть `422`
 
-#### Scenario: Успешный ответ 201
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /company/products` с корректными параметрами
-- THEN система MUST вернуть статус `201` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+### Requirement: GET /company/products
+Система MUST возвращать операцию «List Products» по запросу `GET /company/products` (operationId `list_products_company_products_get`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+Параметры:
+- `limit` (query, integer, необязательный)
+- `page` (query, integer, необязательный)
+- `include_deleted` (query, boolean, необязательный)
+- `sort_by` (query, string (created_at | updated_at), необязательный)
+- `sort_order` (query, string (asc | desc), необязательный)
 
-### Requirement: GET /company/products/{product_id} — Get Product
-Система MUST предоставлять эндпоинт `GET /company/products/{product_id}` (operationId `get_product_company_products__product_id__get`, раздел OpenAPI «Products»).
-
-Path-параметры: `product_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `include_deleted`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /company/products/{product_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /company/products` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `PaginatedResponse_ProductResponse_`
+- AND тело MUST содержать поля `data`, `meta`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /company/products`
+- THEN система MUST вернуть `422`
 
-### Requirement: PATCH /company/products/{product_id} — Update Product
-Система MUST предоставлять эндпоинт `PATCH /company/products/{product_id}` (operationId `update_product_company_products__product_id__patch`, раздел OpenAPI «Products»).
+### Requirement: POST /company/products
+Система MUST выполнять операцию «Create Product» по запросу `POST /company/products` (operationId `create_product_company_products_post`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Path-параметры: `product_id` — MUST быть заданы (обязательные).
+Тело запроса (`application/json`, схема `ProductCreate`):
+- `name`: string, обязательное
+- `purpose`: string | null
+- `metadata`: object | null
 
-Тело запроса: `application/json`, схема `ProductUpdate`, обязательное. Поля: `name`, `purpose`, `metadata`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `PATCH /company/products/{product_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: DELETE /company/products/{product_id} — Delete Product
-Система MUST предоставлять эндпоинт `DELETE /company/products/{product_id}` (operationId `delete_product_company_products__product_id__delete`, раздел OpenAPI «Products»).
-
-Path-параметры: `product_id` — MUST быть заданы (обязательные).
-
-#### Scenario: Успешный ответ 204
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `DELETE /company/products/{product_id}` с корректными параметрами
-- THEN система MUST вернуть статус `204` («Successful Response»)
-- AND формат содержимого ответа: без тела
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /company/products` с корректными параметрами
+- THEN система MUST вернуть `201` с телом по схеме `ProductResponse`
+- AND тело MUST содержать поля `id`, `name`, `created_at`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /company/products`
+- THEN система MUST вернуть `422`
 
-### Requirement: POST /company/products/{product_id}/restore — Restore Product
-Система MUST предоставлять эндпоинт `POST /company/products/{product_id}/restore` (operationId `restore_product_company_products__product_id__restore_post`, раздел OpenAPI «Products»).
+### Requirement: GET /company/products/{product_id}
+Система MUST возвращать операцию «Get Product» по запросу `GET /company/products/{product_id}` (operationId `get_product_company_products__product_id__get`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Path-параметры: `product_id` — MUST быть заданы (обязательные).
+Параметры:
+- `product_id` (path, string, обязательный)
+- `include_deleted` (query, boolean, необязательный)
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /company/products/{product_id}/restore` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: GET /company/sources — List Sources
-Система MUST предоставлять эндпоинт `GET /company/sources` (operationId `list_sources_company_sources_get`, раздел OpenAPI «Company heartbeat»).
-
-Query-параметры: `product_id`, `limit`, `page`, `include_deleted`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /company/sources` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /company/products/{product_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ProductResponse`
+- AND тело MUST содержать поля `id`, `name`, `created_at`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /company/products/{product_id}`
+- THEN система MUST вернуть `422`
 
-### Requirement: POST /company/sources — Create Source
-Система MUST предоставлять эндпоинт `POST /company/sources` (operationId `create_source_company_sources_post`, раздел OpenAPI «Company heartbeat»).
+### Requirement: PATCH /company/products/{product_id}
+Система MUST обновлять операцию «Update Product» по запросу `PATCH /company/products/{product_id}` (operationId `update_product_company_products__product_id__patch`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Тело запроса: `application/json`, схема `SourceCreate`, обязательное. Поля: `id`, `type` (обязательное), `reference` (обязательное), `credential_ref`, `config`, `product_id` (обязательное).
+Параметры:
+- `product_id` (path, string, обязательный)
 
-#### Scenario: Успешный ответ 201
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /company/sources` с корректными параметрами
-- THEN система MUST вернуть статус `201` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+Тело запроса (`application/json`, схема `ProductUpdate`):
+- `name`: string | null
+- `purpose`: string | null
+- `metadata`: object | null
 
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: DELETE /company/sources/{source_id} — Delete Source
-Система MUST предоставлять эндпоинт `DELETE /company/sources/{source_id}` (operationId `delete_source_company_sources__source_id__delete`, раздел OpenAPI «Company heartbeat»).
-
-Path-параметры: `source_id` — MUST быть заданы (обязательные).
-
-#### Scenario: Успешный ответ 204
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `DELETE /company/sources/{source_id}` с корректными параметрами
-- THEN система MUST вернуть статус `204` («Successful Response»)
-- AND формат содержимого ответа: без тела
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `PATCH /company/products/{product_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ProductResponse`
+- AND тело MUST содержать поля `id`, `name`, `created_at`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `PATCH /company/products/{product_id}`
+- THEN система MUST вернуть `422`
 
-### Requirement: POST /company/sources/{source_id}/restore — Restore Source
-Система MUST предоставлять эндпоинт `POST /company/sources/{source_id}/restore` (operationId `restore_source_company_sources__source_id__restore_post`, раздел OpenAPI «Company heartbeat»).
+### Requirement: DELETE /company/products/{product_id}
+Система MUST удалять операцию «Delete Product» по запросу `DELETE /company/products/{product_id}` (operationId `delete_product_company_products__product_id__delete`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Path-параметры: `source_id` — MUST быть заданы (обязательные).
+Параметры:
+- `product_id` (path, string, обязательный)
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /company/sources/{source_id}/restore` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: GET /company/routines — List Routines
-Система MUST предоставлять эндпоинт `GET /company/routines` (operationId `list_routines_company_routines_get`, раздел OpenAPI «Company heartbeat»).
-
-Query-параметры: `product_id`, `limit`, `page`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /company/routines` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `DELETE /company/products/{product_id}` с корректными параметрами
+- THEN система MUST вернуть `204`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `DELETE /company/products/{product_id}`
+- THEN система MUST вернуть `422`
 
-### Requirement: POST /company/routines — Create Routine
-Система MUST предоставлять эндпоинт `POST /company/routines` (operationId `create_routine_company_routines_post`, раздел OpenAPI «Company heartbeat»).
+### Requirement: POST /company/products/{product_id}/restore
+Система MUST выполнять операцию «Restore Product» по запросу `POST /company/products/{product_id}/restore` (operationId `restore_product_company_products__product_id__restore_post`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Тело запроса: `application/json`, схема `RoutineCreate`, обязательное. Поля: `name` (обязательное), `template`, `executor_type` (обязательное), `executor_id` (обязательное), `cron_expr`, `timezone`, `instructions`, `auto_accept`, `product_id` (обязательное).
+Параметры:
+- `product_id` (path, string, обязательный)
 
-#### Scenario: Успешный ответ 201
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /company/routines` с корректными параметрами
-- THEN система MUST вернуть статус `201` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: GET /company/routines/{routine_id} — Get Routine
-Система MUST предоставлять эндпоинт `GET /company/routines/{routine_id}` (operationId `get_routine_company_routines__routine_id__get`, раздел OpenAPI «Company heartbeat»).
-
-Path-параметры: `routine_id` — MUST быть заданы (обязательные).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /company/routines/{routine_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /company/products/{product_id}/restore` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ProductResponse`
+- AND тело MUST содержать поля `id`, `name`, `created_at`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /company/products/{product_id}/restore`
+- THEN система MUST вернуть `422`
 
-### Requirement: PATCH /company/routines/{routine_id} — Update Routine
-Система MUST предоставлять эндпоинт `PATCH /company/routines/{routine_id}` (operationId `update_routine_company_routines__routine_id__patch`, раздел OpenAPI «Company heartbeat»).
+### Requirement: GET /company/projects
+Система MUST возвращать операцию «List Projects» по запросу `GET /company/projects` (operationId `list_projects_company_projects_get`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Path-параметры: `routine_id` — MUST быть заданы (обязательные).
+Параметры:
+- `limit` (query, integer, необязательный)
+- `page` (query, integer, необязательный)
+- `include_deleted` (query, boolean, необязательный)
+- `sort_by` (query, string (created_at | updated_at), необязательный)
+- `sort_order` (query, string (asc | desc), необязательный)
+- `product_id` (query, string | null, необязательный)
+- `status` (query, string (proposed | active | done | cancelled) | null, необязательный)
 
-Тело запроса: `application/json`, схема `RoutineUpdate`, обязательное. Поля: `name`, `executor_type`, `executor_id`, `instructions`, `cron_expr`, `timezone`, `auto_accept`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `PATCH /company/routines/{routine_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: POST /company/routines/{routine_id}/trigger — Trigger Routine
-Система MUST предоставлять эндпоинт `POST /company/routines/{routine_id}/trigger` (operationId `trigger_routine_company_routines__routine_id__trigger_post`, раздел OpenAPI «Company heartbeat»).
-
-Path-параметры: `routine_id` — MUST быть заданы (обязательные).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /company/routines/{routine_id}/trigger` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /company/projects` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `PaginatedResponse_ProjectResponse_`
+- AND тело MUST содержать поля `data`, `meta`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /company/projects`
+- THEN система MUST вернуть `422`
 
-### Requirement: POST /company/routines/{routine_id}/pause — Pause Routine
-Система MUST предоставлять эндпоинт `POST /company/routines/{routine_id}/pause` (operationId `pause_routine_company_routines__routine_id__pause_post`, раздел OpenAPI «Company heartbeat»).
+### Requirement: POST /company/projects
+Система MUST выполнять операцию «Create Project» по запросу `POST /company/projects` (operationId `create_project_company_projects_post`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Path-параметры: `routine_id` — MUST быть заданы (обязательные).
+Тело запроса (`application/json`, схема `ProjectCreate`):
+- `product_id`: string, обязательное
+- `name`: string, обязательное
+- `outcome`: string | null
+- `target_date`: integer | null
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /company/routines/{routine_id}/pause` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: POST /company/routines/{routine_id}/resume — Resume Routine
-Система MUST предоставлять эндпоинт `POST /company/routines/{routine_id}/resume` (operationId `resume_routine_company_routines__routine_id__resume_post`, раздел OpenAPI «Company heartbeat»).
-
-Path-параметры: `routine_id` — MUST быть заданы (обязательные).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /company/routines/{routine_id}/resume` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /company/projects` с корректными параметрами
+- THEN система MUST вернуть `201` с телом по схеме `ProjectResponse`
+- AND тело MUST содержать поля `product_id`, `name`, `id`, `status`, `created_at`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /company/projects`
+- THEN система MUST вернуть `422`
 
-### Requirement: GET /company/routines/{routine_id}/runs — Routine Runs
-Система MUST предоставлять эндпоинт `GET /company/routines/{routine_id}/runs` (operationId `routine_runs_company_routines__routine_id__runs_get`, раздел OpenAPI «Company heartbeat»).
+### Requirement: GET /company/projects/{project_id}
+Система MUST возвращать операцию «Get Project» по запросу `GET /company/projects/{project_id}` (operationId `get_project_company_projects__project_id__get`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Path-параметры: `routine_id` — MUST быть заданы (обязательные).
+Параметры:
+- `project_id` (path, string, обязательный)
+- `include_deleted` (query, boolean, необязательный)
 
-Query-параметры: `limit`, `page`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /company/routines/{routine_id}/runs` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: POST /company/setup — Setup
-Система MUST предоставлять эндпоинт `POST /company/setup` (operationId `setup_company_setup_post`, раздел OpenAPI «Company heartbeat»).
-
-Тело запроса: `application/json`, схема `Setup`, обязательное. Поля: `id`, `name` (обязательное), `purpose`, `user_id`, `metadata`, `sources`, `routines`.
-
-#### Scenario: Успешный ответ 201
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /company/setup` с корректными параметрами
-- THEN система MUST вернуть статус `201` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /company/projects/{project_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ProjectResponse`
+- AND тело MUST содержать поля `product_id`, `name`, `id`, `status`, `created_at`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /company/projects/{project_id}`
+- THEN система MUST вернуть `422`
 
-### Requirement: GET /company/projects — List Projects
-Система MUST предоставлять эндпоинт `GET /company/projects` (operationId `list_projects_company_projects_get`, раздел OpenAPI «Projects»).
+### Requirement: PATCH /company/projects/{project_id}
+Система MUST обновлять операцию «Update Project» по запросу `PATCH /company/projects/{project_id}` (operationId `update_project_company_projects__project_id__patch`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Query-параметры: `limit`, `page`, `include_deleted`, `sort_by`, `sort_order`, `product_id`, `status`.
+Параметры:
+- `project_id` (path, string, обязательный)
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /company/projects` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+Тело запроса (`application/json`, схема `ProjectUpdate`):
+- `name`: string | null
+- `outcome`: string | null
+- `target_date`: integer | null
 
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: POST /company/projects — Create Project
-Система MUST предоставлять эндпоинт `POST /company/projects` (operationId `create_project_company_projects_post`, раздел OpenAPI «Projects»).
-
-Тело запроса: `application/json`, схема `ProjectCreate`, обязательное. Поля: `product_id` (обязательное), `name` (обязательное), `outcome`, `target_date`.
-
-#### Scenario: Успешный ответ 201
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /company/projects` с корректными параметрами
-- THEN система MUST вернуть статус `201` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `PATCH /company/projects/{project_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ProjectResponse`
+- AND тело MUST содержать поля `product_id`, `name`, `id`, `status`, `created_at`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `PATCH /company/projects/{project_id}`
+- THEN система MUST вернуть `422`
 
-### Requirement: GET /company/projects/{project_id} — Get Project
-Система MUST предоставлять эндпоинт `GET /company/projects/{project_id}` (operationId `get_project_company_projects__project_id__get`, раздел OpenAPI «Projects»).
+### Requirement: DELETE /company/projects/{project_id}
+Система MUST удалять операцию «Delete Project» по запросу `DELETE /company/projects/{project_id}` (operationId `delete_project_company_projects__project_id__delete`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Path-параметры: `project_id` — MUST быть заданы (обязательные).
+Параметры:
+- `project_id` (path, string, обязательный)
 
-Query-параметры: `include_deleted`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /company/projects/{project_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: PATCH /company/projects/{project_id} — Update Project
-Система MUST предоставлять эндпоинт `PATCH /company/projects/{project_id}` (operationId `update_project_company_projects__project_id__patch`, раздел OpenAPI «Projects»).
-
-Path-параметры: `project_id` — MUST быть заданы (обязательные).
-
-Тело запроса: `application/json`, схема `ProjectUpdate`, обязательное. Поля: `name`, `outcome`, `target_date`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `PATCH /company/projects/{project_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `DELETE /company/projects/{project_id}` с корректными параметрами
+- THEN система MUST вернуть `204`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `DELETE /company/projects/{project_id}`
+- THEN система MUST вернуть `422`
 
-### Requirement: DELETE /company/projects/{project_id} — Delete Project
-Система MUST предоставлять эндпоинт `DELETE /company/projects/{project_id}` (operationId `delete_project_company_projects__project_id__delete`, раздел OpenAPI «Projects»).
+### Requirement: POST /company/projects/{project_id}/restore
+Система MUST выполнять операцию «Restore Project» по запросу `POST /company/projects/{project_id}/restore` (operationId `restore_project_company_projects__project_id__restore_post`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Path-параметры: `project_id` — MUST быть заданы (обязательные).
+Параметры:
+- `project_id` (path, string, обязательный)
 
-#### Scenario: Успешный ответ 204
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `DELETE /company/projects/{project_id}` с корректными параметрами
-- THEN система MUST вернуть статус `204` («Successful Response»)
-- AND формат содержимого ответа: без тела
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: POST /company/projects/{project_id}/restore — Restore Project
-Система MUST предоставлять эндпоинт `POST /company/projects/{project_id}/restore` (operationId `restore_project_company_projects__project_id__restore_post`, раздел OpenAPI «Projects»).
-
-Path-параметры: `project_id` — MUST быть заданы (обязательные).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /company/projects/{project_id}/restore` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /company/projects/{project_id}/restore` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ProjectResponse`
+- AND тело MUST содержать поля `product_id`, `name`, `id`, `status`, `created_at`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /company/projects/{project_id}/restore`
+- THEN система MUST вернуть `422`
 
-### Requirement: POST /company/projects/{project_id}/transitions — Transition Project
-Система MUST предоставлять эндпоинт `POST /company/projects/{project_id}/transitions` (operationId `transition_project_company_projects__project_id__transitions_post`, раздел OpenAPI «Projects»).
+### Requirement: POST /company/projects/{project_id}/transitions
+Система MUST выполнять операцию «Transition Project» по запросу `POST /company/projects/{project_id}/transitions` (operationId `transition_project_company_projects__project_id__transitions_post`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Path-параметры: `project_id` — MUST быть заданы (обязательные).
+Параметры:
+- `project_id` (path, string, обязательный)
 
-Тело запроса: `application/json`, схема `ProjectTransition`, обязательное. Поля: `target` (обязательное), `reason` (обязательное).
+Тело запроса (`application/json`, схема `ProjectTransition`):
+- `target`: string (proposed | active | done | cancelled), обязательное
+- `reason`: string, обязательное
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /company/projects/{project_id}/transitions` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: GET /company/tasks — List Tasks
-Система MUST предоставлять эндпоинт `GET /company/tasks` (operationId `list_tasks_company_tasks_get`, раздел OpenAPI «Tasks»).
-
-Query-параметры: `limit`, `page`, `include_deleted`, `sort_by`, `sort_order`, `product_id`, `status`, `project_id`, `failed`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /company/tasks` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /company/projects/{project_id}/transitions` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ProjectResponse`
+- AND тело MUST содержать поля `product_id`, `name`, `id`, `status`, `created_at`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /company/projects/{project_id}/transitions`
+- THEN система MUST вернуть `422`
 
-### Requirement: POST /company/tasks — Create Task
-Система MUST предоставлять эндпоинт `POST /company/tasks` (operationId `create_task_company_tasks_post`, раздел OpenAPI «Tasks»).
+### Requirement: GET /company/tasks
+Система MUST возвращать операцию «List Tasks» по запросу `GET /company/tasks` (operationId `list_tasks_company_tasks_get`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Тело запроса: `application/json`, схема `TaskCreate`, обязательное. Поля: `executor_type`, `executor_id`, `product_id` (обязательное), `title` (обязательное), `brief`, `project_id` (обязательное), `evidence`.
+Параметры:
+- `limit` (query, integer, необязательный)
+- `page` (query, integer, необязательный)
+- `include_deleted` (query, boolean, необязательный)
+- `sort_by` (query, string (created_at | updated_at), необязательный)
+- `sort_order` (query, string (asc | desc), необязательный)
+- `product_id` (query, string | null, необязательный)
+- `status` (query, string (backlog | ready | in_progress | in_review | done | cancelled) | null, необязательный)
+- `project_id` (query, string | null, необязательный)
+- `failed` (query, boolean | null, необязательный)
 
-#### Scenario: Успешный ответ 201
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /company/tasks` с корректными параметрами
-- THEN система MUST вернуть статус `201` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: GET /company/tasks/{task_id} — Get Task
-Система MUST предоставлять эндпоинт `GET /company/tasks/{task_id}` (operationId `get_task_company_tasks__task_id__get`, раздел OpenAPI «Tasks»).
-
-Path-параметры: `task_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `include_deleted`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /company/tasks/{task_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /company/tasks` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `PaginatedResponse_TaskResponse_`
+- AND тело MUST содержать поля `data`, `meta`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /company/tasks`
+- THEN система MUST вернуть `422`
 
-### Requirement: PATCH /company/tasks/{task_id} — Update Task
-Система MUST предоставлять эндпоинт `PATCH /company/tasks/{task_id}` (operationId `update_task_company_tasks__task_id__patch`, раздел OpenAPI «Tasks»).
+### Requirement: POST /company/tasks
+Система MUST выполнять операцию «Create Task» по запросу `POST /company/tasks` (operationId `create_task_company_tasks_post`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Path-параметры: `task_id` — MUST быть заданы (обязательные).
+Тело запроса (`application/json`, схема `TaskCreate`):
+- `executor_type`: string (agent | team | workflow) | null
+- `executor_id`: string | null
+- `product_id`: string, обязательное
+- `title`: string, обязательное
+- `brief`: string | null
+- `project_id`: string, обязательное
+- `evidence`: array[object] | null
 
-Тело запроса: `application/json`, схема `TaskUpdate`, обязательное. Поля: `executor_type`, `executor_id`, `title`, `brief`, `project_id`, `evidence`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `PATCH /company/tasks/{task_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: DELETE /company/tasks/{task_id} — Delete Task
-Система MUST предоставлять эндпоинт `DELETE /company/tasks/{task_id}` (operationId `delete_task_company_tasks__task_id__delete`, раздел OpenAPI «Tasks»).
-
-Path-параметры: `task_id` — MUST быть заданы (обязательные).
-
-#### Scenario: Успешный ответ 204
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `DELETE /company/tasks/{task_id}` с корректными параметрами
-- THEN система MUST вернуть статус `204` («Successful Response»)
-- AND формат содержимого ответа: без тела
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /company/tasks` с корректными параметрами
+- THEN система MUST вернуть `201` с телом по схеме `TaskResponse`
+- AND тело MUST содержать поля `product_id`, `title`, `id`, `status`, `created_at`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /company/tasks`
+- THEN система MUST вернуть `422`
 
-### Requirement: POST /company/tasks/{task_id}/restore — Restore Task
-Система MUST предоставлять эндпоинт `POST /company/tasks/{task_id}/restore` (operationId `restore_task_company_tasks__task_id__restore_post`, раздел OpenAPI «Tasks»).
+### Requirement: GET /company/tasks/{task_id}
+Система MUST возвращать операцию «Get Task» по запросу `GET /company/tasks/{task_id}` (operationId `get_task_company_tasks__task_id__get`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Path-параметры: `task_id` — MUST быть заданы (обязательные).
+Параметры:
+- `task_id` (path, string, обязательный)
+- `include_deleted` (query, boolean, необязательный)
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /company/tasks/{task_id}/restore` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: POST /company/tasks/{task_id}/transitions — Transition Task
-Система MUST предоставлять эндпоинт `POST /company/tasks/{task_id}/transitions` (operationId `transition_task_company_tasks__task_id__transitions_post`, раздел OpenAPI «Tasks»).
-
-Path-параметры: `task_id` — MUST быть заданы (обязательные).
-
-Тело запроса: `application/json`, схема `TaskTransition`, обязательное. Поля: `target` (обязательное), `reason` (обязательное), `executor_type`, `executor_id`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /company/tasks/{task_id}/transitions` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /company/tasks/{task_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `TaskResponse`
+- AND тело MUST содержать поля `product_id`, `title`, `id`, `status`, `created_at`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /company/tasks/{task_id}`
+- THEN система MUST вернуть `422`
 
-### Requirement: GET /company/products/{product_id}/wiki — List Product Wiki
-Система MUST предоставлять эндпоинт `GET /company/products/{product_id}/wiki` (operationId `list_product_wiki_company_products__product_id__wiki_get`, раздел OpenAPI «Company playbook»).
+### Requirement: PATCH /company/tasks/{task_id}
+Система MUST обновлять операцию «Update Task» по запросу `PATCH /company/tasks/{task_id}` (operationId `update_task_company_tasks__task_id__patch`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Path-параметры: `product_id` — MUST быть заданы (обязательные).
+Параметры:
+- `task_id` (path, string, обязательный)
 
-Query-параметры: `limit`, `page`.
+Тело запроса (`application/json`, схема `TaskUpdate`):
+- `executor_type`: string (agent | team | workflow) | null
+- `executor_id`: string | null
+- `title`: string | null
+- `brief`: string | null
+- `project_id`: string | null
+- `evidence`: array[object] | null
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /company/products/{product_id}/wiki` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: GET /company/products/{product_id}/wiki/{path} — Read Product Wiki
-Система MUST предоставлять эндпоинт `GET /company/products/{product_id}/wiki/{path}` (operationId `read_product_wiki_company_products__product_id__wiki__path__get`, раздел OpenAPI «Company playbook»).
-
-Path-параметры: `path`, `product_id` — MUST быть заданы (обязательные).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /company/products/{product_id}/wiki/{path}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `PATCH /company/tasks/{task_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `TaskResponse`
+- AND тело MUST содержать поля `product_id`, `title`, `id`, `status`, `created_at`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `PATCH /company/tasks/{task_id}`
+- THEN система MUST вернуть `422`
 
-### Requirement: PUT /company/products/{product_id}/wiki/{path} — Write Product Wiki
-Система MUST предоставлять эндпоинт `PUT /company/products/{product_id}/wiki/{path}` (operationId `write_product_wiki_company_products__product_id__wiki__path__put`, раздел OpenAPI «Company playbook»).
+### Requirement: DELETE /company/tasks/{task_id}
+Система MUST удалять операцию «Delete Task» по запросу `DELETE /company/tasks/{task_id}` (operationId `delete_task_company_tasks__task_id__delete`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Path-параметры: `path`, `product_id` — MUST быть заданы (обязательные).
+Параметры:
+- `task_id` (path, string, обязательный)
 
-Тело запроса: `application/json`, схема `WikiWrite`, обязательное. Поля: `content` (обязательное), `expected_version` (обязательное).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `PUT /company/products/{product_id}/wiki/{path}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: GET /company/wiki — List Company Wiki
-Система MUST предоставлять эндпоинт `GET /company/wiki` (operationId `list_company_wiki_company_wiki_get`, раздел OpenAPI «Company playbook»).
-
-Query-параметры: `limit`, `page`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /company/wiki` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `DELETE /company/tasks/{task_id}` с корректными параметрами
+- THEN система MUST вернуть `204`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `DELETE /company/tasks/{task_id}`
+- THEN система MUST вернуть `422`
 
-### Requirement: GET /company/wiki/{path} — Read Company Wiki
-Система MUST предоставлять эндпоинт `GET /company/wiki/{path}` (operationId `read_company_wiki_company_wiki__path__get`, раздел OpenAPI «Company playbook»).
+### Requirement: POST /company/tasks/{task_id}/restore
+Система MUST выполнять операцию «Restore Task» по запросу `POST /company/tasks/{task_id}/restore` (operationId `restore_task_company_tasks__task_id__restore_post`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Path-параметры: `path` — MUST быть заданы (обязательные).
+Параметры:
+- `task_id` (path, string, обязательный)
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /company/wiki/{path}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: PUT /company/wiki/{path} — Write Company Wiki
-Система MUST предоставлять эндпоинт `PUT /company/wiki/{path}` (operationId `write_company_wiki_company_wiki__path__put`, раздел OpenAPI «Company playbook»).
-
-Path-параметры: `path` — MUST быть заданы (обязательные).
-
-Тело запроса: `application/json`, схема `WikiWrite`, обязательное. Поля: `content` (обязательное), `expected_version` (обязательное).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `PUT /company/wiki/{path}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /company/tasks/{task_id}/restore` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `TaskResponse`
+- AND тело MUST содержать поля `product_id`, `title`, `id`, `status`, `created_at`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /company/tasks/{task_id}/restore`
+- THEN система MUST вернуть `422`
 
-### Requirement: GET /company/decisions — List Decisions
-Система MUST предоставлять эндпоинт `GET /company/decisions` (operationId `list_decisions_company_decisions_get`, раздел OpenAPI «Company playbook»).
+### Requirement: POST /company/tasks/{task_id}/transitions
+Система MUST выполнять операцию «Transition Task» по запросу `POST /company/tasks/{task_id}/transitions` (operationId `transition_task_company_tasks__task_id__transitions_post`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Query-параметры: `query`, `agent_id`, `session_id`, `days`, `limit`, `page`.
+Параметры:
+- `task_id` (path, string, обязательный)
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /company/decisions` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+Тело запроса (`application/json`, схема `TaskTransition`):
+- `target`: string (backlog | ready | in_progress | in_review | done | cancelled), обязательное
+- `reason`: string, обязательное
+- `executor_type`: string (agent | team | workflow) | null
+- `executor_id`: string | null
 
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: POST /company/decisions — Create Decision
-Система MUST предоставлять эндпоинт `POST /company/decisions` (operationId `create_decision_company_decisions_post`, раздел OpenAPI «Company playbook»).
-
-Тело запроса: `application/json`, схема `DecisionCreate`, обязательное. Поля: `decision` (обязательное), `reasoning`, `context`, `outcome`.
-
-#### Scenario: Успешный ответ 201
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /company/decisions` с корректными параметрами
-- THEN система MUST вернуть статус `201` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /company/tasks/{task_id}/transitions` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `TaskResponse`
+- AND тело MUST содержать поля `product_id`, `title`, `id`, `status`, `created_at`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: POST /company/tasks/{task_id}/runs — Start
-Система MUST предоставлять эндпоинт `POST /company/tasks/{task_id}/runs` (operationId `start_company_tasks__task_id__runs_post`, раздел OpenAPI «Company execution»).
-
-Path-параметры: `task_id` — MUST быть заданы (обязательные).
-
-Тело запроса: `application/json`, схема `TaskRunCreate`. Поля: `attempt`.
-
-#### Scenario: Успешный ответ 202
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /company/tasks/{task_id}/runs` с корректными параметрами
-- THEN система MUST вернуть статус `202` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: GET /company/tasks/{task_id}/runs — Runs
-Система MUST предоставлять эндпоинт `GET /company/tasks/{task_id}/runs` (operationId `runs_company_tasks__task_id__runs_get`, раздел OpenAPI «Company execution»).
-
-Path-параметры: `task_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `limit`, `page`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /company/tasks/{task_id}/runs` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: GET /company/runs/{run_id} — Get Run
-Система MUST предоставлять эндпоинт `GET /company/runs/{run_id}` (operationId `get_run_company_runs__run_id__get`, раздел OpenAPI «Company execution»).
-
-Path-параметры: `run_id` — MUST быть заданы (обязательные).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /company/runs/{run_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: POST /company/runs/{run_id}/cancel — Cancel
-Система MUST предоставлять эндпоинт `POST /company/runs/{run_id}/cancel` (operationId `cancel_company_runs__run_id__cancel_post`, раздел OpenAPI «Company execution»).
-
-Path-параметры: `run_id` — MUST быть заданы (обязательные).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /company/runs/{run_id}/cancel` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: GET /company/attention — Attention
-Система MUST предоставлять эндпоинт `GET /company/attention` (operationId `attention_company_attention_get`, раздел OpenAPI «Company execution»).
-
-Query-параметры: `product_id`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /company/attention` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /company/tasks/{task_id}/transitions`
+- THEN система MUST вернуть `422`

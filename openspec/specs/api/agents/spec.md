@@ -1,494 +1,536 @@
-# API `agents` Specification
+# Agents API Specification
 
 ## Purpose
-Запуск и управление агентами AgentOS: запуски (runs), чекпоинты, форк и компактация сессий.
+Регистрация, запуск и управление ходами агентов AgentOS.
 
-Эндпоинты этого домена не реализованы в коде репозитория: их предоставляет runtime `agno.os.AgentOS` (agno 3.1.10), создаваемый в `app/main.py`. Требования ниже восстановлены по OpenAPI-схеме работающего инстанса (`GET /openapi.json`, заголовок «Agno AgentOS», версия API `1.0.0`).
-
-Общее требование: если `authorization` включена (в `app/main.py` это `RUNTIME_ENV != "dev"`), каждый эндпоинт домена MUST требовать заголовок `Authorization: Bearer <JWT>` (схема безопасности `HTTPBearer` в OpenAPI), а запрос без валидного токена MUST завершаться статусом `401`. В режиме `RUNTIME_ENV=dev` (compose.yaml) `GET /info` возвращает `auth_mode: "none"` и эндпоинты доступны без токена.
+Домен содержит 12 операций HTTP (теги OpenAPI: Agents). Все они предоставляются runtime Agno `AgentOS`; в коде репозитория маршрутов нет.
 
 ## Requirements
 
-### Requirement: POST /agents/{agent_id}/runs — Create Agent Run
-Система MUST предоставлять эндпоинт `POST /agents/{agent_id}/runs` (operationId `create_agent_run`, раздел OpenAPI «Agents»).
+### Requirement: Зарегистрированные агенты
+`GET /agents` MUST возвращать агентов `claude-engineer` (`Claude Engineer`, metadata `sdk: claude-agent-sdk`), `codex-engineer` (`Codex Engineer`, metadata `sdk: codex`) и `company-manager-internal` (`Company Manager`, модель `claude-opus-5-5`). Все MUST использовать БД `agentos-db`; при отсутствии sandbox поле `sandboxed` MUST быть `false`.
 
-Описание в OpenAPI: «Execute an agent with a message and optional media files. Supports both streaming and non-streaming responses.»
+#### Scenario: Неизвестный агент
+- GIVEN агента `nope` не существует
+- WHEN клиент выполняет `GET /agents/nope`
+- THEN система MUST вернуть `404`
 
-Path-параметры: `agent_id` — MUST быть заданы (обязательные).
+### Requirement: Конфигурация инженеров
+`claude-engineer` MUST создаваться как `ClaudeAgent` с `model="claude-opus-5-5"`, `system_prompt` preset `claude_code` и `permission_mode="acceptEdits"`. `codex-engineer` MUST создаваться как `CodexAgent` с `model="gpt-6.1-sol"` и `sandbox_mode="workspace-write"` (`agents/engineers.py`). Без sandbox оба MUST работать в абсолютном корне репозитория (`cwd`) на сервере AgentOS и MUST NOT получать `repository`.
 
-Тело запроса: `multipart/form-data`, схема `Body_create_agent_run`, обязательное. Поля: `message` (обязательное), `stream`, `session_id`, `user_id`, `files`, `files_metadata`, `version`, `background`, `factory_input`.
+#### Scenario: Sandbox без репозитория
+- GIVEN `sandbox_provider()` возвращает sandbox, а `REPOSITORY` равен `None`
+- WHEN импортируется `agents/engineers.py`
+- THEN импорт MUST завершиться `ValueError("Set REPOSITORY in app/sandbox.py before enabling a sandbox.")`
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /agents/{agent_id}/runs` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Agent run executed successfully»)
-- AND формат содержимого ответа: `application/json`, `text/event-stream`
+#### Scenario: Sandbox с репозиторием
+- GIVEN sandbox включён и `REPOSITORY` задан
+- WHEN создаются инженеры
+- THEN `cwd` MUST быть `None`, а `repository` MUST быть равен `REPOSITORY`
 
-#### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Invalid request or unsupported file type»
-- THEN система MUST вернуть статус `400` («Invalid request or unsupported file type»)
+### Requirement: Статусы хода
+Статус хода MUST принимать одно из значений `RunStatus`: `PENDING`, `RUNNING`, `COMPLETED`, `PAUSED`, `CANCELLED`, `ERROR`, `REGENERATED`.
 
-#### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+#### Scenario: Список ходов без сессии
+- GIVEN агент `claude-engineer` существует
+- WHEN клиент выполняет `GET /agents/claude-engineer/runs` без `session_id`
+- THEN система MUST вернуть `422`
 
-#### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Agent not found»
-- THEN система MUST вернуть статус `404` («Agent not found»)
+### Requirement: POST /agents/{agent_id}/runs
+Система MUST выполнять операцию «Create Agent Run» по запросу `POST /agents/{agent_id}/runs` (operationId `create_agent_run`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+Параметры:
+- `agent_id` (path, string, обязательный)
 
-#### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+Тело запроса (`multipart/form-data`, схема `Body_create_agent_run`):
+- `message`: string, обязательное
+- `stream`: boolean, по умолчанию `true`
+- `session_id`: string | null
+- `user_id`: string | null
+- `files`: array[string] | null
+- `files_metadata`: string | null
+- `version`: integer | null
+- `background`: boolean, по умолчанию `false`
+- `factory_input`: string | null
 
-### Requirement: GET /agents/{agent_id}/runs — List Agent Runs
-Система MUST предоставлять эндпоинт `GET /agents/{agent_id}/runs` (operationId `list_agent_runs`, раздел OpenAPI «Agents»).
-
-Описание в OpenAPI: «List runs for an agent within a session, optionally filtered by status.»
-
-Path-параметры: `agent_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `session_id` (обязательный), `status`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /agents/{agent_id}/runs` с корректными параметрами
-- THEN система MUST вернуть статус `200` («List of runs retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs` с корректными параметрами
+- THEN система MUST вернуть `200`
+- AND при `stream=true` ответ MUST передаваться как `text/event-stream` (SSE)
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Invalid request or unsupported file type»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Agent not found»
-- THEN система MUST вернуть статус `404` («Agent not found»)
+- GIVEN выполняется условие ошибки «Agent not found»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs`
+- THEN система MUST вернуть `500`
 
-### Requirement: POST /agents/{agent_id}/runs/{run_id}/cancel — Cancel Agent Run
-Система MUST предоставлять эндпоинт `POST /agents/{agent_id}/runs/{run_id}/cancel` (operationId `cancel_agent_run`, раздел OpenAPI «Agents»).
+### Requirement: GET /agents/{agent_id}/runs
+Система MUST возвращать операцию «List Agent Runs» по запросу `GET /agents/{agent_id}/runs` (operationId `list_agent_runs`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Cancel a currently executing agent run. This will attempt to stop the agent's execution gracefully.»
+Параметры:
+- `agent_id` (path, string, обязательный)
+- `session_id` (query, string, обязательный)
+- `status` (query, string | null, необязательный)
 
-Path-параметры: `agent_id`, `run_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `session_id`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /agents/{agent_id}/runs/{run_id}/cancel` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Agent not found»
-- THEN система MUST вернуть статус `404` («Agent not found»)
+- GIVEN выполняется условие ошибки «Agent not found»
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Failed to cancel run»
-- THEN система MUST вернуть статус `500` («Failed to cancel run»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs`
+- THEN система MUST вернуть `500`
 
-### Requirement: POST /agents/{agent_id}/runs/{run_id}/continue — Continue Agent Run
-Система MUST предоставлять эндпоинт `POST /agents/{agent_id}/runs/{run_id}/continue` (operationId `continue_agent_run`, раздел OpenAPI «Agents»).
+### Requirement: POST /agents/{agent_id}/runs/{run_id}/cancel
+Система MUST выполнять операцию «Cancel Agent Run» по запросу `POST /agents/{agent_id}/runs/{run_id}/cancel` (operationId `cancel_agent_run`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Advance a persisted agent run from its current state. Dispatches on the body shape and the persisted run state.»
+Параметры:
+- `agent_id` (path, string, обязательный)
+- `run_id` (path, string, обязательный)
+- `session_id` (query, string | null, необязательный)
 
-Path-параметры: `agent_id`, `run_id` — MUST быть заданы (обязательные).
-
-Тело запроса: `application/x-www-form-urlencoded`, схема `Body_continue_agent_run`. Поля: `tools`, `input`, `continue_from`, `fork`, `regenerate`, `replace_original`, `additional_instructions`, `session_id`, `user_id`, `stream`, `background`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /agents/{agent_id}/runs/{run_id}/continue` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Agent run continued successfully»)
-- AND формат содержимого ответа: `application/json`, `text/event-stream`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs/{run_id}/cancel` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Invalid JSON in tools field or invalid tool structure»
-- THEN система MUST вернуть статус `400` («Invalid JSON in tools field or invalid tool structure»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs/{run_id}/cancel`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs/{run_id}/cancel`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Agent not found»
-- THEN система MUST вернуть статус `404` («Agent not found»)
+- GIVEN выполняется условие ошибки «Agent not found»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs/{run_id}/cancel`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs/{run_id}/cancel`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Failed to cancel run»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs/{run_id}/cancel`
+- THEN система MUST вернуть `500`
+
+### Requirement: POST /agents/{agent_id}/runs/{run_id}/continue
+Система MUST выполнять операцию «Continue Agent Run» по запросу `POST /agents/{agent_id}/runs/{run_id}/continue` (operationId `continue_agent_run`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `agent_id` (path, string, обязательный)
+- `run_id` (path, string, обязательный)
+
+Тело запроса (`application/x-www-form-urlencoded`, схема `Body_continue_agent_run`):
+- `tools`: string, по умолчанию `""`
+- `input`: string | null
+- `continue_from`: string, по умолчанию `"end"`
+- `fork`: boolean, по умолчанию `false`
+- `regenerate`: boolean, по умолчанию `false`
+- `replace_original`: boolean | null
+- `additional_instructions`: string | null
+- `session_id`: string | null
+- `user_id`: string | null
+- `stream`: boolean, по умолчанию `true`
+- `background`: boolean, по умолчанию `false`
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs/{run_id}/continue` с корректными параметрами
+- THEN система MUST вернуть `200`
+- AND при `stream=true` ответ MUST передаваться как `text/event-stream` (SSE)
+
+#### Scenario: Ответ 400
+- GIVEN выполняется условие ошибки «Invalid JSON in tools field or invalid tool structure»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs/{run_id}/continue`
+- THEN система MUST вернуть `400`
+
+#### Scenario: Ответ 401
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs/{run_id}/continue`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 403
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Run has a pending admin approval and cannot be continued by the user yet.»
-- THEN система MUST вернуть статус `403` («Run has a pending admin approval and cannot be continued by the user yet.»)
+- GIVEN выполняется условие ошибки «Run has a pending admin approval and cannot be continued by the user yet.»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs/{run_id}/continue`
+- THEN система MUST вернуть `403`
+
+#### Scenario: Ответ 404
+- GIVEN выполняется условие ошибки «Agent not found»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs/{run_id}/continue`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 409
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Continuation conflict: a durable queue ticket owns this run's continuation (continue it with background=true), or a continuation is already queued or executing. Runs in any state can be continued - a COMPLETED run forks into a follow-up; RUNNING/ERROR runs resume.»
-- THEN система MUST вернуть статус `409` («Continuation conflict: a durable queue ticket owns this run's continuation (continue it with background=true), or a continuation is already queued or executing. Runs in any state can be continued - a COMPLETED run forks into a follow-up; RUNNING/ERROR runs resume.»)
-
-### Requirement: POST /agents/{agent_id}/sessions/{session_id}/fork — Fork Agent Session
-Система MUST предоставлять эндпоинт `POST /agents/{agent_id}/sessions/{session_id}/fork` (operationId `fork_agent_session`, раздел OpenAPI «Agents»).
-
-Описание в OpenAPI: «Deep-copy a session into a new independent session. Every run is copied with a fresh ``run_id``; the new session has a fresh ``session_id``. The original is untouched. Use to explore alternative conversation paths without mutating the source.»
-
-Path-параметры: `agent_id`, `session_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `user_id`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /agents/{agent_id}/sessions/{session_id}/fork` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Session forked successfully»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Source session is empty or missing»
-- THEN система MUST вернуть статус `400` («Source session is empty or missing»)
-
-#### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
-
-#### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Agent not found»
-- THEN система MUST вернуть статус `404` («Agent not found»)
+- GIVEN выполняется условие ошибки «Continuation conflict: a durable queue ticket owns this run's continuation (continue it with background=true), or a continuation is already queued or executing. Runs in any state can be continued - a COMPLETED run forks into a follow-up; RUNNING/ERROR runs resume.»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs/{run_id}/continue`
+- THEN система MUST вернуть `409`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs/{run_id}/continue`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs/{run_id}/continue`
+- THEN система MUST вернуть `500`
 
-### Requirement: POST /agents/{agent_id}/sessions/{session_id}/compact — Compact Agent Session
-Система MUST предоставлять эндпоинт `POST /agents/{agent_id}/sessions/{session_id}/compact` (operationId `compact_agent_session`, раздел OpenAPI «Agents»).
+### Requirement: POST /agents/{agent_id}/sessions/{session_id}/fork
+Система MUST выполнять операцию «Fork Agent Session» по запросу `POST /agents/{agent_id}/sessions/{session_id}/fork` (operationId `fork_agent_session`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Fold this session's older history into a summary now, without waiting for the context to reach ``compact_at_tokens``. The stored transcript is never modified - compaction shortens what is sent to the model, not the record.»
+Параметры:
+- `agent_id` (path, string, обязательный)
+- `session_id` (path, string, обязательный)
+- `user_id` (query, string | null, необязательный)
 
-Path-параметры: `agent_id`, `session_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `user_id`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /agents/{agent_id}/sessions/{session_id}/compact` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Compaction attempted; see status for the outcome»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /agents/{agent_id}/sessions/{session_id}/fork` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Source session is empty or missing»
+- WHEN клиент выполняет `POST /agents/{agent_id}/sessions/{session_id}/fork`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /agents/{agent_id}/sessions/{session_id}/fork`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Agent or session not found»
-- THEN система MUST вернуть статус `404` («Agent or session not found»)
+- GIVEN выполняется условие ошибки «Agent not found»
+- WHEN клиент выполняет `POST /agents/{agent_id}/sessions/{session_id}/fork`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /agents/{agent_id}/sessions/{session_id}/fork`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `POST /agents/{agent_id}/sessions/{session_id}/fork`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /agents — List All Agents
-Система MUST предоставлять эндпоинт `GET /agents` (operationId `get_agents`, раздел OpenAPI «Agents»).
+### Requirement: POST /agents/{agent_id}/sessions/{session_id}/compact
+Система MUST выполнять операцию «Compact Agent Session» по запросу `POST /agents/{agent_id}/sessions/{session_id}/compact` (operationId `compact_agent_session`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve a comprehensive list of all agents configured in this OS instance.»
+Параметры:
+- `agent_id` (path, string, обязательный)
+- `session_id` (path, string, обязательный)
+- `user_id` (query, string | null, необязательный)
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /agents` с корректными параметрами
-- THEN система MUST вернуть статус `200` («List of agents retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /agents/{agent_id}/sessions/{session_id}/compact` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `POST /agents/{agent_id}/sessions/{session_id}/compact`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /agents/{agent_id}/sessions/{session_id}/compact`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Agent or session not found»
+- WHEN клиент выполняет `POST /agents/{agent_id}/sessions/{session_id}/compact`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /agents/{agent_id}/sessions/{session_id}/compact`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `POST /agents/{agent_id}/sessions/{session_id}/compact`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /agents/{agent_id} — Get Agent Details
-Система MUST предоставлять эндпоинт `GET /agents/{agent_id}` (operationId `get_agent`, раздел OpenAPI «Agents»).
+### Requirement: GET /agents
+Система MUST возвращать операцию «List All Agents» по запросу `GET /agents` (operationId `get_agents`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve detailed configuration and capabilities of a specific agent.»
-
-Path-параметры: `agent_id` — MUST быть заданы (обязательные).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /agents/{agent_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Agent details retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /agents` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `array[AgentResponse]`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /agents`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /agents`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Agent not found»
-- THEN система MUST вернуть статус `404` («Agent not found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `GET /agents`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /agents`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /agents`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /agents/{agent_id}/runs/{run_id} — Get Agent Run
-Система MUST предоставлять эндпоинт `GET /agents/{agent_id}/runs/{run_id}` (operationId `get_agent_run`, раздел OpenAPI «Agents»).
+### Requirement: GET /agents/{agent_id}
+Система MUST возвращать операцию «Get Agent Details» по запросу `GET /agents/{agent_id}` (operationId `get_agent`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve the status and output of an agent run. Use this to poll for background run completion.»
+Параметры:
+- `agent_id` (path, string, обязательный)
 
-Path-параметры: `agent_id`, `run_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `session_id` (обязательный).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /agents/{agent_id}/runs/{run_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Run output retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /agents/{agent_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `AgentResponse`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /agents/{agent_id}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /agents/{agent_id}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Agent or run not found»
-- THEN система MUST вернуть статус `404` («Agent or run not found»)
+- GIVEN выполняется условие ошибки «Agent not found»
+- WHEN клиент выполняет `GET /agents/{agent_id}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /agents/{agent_id}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /agents/{agent_id}`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /agents/{agent_id}/runs/{run_id}/checkpoints — List Agent Run Checkpoints
-Система MUST предоставлять эндпоинт `GET /agents/{agent_id}/runs/{run_id}/checkpoints` (operationId `list_agent_run_checkpoints`, раздел OpenAPI «Agents»).
+### Requirement: GET /agents/{agent_id}/runs/{run_id}
+Система MUST возвращать операцию «Get Agent Run» по запросу `GET /agents/{agent_id}/runs/{run_id}` (operationId `get_agent_run`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «List FE-friendly continuation boundaries derived from the current stored run. No separate checkpoint table is used; entries are inferred from message-level checkpoint markers and the terminal end of the transcript.»
+Параметры:
+- `agent_id` (path, string, обязательный)
+- `run_id` (path, string, обязательный)
+- `session_id` (query, string, обязательный)
 
-Path-параметры: `agent_id`, `run_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `session_id` (обязательный).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /agents/{agent_id}/runs/{run_id}/checkpoints` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Run checkpoints retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs/{run_id}` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs/{run_id}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs/{run_id}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Agent or run not found»
-- THEN система MUST вернуть статус `404` («Agent or run not found»)
+- GIVEN выполняется условие ошибки «Agent or run not found»
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs/{run_id}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs/{run_id}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs/{run_id}`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /agents/{agent_id}/runs/{run_id}/checkpoints/{message_index} — Get Agent Run Checkpoint Snapshot
-Система MUST предоставлять эндпоинт `GET /agents/{agent_id}/runs/{run_id}/checkpoints/{message_index}` (operationId `get_agent_run_checkpoint_snapshot`, раздел OpenAPI «Agents»).
+### Requirement: GET /agents/{agent_id}/runs/{run_id}/checkpoints
+Система MUST возвращать операцию «List Agent Run Checkpoints» по запросу `GET /agents/{agent_id}/runs/{run_id}/checkpoints` (operationId `list_agent_run_checkpoints`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Return a derived run snapshot truncated at a message boundary. Use the returned message_index as `continue_from` when continuing this run.»
+Параметры:
+- `agent_id` (path, string, обязательный)
+- `run_id` (path, string, обязательный)
+- `session_id` (query, string, обязательный)
 
-Path-параметры: `agent_id`, `run_id`, `message_index` — MUST быть заданы (обязательные).
-
-Query-параметры: `session_id` (обязательный).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /agents/{agent_id}/runs/{run_id}/checkpoints/{message_index}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Run checkpoint snapshot retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs/{run_id}/checkpoints` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Invalid checkpoint message index»
-- THEN система MUST вернуть статус `400` («Invalid checkpoint message index»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs/{run_id}/checkpoints`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs/{run_id}/checkpoints`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Agent or run not found»
-- THEN система MUST вернуть статус `404` («Agent or run not found»)
+- GIVEN выполняется условие ошибки «Agent or run not found»
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs/{run_id}/checkpoints`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs/{run_id}/checkpoints`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs/{run_id}/checkpoints`
+- THEN система MUST вернуть `500`
 
-### Requirement: POST /agents/{agent_id}/runs/{run_id}/resume — Resume Agent Run Stream
-Система MUST предоставлять эндпоинт `POST /agents/{agent_id}/runs/{run_id}/resume` (operationId `resume_agent_run_stream`, раздел OpenAPI «Agents»).
+### Requirement: GET /agents/{agent_id}/runs/{run_id}/checkpoints/{message_index}
+Система MUST возвращать операцию «Get Agent Run Checkpoint Snapshot» по запросу `GET /agents/{agent_id}/runs/{run_id}/checkpoints/{message_index}` (operationId `get_agent_run_checkpoint_snapshot`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Resume an SSE stream for an agent run after disconnection.»
+Параметры:
+- `agent_id` (path, string, обязательный)
+- `run_id` (path, string, обязательный)
+- `message_index` (path, integer, обязательный)
+- `session_id` (query, string, обязательный)
 
-Path-параметры: `agent_id`, `run_id` — MUST быть заданы (обязательные).
-
-Тело запроса: `application/x-www-form-urlencoded`, схема `Body_resume_agent_run_stream`. Поля: `last_event_index`, `session_id`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /agents/{agent_id}/runs/{run_id}/resume` с корректными параметрами
-- THEN система MUST вернуть статус `200` («SSE stream of catch-up and/or live events»)
-- AND формат содержимого ответа: `application/json`, `text/event-stream`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs/{run_id}/checkpoints/{message_index}` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not supported for remote agents»
-- THEN система MUST вернуть статус `400` («Not supported for remote agents»)
+- GIVEN выполняется условие ошибки «Invalid checkpoint message index»
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs/{run_id}/checkpoints/{message_index}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs/{run_id}/checkpoints/{message_index}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Agent not found»
-- THEN система MUST вернуть статус `404` («Agent not found»)
+- GIVEN выполняется условие ошибки «Agent or run not found»
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs/{run_id}/checkpoints/{message_index}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs/{run_id}/checkpoints/{message_index}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /agents/{agent_id}/runs/{run_id}/checkpoints/{message_index}`
+- THEN система MUST вернуть `500`
+
+### Requirement: POST /agents/{agent_id}/runs/{run_id}/resume
+Система MUST выполнять операцию «Resume Agent Run Stream» по запросу `POST /agents/{agent_id}/runs/{run_id}/resume` (operationId `resume_agent_run_stream`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `agent_id` (path, string, обязательный)
+- `run_id` (path, string, обязательный)
+
+Тело запроса (`application/x-www-form-urlencoded`, схема `Body_resume_agent_run_stream`):
+- `last_event_index`: integer | null
+- `session_id`: string | null
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs/{run_id}/resume` с корректными параметрами
+- THEN система MUST вернуть `200`
+- AND при `stream=true` ответ MUST передаваться как `text/event-stream` (SSE)
+
+#### Scenario: Ответ 400
+- GIVEN выполняется условие ошибки «Not supported for remote agents»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs/{run_id}/resume`
+- THEN система MUST вернуть `400`
+
+#### Scenario: Ответ 401
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs/{run_id}/resume`
+- THEN система MUST вернуть `401`
+
+#### Scenario: Ответ 404
+- GIVEN выполняется условие ошибки «Agent not found»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs/{run_id}/resume`
+- THEN система MUST вернуть `404`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs/{run_id}/resume`
+- THEN система MUST вернуть `422`
+
+#### Scenario: Ответ 500
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `POST /agents/{agent_id}/runs/{run_id}/resume`
+- THEN система MUST вернуть `500`

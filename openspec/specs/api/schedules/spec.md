@@ -1,174 +1,229 @@
-# API `schedules` Specification
+# Schedules API Specification
 
 ## Purpose
-Расписания (cron) запуска агентов и других исполнителей (`scheduler=True`).
+Cron-расписания, которые вызывают маршруты AgentOS (`scheduler=True`, `scheduler_base_url=AGENTOS_URL`).
 
-Эндпоинты этого домена не реализованы в коде репозитория: их предоставляет runtime `agno.os.AgentOS` (agno 3.1.10), создаваемый в `app/main.py`. Требования ниже восстановлены по OpenAPI-схеме работающего инстанса (`GET /openapi.json`, заголовок «Agno AgentOS», версия API `1.0.0`).
-
-Общее требование: если `authorization` включена (в `app/main.py` это `RUNTIME_ENV != "dev"`), каждый эндпоинт домена MUST требовать заголовок `Authorization: Bearer <JWT>` (схема безопасности `HTTPBearer` в OpenAPI), а запрос без валидного токена MUST завершаться статусом `401`. В режиме `RUNTIME_ENV=dev` (compose.yaml) `GET /info` возвращает `auth_mode: "none"` и эндпоинты доступны без токена.
+Домен содержит 10 операций HTTP (теги OpenAPI: Schedules). Все они предоставляются runtime Agno `AgentOS`; в коде репозитория маршрутов нет.
 
 ## Requirements
 
-### Requirement: GET /schedules — List Schedules
-Система MUST предоставлять эндпоинт `GET /schedules` (operationId `list_schedules_schedules_get`, раздел OpenAPI «Schedules»).
+### Requirement: Расписания CompanyOS
+Система MUST содержать два расписания с `managed_by: company`: `Company automation` (`0 * * * *`, `GET /company/attention`) и `this-agentos.agentos-maintenance` (`0 9 * * *`, `POST /agents/company-manager-internal/runs`, `target_type: agent`).
 
-Query-параметры: `enabled`, `limit`, `page`.
+#### Scenario: Список расписаний
+- GIVEN платформа запущена из репозитория
+- WHEN клиент выполняет `GET /schedules`
+- THEN `meta.total_count` MUST быть `2`
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /schedules` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+### Requirement: Значения по умолчанию ScheduleCreate
+`ScheduleCreate` MUST требовать `name` и `endpoint`; по умолчанию `method` MUST быть `POST`, `timezone` `UTC`, `timeout_seconds` `3600`, `max_retries` `0`, `retry_delay_seconds` `60`.
 
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+#### Scenario: Расписание без endpoint
+- GIVEN клиент аутентифицирован
+- WHEN клиент создаёт расписание без `endpoint`
+- THEN система MUST вернуть `422`
 
-### Requirement: POST /schedules — Create Schedule
-Система MUST предоставлять эндпоинт `POST /schedules` (operationId `create_schedule_schedules_post`, раздел OpenAPI «Schedules»).
+### Requirement: GET /schedules
+Система MUST возвращать операцию «List Schedules» по запросу `GET /schedules` (operationId `list_schedules_schedules_get`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Тело запроса: `application/json`, схема `ScheduleCreate`, обязательное. Поля: `name` (обязательное), `cron_expr`, `endpoint` (обязательное), `method`, `description`, `payload`, `timezone`, `timeout_seconds`, `max_retries`, `retry_delay_seconds`.
+Параметры:
+- `enabled` (query, boolean | null, необязательный)
+- `limit` (query, integer, необязательный)
+- `page` (query, integer, необязательный)
 
-#### Scenario: Успешный ответ 201
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /schedules` с корректными параметрами
-- THEN система MUST вернуть статус `201` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: GET /schedules/{schedule_id} — Get Schedule
-Система MUST предоставлять эндпоинт `GET /schedules/{schedule_id}` (operationId `get_schedule_schedules__schedule_id__get`, раздел OpenAPI «Schedules»).
-
-Path-параметры: `schedule_id` — MUST быть заданы (обязательные).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /schedules/{schedule_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /schedules` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `PaginatedResponse_ScheduleResponse_`
+- AND тело MUST содержать поля `data`, `meta`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /schedules`
+- THEN система MUST вернуть `422`
 
-### Requirement: PATCH /schedules/{schedule_id} — Update Schedule
-Система MUST предоставлять эндпоинт `PATCH /schedules/{schedule_id}` (operationId `update_schedule_schedules__schedule_id__patch`, раздел OpenAPI «Schedules»).
+### Requirement: POST /schedules
+Система MUST выполнять операцию «Create Schedule» по запросу `POST /schedules` (operationId `create_schedule_schedules_post`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Path-параметры: `schedule_id` — MUST быть заданы (обязательные).
+Тело запроса (`application/json`, схема `ScheduleCreate`):
+- `name`: string, обязательное
+- `cron_expr`: string, по умолчанию `""`
+- `endpoint`: string, обязательное
+- `method`: string, по умолчанию `"POST"`
+- `description`: string | null
+- `payload`: object | null
+- `timezone`: string, по умолчанию `"UTC"`
+- `timeout_seconds`: integer, по умолчанию `3600`
+- `max_retries`: integer, по умолчанию `0`
+- `retry_delay_seconds`: integer, по умолчанию `60`
 
-Тело запроса: `application/json`, схема `ScheduleUpdate`, обязательное. Поля: `name`, `cron_expr`, `endpoint`, `method`, `description`, `payload`, `timezone`, `timeout_seconds`, `max_retries`, `retry_delay_seconds`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `PATCH /schedules/{schedule_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: DELETE /schedules/{schedule_id} — Delete Schedule
-Система MUST предоставлять эндпоинт `DELETE /schedules/{schedule_id}` (operationId `delete_schedule_schedules__schedule_id__delete`, раздел OpenAPI «Schedules»).
-
-Path-параметры: `schedule_id` — MUST быть заданы (обязательные).
-
-#### Scenario: Успешный ответ 204
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `DELETE /schedules/{schedule_id}` с корректными параметрами
-- THEN система MUST вернуть статус `204` («Successful Response»)
-- AND формат содержимого ответа: без тела
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /schedules` с корректными параметрами
+- THEN система MUST вернуть `201` с телом по схеме `ScheduleResponse`
+- AND тело MUST содержать поля `id`, `name`, `method`, `endpoint`, `timezone`, `timeout_seconds`, `max_retries`, `retry_delay_seconds`, `enabled`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /schedules`
+- THEN система MUST вернуть `422`
 
-### Requirement: POST /schedules/{schedule_id}/enable — Enable Schedule
-Система MUST предоставлять эндпоинт `POST /schedules/{schedule_id}/enable` (operationId `enable_schedule_schedules__schedule_id__enable_post`, раздел OpenAPI «Schedules»).
+### Requirement: GET /schedules/{schedule_id}
+Система MUST возвращать операцию «Get Schedule» по запросу `GET /schedules/{schedule_id}` (operationId `get_schedule_schedules__schedule_id__get`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Path-параметры: `schedule_id` — MUST быть заданы (обязательные).
+Параметры:
+- `schedule_id` (path, string, обязательный)
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /schedules/{schedule_id}/enable` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: POST /schedules/{schedule_id}/disable — Disable Schedule
-Система MUST предоставлять эндпоинт `POST /schedules/{schedule_id}/disable` (operationId `disable_schedule_schedules__schedule_id__disable_post`, раздел OpenAPI «Schedules»).
-
-Path-параметры: `schedule_id` — MUST быть заданы (обязательные).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /schedules/{schedule_id}/disable` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /schedules/{schedule_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ScheduleResponse`
+- AND тело MUST содержать поля `id`, `name`, `method`, `endpoint`, `timezone`, `timeout_seconds`, `max_retries`, `retry_delay_seconds`, `enabled`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /schedules/{schedule_id}`
+- THEN система MUST вернуть `422`
 
-### Requirement: POST /schedules/{schedule_id}/trigger — Trigger Schedule
-Система MUST предоставлять эндпоинт `POST /schedules/{schedule_id}/trigger` (operationId `trigger_schedule_schedules__schedule_id__trigger_post`, раздел OpenAPI «Schedules»).
+### Requirement: PATCH /schedules/{schedule_id}
+Система MUST обновлять операцию «Update Schedule» по запросу `PATCH /schedules/{schedule_id}` (operationId `update_schedule_schedules__schedule_id__patch`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Path-параметры: `schedule_id` — MUST быть заданы (обязательные).
+Параметры:
+- `schedule_id` (path, string, обязательный)
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /schedules/{schedule_id}/trigger` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+Тело запроса (`application/json`, схема `ScheduleUpdate`):
+- `name`: string | null
+- `cron_expr`: string | null
+- `endpoint`: string | null
+- `method`: string | null
+- `description`: string | null
+- `payload`: object | null
+- `timezone`: string | null
+- `timeout_seconds`: integer | null
+- `max_retries`: integer | null
+- `retry_delay_seconds`: integer | null
 
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-### Requirement: GET /schedules/{schedule_id}/runs — List Schedule Runs
-Система MUST предоставлять эндпоинт `GET /schedules/{schedule_id}/runs` (operationId `list_schedule_runs_schedules__schedule_id__runs_get`, раздел OpenAPI «Schedules»).
-
-Path-параметры: `schedule_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `limit`, `page`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /schedules/{schedule_id}/runs` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `PATCH /schedules/{schedule_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ScheduleResponse`
+- AND тело MUST содержать поля `id`, `name`, `method`, `endpoint`, `timezone`, `timeout_seconds`, `max_retries`, `retry_delay_seconds`, `enabled`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `PATCH /schedules/{schedule_id}`
+- THEN система MUST вернуть `422`
 
-### Requirement: GET /schedules/{schedule_id}/runs/{run_id} — Get Schedule Run
-Система MUST предоставлять эндпоинт `GET /schedules/{schedule_id}/runs/{run_id}` (operationId `get_schedule_run_schedules__schedule_id__runs__run_id__get`, раздел OpenAPI «Schedules»).
+### Requirement: DELETE /schedules/{schedule_id}
+Система MUST удалять операцию «Delete Schedule» по запросу `DELETE /schedules/{schedule_id}` (operationId `delete_schedule_schedules__schedule_id__delete`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Path-параметры: `schedule_id`, `run_id` — MUST быть заданы (обязательные).
+Параметры:
+- `schedule_id` (path, string, обязательный)
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /schedules/{schedule_id}/runs/{run_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `DELETE /schedules/{schedule_id}` с корректными параметрами
+- THEN система MUST вернуть `204`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `DELETE /schedules/{schedule_id}`
+- THEN система MUST вернуть `422`
+
+### Requirement: POST /schedules/{schedule_id}/enable
+Система MUST выполнять операцию «Enable Schedule» по запросу `POST /schedules/{schedule_id}/enable` (operationId `enable_schedule_schedules__schedule_id__enable_post`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `schedule_id` (path, string, обязательный)
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /schedules/{schedule_id}/enable` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ScheduleStateResponse`
+- AND тело MUST содержать поля `id`, `name`, `enabled`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /schedules/{schedule_id}/enable`
+- THEN система MUST вернуть `422`
+
+### Requirement: POST /schedules/{schedule_id}/disable
+Система MUST выполнять операцию «Disable Schedule» по запросу `POST /schedules/{schedule_id}/disable` (operationId `disable_schedule_schedules__schedule_id__disable_post`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `schedule_id` (path, string, обязательный)
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /schedules/{schedule_id}/disable` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ScheduleStateResponse`
+- AND тело MUST содержать поля `id`, `name`, `enabled`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /schedules/{schedule_id}/disable`
+- THEN система MUST вернуть `422`
+
+### Requirement: POST /schedules/{schedule_id}/trigger
+Система MUST выполнять операцию «Trigger Schedule» по запросу `POST /schedules/{schedule_id}/trigger` (operationId `trigger_schedule_schedules__schedule_id__trigger_post`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `schedule_id` (path, string, обязательный)
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /schedules/{schedule_id}/trigger` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ScheduleRunResponse`
+- AND тело MUST содержать поля `id`, `schedule_id`, `attempt`, `status`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /schedules/{schedule_id}/trigger`
+- THEN система MUST вернуть `422`
+
+### Requirement: GET /schedules/{schedule_id}/runs
+Система MUST возвращать операцию «List Schedule Runs» по запросу `GET /schedules/{schedule_id}/runs` (operationId `list_schedule_runs_schedules__schedule_id__runs_get`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `schedule_id` (path, string, обязательный)
+- `limit` (query, integer, необязательный)
+- `page` (query, integer, необязательный)
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /schedules/{schedule_id}/runs` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `PaginatedResponse_ScheduleRunResponse_`
+- AND тело MUST содержать поля `data`, `meta`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /schedules/{schedule_id}/runs`
+- THEN система MUST вернуть `422`
+
+### Requirement: GET /schedules/{schedule_id}/runs/{run_id}
+Система MUST возвращать операцию «Get Schedule Run» по запросу `GET /schedules/{schedule_id}/runs/{run_id}` (operationId `get_schedule_run_schedules__schedule_id__runs__run_id__get`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `schedule_id` (path, string, обязательный)
+- `run_id` (path, string, обязательный)
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /schedules/{schedule_id}/runs/{run_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ScheduleRunResponse`
+- AND тело MUST содержать поля `id`, `schedule_id`, `attempt`, `status`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /schedules/{schedule_id}/runs/{run_id}`
+- THEN система MUST вернуть `422`

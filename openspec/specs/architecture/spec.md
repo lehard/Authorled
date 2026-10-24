@@ -1,92 +1,78 @@
 # Architecture Specification
 
 ## Purpose
-Backend-приложение на Python: тонкий слой конфигурации (`app/`, `agents/`, `db/`, `evals/`) поверх runtime Agno AgentOS. Слои: клиенты (AgentOS UI, MCP-клиенты, Slack, REST) → FastAPI-приложение AgentOS → агенты/команды/CompanyOS/планировщик/очередь → PostgreSQL (+pgvector) и внешние LLM/сервисы.
+Слои и связи текущего кода. Целевая архитектура Authorled (три сервиса, ядро, свои маршруты `/api/v1/`, Valkey, LiteLLM) описана в `openspec/context/03-architecture.md` и ADR-001/002 и в коде не реализована.
 
 ```mermaid
-graph TD
-    UI[AgentOS UI os.agno.com] -->|REST| API
-    MCPClient[MCP-клиенты Claude / ChatGPT] -->|/mcp| API
-    Slack[Slack] -->|events| API
-    subgraph Container agentos-api
-        API[FastAPI app.main:app / AgentOS]
-        API --> Manager[OS Manager team os-manager-internal]
-        API --> Engineers[claude-engineer / codex-engineer]
-        API --> Company[CompanyOS: Product, Routine, Project, Task]
-        API --> Sched[Scheduler]
-        API --> Queue[Durable job queue]
-        Manager --> Registry[Registry: tools, models, functions]
-        Manager --> Learning[shared-learning]
-        Manager --> Knowledge[shared-knowledge]
+graph LR
+    UI["AgentOS UI os.agno.com"] -->|REST + SSE, JWT| API
+    AIApps["AI-приложения (Claude, ChatGPT)"] -->|MCP /mcp| API
+    Slack["Slack (опционально)"] -->|events| API
+    subgraph API["agentos-api: AgentOS (app.main:app)"]
+        OSM["OS Manager os-manager-internal"]
+        CM["Company Manager"]
+        ENG["claude-engineer / codex-engineer"]
+        SCH["Scheduler"]
+        Q["Durable queue"]
+        REG["Registry"]
     end
-    Registry --> Parallel[Parallel web search / MCP]
-    Manager --> Anthropic[(Anthropic API)]
-    Engineers --> Anthropic
-    Engineers --> OpenAI[(OpenAI API)]
-    Knowledge --> OpenAI
-    API --> DB[(PostgreSQL 18 + pgvector agentos-db)]
-    Learning --> DB
-    Knowledge --> DB
-    Queue --> DB
-    Company --> Releases[GitHub releases / git sources]
+    OSM --> CM
+    SCH -->|POST /agents/company-manager-internal/runs| CM
+    API --> DB[("agentos-db: PostgreSQL 18 + pgvector")]
+    ENG -.->|при sandbox| SBX["Docker / AgentCore sandbox"]
+    API --> Anthropic["Anthropic API"]
+    API --> OpenAI["OpenAI API"]
+    REG --> Parallel["Parallel web"]
 ```
 
 ## Requirements
 
-### Requirement: Слои и их расположение
-Система MUST придерживаться следующего размещения кода:
-- `app/main.py` — сборка и конфигурация `AgentOS`;
-- `app/settings.py` — фабрики моделей `default_model()` и `manager_model()`;
-- `app/registry.py` — `Registry`, `shared_knowledge`, `shared_learning`, `shared_notes`, веб-инструменты;
-- `app/interfaces.py` — MCP-аутентификация и подключение Slack;
-- `app/company.py` — продукты и рутины CompanyOS;
-- `app/sandbox.py` — опциональные sandbox-провайдеры и `REPOSITORY`;
-- `app/config.yaml` — manifest описаний и `quick_prompts` для UI;
-- `agents/engineers.py` — внешние агенты `claude_engineer`, `codex_engineer` и список `engineers`;
-- `db/__init__.py`, `db/url.py` — подключение к PostgreSQL и фабрика `Knowledge`;
-- `evals/` — смоук-проверки (`python -m evals`).
+### Requirement: Слои приложения
+Код MUST разделяться так:
+- `app/main.py` — сборка `AgentOS`;
+- `app/interfaces.py` — MCP OAuth, MCP-инструменты, Slack;
+- `app/company.py` — Products, Sources, Routines;
+- `app/config.yaml` — манифест компонентов;
+- `app/registry.py` — реестр Studio, shared knowledge/learning/notes;
+- `app/settings.py` — фабрики моделей;
+- `app/sandbox.py` — провайдеры sandbox и `REPOSITORY`;
+- `agents/engineers.py` — инженеры;
+- `db/` — подключение к PostgreSQL и знания;
+- `evals/` — кейсы и CLI.
 
-#### Scenario: Добавление зарегистрированного агента
-- GIVEN нужен новый агент кода
-- WHEN разработчик добавляет его в `agents/` и в список, передаваемый в `AgentOS(agents=[...])`
-- THEN агент MUST появиться в `GET /agents` после перезапуска приложения
+#### Scenario: Порядок сборки
+- GIVEN импортируется `app.main`
+- WHEN создаётся `AgentOS`
+- THEN `attach_interfaces(agent_os)` MUST вызываться после создания и до `agent_os.get_app()`
 
-### Requirement: Конфигурация AgentOS
-Экземпляр `AgentOS` MUST создаваться с параметрами: `mcp=True`, `tracing=True`, `scheduler=True`, `user_isolation=True`, `user_directory=True`, `queue=QueueConfig(durable=True, db=db)`, `knowledge=[shared_knowledge]`, `agents=[*engineers]`, `registry=registry`, `config=app/config.yaml`, `manager=OSManager(root=<корень репозитория>, model=manager_model(), learning=shared_learning)`, `company=CompanyConfig(products=products, model=manager_model())`.
+### Requirement: Единая БД
+OS, Company, queue, learning, notes, реестр и инженеры MUST использовать один `PostgresDb` с ID `agentos-db`, возвращаемый кэшированной `get_postgres_db()`. Content-адаптер знаний MUST иметь собственный ID `agentos-db-<table>_contents`.
 
-#### Scenario: Проверка конфигурации
+#### Scenario: Одна БД в конфигурации
 - GIVEN платформа запущена
-- WHEN клиент вызывает `GET /info`
-- THEN ответ MUST содержать `mcp.enabled: true`, `user_isolation: true`, `agno_version: "3.1.10"`
+- WHEN клиент выполняет `GET /config`
+- THEN `databases` MUST быть `["agentos-db"]`
 
-### Requirement: Единая база данных
-Все компоненты (сессии, память, learning, метрики, evals, CompanyOS, очередь, трассировки, содержимое знаний) MUST использовать одну БД PostgreSQL с идентификатором `agentos-db` (`DB_ID` в `db/__init__.py`). Содержимое знаний MUST храниться в таблице `shared_knowledge_contents`, векторы — в таблице `shared_knowledge`.
+### Requirement: Модели
+`default_model()` MUST возвращать новый `Claude(id="claude-sonnet-5-5")` при каждом вызове; `manager_model()` MUST возвращать `Claude(id="claude-opus-5-5")` и MUST использоваться OS Manager и CompanyOS. Инженеры задают модели напрямую (`claude-opus-5-5`, `gpt-6.1-sol`).
 
-#### Scenario: Состояние таблиц
-- GIVEN приложение стартовало впервые
-- WHEN читается `GET /config`
-- THEN `os_database` MUST быть `agentos-db`, а таблицы `agno_sessions`, `agno_memories`, `agno_learnings`, `agno_metrics`, `agno_eval_runs`, `agno_company_*` MUST быть перечислены в соответствующих разделах
+#### Scenario: Модель менеджера
+- GIVEN платформа запущена
+- WHEN клиент выполняет `GET /teams`
+- THEN `os-manager-internal` MUST иметь модель `claude-opus-5-5`
 
-### Requirement: Миграции и создание таблиц
-Приложение MUST создавать недостающие таблицы при старте (в логах: `Created table ai.agno_jobs`, `ai.agno_company_projects` и др.). Явные миграции MAY запускаться через `POST /databases/all/migrate`.
+### Requirement: Sandbox
+`sandbox_provider()` MUST возвращать `None`; тогда инженеры MUST исполняться на сервере AgentOS в корне репозитория. `docker_sandbox()` MUST создавать `DockerSandbox` (образ `agno-sandbox:local`, сеть `isolated`, `workspace_mb=2048`, checkpoints в `<root>/tmp/checkpoints`). `agentcore_sandbox(runtime_arn)` MUST требовать смонтированный том `/data`, иначе MUST завершаться `ValueError`.
 
-#### Scenario: Первый запуск
-- GIVEN пустой том `pgdata`
-- WHEN запускается `agentos-api`
-- THEN приложение MUST создать недостающие таблицы в схеме `ai`
+#### Scenario: AgentCore без тома
+- GIVEN `/data` не является точкой монтирования
+- WHEN вызывается `agentcore_sandbox("arn")`
+- THEN функция MUST завершиться `ValueError("Mount a persistent volume at /data before enabling AgentCore")`
 
-### Requirement: Контейнерная топология
-`compose.yaml` MUST определять сервисы `agentos-db` (`agnohq/pgvector:18`, порт `127.0.0.1:5432`, том `pgdata`) и `agentos-api` (сборка из `Dockerfile`, target `agentos`, порт `127.0.0.1:8000`, `depends_on: agentos-db`, сеть `agentos`). Dockerfile MUST содержать stages `base`, `sandbox`, `agentos`; entrypoint (`scripts/entrypoint.sh`) MUST ожидать готовность БД, если `WAIT_FOR_DB` равен `true`/`True`.
+### Requirement: Подключение к БД
+URL БД MUST собираться из `DB_DRIVER`, `DB_USER`, `DB_PASS`, `DB_HOST`, `DB_PORT`, `DB_DATABASE` (`db/url.py`). При отсутствии переменных код подставляет значения разработки (`postgresql+psycopg`, `ai`/`ai`, `localhost:5432`, `ai`).
 
-#### Scenario: Ожидание БД
-- GIVEN `WAIT_FOR_DB=True`
-- WHEN стартует контейнер `agentos-api`
-- THEN entrypoint MUST дождаться TCP-доступа к `DB_HOST:DB_PORT` (таймаут 300 секунд), иначе процесс MUST завершиться с ошибкой
-
-### Requirement: Dev и production режимы
-В dev-режиме (`compose.yaml`) приложение MUST запускаться с `--reload` и bind-mount `.:/app`, `RUNTIME_ENV=dev`. В production-override (`compose.prod.yaml`) приложение MUST запускаться без reload, без bind-mount, с `RUNTIME_ENV=prd` и `AGNO_DEBUG=False`, а порт Postgres MUST быть привязан к `127.0.0.1`.
-
-#### Scenario: Production-запуск
-- GIVEN используется `docker compose -f compose.yaml -f compose.prod.yaml up -d --build`
-- WHEN приложение стартует
-- THEN авторизация MUST быть включена (`authorization = RUNTIME_ENV != "dev"`)
+#### Scenario: Compose
+- GIVEN контейнер `agentos-api` запущен через `compose.yaml`
+- WHEN строится URL
+- THEN `DB_HOST` MUST быть `agentos-db`, `DB_PORT` `5432`

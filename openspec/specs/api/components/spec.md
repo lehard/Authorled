@@ -1,520 +1,548 @@
-# API `components` Specification
+# Components API Specification
 
 ## Purpose
-Компоненты и версии их конфигураций (Studio/runtime-built компоненты).
+Версионируемые компоненты Studio (агенты, команды, workflows) и их конфигурации.
 
-Эндпоинты этого домена не реализованы в коде репозитория: их предоставляет runtime `agno.os.AgentOS` (agno 3.1.10), создаваемый в `app/main.py`. Требования ниже восстановлены по OpenAPI-схеме работающего инстанса (`GET /openapi.json`, заголовок «Agno AgentOS», версия API `1.0.0`).
-
-Общее требование: если `authorization` включена (в `app/main.py` это `RUNTIME_ENV != "dev"`), каждый эндпоинт домена MUST требовать заголовок `Authorization: Bearer <JWT>` (схема безопасности `HTTPBearer` в OpenAPI), а запрос без валидного токена MUST завершаться статусом `401`. В режиме `RUNTIME_ENV=dev` (compose.yaml) `GET /info` возвращает `auth_mode: "none"` и эндпоинты доступны без токена.
+Домен содержит 13 операций HTTP (теги OpenAPI: Components). Все они предоставляются runtime Agno `AgentOS`; в коде репозитория маршрутов нет.
 
 ## Requirements
 
-### Requirement: GET /components — List Components
-Система MUST предоставлять эндпоинт `GET /components` (operationId `list_components`, раздел OpenAPI «Components»).
+### Requirement: GET /components
+Система MUST возвращать операцию «List Components» по запросу `GET /components` (operationId `list_components`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve a paginated list of components with optional filtering by type.»
+Параметры:
+- `component_type` (query, ComponentType (agent | team | workflow) | null, необязательный)
+- `page` (query, integer, необязательный)
+- `limit` (query, integer, необязательный)
+- `include_deleted` (query, boolean, необязательный)
 
-Query-параметры: `component_type`, `page`, `limit`, `include_deleted`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /components` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
-
-#### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
-
-#### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-#### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
-
-### Requirement: POST /components — Create Component
-Система MUST предоставлять эндпоинт `POST /components` (operationId `create_component`, раздел OpenAPI «Components»).
-
-Описание в OpenAPI: «Create a new component (agent, team, or workflow) with initial config.»
-
-Тело запроса: `application/json`, схема `ComponentCreate`, обязательное. Поля: `name` (обязательное), `component_id`, `component_type` (обязательное), `description`, `metadata`, `config`, `label`, `stage`, `notes`, `set_current`.
-
-#### Scenario: Успешный ответ 201
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /components` с корректными параметрами
-- THEN система MUST вернуть статус `201` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /components` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `PaginatedResponse_ComponentResponse_`
+- AND тело MUST содержать поля `data`, `meta`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /components`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /components`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `GET /components`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /components`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /components`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /components/{component_id} — Get Component
-Система MUST предоставлять эндпоинт `GET /components/{component_id}` (operationId `get_component`, раздел OpenAPI «Components»).
+### Requirement: POST /components
+Система MUST выполнять операцию «Create Component» по запросу `POST /components` (operationId `create_component`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve a component by ID.»
+Тело запроса (`application/json`, схема `ComponentCreate`):
+- `name`: string, обязательное
+- `component_id`: string | null
+- `component_type`: ComponentType (agent | team | workflow), обязательное
+- `description`: string | null
+- `metadata`: object | null
+- `config`: object | null
+- `label`: string | null
+- `stage`: string, по умолчанию `"draft"`
+- `notes`: string | null
+- `set_current`: boolean, по умолчанию `true`
 
-Path-параметры: `component_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `include_deleted`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /components/{component_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /components` с корректными параметрами
+- THEN система MUST вернуть `201` с телом по схеме `ComponentResponse`
+- AND тело MUST содержать поля `component_id`, `component_type`, `created_at`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `POST /components`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /components`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `POST /components`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /components`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `POST /components`
+- THEN система MUST вернуть `500`
 
-### Requirement: PATCH /components/{component_id} — Update Component
-Система MUST предоставлять эндпоинт `PATCH /components/{component_id}` (operationId `update_component`, раздел OpenAPI «Components»).
+### Requirement: GET /components/{component_id}
+Система MUST возвращать операцию «Get Component» по запросу `GET /components/{component_id}` (operationId `get_component`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Partially update a component by ID.»
+Параметры:
+- `component_id` (path, string, обязательный)
+- `include_deleted` (query, boolean, необязательный)
 
-Path-параметры: `component_id` — MUST быть заданы (обязательные).
-
-Тело запроса: `application/json`, схема `ComponentUpdate`, обязательное. Поля: `name`, `description`, `component_type`, `metadata`, `current_version`, `guard`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `PATCH /components/{component_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /components/{component_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ComponentResponse`
+- AND тело MUST содержать поля `component_id`, `component_type`, `created_at`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /components/{component_id}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /components/{component_id}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `GET /components/{component_id}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /components/{component_id}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /components/{component_id}`
+- THEN система MUST вернуть `500`
 
-### Requirement: DELETE /components/{component_id} — Delete Component
-Система MUST предоставлять эндпоинт `DELETE /components/{component_id}` (operationId `delete_component`, раздел OpenAPI «Components»).
+### Requirement: PATCH /components/{component_id}
+Система MUST обновлять операцию «Update Component» по запросу `PATCH /components/{component_id}` (operationId `update_component`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Delete a component by ID.»
+Параметры:
+- `component_id` (path, string, обязательный)
 
-Path-параметры: `component_id` — MUST быть заданы (обязательные).
+Тело запроса (`application/json`, схема `ComponentUpdate`):
+- `name`: string | null
+- `description`: string | null
+- `component_type`: string | null
+- `metadata`: object | null
+- `current_version`: integer | null
+- `guard`: ComponentGuard | null
 
-Query-параметры: `expected_current_version`.
-
-Тело запроса: `application/json`.
-
-#### Scenario: Успешный ответ 204
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `DELETE /components/{component_id}` с корректными параметрами
-- THEN система MUST вернуть статус `204` («Successful Response»)
-- AND формат содержимого ответа: без тела
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `PATCH /components/{component_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ComponentResponse`
+- AND тело MUST содержать поля `component_id`, `component_type`, `created_at`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `PATCH /components/{component_id}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `PATCH /components/{component_id}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `PATCH /components/{component_id}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `PATCH /components/{component_id}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `PATCH /components/{component_id}`
+- THEN система MUST вернуть `500`
 
-### Requirement: POST /components/{component_id}/restore — Restore Component
-Система MUST предоставлять эндпоинт `POST /components/{component_id}/restore` (operationId `restore_component`, раздел OpenAPI «Components»).
+### Requirement: DELETE /components/{component_id}
+Система MUST удалять операцию «Delete Component» по запросу `DELETE /components/{component_id}` (operationId `delete_component`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Restore an archived (soft-deleted) component by ID.»
+Параметры:
+- `component_id` (path, string, обязательный)
+- `expected_current_version` (query, integer | null, необязательный)
 
-Path-параметры: `component_id` — MUST быть заданы (обязательные).
+Тело запроса: `application/json`, схема в OpenAPI не задана.
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /components/{component_id}/restore` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `DELETE /components/{component_id}` с корректными параметрами
+- THEN система MUST вернуть `204`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `DELETE /components/{component_id}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `DELETE /components/{component_id}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `DELETE /components/{component_id}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `DELETE /components/{component_id}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `DELETE /components/{component_id}`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /components/{component_id}/configs — List Configs
-Система MUST предоставлять эндпоинт `GET /components/{component_id}/configs` (operationId `list_configs`, раздел OpenAPI «Components»).
+### Requirement: POST /components/{component_id}/restore
+Система MUST выполнять операцию «Restore Component» по запросу `POST /components/{component_id}/restore` (operationId `restore_component`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «List all configs for a component.»
+Параметры:
+- `component_id` (path, string, обязательный)
 
-Path-параметры: `component_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `include_config`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /components/{component_id}/configs` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /components/{component_id}/restore` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ComponentResponse`
+- AND тело MUST содержать поля `component_id`, `component_type`, `created_at`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `POST /components/{component_id}/restore`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /components/{component_id}/restore`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `POST /components/{component_id}/restore`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /components/{component_id}/restore`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `POST /components/{component_id}/restore`
+- THEN система MUST вернуть `500`
 
-### Requirement: POST /components/{component_id}/configs — Create Config Version
-Система MUST предоставлять эндпоинт `POST /components/{component_id}/configs` (operationId `create_config`, раздел OpenAPI «Components»).
+### Requirement: GET /components/{component_id}/configs
+Система MUST возвращать операцию «List Configs» по запросу `GET /components/{component_id}/configs` (operationId `list_configs`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Create a new config version for a component.»
+Параметры:
+- `component_id` (path, string, обязательный)
+- `include_config` (query, boolean, необязательный)
 
-Path-параметры: `component_id` — MUST быть заданы (обязательные).
-
-Тело запроса: `application/json`, схема `ConfigCreate`, обязательное. Поля: `config` (обязательное), `version`, `label`, `stage`, `notes`, `links`, `set_current`, `guard`.
-
-#### Scenario: Успешный ответ 201
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /components/{component_id}/configs` с корректными параметрами
-- THEN система MUST вернуть статус `201` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /components/{component_id}/configs` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `array[ComponentConfigResponse]`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /components/{component_id}/configs`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /components/{component_id}/configs`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `GET /components/{component_id}/configs`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /components/{component_id}/configs`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /components/{component_id}/configs`
+- THEN система MUST вернуть `500`
 
-### Requirement: PATCH /components/{component_id}/configs/{version} — Update Draft Config
-Система MUST предоставлять эндпоинт `PATCH /components/{component_id}/configs/{version}` (operationId `update_config`, раздел OpenAPI «Components»).
+### Requirement: POST /components/{component_id}/configs
+Система MUST выполнять операцию «Create Config Version» по запросу `POST /components/{component_id}/configs` (operationId `create_config`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Update an existing draft config. Cannot update published configs.»
+Параметры:
+- `component_id` (path, string, обязательный)
 
-Path-параметры: `component_id`, `version` — MUST быть заданы (обязательные).
+Тело запроса (`application/json`, схема `ConfigCreate`):
+- `config`: object, обязательное
+- `version`: integer | null
+- `label`: string | null
+- `stage`: string, по умолчанию `"draft"`
+- `notes`: string | null
+- `links`: array[object] | null
+- `set_current`: boolean, по умолчанию `true`
+- `guard`: ComponentGuard | null
 
-Тело запроса: `application/json`, схема `ConfigUpdate`, обязательное. Поля: `config`, `label`, `stage`, `notes`, `links`, `guard`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `PATCH /components/{component_id}/configs/{version}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /components/{component_id}/configs` с корректными параметрами
+- THEN система MUST вернуть `201` с телом по схеме `ComponentConfigResponse`
+- AND тело MUST содержать поля `component_id`, `version`, `stage`, `config`, `created_at`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `POST /components/{component_id}/configs`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /components/{component_id}/configs`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `POST /components/{component_id}/configs`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /components/{component_id}/configs`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `POST /components/{component_id}/configs`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /components/{component_id}/configs/{version} — Get Config Version
-Система MUST предоставлять эндпоинт `GET /components/{component_id}/configs/{version}` (operationId `get_config`, раздел OpenAPI «Components»).
+### Requirement: PATCH /components/{component_id}/configs/{version}
+Система MUST обновлять операцию «Update Draft Config» по запросу `PATCH /components/{component_id}/configs/{version}` (operationId `update_config`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Get a specific config version by number.»
+Параметры:
+- `component_id` (path, string, обязательный)
+- `version` (path, integer, обязательный)
 
-Path-параметры: `component_id`, `version` — MUST быть заданы (обязательные).
+Тело запроса (`application/json`, схема `ConfigUpdate`):
+- `config`: object | null
+- `label`: string | null
+- `stage`: string | null
+- `notes`: string | null
+- `links`: array[object] | null
+- `guard`: ComponentGuard | null
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /components/{component_id}/configs/{version}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `PATCH /components/{component_id}/configs/{version}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ComponentConfigResponse`
+- AND тело MUST содержать поля `component_id`, `version`, `stage`, `config`, `created_at`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `PATCH /components/{component_id}/configs/{version}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `PATCH /components/{component_id}/configs/{version}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `PATCH /components/{component_id}/configs/{version}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `PATCH /components/{component_id}/configs/{version}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `PATCH /components/{component_id}/configs/{version}`
+- THEN система MUST вернуть `500`
 
-### Requirement: DELETE /components/{component_id}/configs/{version} — Delete Config Version
-Система MUST предоставлять эндпоинт `DELETE /components/{component_id}/configs/{version}` (operationId `delete_config`, раздел OpenAPI «Components»).
+### Requirement: GET /components/{component_id}/configs/{version}
+Система MUST возвращать операцию «Get Config Version» по запросу `GET /components/{component_id}/configs/{version}` (operationId `get_config`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Delete a specific draft config version. Cannot delete published or current configs.»
+Параметры:
+- `component_id` (path, string, обязательный)
+- `version` (path, integer, обязательный)
 
-Path-параметры: `component_id`, `version` — MUST быть заданы (обязательные).
-
-#### Scenario: Успешный ответ 204
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `DELETE /components/{component_id}/configs/{version}` с корректными параметрами
-- THEN система MUST вернуть статус `204` («Successful Response»)
-- AND формат содержимого ответа: без тела
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /components/{component_id}/configs/{version}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ComponentConfigResponse`
+- AND тело MUST содержать поля `component_id`, `version`, `stage`, `config`, `created_at`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /components/{component_id}/configs/{version}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /components/{component_id}/configs/{version}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `GET /components/{component_id}/configs/{version}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /components/{component_id}/configs/{version}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /components/{component_id}/configs/{version}`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /components/{component_id}/configs/current — Get Current Config
-Система MUST предоставлять эндпоинт `GET /components/{component_id}/configs/current` (operationId `get_current_config`, раздел OpenAPI «Components»).
+### Requirement: DELETE /components/{component_id}/configs/{version}
+Система MUST удалять операцию «Delete Config Version» по запросу `DELETE /components/{component_id}/configs/{version}` (operationId `delete_config`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Get the current config version for a component.»
+Параметры:
+- `component_id` (path, string, обязательный)
+- `version` (path, integer, обязательный)
 
-Path-параметры: `component_id` — MUST быть заданы (обязательные).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /components/{component_id}/configs/current` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `DELETE /components/{component_id}/configs/{version}` с корректными параметрами
+- THEN система MUST вернуть `204`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `DELETE /components/{component_id}/configs/{version}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `DELETE /components/{component_id}/configs/{version}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `DELETE /components/{component_id}/configs/{version}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `DELETE /components/{component_id}/configs/{version}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `DELETE /components/{component_id}/configs/{version}`
+- THEN система MUST вернуть `500`
 
-### Requirement: POST /components/{component_id}/configs/{version}/set-current — Set Current Config Version
-Система MUST предоставлять эндпоинт `POST /components/{component_id}/configs/{version}/set-current` (operationId `set_current_config`, раздел OpenAPI «Components»).
+### Requirement: GET /components/{component_id}/configs/current
+Система MUST возвращать операцию «Get Current Config» по запросу `GET /components/{component_id}/configs/current` (operationId `get_current_config`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Set a published config version as current (for rollback).»
+Параметры:
+- `component_id` (path, string, обязательный)
 
-Path-параметры: `component_id`, `version` — MUST быть заданы (обязательные).
-
-Тело запроса: `application/json`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /components/{component_id}/configs/{version}/set-current` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /components/{component_id}/configs/current` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ComponentConfigResponse`
+- AND тело MUST содержать поля `component_id`, `version`, `stage`, `config`, `created_at`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /components/{component_id}/configs/current`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /components/{component_id}/configs/current`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `GET /components/{component_id}/configs/current`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /components/{component_id}/configs/current`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /components/{component_id}/configs/current`
+- THEN система MUST вернуть `500`
+
+### Requirement: POST /components/{component_id}/configs/{version}/set-current
+Система MUST выполнять операцию «Set Current Config Version» по запросу `POST /components/{component_id}/configs/{version}/set-current` (operationId `set_current_config`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `component_id` (path, string, обязательный)
+- `version` (path, integer, обязательный)
+
+Тело запроса: `application/json`, схема в OpenAPI не задана.
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /components/{component_id}/configs/{version}/set-current` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `ComponentResponse`
+- AND тело MUST содержать поля `component_id`, `component_type`, `created_at`
+
+#### Scenario: Ответ 400
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `POST /components/{component_id}/configs/{version}/set-current`
+- THEN система MUST вернуть `400`
+
+#### Scenario: Ответ 401
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /components/{component_id}/configs/{version}/set-current`
+- THEN система MUST вернуть `401`
+
+#### Scenario: Ответ 404
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `POST /components/{component_id}/configs/{version}/set-current`
+- THEN система MUST вернуть `404`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /components/{component_id}/configs/{version}/set-current`
+- THEN система MUST вернуть `422`
+
+#### Scenario: Ответ 500
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `POST /components/{component_id}/configs/{version}/set-current`
+- THEN система MUST вернуть `500`

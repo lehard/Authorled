@@ -1,644 +1,711 @@
-# API `memory` Specification
+# Memory and Learning API Specification
 
 ## Purpose
-Пользовательская память (memories) и накопленные знания обучения (learnings), включая `shared-learning`.
+Пользовательские воспоминания (`agno_memories`) и записи LearningMachine (`agno_learnings`).
 
-Эндпоинты этого домена не реализованы в коде репозитория: их предоставляет runtime `agno.os.AgentOS` (agno 3.1.10), создаваемый в `app/main.py`. Требования ниже восстановлены по OpenAPI-схеме работающего инстанса (`GET /openapi.json`, заголовок «Agno AgentOS», версия API `1.0.0`).
-
-Общее требование: если `authorization` включена (в `app/main.py` это `RUNTIME_ENV != "dev"`), каждый эндпоинт домена MUST требовать заголовок `Authorization: Bearer <JWT>` (схема безопасности `HTTPBearer` в OpenAPI), а запрос без валидного токена MUST завершаться статусом `401`. В режиме `RUNTIME_ENV=dev` (compose.yaml) `GET /info` возвращает `auth_mode: "none"` и эндпоинты доступны без токена.
+Домен содержит 16 операций HTTP (теги OpenAPI: Memory, Learnings). Все они предоставляются runtime Agno `AgentOS`; в коде репозитория маршрутов нет.
 
 ## Requirements
 
-### Requirement: POST /memories — Create Memory
-Система MUST предоставлять эндпоинт `POST /memories` (operationId `create_memory`, раздел OpenAPI «Memory»).
+### Requirement: Shared learning
+Система MUST объявлять `shared_learning` как `LearningMachine` с именем `shared-learning` на общей БД, с `user_profile` и `user_memory` в режиме `LearningMode.AGENTIC`, и MUST подключать его к OS Manager. Learning MUST хранить данные в PostgreSQL и MUST NOT дообучать модель.
 
-Описание в OpenAPI: «Create a new user memory with content and associated topics. Memories are used to store contextual information for users across conversations.»
-
-Query-параметры: `db_id`, `table`.
-
-Тело запроса: `application/json`, схема `UserMemoryCreateSchema`, обязательное. Поля: `memory` (обязательное), `user_id`, `topics`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /memories` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Memory created successfully»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 400
+#### Scenario: Learning в реестре
 - GIVEN платформа запущена
-- WHEN условие ошибки: «Invalid request data»
-- THEN система MUST вернуть статус `400` («Invalid request data»)
+- WHEN клиент выполняет `GET /registry`
+- THEN ответ MUST содержать элемент типа `learning` с именем `shared-learning`
 
-#### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+### Requirement: POST /memories
+Система MUST выполнять операцию «Create Memory» по запросу `POST /memories` (operationId `create_memory`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-#### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+Параметры:
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation error in payload»)
+Тело запроса (`application/json`, схема `UserMemoryCreateSchema`):
+- `memory`: string, обязательное
+- `user_id`: string | null
+- `topics`: array[string] | null
 
-#### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Failed to create memory»
-- THEN система MUST вернуть статус `500` («Failed to create memory»)
-
-### Requirement: DELETE /memories — Delete Multiple Memories
-Система MUST предоставлять эндпоинт `DELETE /memories` (operationId `delete_memories`, раздел OpenAPI «Memory»).
-
-Описание в OpenAPI: «Delete multiple user memories by their IDs in a single operation. This action cannot be undone and all specified memories will be permanently removed.»
-
-Query-параметры: `db_id`, `table`.
-
-Тело запроса: `application/json`, схема `DeleteMemoriesRequest`, обязательное. Поля: `memory_ids` (обязательное), `user_id`.
-
-#### Scenario: Успешный ответ 204
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `DELETE /memories` с корректными параметрами
-- THEN система MUST вернуть статус `204` («Memories deleted successfully»)
-- AND формат содержимого ответа: без тела
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /memories` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `UserMemorySchema`
+- AND тело MUST содержать поля `memory_id`, `memory`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Invalid request - empty memory_ids list»
-- THEN система MUST вернуть статус `400` («Invalid request - empty memory_ids list»)
+- GIVEN выполняется условие ошибки «Invalid request data»
+- WHEN клиент выполняет `POST /memories`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /memories`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `POST /memories`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation error in payload»
+- WHEN клиент выполняет `POST /memories`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Failed to delete memories»
-- THEN система MUST вернуть статус `500` («Failed to delete memories»)
+- GIVEN выполняется условие ошибки «Failed to create memory»
+- WHEN клиент выполняет `POST /memories`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /memories — List Memories
-Система MUST предоставлять эндпоинт `GET /memories` (operationId `get_memories`, раздел OpenAPI «Memory»).
+### Requirement: DELETE /memories
+Система MUST удалять операцию «Delete Multiple Memories» по запросу `DELETE /memories` (operationId `delete_memories`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve paginated list of user memories with filtering and search capabilities. Filter by user, agent, team, topics, or search within memory content.»
+Параметры:
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Query-параметры: `user_id`, `agent_id`, `team_id`, `search_content`, `limit`, `page`, `sort_by`, `sort_order`, `db_id`, `table`, `topics`.
+Тело запроса (`application/json`, схема `DeleteMemoriesRequest`):
+- `memory_ids`: array[string], обязательное
+- `user_id`: string | null
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /memories` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Memories retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `DELETE /memories` с корректными параметрами
+- THEN система MUST вернуть `204`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Invalid request - empty memory_ids list»
+- WHEN клиент выполняет `DELETE /memories`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `DELETE /memories`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `DELETE /memories`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `DELETE /memories`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Failed to delete memories»
+- WHEN клиент выполняет `DELETE /memories`
+- THEN система MUST вернуть `500`
 
-### Requirement: DELETE /memories/{memory_id} — Delete Memory
-Система MUST предоставлять эндпоинт `DELETE /memories/{memory_id}` (operationId `delete_memory`, раздел OpenAPI «Memory»).
+### Requirement: GET /memories
+Система MUST возвращать операцию «List Memories» по запросу `GET /memories` (operationId `get_memories`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Permanently delete a specific user memory. This action cannot be undone.»
+Параметры:
+- `user_id` (query, string | null, необязательный)
+- `agent_id` (query, string | null, необязательный)
+- `team_id` (query, string | null, необязательный)
+- `search_content` (query, string | null, необязательный)
+- `limit` (query, integer | null, необязательный)
+- `page` (query, integer | null, необязательный)
+- `sort_by` (query, string | null, необязательный)
+- `sort_order` (query, SortOrder (asc | desc) | null, необязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
+- `topics` (query, array[string] | null, необязательный)
 
-Path-параметры: `memory_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `user_id`, `db_id`, `table`.
-
-#### Scenario: Успешный ответ 204
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `DELETE /memories/{memory_id}` с корректными параметрами
-- THEN система MUST вернуть статус `204` («Memory deleted successfully»)
-- AND формат содержимого ответа: без тела
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /memories` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `PaginatedResponse_UserMemorySchema_`
+- AND тело MUST содержать поля `data`, `meta`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /memories`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /memories`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Memory not found»
-- THEN система MUST вернуть статус `404` («Memory not found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `GET /memories`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /memories`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Failed to delete memory»
-- THEN система MUST вернуть статус `500` («Failed to delete memory»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /memories`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /memories/{memory_id} — Get Memory by ID
-Система MUST предоставлять эндпоинт `GET /memories/{memory_id}` (operationId `get_memory`, раздел OpenAPI «Memory»).
+### Requirement: DELETE /memories/{memory_id}
+Система MUST удалять операцию «Delete Memory» по запросу `DELETE /memories/{memory_id}` (operationId `delete_memory`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve detailed information about a specific user memory by its ID.»
+Параметры:
+- `memory_id` (path, string, обязательный)
+- `user_id` (query, string | null, необязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Path-параметры: `memory_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `user_id`, `db_id`, `table`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /memories/{memory_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Memory retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `DELETE /memories/{memory_id}` с корректными параметрами
+- THEN система MUST вернуть `204`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `DELETE /memories/{memory_id}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `DELETE /memories/{memory_id}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Memory not found»
-- THEN система MUST вернуть статус `404` («Memory not found»)
+- GIVEN выполняется условие ошибки «Memory not found»
+- WHEN клиент выполняет `DELETE /memories/{memory_id}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `DELETE /memories/{memory_id}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Failed to delete memory»
+- WHEN клиент выполняет `DELETE /memories/{memory_id}`
+- THEN система MUST вернуть `500`
 
-### Requirement: PATCH /memories/{memory_id} — Update Memory
-Система MUST предоставлять эндпоинт `PATCH /memories/{memory_id}` (operationId `update_memory`, раздел OpenAPI «Memory»).
+### Requirement: GET /memories/{memory_id}
+Система MUST возвращать операцию «Get Memory by ID» по запросу `GET /memories/{memory_id}` (operationId `get_memory`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Update an existing user memory's content and topics. Replaces the entire memory content and topic list with the provided values.»
+Параметры:
+- `memory_id` (path, string, обязательный)
+- `user_id` (query, string | null, необязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Path-параметры: `memory_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `db_id`, `table`.
-
-Тело запроса: `application/json`, схема `UserMemoryCreateSchema`, обязательное. Поля: `memory` (обязательное), `user_id`, `topics`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `PATCH /memories/{memory_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Memory updated successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /memories/{memory_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `UserMemorySchema`
+- AND тело MUST содержать поля `memory_id`, `memory`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Invalid request data»
-- THEN система MUST вернуть статус `400` («Invalid request data»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /memories/{memory_id}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /memories/{memory_id}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Memory not found»
-- THEN система MUST вернуть статус `404` («Memory not found»)
+- GIVEN выполняется условие ошибки «Memory not found»
+- WHEN клиент выполняет `GET /memories/{memory_id}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation error in payload»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /memories/{memory_id}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Failed to update memory»
-- THEN система MUST вернуть статус `500` («Failed to update memory»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /memories/{memory_id}`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /memory_topics — Get Memory Topics
-Система MUST предоставлять эндпоинт `GET /memory_topics` (operationId `get_memory_topics`, раздел OpenAPI «Memory»).
+### Requirement: PATCH /memories/{memory_id}
+Система MUST обновлять операцию «Update Memory» по запросу `PATCH /memories/{memory_id}` (operationId `update_memory`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve all unique topics associated with memories in the system. Useful for filtering and categorizing memories by topic.»
+Параметры:
+- `memory_id` (path, string, обязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Query-параметры: `user_id`, `db_id`, `table`.
+Тело запроса (`application/json`, схема `UserMemoryCreateSchema`):
+- `memory`: string, обязательное
+- `user_id`: string | null
+- `topics`: array[string] | null
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /memory_topics` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Memory topics retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `PATCH /memories/{memory_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `UserMemorySchema`
+- AND тело MUST содержать поля `memory_id`, `memory`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Invalid request data»
+- WHEN клиент выполняет `PATCH /memories/{memory_id}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `PATCH /memories/{memory_id}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Memory not found»
+- WHEN клиент выполняет `PATCH /memories/{memory_id}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation error in payload»
+- WHEN клиент выполняет `PATCH /memories/{memory_id}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Failed to update memory»
+- WHEN клиент выполняет `PATCH /memories/{memory_id}`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /user_memory_stats — Get User Memory Statistics
-Система MUST предоставлять эндпоинт `GET /user_memory_stats` (operationId `get_user_memory_stats`, раздел OpenAPI «Memory»).
+### Requirement: GET /memory_topics
+Система MUST возвращать операцию «Get Memory Topics» по запросу `GET /memory_topics` (operationId `get_memory_topics`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve paginated statistics about memory usage by user. Provides insights into user engagement and memory distribution across users.»
+Параметры:
+- `user_id` (query, string | null, необязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Query-параметры: `limit`, `page`, `user_id`, `db_id`, `table`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /user_memory_stats` с корректными параметрами
-- THEN система MUST вернуть статус `200` («User memory statistics retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /memory_topics` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /memory_topics`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /memory_topics`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `GET /memory_topics`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /memory_topics`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Failed to retrieve user statistics»
-- THEN система MUST вернуть статус `500` («Failed to retrieve user statistics»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /memory_topics`
+- THEN система MUST вернуть `500`
 
-### Requirement: POST /optimize-memories — Optimize User Memories
-Система MUST предоставлять эндпоинт `POST /optimize-memories` (operationId `optimize_memories`, раздел OpenAPI «Memory»).
+### Requirement: GET /user_memory_stats
+Система MUST возвращать операцию «Get User Memory Statistics» по запросу `GET /user_memory_stats` (operationId `get_user_memory_stats`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Optimize all memories for a given user using the default summarize strategy. This operation combines all memories into a single comprehensive summary, achieving maximum token reduction while preserving all key information. To use a custom model, specify the model parameter in 'provider:model_id' for…»
+Параметры:
+- `limit` (query, integer | null, необязательный)
+- `page` (query, integer | null, необязательный)
+- `user_id` (query, string | null, необязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Query-параметры: `db_id`, `table`.
-
-Тело запроса: `application/json`, схема `OptimizeMemoriesRequest`, обязательное. Поля: `user_id` (обязательное), `model`, `apply`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /optimize-memories` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Memories optimized successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /user_memory_stats` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `PaginatedResponse_UserStatsSchema_`
+- AND тело MUST содержать поля `data`, `meta`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad request - User ID is required or invalid model string format»
-- THEN система MUST вернуть статус `400` («Bad request - User ID is required or invalid model string format»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /user_memory_stats`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /user_memory_stats`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «No memories found for user»
-- THEN система MUST вернуть статус `404` («No memories found for user»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `GET /user_memory_stats`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /user_memory_stats`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Failed to optimize memories»
-- THEN система MUST вернуть статус `500` («Failed to optimize memories»)
+- GIVEN выполняется условие ошибки «Failed to retrieve user statistics»
+- WHEN клиент выполняет `GET /user_memory_stats`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /learnings — List Learnings
-Система MUST предоставлять эндпоинт `GET /learnings` (operationId `list_learnings`, раздел OpenAPI «Learnings»).
+### Requirement: POST /optimize-memories
+Система MUST выполнять операцию «Optimize User Memories» по запросу `POST /optimize-memories` (operationId `optimize_memories`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «List learning records with pagination and optional filters. For a scoped (non-admin) caller with user isolation enabled, results are bound to that user and also include records with no owner (`user_id IS NULL`) — this covers global, agent, team, session, and entity-scoped learnings; passing a `user_…»
+Параметры:
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Query-параметры: `learning_type`, `user_id`, `agent_id`, `team_id`, `session_id`, `namespace`, `entity_id`, `entity_type`, `limit`, `page`, `sort_by`, `sort_order`, `db_id`, `table`.
+Тело запроса (`application/json`, схема `OptimizeMemoriesRequest`):
+- `user_id`: string, обязательное
+- `model`: string | null
+- `apply`: boolean, по умолчанию `true`
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /learnings` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /optimize-memories` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `OptimizeMemoriesResponse`
+- AND тело MUST содержать поля `memories`, `memories_before`, `memories_after`, `tokens_before`, `tokens_after`, `tokens_saved`, `reduction_percentage`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad request - User ID is required or invalid model string format»
+- WHEN клиент выполняет `POST /optimize-memories`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /optimize-memories`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «No memories found for user»
+- WHEN клиент выполняет `POST /optimize-memories`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /optimize-memories`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Failed to optimize memories»
+- WHEN клиент выполняет `POST /optimize-memories`
+- THEN система MUST вернуть `500`
 
-### Requirement: POST /learnings — Create Learning
-Система MUST предоставлять эндпоинт `POST /learnings` (operationId `create_learning`, раздел OpenAPI «Learnings»).
+### Requirement: GET /learnings
+Система MUST возвращать операцию «List Learnings» по запросу `GET /learnings` (operationId `list_learnings`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Create a new learning record. For the identity-keyed learning types (`user_profile`, `user_memory`, `session_context`, `entity_memory`) the record id is derived deterministically from the identity fields so it reconciles with what the agent reads/writes — provide those fields (else 422), and if a re…»
+Параметры:
+- `learning_type` (query, string | null, необязательный)
+- `user_id` (query, string | null, необязательный)
+- `agent_id` (query, string | null, необязательный)
+- `team_id` (query, string | null, необязательный)
+- `session_id` (query, string | null, необязательный)
+- `namespace` (query, string | null, необязательный)
+- `entity_id` (query, string | null, необязательный)
+- `entity_type` (query, string | null, необязательный)
+- `limit` (query, integer, необязательный)
+- `page` (query, integer, необязательный)
+- `sort_by` (query, string | null, необязательный)
+- `sort_order` (query, SortOrder (asc | desc) | null, необязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Query-параметры: `db_id`, `table`.
-
-Тело запроса: `application/json`, схема `LearningCreate`, обязательное. Поля: `learning_type` (обязательное), `content` (обязательное), `namespace`, `user_id`, `agent_id`, `team_id`, `session_id`, `entity_id`, `entity_type`, `metadata`.
-
-#### Scenario: Успешный ответ 201
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /learnings` с корректными параметрами
-- THEN система MUST вернуть статус `201` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /learnings` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `PaginatedResponse_LearningResponse_`
+- AND тело MUST содержать поля `data`, `meta`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /learnings`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /learnings`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `GET /learnings`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /learnings`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /learnings`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /learnings/users — List Learning Users
-Система MUST предоставлять эндпоинт `GET /learnings/users` (operationId `list_learning_users`, раздел OpenAPI «Learnings»).
+### Requirement: POST /learnings
+Система MUST выполнять операцию «Create Learning» по запросу `POST /learnings` (operationId `create_learning`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «List the users that own learning records, with a per-user count and last-updated timestamp. Intended as the entry point for a per-user view: list users here, then drill into a single user's learnings via `GET /learnings?user_id=...`. Records with no owner (`user_id IS NULL`) are excluded. Pass `lear…»
+Параметры:
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Query-параметры: `learning_type`, `user_id`, `limit`, `page`, `sort_by`, `sort_order`, `db_id`, `table`.
+Тело запроса (`application/json`, схема `LearningCreate`):
+- `learning_type`: string, обязательное
+- `content`: object, обязательное
+- `namespace`: string | null
+- `user_id`: string | null
+- `agent_id`: string | null
+- `team_id`: string | null
+- `session_id`: string | null
+- `entity_id`: string | null
+- `entity_type`: string | null
+- `metadata`: object | null
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /learnings/users` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /learnings` с корректными параметрами
+- THEN система MUST вернуть `201` с телом по схеме `LearningResponse`
+- AND тело MUST содержать поля `learning_id`, `learning_type`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `POST /learnings`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /learnings`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `POST /learnings`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /learnings`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `POST /learnings`
+- THEN система MUST вернуть `500`
 
-### Requirement: DELETE /learnings/users/{user_id} — Delete Learning User
-Система MUST предоставлять эндпоинт `DELETE /learnings/users/{user_id}` (operationId `delete_learning_user`, раздел OpenAPI «Learnings»).
+### Requirement: GET /learnings/users
+Система MUST возвращать операцию «List Learning Users» по запросу `GET /learnings/users` (operationId `list_learning_users`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Delete the learning records owned by a user. By default removes every learning type backed by the agno_learnings table (user_profile, user_memory, and any user-scoped entity records); pass `learning_type` to restrict deletion to a single store. Records with no owner (`user_id IS NULL`) are not affec…»
+Параметры:
+- `learning_type` (query, string | null, необязательный)
+- `user_id` (query, string | null, необязательный)
+- `limit` (query, integer, необязательный)
+- `page` (query, integer, необязательный)
+- `sort_by` (query, string | null, необязательный)
+- `sort_order` (query, SortOrder (asc | desc) | null, необязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Path-параметры: `user_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `learning_type`, `db_id`, `table`.
-
-#### Scenario: Успешный ответ 204
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `DELETE /learnings/users/{user_id}` с корректными параметрами
-- THEN система MUST вернуть статус `204` («Successful Response»)
-- AND формат содержимого ответа: без тела
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /learnings/users` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `PaginatedResponse_LearningUserStats_`
+- AND тело MUST содержать поля `data`, `meta`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /learnings/users`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /learnings/users`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `GET /learnings/users`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /learnings/users`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /learnings/users`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /learnings/{learning_id} — Get Learning
-Система MUST предоставлять эндпоинт `GET /learnings/{learning_id}` (operationId `get_learning`, раздел OpenAPI «Learnings»).
+### Requirement: DELETE /learnings/users/{user_id}
+Система MUST удалять операцию «Delete Learning User» по запросу `DELETE /learnings/users/{user_id}` (operationId `delete_learning_user`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve a single learning record by its ID.»
+Параметры:
+- `user_id` (path, string, обязательный)
+- `learning_type` (query, string | null, необязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Path-параметры: `learning_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `db_id`, `table`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /learnings/{learning_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `DELETE /learnings/users/{user_id}` с корректными параметрами
+- THEN система MUST вернуть `204`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `DELETE /learnings/users/{user_id}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `DELETE /learnings/users/{user_id}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `DELETE /learnings/users/{user_id}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `DELETE /learnings/users/{user_id}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `DELETE /learnings/users/{user_id}`
+- THEN система MUST вернуть `500`
 
-### Requirement: PATCH /learnings/{learning_id} — Update Learning
-Система MUST предоставлять эндпоинт `PATCH /learnings/{learning_id}` (operationId `update_learning`, раздел OpenAPI «Learnings»).
+### Requirement: GET /learnings/{learning_id}
+Система MUST возвращать операцию «Get Learning» по запросу `GET /learnings/{learning_id}` (operationId `get_learning`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Update a learning record. Only `content` and `metadata` may be modified; identity fields (user_id, agent_id, team_id, etc.) are immutable. Provided fields fully replace the existing values. Records with no owner (`user_id IS NULL` — shared agent/team/session/entity learnings) are readable by any cal…»
+Параметры:
+- `learning_id` (path, string, обязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Path-параметры: `learning_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `db_id`, `table`.
-
-Тело запроса: `application/json`, схема `LearningUpdate`, обязательное. Поля: `content`, `metadata`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `PATCH /learnings/{learning_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /learnings/{learning_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `LearningResponse`
+- AND тело MUST содержать поля `learning_id`, `learning_type`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /learnings/{learning_id}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /learnings/{learning_id}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `GET /learnings/{learning_id}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /learnings/{learning_id}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /learnings/{learning_id}`
+- THEN система MUST вернуть `500`
 
-### Requirement: DELETE /learnings/{learning_id} — Delete Learning
-Система MUST предоставлять эндпоинт `DELETE /learnings/{learning_id}` (operationId `delete_learning`, раздел OpenAPI «Learnings»).
+### Requirement: PATCH /learnings/{learning_id}
+Система MUST обновлять операцию «Update Learning» по запросу `PATCH /learnings/{learning_id}` (operationId `update_learning`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Permanently delete a learning record by its ID. Records with no owner (`user_id IS NULL` — shared agent/team/session/entity learnings) may only be deleted by an admin.»
+Параметры:
+- `learning_id` (path, string, обязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Path-параметры: `learning_id` — MUST быть заданы (обязательные).
+Тело запроса (`application/json`, схема `LearningUpdate`):
+- `content`: object | null
+- `metadata`: object | null
 
-Query-параметры: `db_id`, `table`.
-
-#### Scenario: Успешный ответ 204
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `DELETE /learnings/{learning_id}` с корректными параметрами
-- THEN система MUST вернуть статус `204` («Successful Response»)
-- AND формат содержимого ответа: без тела
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `PATCH /learnings/{learning_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `LearningResponse`
+- AND тело MUST содержать поля `learning_id`, `learning_type`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `PATCH /learnings/{learning_id}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `PATCH /learnings/{learning_id}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `PATCH /learnings/{learning_id}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `PATCH /learnings/{learning_id}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `PATCH /learnings/{learning_id}`
+- THEN система MUST вернуть `500`
+
+### Requirement: DELETE /learnings/{learning_id}
+Система MUST удалять операцию «Delete Learning» по запросу `DELETE /learnings/{learning_id}` (operationId `delete_learning`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `learning_id` (path, string, обязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `DELETE /learnings/{learning_id}` с корректными параметрами
+- THEN система MUST вернуть `204`
+
+#### Scenario: Ответ 400
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `DELETE /learnings/{learning_id}`
+- THEN система MUST вернуть `400`
+
+#### Scenario: Ответ 401
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `DELETE /learnings/{learning_id}`
+- THEN система MUST вернуть `401`
+
+#### Scenario: Ответ 404
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `DELETE /learnings/{learning_id}`
+- THEN система MUST вернуть `404`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `DELETE /learnings/{learning_id}`
+- THEN система MUST вернуть `422`
+
+#### Scenario: Ответ 500
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `DELETE /learnings/{learning_id}`
+- THEN система MUST вернуть `500`

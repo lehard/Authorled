@@ -1,53 +1,64 @@
-# API `mcp` Specification
+# MCP API Specification
 
 ## Purpose
-MCP-endpoint AgentOS (`mcp=True` в `app/main.py`, путь `/mcp`). Конфигурация задаётся в `app/interfaces.py`: встроенные инструменты AgentOS плюс инструмент `agno`, проксирующий OS Manager. Протокол и транспорт реализует библиотека Agno; в OpenAPI эти маршруты не отражены (`GET /info` → `mcp: {enabled: true, path: "/mcp", oauth: null, tool_run_endpoint: true}`).
+MCP-endpoint `/mcp` (streamable HTTP) для подключения AI-приложений к AgentOS. Настраивается в `app/interfaces.py`; не входит в OpenAPI.
 
 ## Requirements
 
-### Requirement: Включение MCP
-Система MUST публиковать MCP-сервер по пути `/mcp`, а `GET /info` MUST сообщать `mcp.enabled: true` и `mcp.path: "/mcp"`.
+### Requirement: Набор инструментов
+Система MUST публиковать MCP-сервер с инструментами по умолчанию (`MCPConfig(default_tools=True)`) и инструментом `agno`, созданным `manager.as_tool(name="agno", title="Agno")`. `tools/list` MUST возвращать 9 инструментов:
 
-#### Scenario: Обращение к корню MCP
+| Инструмент | Обязательные параметры | Прочие параметры |
+| --- | --- | --- |
+| `agno` | `message` | `user_id`, `session_id` |
+| `get_agentos_config` | — | — |
+| `run_agent` | `agent_id`, `message` | `user_id`, `session_id` |
+| `run_team` | `team_id`, `message` | `user_id`, `session_id` |
+| `run_workflow` | `workflow_id`, `message` | `user_id`, `session_id` |
+| `continue_run` | `run_id`, `session_id` | `agent_id`, `team_id`, `workflow_id`, `requirements`, `user_id` |
+| `cancel_run` | `run_id` | `session_id`, `agent_id`, `team_id`, `workflow_id` |
+| `get_sessions` | — | `session_type`, `component_id`, `user_id`, `session_name`, `db_id`, `limit`, `page`, `sort_by`, `sort_order` |
+| `get_session_runs` | `session_id` | `run_id`, `session_type`, `user_id`, `db_id` |
+
+#### Scenario: Проверка без вызова модели
 - GIVEN платформа запущена
-- WHEN клиент выполняет `GET /mcp` без MCP-заголовков
-- THEN система MUST ответить редиректом `302` на `/mcp/server-card` (наблюдаемое поведение)
+- WHEN выполняется `./scripts/mcp_check.sh`
+- THEN скрипт MUST выполнить handshake, получить все страницы `tools/list` и MUST сообщить `9 tools; required tools available`
 
-#### Scenario: Некорректный MCP-запрос
-- GIVEN платформа запущена
-- WHEN клиент отправляет `POST /mcp/` JSON-RPC запрос `tools/list` без инициализации MCP-сессии
-- THEN система MUST отклонить запрос статусом `400` (наблюдаемое поведение)
+#### Scenario: Нет обязательного инструмента
+- GIVEN в `tools/list` отсутствует хотя бы один из 9 инструментов
+- WHEN выполняется `./scripts/mcp_check.sh`
+- THEN скрипт MUST завершиться кодом `1` с сообщением `missing required tools: ...`
 
-### Requirement: Инструмент `agno`
-`attach_interfaces()` MUST регистрировать в `MCPConfig` инструмент с `name="agno"`, `title="Agno"` и описанием «Talk to OS Manager of this AgentOS. Pass session_id back to continue the conversation.», созданный через `manager.as_tool(...)`, а также MUST включить встроенные инструменты (`default_tools=True`).
+### Requirement: Инструмент agno
+Инструмент `agno` MUST передавать `message` команде OS Manager и MUST возвращать `session_id` для продолжения диалога.
 
-#### Scenario: Продолжение диалога
-- GIVEN MCP-клиент уже вызвал инструмент `agno` и получил `session_id`
-- WHEN клиент вызывает `agno` повторно с тем же `session_id`
-- THEN OS Manager MUST продолжить тот же диалог
+#### Scenario: Вызов с промптом
+- GIVEN платформа запущена и ключ модели задан
+- WHEN выполняется `./scripts/mcp_check.sh --prompt "..."`
+- THEN скрипт MUST вызвать `agno` с `{"message": prompt}` и вывести текст ответа
+- AND при `is_error` скрипт MUST завершиться кодом `1`
 
-#### Scenario: Менеджер не настроен
-- GIVEN `agent_os.manager is None`
-- WHEN вызывается `attach_interfaces(agent_os)`
-- THEN система MUST выбросить `RuntimeError("OS Manager must be configured before attaching interfaces.")`
+### Requirement: Доступ к /mcp
+В режиме `dev` `GET /mcp` MUST отвечать `302` с переадресацией на `/mcp/server-card`. При включённой авторизации запрос к `/mcp` без токена MUST отклоняться кодом `401`.
 
-### Requirement: OAuth для MCP
-Если задана переменная `MCP_CONNECT_SECRET`, `mcp_auth()` MUST вернуть `AgentOSBuiltinAuth(url=AGENTOS_URL, secret=MCP_CONNECT_SECRET)`, и `/mcp` MUST работать как собственный OAuth 2.1 authorization server. Если переменная пуста или не задана, `mcp_auth()` MUST вернуть `None` (OAuth отключён, `mcp.oauth: null`).
+#### Scenario: prd без токена
+- GIVEN `RUNTIME_ENV=prd` и задан `JWT_VERIFICATION_KEY`
+- WHEN клиент выполняет `GET /mcp` без токена
+- THEN система MUST вернуть `401`
 
-#### Scenario: Секрет не задан
-- GIVEN `MCP_CONNECT_SECRET` отсутствует
-- WHEN клиент вызывает `GET /info`
+### Requirement: MCP OAuth
+Если задан `MCP_CONNECT_SECRET`, система MUST включать `AgentOSBuiltinAuth(url=AGENTOS_URL, secret=...)`, превращая `/mcp` в собственный сервер авторизации OAuth 2.1; иначе MCP OAuth MUST быть выключен.
+
+#### Scenario: Без секрета
+- GIVEN `MCP_CONNECT_SECRET` не задан
+- WHEN клиент выполняет `GET /info`
 - THEN `mcp.oauth` MUST быть `null`
 
-#### Scenario: Подключение чат-приложения
-- GIVEN `MCP_CONNECT_SECRET` задан, `AGENTOS_URL` — публичный HTTPS-адрес
-- WHEN claude.ai или ChatGPT (web) подключается к `/mcp`
-- THEN система MUST запросить секрет на странице согласия (по описанию в `example.env`)
+### Requirement: Порядок подключения
+`attach_interfaces` MUST завершаться `RuntimeError("OS Manager must be configured before attaching interfaces.")`, если у `AgentOS` нет менеджера.
 
-### Requirement: Проверка MCP-подключения
-Репозиторий MUST содержать скрипт `scripts/mcp_check.sh` для проверки MCP-подключения, и он SHOULD использоваться для проверки доступности MCP; при запуске с `MCP_CHECK_HOST=1` он проверяет API, работающее на хосте.
-
-#### Scenario: Локальная проверка
-- GIVEN API запущено на хосте
-- WHEN выполняется `MCP_CHECK_HOST=1 ./scripts/mcp_check.sh`
-- THEN скрипт SHOULD сообщить о состоянии MCP-подключения (детали поведения скрипта не проверялись — см. `openspec/TODO.md`)
+#### Scenario: Нет OS Manager
+- GIVEN `agent_os.manager` равен `None`
+- WHEN вызывается `attach_interfaces(agent_os)`
+- THEN функция MUST завершиться `RuntimeError`

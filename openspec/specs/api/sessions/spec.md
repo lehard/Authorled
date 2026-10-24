@@ -1,462 +1,463 @@
-# API `sessions` Specification
+# Sessions API Specification
 
 ## Purpose
-Сессии диалогов, их запуски и сохранённые медиафайлы.
+Сессии (диалоги) агентов и команд, хранящиеся в таблице `agno_sessions` БД `agentos-db`.
 
-Эндпоинты этого домена не реализованы в коде репозитория: их предоставляет runtime `agno.os.AgentOS` (agno 3.1.10), создаваемый в `app/main.py`. Требования ниже восстановлены по OpenAPI-схеме работающего инстанса (`GET /openapi.json`, заголовок «Agno AgentOS», версия API `1.0.0`).
-
-Общее требование: если `authorization` включена (в `app/main.py` это `RUNTIME_ENV != "dev"`), каждый эндпоинт домена MUST требовать заголовок `Authorization: Bearer <JWT>` (схема безопасности `HTTPBearer` в OpenAPI), а запрос без валидного токена MUST завершаться статусом `401`. В режиме `RUNTIME_ENV=dev` (compose.yaml) `GET /info` возвращает `auth_mode: "none"` и эндпоинты доступны без токена.
+Домен содержит 10 операций HTTP (теги OpenAPI: Sessions). Все они предоставляются runtime Agno `AgentOS`; в коде репозитория маршрутов нет.
 
 ## Requirements
 
-### Requirement: GET /sessions — List Sessions
-Система MUST предоставлять эндпоинт `GET /sessions` (operationId `get_sessions`, раздел OpenAPI «Sessions»).
+### Requirement: Изоляция сессий по пользователю
+Система MUST включать `user_isolation=True`: данные сессий MUST разделяться по `user_id` аутентифицированного пользователя.
 
-Описание в OpenAPI: «Retrieve paginated list of sessions with filtering and sorting options. Supports filtering by session type (agent, team, workflow), component, user, and name. Sessions represent conversation histories and execution contexts.»
+#### Scenario: Неизвестная сессия
+- GIVEN сессии `nope` не существует
+- WHEN клиент выполняет `GET /sessions/nope`
+- THEN система MUST вернуть `404`
 
-Query-параметры: `type`, `component_id`, `user_id`, `session_name`, `limit`, `page`, `sort_by`, `sort_order`, `db_id`, `table`.
+### Requirement: GET /sessions
+Система MUST возвращать операцию «List Sessions» по запросу `GET /sessions` (operationId `get_sessions`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /sessions` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Sessions retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+Параметры:
+- `type` (query, SessionType (agent | team | workflow) | null, необязательный)
+- `component_id` (query, string | null, необязательный)
+- `user_id` (query, string | null, необязательный)
+- `session_name` (query, string | null, необязательный)
+- `limit` (query, integer | null, необязательный)
+- `page` (query, integer | null, необязательный)
+- `sort_by` (query, string | null, необязательный)
+- `sort_order` (query, SortOrder (asc | desc) | null, необязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-#### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Invalid session type or filter parameters»
-- THEN система MUST вернуть статус `400` («Invalid session type or filter parameters»)
-
-#### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
-
-#### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not found»
-- THEN система MUST вернуть статус `404` («Not found»)
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation error in query parameters»)
-
-#### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
-
-### Requirement: POST /sessions — Create New Session
-Система MUST предоставлять эндпоинт `POST /sessions` (operationId `create_session`, раздел OpenAPI «Sessions»).
-
-Описание в OpenAPI: «Create a new empty session with optional configuration. Useful for pre-creating sessions with specific session_state, metadata, or other properties before running any agent/team/workflow interactions. The session can later be used by providing its session_id in run requests.»
-
-Query-параметры: `type`, `db_id`.
-
-Тело запроса: `application/json`, схема `CreateSessionRequest`. Поля: `session_id`, `session_name`, `session_state`, `metadata`, `user_id`, `agent_id`, `team_id`, `workflow_id`.
-
-#### Scenario: Успешный ответ 201
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /sessions` с корректными параметрами
-- THEN система MUST вернуть статус `201` («Session created successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /sessions` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `PaginatedResponse_SessionSchema_`
+- AND тело MUST содержать поля `data`, `meta`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Invalid request parameters»
-- THEN система MUST вернуть статус `400` («Invalid request parameters»)
+- GIVEN выполняется условие ошибки «Invalid session type or filter parameters»
+- WHEN клиент выполняет `GET /sessions`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /sessions`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not found»
+- WHEN клиент выполняет `GET /sessions`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation error»)
+- GIVEN выполняется условие ошибки «Validation error in query parameters»
+- WHEN клиент выполняет `GET /sessions`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Failed to create session»
-- THEN система MUST вернуть статус `500` («Failed to create session»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /sessions`
+- THEN система MUST вернуть `500`
+
+### Requirement: POST /sessions
+Система MUST выполнять операцию «Create New Session» по запросу `POST /sessions` (operationId `create_session`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `type` (query, SessionType (agent | team | workflow), необязательный)
+- `db_id` (query, string | null, необязательный)
+
+Тело запроса (`application/json`, схема `CreateSessionRequest`):
+- `session_id`: string | null
+- `session_name`: string | null
+- `session_state`: object | null
+- `metadata`: object | null
+- `user_id`: string | null
+- `agent_id`: string | null
+- `team_id`: string | null
+- `workflow_id`: string | null
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /sessions` с корректными параметрами
+- THEN система MUST вернуть `201`
+
+#### Scenario: Ответ 400
+- GIVEN выполняется условие ошибки «Invalid request parameters»
+- WHEN клиент выполняет `POST /sessions`
+- THEN система MUST вернуть `400`
+
+#### Scenario: Ответ 401
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /sessions`
+- THEN система MUST вернуть `401`
+
+#### Scenario: Ответ 404
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `POST /sessions`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 409
-- GIVEN платформа запущена
-- WHEN условие ошибки: «A session with the supplied session_id already exists»
-- THEN система MUST вернуть статус `409` («A session with the supplied session_id already exists»)
+- GIVEN выполняется условие ошибки «A session with the supplied session_id already exists»
+- WHEN клиент выполняет `POST /sessions`
+- THEN система MUST вернуть `409`
 
-### Requirement: DELETE /sessions — Delete Multiple Sessions
-Система MUST предоставлять эндпоинт `DELETE /sessions` (operationId `delete_sessions`, раздел OpenAPI «Sessions»).
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation error»
+- WHEN клиент выполняет `POST /sessions`
+- THEN система MUST вернуть `422`
 
-Описание в OpenAPI: «Delete multiple sessions by their IDs in a single operation. This action cannot be undone and will permanently remove all specified sessions and their runs.»
+#### Scenario: Ответ 500
+- GIVEN выполняется условие ошибки «Failed to create session»
+- WHEN клиент выполняет `POST /sessions`
+- THEN система MUST вернуть `500`
 
-Query-параметры: `user_id`, `db_id`, `table`, `delete_media`.
+### Requirement: DELETE /sessions
+Система MUST удалять операцию «Delete Multiple Sessions» по запросу `DELETE /sessions` (operationId `delete_sessions`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Тело запроса: `application/json`, схема `DeleteSessionRequest`, обязательное. Поля: `session_ids` (обязательное), `session_types` (обязательное).
+Параметры:
+- `user_id` (query, string | null, необязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
+- `delete_media` (query, boolean, необязательный)
 
-#### Scenario: Успешный ответ 204
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `DELETE /sessions` с корректными параметрами
-- THEN система MUST вернуть статус `204` («Sessions deleted successfully»)
-- AND формат содержимого ответа: без тела
+Тело запроса (`application/json`, схема `DeleteSessionRequest`):
+- `session_ids`: array[string], обязательное
+- `session_types`: array[SessionType (agent | team | workflow)], обязательное
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `DELETE /sessions` с корректными параметрами
+- THEN система MUST вернуть `204`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Invalid request - session IDs and types length mismatch»
-- THEN система MUST вернуть статус `400` («Invalid request - session IDs and types length mismatch»)
+- GIVEN выполняется условие ошибки «Invalid request - session IDs and types length mismatch»
+- WHEN клиент выполняет `DELETE /sessions`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `DELETE /sessions`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `DELETE /sessions`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `DELETE /sessions`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Failed to delete sessions»
-- THEN система MUST вернуть статус `500` («Failed to delete sessions»)
+- GIVEN выполняется условие ошибки «Failed to delete sessions»
+- WHEN клиент выполняет `DELETE /sessions`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /sessions/{session_id} — Get Session by ID
-Система MUST предоставлять эндпоинт `GET /sessions/{session_id}` (operationId `get_session_by_id`, раздел OpenAPI «Sessions»).
+### Requirement: GET /sessions/{session_id}
+Система MUST возвращать операцию «Get Session by ID» по запросу `GET /sessions/{session_id}` (operationId `get_session_by_id`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve detailed information about a specific session including metadata, configuration, and run history. Response schema varies based on session type (agent, team, or workflow).»
+Параметры:
+- `session_id` (path, string, обязательный)
+- `type` (query, SessionType (agent | team | workflow) | null, необязательный)
+- `user_id` (query, string | null, необязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Path-параметры: `session_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `type`, `user_id`, `db_id`, `table`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /sessions/{session_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Session details retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /sessions/{session_id}` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /sessions/{session_id}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /sessions/{session_id}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Session not found»
-- THEN система MUST вернуть статус `404` («Session not found»)
+- GIVEN выполняется условие ошибки «Session not found»
+- WHEN клиент выполняет `GET /sessions/{session_id}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Invalid session type»)
+- GIVEN выполняется условие ошибки «Invalid session type»
+- WHEN клиент выполняет `GET /sessions/{session_id}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /sessions/{session_id}`
+- THEN система MUST вернуть `500`
 
-### Requirement: DELETE /sessions/{session_id} — Delete Session
-Система MUST предоставлять эндпоинт `DELETE /sessions/{session_id}` (operationId `delete_session`, раздел OpenAPI «Sessions»).
+### Requirement: DELETE /sessions/{session_id}
+Система MUST удалять операцию «Delete Session» по запросу `DELETE /sessions/{session_id}` (operationId `delete_session`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Permanently delete a specific session and all its associated runs. This action cannot be undone and will remove all conversation history.»
+Параметры:
+- `session_id` (path, string, обязательный)
+- `user_id` (query, string | null, необязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
+- `delete_media` (query, boolean, необязательный)
 
-Path-параметры: `session_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `user_id`, `db_id`, `table`, `delete_media`.
-
-#### Scenario: Успешный ответ 204
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `DELETE /sessions/{session_id}` с корректными параметрами
-- THEN система MUST вернуть статус `204` («Successful Response»)
-- AND формат содержимого ответа: без тела
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `DELETE /sessions/{session_id}` с корректными параметрами
+- THEN система MUST вернуть `204`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `DELETE /sessions/{session_id}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `DELETE /sessions/{session_id}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `DELETE /sessions/{session_id}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `DELETE /sessions/{session_id}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Failed to delete session»
-- THEN система MUST вернуть статус `500` («Failed to delete session»)
+- GIVEN выполняется условие ошибки «Failed to delete session»
+- WHEN клиент выполняет `DELETE /sessions/{session_id}`
+- THEN система MUST вернуть `500`
 
-### Requirement: PATCH /sessions/{session_id} — Update Session
-Система MUST предоставлять эндпоинт `PATCH /sessions/{session_id}` (operationId `update_session`, раздел OpenAPI «Sessions»).
+### Requirement: PATCH /sessions/{session_id}
+Система MUST обновлять операцию «Update Session» по запросу `PATCH /sessions/{session_id}` (operationId `update_session`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Update session properties such as session_name, session_state, metadata, or summary. Use this endpoint to modify the session name, update state, add metadata, or update the session summary.»
+Параметры:
+- `session_id` (path, string, обязательный)
+- `type` (query, SessionType (agent | team | workflow) | null, необязательный)
+- `user_id` (query, string | null, необязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Path-параметры: `session_id` — MUST быть заданы (обязательные).
+Тело запроса (`application/json`, схема `UpdateSessionRequest`):
+- `session_name`: string | null
+- `session_state`: object | null
+- `metadata`: object | null
+- `summary`: object | null
 
-Query-параметры: `type`, `user_id`, `db_id`, `table`.
-
-Тело запроса: `application/json`, схема `UpdateSessionRequest`, обязательное. Поля: `session_name`, `session_state`, `metadata`, `summary`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `PATCH /sessions/{session_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Session updated successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `PATCH /sessions/{session_id}` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `PATCH /sessions/{session_id}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `PATCH /sessions/{session_id}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Session not found»
-- THEN система MUST вернуть статус `404` («Session not found»)
+- GIVEN выполняется условие ошибки «Session not found»
+- WHEN клиент выполняет `PATCH /sessions/{session_id}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Invalid request»)
+- GIVEN выполняется условие ошибки «Invalid request»
+- WHEN клиент выполняет `PATCH /sessions/{session_id}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Failed to update session»
-- THEN система MUST вернуть статус `500` («Failed to update session»)
+- GIVEN выполняется условие ошибки «Failed to update session»
+- WHEN клиент выполняет `PATCH /sessions/{session_id}`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /sessions/{session_id}/runs — Get Session Runs
-Система MUST предоставлять эндпоинт `GET /sessions/{session_id}/runs` (operationId `get_session_runs`, раздел OpenAPI «Sessions»).
+### Requirement: GET /sessions/{session_id}/runs
+Система MUST возвращать операцию «Get Session Runs» по запросу `GET /sessions/{session_id}/runs` (operationId `get_session_runs`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve all runs (executions) for a specific session with optional timestamp and status filtering. Repeat the status param to match any of several (case-insensitive; e.g. status=PENDING&status=RUNNING&status=PAUSED is the live set a queue tray shows). Response schema varies based on session type. F…»
+Параметры:
+- `session_id` (path, string, обязательный)
+- `type` (query, SessionType (agent | team | workflow) | null, необязательный)
+- `user_id` (query, string | null, необязательный)
+- `created_after` (query, integer | null, необязательный)
+- `created_before` (query, integer | null, необязательный)
+- `status` (query, array[string] | null, необязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Path-параметры: `session_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `type`, `user_id`, `created_after`, `created_before`, `status`, `db_id`, `table`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /sessions/{session_id}/runs` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Session runs retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /sessions/{session_id}/runs` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /sessions/{session_id}/runs`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /sessions/{session_id}/runs`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Session not found or has no runs»
-- THEN система MUST вернуть статус `404` («Session not found or has no runs»)
+- GIVEN выполняется условие ошибки «Session not found or has no runs»
+- WHEN клиент выполняет `GET /sessions/{session_id}/runs`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Invalid session type»)
+- GIVEN выполняется условие ошибки «Invalid session type»
+- WHEN клиент выполняет `GET /sessions/{session_id}/runs`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /sessions/{session_id}/runs`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /sessions/{session_id}/run-previews — Get Session Run Previews
-Система MUST предоставлять эндпоинт `GET /sessions/{session_id}/run-previews` (operationId `get_session_run_previews`, раздел OpenAPI «Sessions»).
+### Requirement: GET /sessions/{session_id}/run-previews
+Система MUST возвращать операцию «Get Session Run Previews» по запросу `GET /sessions/{session_id}/run-previews` (operationId `get_session_run_previews`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Lightweight listing of a session's runs for polling clients such as a queue tray: ids, status, timestamps and truncated input/output previews, without messages, events, media or metrics. Accepts the same filters as GET /sessions/{session_id}/runs.»
+Параметры:
+- `session_id` (path, string, обязательный)
+- `type` (query, SessionType (agent | team | workflow) | null, необязательный)
+- `user_id` (query, string | null, необязательный)
+- `created_after` (query, integer | null, необязательный)
+- `created_before` (query, integer | null, необязательный)
+- `status` (query, array[string] | null, необязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Path-параметры: `session_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `type`, `user_id`, `created_after`, `created_before`, `status`, `db_id`, `table`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /sessions/{session_id}/run-previews` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /sessions/{session_id}/run-previews` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `array[SessionRunPreviewSchema]`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /sessions/{session_id}/run-previews`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /sessions/{session_id}/run-previews`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Session not found»
-- THEN система MUST вернуть статус `404` («Session not found»)
+- GIVEN выполняется условие ошибки «Session not found»
+- WHEN клиент выполняет `GET /sessions/{session_id}/run-previews`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Invalid session type»)
+- GIVEN выполняется условие ошибки «Invalid session type»
+- WHEN клиент выполняет `GET /sessions/{session_id}/run-previews`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /sessions/{session_id}/run-previews`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /sessions/{session_id}/runs/{run_id} — Get Run by ID
-Система MUST предоставлять эндпоинт `GET /sessions/{session_id}/runs/{run_id}` (operationId `get_session_run`, раздел OpenAPI «Sessions»).
+### Requirement: GET /sessions/{session_id}/runs/{run_id}
+Система MUST возвращать операцию «Get Run by ID» по запросу `GET /sessions/{session_id}/runs/{run_id}` (operationId `get_session_run`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve a specific run by its ID from a session. Response schema varies based on the run type (agent run, team run, or workflow run).»
+Параметры:
+- `session_id` (path, string, обязательный)
+- `run_id` (path, string, обязательный)
+- `type` (query, SessionType (agent | team | workflow) | null, необязательный)
+- `user_id` (query, string | null, необязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Path-параметры: `session_id`, `run_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `type`, `user_id`, `db_id`, `table`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /sessions/{session_id}/runs/{run_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Run retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /sessions/{session_id}/runs/{run_id}` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /sessions/{session_id}/runs/{run_id}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /sessions/{session_id}/runs/{run_id}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Session or run not found»
-- THEN система MUST вернуть статус `404` («Session or run not found»)
+- GIVEN выполняется условие ошибки «Session or run not found»
+- WHEN клиент выполняет `GET /sessions/{session_id}/runs/{run_id}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Invalid session type»)
+- GIVEN выполняется условие ошибки «Invalid session type»
+- WHEN клиент выполняет `GET /sessions/{session_id}/runs/{run_id}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /sessions/{session_id}/runs/{run_id}`
+- THEN система MUST вернуть `500`
 
-### Requirement: POST /sessions/{session_id}/rename — Rename Session
-Система MUST предоставлять эндпоинт `POST /sessions/{session_id}/rename` (operationId `rename_session`, раздел OpenAPI «Sessions»).
+### Requirement: POST /sessions/{session_id}/rename
+Система MUST выполнять операцию «Rename Session» по запросу `POST /sessions/{session_id}/rename` (operationId `rename_session`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Update the name of an existing session. Useful for organizing and categorizing sessions with meaningful names for better identification and management.»
+Параметры:
+- `session_id` (path, string, обязательный)
+- `type` (query, SessionType (agent | team | workflow) | null, необязательный)
+- `user_id` (query, string | null, необязательный)
+- `db_id` (query, string | null, необязательный)
+- `table` (query, string | null, необязательный)
 
-Path-параметры: `session_id` — MUST быть заданы (обязательные).
+Тело запроса (`application/json`, схема `Body_rename_session`):
+- `session_name`: string, обязательное
 
-Query-параметры: `type`, `user_id`, `db_id`, `table`.
-
-Тело запроса: `application/json`, схема `Body_rename_session`, обязательное. Поля: `session_name` (обязательное).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /sessions/{session_id}/rename` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Session renamed successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /sessions/{session_id}/rename` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Invalid session name»
-- THEN система MUST вернуть статус `400` («Invalid session name»)
+- GIVEN выполняется условие ошибки «Invalid session name»
+- WHEN клиент выполняет `POST /sessions/{session_id}/rename`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /sessions/{session_id}/rename`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Session not found»
-- THEN система MUST вернуть статус `404` («Session not found»)
+- GIVEN выполняется условие ошибки «Session not found»
+- WHEN клиент выполняет `POST /sessions/{session_id}/rename`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Invalid session type or validation error»)
+- GIVEN выполняется условие ошибки «Invalid session type or validation error»
+- WHEN клиент выполняет `POST /sessions/{session_id}/rename`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
-
-### Requirement: GET /sessions/{session_id}/media/{storage_key} — Fetch stored media for a session
-Система MUST предоставлять эндпоинт `GET /sessions/{session_id}/media/{storage_key}` (operationId `get_session_media`, раздел OpenAPI «Media»).
-
-Описание в OpenAPI: «Stream (or, with redirect=true, redirect to a freshly-signed URL for) a piece of media stored in external media storage. Scoped to the caller's session ownership; the storage_key must belong to the session.»
-
-Path-параметры: `session_id`, `storage_key` — MUST быть заданы (обязательные).
-
-Query-параметры: `type`, `user_id`, `db_id`, `table`, `redirect`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /sessions/{session_id}/media/{storage_key}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («The media bytes, served with the stored mime type»)
-- AND формат содержимого ответа: `application/json`, `application/octet-stream`
-
-#### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthenticated»)
-
-#### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Session or media not found»
-- THEN система MUST вернуть статус `404` («Session or media not found»)
-
-#### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Media storage could not be reached»
-- THEN система MUST вернуть статус `500` («Media storage could not be reached»)
-
-#### Scenario: Ответ 501
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Remote databases are not supported»
-- THEN система MUST вернуть статус `501` («Remote databases are not supported»)
-
-#### Scenario: Ответ 503
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Media storage is not configured»
-- THEN система MUST вернуть статус `503` («Media storage is not configured»)
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `POST /sessions/{session_id}/rename`
+- THEN система MUST вернуть `500`

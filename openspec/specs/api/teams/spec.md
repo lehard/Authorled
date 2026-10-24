@@ -1,454 +1,477 @@
-# API `teams` Specification
+# Teams API Specification
 
 ## Purpose
-Запуск и управление командами агентов (teams), в том числе OS Manager.
+Команды агентов. В репозитории единственная команда — встроенный OS Manager.
 
-Эндпоинты этого домена не реализованы в коде репозитория: их предоставляет runtime `agno.os.AgentOS` (agno 3.1.10), создаваемый в `app/main.py`. Требования ниже восстановлены по OpenAPI-схеме работающего инстанса (`GET /openapi.json`, заголовок «Agno AgentOS», версия API `1.0.0`).
-
-Общее требование: если `authorization` включена (в `app/main.py` это `RUNTIME_ENV != "dev"`), каждый эндпоинт домена MUST требовать заголовок `Authorization: Bearer <JWT>` (схема безопасности `HTTPBearer` в OpenAPI), а запрос без валидного токена MUST завершаться статусом `401`. В режиме `RUNTIME_ENV=dev` (compose.yaml) `GET /info` возвращает `auth_mode: "none"` и эндпоинты доступны без токена.
+Домен содержит 11 операций HTTP (теги OpenAPI: Teams). Все они предоставляются runtime Agno `AgentOS`; в коде репозитория маршрутов нет.
 
 ## Requirements
 
-### Requirement: POST /teams/{team_id}/runs — Create Team Run
-Система MUST предоставлять эндпоинт `POST /teams/{team_id}/runs` (operationId `create_team_run`, раздел OpenAPI «Teams»).
+### Requirement: OS Manager
+`GET /teams` MUST возвращать команду `os-manager-internal` (`OS Manager`) в режиме `coordinate` с моделью `claude-opus-5-5` и участниками `platform-builder-internal`, `platform-manager-internal`, `company-manager-internal`. Команду MUST создавать Agno через `OSManager(root=agentos_root, model=manager_model(), learning=shared_learning)`; репозиторий MUST NOT объявлять собственных команд (каталога `teams/` нет).
 
-Описание в OpenAPI: «Execute a team collaboration with multiple agents working together on a task.»
+#### Scenario: Неизвестная команда
+- GIVEN команды `nope` не существует
+- WHEN клиент выполняет `GET /teams/nope`
+- THEN система MUST вернуть `404`
 
-Path-параметры: `team_id` — MUST быть заданы (обязательные).
+### Requirement: POST /teams/{team_id}/runs
+Система MUST выполнять операцию «Create Team Run» по запросу `POST /teams/{team_id}/runs` (operationId `create_team_run`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Тело запроса: `multipart/form-data`, схема `Body_create_team_run`, обязательное. Поля: `message` (обязательное), `stream`, `monitor`, `session_id`, `user_id`, `files`, `files_metadata`, `version`, `background`, `factory_input`.
+Параметры:
+- `team_id` (path, string, обязательный)
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /teams/{team_id}/runs` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Team run executed successfully»)
-- AND формат содержимого ответа: `application/json`, `text/event-stream`
+Тело запроса (`multipart/form-data`, схема `Body_create_team_run`):
+- `message`: string, обязательное
+- `stream`: boolean, по умолчанию `true`
+- `monitor`: boolean, по умолчанию `true`
+- `session_id`: string | null
+- `user_id`: string | null
+- `files`: array[string] | null
+- `files_metadata`: string | null
+- `version`: integer | null
+- `background`: boolean, по умолчанию `false`
+- `factory_input`: string | null
 
-#### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Invalid request or unsupported file type»
-- THEN система MUST вернуть статус `400` («Invalid request or unsupported file type»)
-
-#### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
-
-#### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Team not found»
-- THEN система MUST вернуть статус `404` («Team not found»)
-
-#### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
-
-#### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
-
-### Requirement: GET /teams/{team_id}/runs — List Team Runs
-Система MUST предоставлять эндпоинт `GET /teams/{team_id}/runs` (operationId `list_team_runs`, раздел OpenAPI «Teams»).
-
-Описание в OpenAPI: «List runs for a team within a session, optionally filtered by status.»
-
-Path-параметры: `team_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `session_id` (обязательный), `status`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /teams/{team_id}/runs` с корректными параметрами
-- THEN система MUST вернуть статус `200` («List of runs retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /teams/{team_id}/runs` с корректными параметрами
+- THEN система MUST вернуть `200`
+- AND при `stream=true` ответ MUST передаваться как `text/event-stream` (SSE)
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Invalid request or unsupported file type»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Team not found»
-- THEN система MUST вернуть статус `404` («Team not found»)
+- GIVEN выполняется условие ошибки «Team not found»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs`
+- THEN система MUST вернуть `500`
 
-### Requirement: POST /teams/{team_id}/runs/{run_id}/cancel — Cancel Team Run
-Система MUST предоставлять эндпоинт `POST /teams/{team_id}/runs/{run_id}/cancel` (operationId `cancel_team_run`, раздел OpenAPI «Teams»).
+### Requirement: GET /teams/{team_id}/runs
+Система MUST возвращать операцию «List Team Runs» по запросу `GET /teams/{team_id}/runs` (operationId `list_team_runs`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Cancel a currently executing team run. This will attempt to stop the team's execution gracefully.»
+Параметры:
+- `team_id` (path, string, обязательный)
+- `session_id` (query, string, обязательный)
+- `status` (query, string | null, необязательный)
 
-Path-параметры: `team_id`, `run_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `session_id`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /teams/{team_id}/runs/{run_id}/cancel` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Successful Response»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /teams/{team_id}/runs` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /teams/{team_id}/runs`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /teams/{team_id}/runs`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Team not found»
-- THEN система MUST вернуть статус `404` («Team not found»)
+- GIVEN выполняется условие ошибки «Team not found»
+- WHEN клиент выполняет `GET /teams/{team_id}/runs`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /teams/{team_id}/runs`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Failed to cancel team run»
-- THEN система MUST вернуть статус `500` («Failed to cancel team run»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /teams/{team_id}/runs`
+- THEN система MUST вернуть `500`
 
-### Requirement: POST /teams/{team_id}/runs/{run_id}/resume — Resume Team Run Stream
-Система MUST предоставлять эндпоинт `POST /teams/{team_id}/runs/{run_id}/resume` (operationId `resume_team_run_stream`, раздел OpenAPI «Teams»).
+### Requirement: POST /teams/{team_id}/runs/{run_id}/cancel
+Система MUST выполнять операцию «Cancel Team Run» по запросу `POST /teams/{team_id}/runs/{run_id}/cancel` (operationId `cancel_team_run`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Resume an SSE stream for a team run after disconnection.»
+Параметры:
+- `team_id` (path, string, обязательный)
+- `run_id` (path, string, обязательный)
+- `session_id` (query, string | null, необязательный)
 
-Path-параметры: `team_id`, `run_id` — MUST быть заданы (обязательные).
-
-Тело запроса: `application/x-www-form-urlencoded`, схема `Body_resume_team_run_stream`. Поля: `last_event_index`, `session_id`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /teams/{team_id}/runs/{run_id}/resume` с корректными параметрами
-- THEN система MUST вернуть статус `200` («SSE stream of catch-up and/or live events»)
-- AND формат содержимого ответа: `application/json`, `text/event-stream`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /teams/{team_id}/runs/{run_id}/cancel` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not supported for remote teams»
-- THEN система MUST вернуть статус `400` («Not supported for remote teams»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs/{run_id}/cancel`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs/{run_id}/cancel`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Team not found»
-- THEN система MUST вернуть статус `404` («Team not found»)
+- GIVEN выполняется условие ошибки «Team not found»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs/{run_id}/cancel`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs/{run_id}/cancel`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Failed to cancel team run»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs/{run_id}/cancel`
+- THEN система MUST вернуть `500`
 
-### Requirement: POST /teams/{team_id}/runs/{run_id}/continue — Continue Team Run
-Система MUST предоставлять эндпоинт `POST /teams/{team_id}/runs/{run_id}/continue` (operationId `continue_team_run`, раздел OpenAPI «Teams»).
+### Requirement: POST /teams/{team_id}/runs/{run_id}/resume
+Система MUST выполнять операцию «Resume Team Run Stream» по запросу `POST /teams/{team_id}/runs/{run_id}/resume` (operationId `resume_team_run_stream`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Continue a paused or incomplete team run with updated requirements.»
+Параметры:
+- `team_id` (path, string, обязательный)
+- `run_id` (path, string, обязательный)
 
-Path-параметры: `team_id`, `run_id` — MUST быть заданы (обязательные).
+Тело запроса (`application/x-www-form-urlencoded`, схема `Body_resume_team_run_stream`):
+- `last_event_index`: integer | null
+- `session_id`: string | null
 
-Тело запроса: `application/x-www-form-urlencoded`, схема `Body_continue_team_run`. Поля: `requirements`, `input`, `continue_from`, `fork`, `regenerate`, `replace_original`, `additional_instructions`, `session_id`, `user_id`, `stream`, `background`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /teams/{team_id}/runs/{run_id}/continue` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Team run continued successfully»)
-- AND формат содержимого ответа: `application/json`, `text/event-stream`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /teams/{team_id}/runs/{run_id}/resume` с корректными параметрами
+- THEN система MUST вернуть `200`
+- AND при `stream=true` ответ MUST передаваться как `text/event-stream` (SSE)
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Invalid JSON in requirements field or invalid requirement structure»
-- THEN система MUST вернуть статус `400` («Invalid JSON in requirements field or invalid requirement structure»)
+- GIVEN выполняется условие ошибки «Not supported for remote teams»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs/{run_id}/resume`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs/{run_id}/resume`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Team not found»
-- THEN система MUST вернуть статус `404` («Team not found»)
+- GIVEN выполняется условие ошибки «Team not found»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs/{run_id}/resume`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs/{run_id}/resume`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs/{run_id}/resume`
+- THEN система MUST вернуть `500`
+
+### Requirement: POST /teams/{team_id}/runs/{run_id}/continue
+Система MUST выполнять операцию «Continue Team Run» по запросу `POST /teams/{team_id}/runs/{run_id}/continue` (operationId `continue_team_run`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `team_id` (path, string, обязательный)
+- `run_id` (path, string, обязательный)
+
+Тело запроса (`application/x-www-form-urlencoded`, схема `Body_continue_team_run`):
+- `requirements`: string, по умолчанию `""`
+- `input`: string | null
+- `continue_from`: string, по умолчанию `"end"`
+- `fork`: boolean, по умолчанию `false`
+- `regenerate`: boolean, по умолчанию `false`
+- `replace_original`: boolean | null
+- `additional_instructions`: string | null
+- `session_id`: string | null
+- `user_id`: string | null
+- `stream`: boolean, по умолчанию `true`
+- `background`: boolean, по умолчанию `false`
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /teams/{team_id}/runs/{run_id}/continue` с корректными параметрами
+- THEN система MUST вернуть `200`
+- AND при `stream=true` ответ MUST передаваться как `text/event-stream` (SSE)
+
+#### Scenario: Ответ 400
+- GIVEN выполняется условие ошибки «Invalid JSON in requirements field or invalid requirement structure»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs/{run_id}/continue`
+- THEN система MUST вернуть `400`
+
+#### Scenario: Ответ 401
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs/{run_id}/continue`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 403
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Run has a pending admin approval and cannot be continued by the user yet.»
-- THEN система MUST вернуть статус `403` («Run has a pending admin approval and cannot be continued by the user yet.»)
+- GIVEN выполняется условие ошибки «Run has a pending admin approval and cannot be continued by the user yet.»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs/{run_id}/continue`
+- THEN система MUST вернуть `403`
+
+#### Scenario: Ответ 404
+- GIVEN выполняется условие ошибки «Team not found»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs/{run_id}/continue`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 409
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Continuation conflict: a durable queue ticket owns this run's continuation (continue it with background=true), or a continuation is already queued or executing. Runs in any state can be continued - a COMPLETED run forks into a follow-up; RUNNING/ERROR runs resume.»
-- THEN система MUST вернуть статус `409` («Continuation conflict: a durable queue ticket owns this run's continuation (continue it with background=true), or a continuation is already queued or executing. Runs in any state can be continued - a COMPLETED run forks into a follow-up; RUNNING/ERROR runs resume.»)
-
-### Requirement: POST /teams/{team_id}/sessions/{session_id}/fork — Fork Team Session
-Система MUST предоставлять эндпоинт `POST /teams/{team_id}/sessions/{session_id}/fork` (operationId `fork_team_session`, раздел OpenAPI «Teams»).
-
-Описание в OpenAPI: «Deep-copy a team session into a new independent session. Every run is copied with a fresh ``run_id``; the new session has a fresh ``session_id``. The original is untouched. Use to explore alternative conversation paths without mutating the source.»
-
-Path-параметры: `team_id`, `session_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `user_id`.
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `POST /teams/{team_id}/sessions/{session_id}/fork` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Session forked successfully»)
-- AND формат содержимого ответа: `application/json`
-
-#### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Source session is empty or missing»
-- THEN система MUST вернуть статус `400` («Source session is empty or missing»)
-
-#### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
-
-#### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Team not found»
-- THEN система MUST вернуть статус `404` («Team not found»)
+- GIVEN выполняется условие ошибки «Continuation conflict: a durable queue ticket owns this run's continuation (continue it with background=true), or a continuation is already queued or executing. Runs in any state can be continued - a COMPLETED run forks into a follow-up; RUNNING/ERROR runs resume.»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs/{run_id}/continue`
+- THEN система MUST вернуть `409`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs/{run_id}/continue`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `POST /teams/{team_id}/runs/{run_id}/continue`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /teams — List All Teams
-Система MUST предоставлять эндпоинт `GET /teams` (operationId `get_teams`, раздел OpenAPI «Teams»).
+### Requirement: POST /teams/{team_id}/sessions/{session_id}/fork
+Система MUST выполнять операцию «Fork Team Session» по запросу `POST /teams/{team_id}/sessions/{session_id}/fork` (operationId `fork_team_session`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve a comprehensive list of all teams configured in this OS instance.»
+Параметры:
+- `team_id` (path, string, обязательный)
+- `session_id` (path, string, обязательный)
+- `user_id` (query, string | null, необязательный)
 
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /teams` с корректными параметрами
-- THEN система MUST вернуть статус `200` («List of teams retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `POST /teams/{team_id}/sessions/{session_id}/fork` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Source session is empty or missing»
+- WHEN клиент выполняет `POST /teams/{team_id}/sessions/{session_id}/fork`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `POST /teams/{team_id}/sessions/{session_id}/fork`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Not Found»
-- THEN система MUST вернуть статус `404` («Not Found»)
+- GIVEN выполняется условие ошибки «Team not found»
+- WHEN клиент выполняет `POST /teams/{team_id}/sessions/{session_id}/fork`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `POST /teams/{team_id}/sessions/{session_id}/fork`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `POST /teams/{team_id}/sessions/{session_id}/fork`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /teams/{team_id} — Get Team Details
-Система MUST предоставлять эндпоинт `GET /teams/{team_id}` (operationId `get_team`, раздел OpenAPI «Teams»).
+### Requirement: GET /teams
+Система MUST возвращать операцию «List All Teams» по запросу `GET /teams` (operationId `get_teams`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve detailed configuration and member information for a specific team.»
-
-Path-параметры: `team_id` — MUST быть заданы (обязательные).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /teams/{team_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Team details retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /teams` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `array[TeamResponse]`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /teams`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /teams`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Team not found»
-- THEN система MUST вернуть статус `404` («Team not found»)
+- GIVEN выполняется условие ошибки «Not Found»
+- WHEN клиент выполняет `GET /teams`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /teams`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /teams`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /teams/{team_id}/runs/{run_id} — Get Team Run
-Система MUST предоставлять эндпоинт `GET /teams/{team_id}/runs/{run_id}` (operationId `get_team_run`, раздел OpenAPI «Teams»).
+### Requirement: GET /teams/{team_id}
+Система MUST возвращать операцию «Get Team Details» по запросу `GET /teams/{team_id}` (operationId `get_team`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Retrieve the status and output of a team run. Use this to poll for background run completion.»
+Параметры:
+- `team_id` (path, string, обязательный)
 
-Path-параметры: `team_id`, `run_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `session_id` (обязательный).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /teams/{team_id}/runs/{run_id}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Run output retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /teams/{team_id}` с корректными параметрами
+- THEN система MUST вернуть `200` с телом по схеме `TeamResponse`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /teams/{team_id}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /teams/{team_id}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Team or run not found»
-- THEN система MUST вернуть статус `404` («Team or run not found»)
+- GIVEN выполняется условие ошибки «Team not found»
+- WHEN клиент выполняет `GET /teams/{team_id}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /teams/{team_id}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /teams/{team_id}`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /teams/{team_id}/runs/{run_id}/checkpoints — List Team Run Checkpoints
-Система MUST предоставлять эндпоинт `GET /teams/{team_id}/runs/{run_id}/checkpoints` (operationId `list_team_run_checkpoints`, раздел OpenAPI «Teams»).
+### Requirement: GET /teams/{team_id}/runs/{run_id}
+Система MUST возвращать операцию «Get Team Run» по запросу `GET /teams/{team_id}/runs/{run_id}` (operationId `get_team_run`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «List FE-friendly continuation boundaries derived from the current stored team run. No separate checkpoint table is used; entries are inferred from message-level checkpoint markers and the terminal end of the transcript.»
+Параметры:
+- `team_id` (path, string, обязательный)
+- `run_id` (path, string, обязательный)
+- `session_id` (query, string, обязательный)
 
-Path-параметры: `team_id`, `run_id` — MUST быть заданы (обязательные).
-
-Query-параметры: `session_id` (обязательный).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /teams/{team_id}/runs/{run_id}/checkpoints` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Run checkpoints retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /teams/{team_id}/runs/{run_id}` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Bad Request»
-- THEN система MUST вернуть статус `400` («Bad Request»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /teams/{team_id}/runs/{run_id}`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /teams/{team_id}/runs/{run_id}`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Team or run not found»
-- THEN система MUST вернуть статус `404` («Team or run not found»)
+- GIVEN выполняется условие ошибки «Team or run not found»
+- WHEN клиент выполняет `GET /teams/{team_id}/runs/{run_id}`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /teams/{team_id}/runs/{run_id}`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /teams/{team_id}/runs/{run_id}`
+- THEN система MUST вернуть `500`
 
-### Requirement: GET /teams/{team_id}/runs/{run_id}/checkpoints/{message_index} — Get Team Run Checkpoint Snapshot
-Система MUST предоставлять эндпоинт `GET /teams/{team_id}/runs/{run_id}/checkpoints/{message_index}` (operationId `get_team_run_checkpoint_snapshot`, раздел OpenAPI «Teams»).
+### Requirement: GET /teams/{team_id}/runs/{run_id}/checkpoints
+Система MUST возвращать операцию «List Team Run Checkpoints» по запросу `GET /teams/{team_id}/runs/{run_id}/checkpoints` (operationId `list_team_run_checkpoints`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
 
-Описание в OpenAPI: «Return a derived team run snapshot truncated at a message boundary. Use the returned message_index as `continue_from` when continuing this run.»
+Параметры:
+- `team_id` (path, string, обязательный)
+- `run_id` (path, string, обязательный)
+- `session_id` (query, string, обязательный)
 
-Path-параметры: `team_id`, `run_id`, `message_index` — MUST быть заданы (обязательные).
-
-Query-параметры: `session_id` (обязательный).
-
-#### Scenario: Успешный ответ 200
-- GIVEN платформа запущена, а запрос аутентифицирован (если авторизация включена)
-- WHEN клиент вызывает `GET /teams/{team_id}/runs/{run_id}/checkpoints/{message_index}` с корректными параметрами
-- THEN система MUST вернуть статус `200` («Run checkpoint snapshot retrieved successfully»)
-- AND формат содержимого ответа: `application/json`
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /teams/{team_id}/runs/{run_id}/checkpoints` с корректными параметрами
+- THEN система MUST вернуть `200`
 
 #### Scenario: Ответ 400
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Invalid checkpoint message index»
-- THEN система MUST вернуть статус `400` («Invalid checkpoint message index»)
+- GIVEN выполняется условие ошибки «Bad Request»
+- WHEN клиент выполняет `GET /teams/{team_id}/runs/{run_id}/checkpoints`
+- THEN система MUST вернуть `400`
 
 #### Scenario: Ответ 401
-- GIVEN платформа запущена
-- WHEN запрос отправлен без валидного Bearer-токена при включённой авторизации
-- THEN система MUST вернуть статус `401` («Unauthorized»)
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /teams/{team_id}/runs/{run_id}/checkpoints`
+- THEN система MUST вернуть `401`
 
 #### Scenario: Ответ 404
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Team or run not found»
-- THEN система MUST вернуть статус `404` («Team or run not found»)
+- GIVEN выполняется условие ошибки «Team or run not found»
+- WHEN клиент выполняет `GET /teams/{team_id}/runs/{run_id}/checkpoints`
+- THEN система MUST вернуть `404`
 
 #### Scenario: Ответ 422
-- GIVEN платформа запущена
-- WHEN параметры или тело запроса не проходят валидацию
-- THEN система MUST вернуть статус `422` («Validation Error»)
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /teams/{team_id}/runs/{run_id}/checkpoints`
+- THEN система MUST вернуть `422`
 
 #### Scenario: Ответ 500
-- GIVEN платформа запущена
-- WHEN условие ошибки: «Internal Server Error»
-- THEN система MUST вернуть статус `500` («Internal Server Error»)
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /teams/{team_id}/runs/{run_id}/checkpoints`
+- THEN система MUST вернуть `500`
+
+### Requirement: GET /teams/{team_id}/runs/{run_id}/checkpoints/{message_index}
+Система MUST возвращать операцию «Get Team Run Checkpoint Snapshot» по запросу `GET /teams/{team_id}/runs/{run_id}/checkpoints/{message_index}` (operationId `get_team_run_checkpoint_snapshot`).
+Маршрут MUST требовать аутентификацию `HTTPBearer` при включённой авторизации.
+
+Параметры:
+- `team_id` (path, string, обязательный)
+- `run_id` (path, string, обязательный)
+- `message_index` (path, integer, обязательный)
+- `session_id` (query, string, обязательный)
+
+#### Scenario: Успешный запрос
+- GIVEN платформа запущена, а клиент имеет доступ к маршруту
+- WHEN клиент выполняет `GET /teams/{team_id}/runs/{run_id}/checkpoints/{message_index}` с корректными параметрами
+- THEN система MUST вернуть `200`
+
+#### Scenario: Ответ 400
+- GIVEN выполняется условие ошибки «Invalid checkpoint message index»
+- WHEN клиент выполняет `GET /teams/{team_id}/runs/{run_id}/checkpoints/{message_index}`
+- THEN система MUST вернуть `400`
+
+#### Scenario: Ответ 401
+- GIVEN выполняется условие ошибки «Unauthorized»
+- WHEN клиент выполняет `GET /teams/{team_id}/runs/{run_id}/checkpoints/{message_index}`
+- THEN система MUST вернуть `401`
+
+#### Scenario: Ответ 404
+- GIVEN выполняется условие ошибки «Team or run not found»
+- WHEN клиент выполняет `GET /teams/{team_id}/runs/{run_id}/checkpoints/{message_index}`
+- THEN система MUST вернуть `404`
+
+#### Scenario: Ответ 422
+- GIVEN выполняется условие ошибки «Validation Error»
+- WHEN клиент выполняет `GET /teams/{team_id}/runs/{run_id}/checkpoints/{message_index}`
+- THEN система MUST вернуть `422`
+
+#### Scenario: Ответ 500
+- GIVEN выполняется условие ошибки «Internal Server Error»
+- WHEN клиент выполняет `GET /teams/{team_id}/runs/{run_id}/checkpoints/{message_index}`
+- THEN система MUST вернуть `500`
