@@ -29,16 +29,20 @@ services:
     environment:
       RUNTIME_ENV: prd
       AGNO_DEBUG: "False"
-      AGENTOS_URL: ${AGENTOS_URL:-http://127.0.0.1:8000}
+      AGNO_TELEMETRY: "false"
+      AGENTOS_URL: ${AGENTOS_URL:?AGENTOS_URL must be set in .env}
+      DB_PASS: ${DB_PASS:?DB_PASS must be set in .env}
       MCP_CONNECT_SECRET: ${MCP_CONNECT_SECRET:-}
 
   # In dev, Postgres is published on all interfaces for GUI/psql convenience.
   # In production that would expose the database to the internet (Docker's
   # iptables rules bypass ufw-style host firewalls), so bind it to loopback:
   # containers still reach it over the compose network, and host-side tools
-  # (psql, python -m evals) still connect via localhost. Set a strong DB_PASS
-  # in .env — the dev default is ai/ai.
+  # (psql, python -m evals) still connect via localhost. DB_PASS is required
+  # in .env (strong value); the dev ai/ai is not used here.
   agentos-db:
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASS:?DB_PASS must be set in .env}
     ports: !override
       - "127.0.0.1:5432:5432"
 
