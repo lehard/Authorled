@@ -19,6 +19,19 @@ generic manager behavior belongs in Agno. `CLAUDE.md` links to this file.
 - Keep the starter lean. Add abstractions, tests and infrastructure only for a concrete
   application need. Never print or commit credentials.
 
+## OpenSpec is mandatory
+
+Every change to code, configuration, agents, prompts, evals or behavior goes through an
+OpenSpec change in `openspec/changes/`, even when the request is a plain "do X".
+
+- No active change covers the request: run `/opsx:propose` first, stop after the
+  artifacts and wait for the user's approval before `/opsx:apply`.
+- An active change covers it: continue it with `/opsx:apply`; revise its plan with
+  `/opsx:update` instead of drifting from `tasks.md`.
+- Finish with `/opsx:verify`, then `/opsx:archive` only on the user's request.
+- Exempt: typos, formatting, comments, edits under `openspec/` itself, and read-only
+  questions or investigation (`/opsx:explore`). If unsure whether a request is exempt, ask.
+
 ## Workflows
 
 Read the relevant local skill before starting. Slash commands refer to coding-agent
