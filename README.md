@@ -1,6 +1,6 @@
 # AgentOS: The Agent Platform That Builds Itself
 
-AgentOS is a durable agent runtime that serves agents over API, MCP, and chat interfaces like Slack.
+AgentOS is a durable agent runtime that serves agents over API and MCP.
 Build agents for your product, your team, or yourself. Run them in your own cloud,
 keep their data in your own database, and manage them from [AgentOS](https://os.agno.com).
 
@@ -15,11 +15,10 @@ agent platform that you can run locally or deploy to your own Docker host.
    manage the platform and build new agents.
 3. **Use Studio.** Build agents visually in [AgentOS Studio](https://os.agno.com).
 
-**Three ways to use your agents.**
+**Two ways to use your agents.**
 
 1. **In your product.** Call your agents through the REST API.
 2. **In AI apps.** Connect apps such as Claude and ChatGPT through MCP.
-3. **In Slack.** Connect a Slack app to talk to OS Manager from your workspace.
 
 The AgentOS UI lets you chat with your agents, review past conversations, and see
 the steps an agent took. Your PostgreSQL database stores conversations, memories,
@@ -44,7 +43,8 @@ Prefer to set it up yourself? Follow the steps below.
 
 ## Run locally
 
-You'll need Git, Docker with Compose, and an OpenAI API key. Make sure Docker is running.
+You'll need Git, Docker with Compose, a DeepSeek API key and GigaChat API credentials.
+Make sure Docker is running.
 Run the commands below in a terminal.
 
 ### 1. Start the platform
@@ -55,7 +55,9 @@ cd agent-platform
 cp example.env .env
 ```
 
-Open `.env` and set `OPENAI_API_KEY`. Then start the platform:
+Open `.env` and fill the Required block: `LITELLM_MASTER_KEY`, `LITELLM_API_KEY`,
+`DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS` and `GIGACHAT_SCOPE`. The CA bundle for GigaChat
+ships in `litellm/certs/ca-bundle.pem` (see [Models](#models)). Then start the platform:
 
 ```sh
 docker compose up -d --build
@@ -71,6 +73,20 @@ Check that AI apps can connect through MCP:
 ```
 
 The check should report `9 tools; required tools available`.
+
+### Develop with the API on the host
+
+For code changes without rebuilding the image, run PostgreSQL and LiteLLM in Docker and the
+API on your computer with `--reload` (needs [uv](https://docs.astral.sh/uv/) and a filled `.env`):
+
+```sh
+./scripts/dev.sh api
+```
+
+Other commands: `./scripts/dev.sh db` starts only PostgreSQL and waits until it is healthy,
+`stop` stops the services and keeps the data, `psql` opens `psql` in the database,
+`reset-db --yes` deletes the database volume. `.env` is needed even for `db`: Compose
+requires the LiteLLM keys for every service.
 
 ### 2. Connect the UI
 
@@ -136,15 +152,15 @@ editing the Python file alone won't change an existing Routine.
 
 ## Engineers
 
-The platform includes **Claude Engineer** and **Codex Engineer**. They can read your
-code, make changes, and run commands.
+The platform includes **Claude Engineer**: Claude Code running on DeepSeek through
+the LiteLLM proxy. It can read your code, make changes, and run commands.
 
-Chat with either engineer in AgentOS, or ask OS Manager to use one:
+Chat with it in AgentOS, or ask OS Manager to use it:
 
-> Ask Codex Engineer to review this project and suggest improvements. Don't change any files yet.
+> Ask Claude Engineer to review this project and suggest improvements. Don't change any files yet.
 
-Codex uses the `OPENAI_API_KEY` you added during setup. To use Claude, add
-`ANTHROPIC_API_KEY` to `.env`. After changing `.env`, run `docker compose up -d` again.
+It uses the proxy settings you added during setup and needs no Anthropic key. After
+changing `.env`, run `docker compose up -d` again.
 
 By default, engineers work in this project's folder. When running locally with
 Docker Compose, their file changes appear in your local checkout. Review those
@@ -185,12 +201,13 @@ to port 8000 on your host. Use a reverse proxy on the host or an HTTPS tunnel.
 
 ### 1. Configure the host
 
-Production Compose reads `.env`. Set `OPENAI_API_KEY`, `AGENTOS_URL` to your
-public HTTPS URL, a strong `DB_PASS`, and `MCP_CONNECT_SECRET` (generate one with
-`openssl rand -base64 32`). For Claude Engineer, set `ANTHROPIC_API_KEY` or
-`CLAUDE_CODE_OAUTH_TOKEN`. Compose passes the file through unchanged, so delete
-any `sk-***` placeholder line you are not filling in: a placeholder reaches the
-container as a real value and the matching engineer fails on authentication.
+Production Compose reads `.env`. Fill the Required block (`LITELLM_MASTER_KEY`,
+`LITELLM_API_KEY`, `DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`),
+place `litellm/certs/ca-bundle.pem`, and set `AGENTOS_URL` to your public HTTPS URL,
+a strong `DB_PASS`, and `MCP_CONNECT_SECRET` (generate one with
+`openssl rand -base64 32`). Compose passes the file through unchanged, so replace
+every `***` placeholder: a placeholder reaches the containers as a real value and
+model calls fail on authentication.
 
 For an existing database, changing `DB_PASS` in `.env` does not change the database
 password. Update the database password separately; do not delete the data volume.
@@ -274,17 +291,41 @@ Change dependencies in `pyproject.toml`, then run `./scripts/generate_requiremen
 Commit the updated `requirements.txt` and rebuild the API and any sandbox image you use.
 See [AGENTS.md](AGENTS.md) for the code layout and development conventions.
 
+## Models
+
+Every model call goes through the LiteLLM proxy (`litellm` service, [litellm/config.yaml](litellm/config.yaml)).
+The application uses only the proxy aliases:
+
+| Alias | Provider model | Used by |
+| --- | --- | --- |
+| `deepseek-fast` | DeepSeek `deepseek-flash`, thinking off | Agents by default |
+| `deepseek-thinking` | DeepSeek `deepseek-v4-pro`, thinking on | OS Manager, Company Manager, Claude Engineer |
+| `gigachat-embeddings` | GigaChat `Embeddings-2` (1024 dimensions) | Knowledge bases |
+
+The proxy verifies GigaChat TLS with `litellm/certs/ca-bundle.pem`: the certifi CA bundle
+with the Russian Trusted Root CA and Sub CA appended. The file is committed; rebuild it with
+`./scripts/build_ca_bundle.sh` (active `.venv`) after a `certifi` update. Without that file
+the proxy does not start. Changing the embedding model changes the vector size; rebuild the knowledge tables.
+
+`Embeddings-2` reads at most 512 tokens, so knowledge bases declare readers that cut
+documents into chunks of up to 1200 characters ([db/__init__.py](db/__init__.py)). URLs use
+them automatically. When you upload a file, pass the reader explicitly: `reader_id`
+(`pdf`, `docx`, `csv`, `excel`, `markdown`, `text`) in `POST /knowledge/content`, or
+`chunker` with `chunk_size=1200`. Without it, Agno 3.1.10 reads the file with its default
+reader and 5000-character chunks, which exceed the model's limit.
+
 ## Configuration
 
-[example.env](example.env) shows the main settings. Start with `OPENAI_API_KEY`;
+[example.env](example.env) shows the main settings. Start with its Required block;
 add the others when you need them. Docker Compose reads `.env` for both local and production runs.
 
 | Setting | What it's for |
 | --- | --- |
-| `OPENAI_API_KEY` | Embeddings (knowledge bases) and Codex Engineer. |
-| `ANTHROPIC_API_KEY` | OS Manager and the default agent model (required). Also used by Claude Engineer. |
-| `CLAUDE_CODE_OAUTH_TOKEN` | Alternative authentication for Claude Engineer only. |
-| `SLACK_BOT_TOKEN` and `SLACK_SIGNING_SECRET` | Connect OS Manager to Slack. Set both. |
+| `LITELLM_MASTER_KEY` | Admin key of the LiteLLM proxy (required). |
+| `LITELLM_API_KEY` | Key the API and Claude Engineer use to call the proxy (required). The proxy has no key database, so set it to the `LITELLM_MASTER_KEY` value. |
+| `LITELLM_URL` | Proxy address for the API. Local Compose sets `http://litellm:4000`; set it yourself when the API runs on the host. |
+| `DEEPSEEK_API_KEY` | DeepSeek models behind the proxy: agents, OS Manager, Company Manager and Claude Engineer (required). |
+| `GIGACHAT_CREDENTIALS` and `GIGACHAT_SCOPE` | GigaChat Embeddings-2 behind the proxy for knowledge bases (required). Scope is `GIGACHAT_API_PERS` or `GIGACHAT_API_B2B`. |
 | `PARALLEL_API_KEY` | Optional web search key. Without it, search uses Parallel's MCP server without an API key. |
 | `JWT_VERIFICATION_KEY` or `JWT_JWKS_FILE` | Check login tokens in production. A JWKS file must be available on the server. |
 | `AGENTOS_URL` | Public URL used by scheduled jobs and MCP. Set it to your public HTTPS URL. |

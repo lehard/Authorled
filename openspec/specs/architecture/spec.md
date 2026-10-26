@@ -1,17 +1,16 @@
 # Architecture Specification
 
 ## Purpose
-Слои и связи текущего кода. Целевая архитектура Authorled (три сервиса, ядро, свои маршруты `/api/v1/`, Valkey, LiteLLM) описана в `openspec/context/03-architecture.md` и ADR-001/002 и в коде не реализована.
+Слои и связи текущего кода. Целевая архитектура Authorled (три сервиса, ядро, свои маршруты `/api/v1/`, Redis, LiteLLM) описана в `openspec/context/03-architecture.md` и ADR-001/002 и в коде не реализована.
 
 ```mermaid
 graph LR
     UI["AgentOS UI os.agno.com"] -->|REST + SSE, JWT| API
     AIApps["AI-приложения (Claude, ChatGPT)"] -->|MCP /mcp| API
-    Slack["Slack (опционально)"] -->|events| API
     subgraph API["agentos-api: AgentOS (app.main:app)"]
         OSM["OS Manager os-manager-internal"]
         CM["Company Manager"]
-        ENG["claude-engineer / codex-engineer"]
+        ENG["claude-engineer (Claude Code)"]
         SCH["Scheduler"]
         Q["Durable queue"]
         REG["Registry"]
@@ -20,8 +19,9 @@ graph LR
     SCH -->|POST /agents/company-manager-internal/runs| CM
     API --> DB[("agentos-db: PostgreSQL 18 + pgvector")]
     ENG -.->|при sandbox| SBX["Docker / AgentCore sandbox"]
-    API --> Anthropic["Anthropic API"]
-    API --> OpenAI["OpenAI API"]
+    API -->|псевдонимы моделей| LLM["litellm: LiteLLM-прокси"]
+    LLM --> DeepSeek["DeepSeek API"]
+    LLM -->|TLS: Russian Trusted CA| GigaChat["GigaChat API (эмбеддинги)"]
     REG --> Parallel["Parallel web"]
 ```
 
@@ -54,12 +54,12 @@ OS, Company, queue, learning, notes, реестр и инженеры MUST ис�
 - THEN `databases` MUST быть `["agentos-db"]`
 
 ### Requirement: Модели
-`default_model()` MUST возвращать новый `Claude(id="claude-sonnet-5-5")` при каждом вызове; `manager_model()` MUST возвращать `Claude(id="claude-opus-5-5")` и MUST использоваться OS Manager и CompanyOS. Инженеры задают модели напрямую (`claude-opus-5-5`, `gpt-6.1-sol`).
+`default_model()` MUST возвращать при каждом вызове новый экземпляр модели DeepSeek с псевдонимом прокси `deepseek-fast` без режима размышлений; `manager_model()` MUST возвращать модель с псевдонимом `deepseek-thinking` в режиме размышлений и MUST использоваться OS Manager и CompanyOS. Обе модели MUST обращаться к LiteLLM-прокси по `LITELLM_URL` с ключом `LITELLM_API_KEY`. Псевдонимы MUST объявляться только в `app/settings.py`; инженеры MUST брать их оттуда и MUST NOT задавать имена моделей сами.
 
 #### Scenario: Модель менеджера
 - GIVEN платформа запущена
 - WHEN клиент выполняет `GET /teams`
-- THEN `os-manager-internal` MUST иметь модель `claude-opus-5-5`
+- THEN `os-manager-internal` MUST иметь модель `deepseek-thinking`
 
 ### Requirement: Sandbox
 `sandbox_provider()` MUST возвращать `None`; тогда инженеры MUST исполняться на сервере AgentOS в корне репозитория. `docker_sandbox()` MUST создавать `DockerSandbox` (образ `agno-sandbox:local`, сеть `isolated`, `workspace_mb=2048`, checkpoints в `<root>/tmp/checkpoints`). `agentcore_sandbox(runtime_arn)` MUST требовать смонтированный том `/data`, иначе MUST завершаться `ValueError`.

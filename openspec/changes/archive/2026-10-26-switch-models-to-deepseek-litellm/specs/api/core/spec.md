@@ -15,11 +15,16 @@
 `GET /registry` MUST возвращать 15 элементов, объявленных в `app/registry.py` и `app/main.py`: агент `Claude Engineer`, БД `agentos-db`, функции `content_to_file`, `csv_to_markdown_table`, `extract_json`, `extract_urls`, `json_to_csv`, знание `shared-knowledge`, learning `shared-learning`, модели `deepseek-fast` и `deepseek-thinking`, инструменты `calculator`, `file_generation`, `filesystem`, `parallel_tools`.
 
 #### Scenario: Веб-инструменты без ключа Parallel
-- GIVEN `PARALLEL_API_KEY` не задан
+- GIVEN `PARALLEL_API_KEY` не задан, а `PARALLEL_MODE` в `app/registry.py` равен `keyless_mcp` (значение в коде)
 - WHEN строится реестр
 - THEN инструмент `parallel_tools` MUST быть `MCPTools` на `https://search.parallel.ai/mcp` (streamable-http, таймаут 30 с)
 
 #### Scenario: Веб-инструменты с ключом Parallel
-- GIVEN `PARALLEL_API_KEY` задан
+- GIVEN `PARALLEL_API_KEY` задан, а `PARALLEL_MODE` равен `keyless_mcp`
 - WHEN строится реестр
-- THEN система MUST использовать `ParallelTools()`
+- THEN система MUST использовать тот же `MCPTools` без ключа: режим выбирает `PARALLEL_MODE`, а не наличие ключа
+
+#### Scenario: Веб-инструменты в режиме sdk
+- GIVEN `PARALLEL_MODE` равен `sdk`
+- WHEN строится реестр
+- THEN система MUST использовать `ParallelTools()`, а без `PARALLEL_API_KEY` MUST завершиться `RuntimeError`, называющей `PARALLEL_API_KEY`

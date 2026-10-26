@@ -7,12 +7,25 @@
 ## Changes
 | Change | Статус | Закрывает |
 |---|---|---|
-| `switch-models-to-deepseek-litellm` | proposal, design, tasks, дельты готовы; черновик кода в рабочем дереве (tasks 2.1–2.5), не проверен | модели, эмбеддинги, ключи в документации, `available_models`, ADR по моделям |
+| `switch-models-to-deepseek-litellm` | архивирован 2026-10-26; живая проверка перенесена сюда (раздел ниже), ждёт ключей | модели, эмбеддинги, ключи в документации, `available_models`, ADR по моделям |
 | `remove-config-fallbacks` | не создан; код уже в рабочем дереве | fallback-и, телеметрия: спеки и документация |
 | `core-*` (серия) | не создан | продуктовое ядро, Alembic, pytest, свои маршруты |
 | `authentik-jwt` | не создан; после запуска `authorled-auth` | авторизация |
 
-> Внимание: черновик `switch-models-to-deepseek-litellm` в рабочем дереве требует `LITELLM_URL` и `LITELLM_API_KEY`, а прокси в compose ещё нет — API в текущем рабочем дереве не стартует, пока не выполнены tasks 3.x.
+> Внимание: compose требует ключи LiteLLM, DeepSeek, GigaChat и файл `litellm/certs/ca-bundle.pem`; без них `docker compose up` не стартует.
+
+## Живая проверка DeepSeek/LiteLLM/GigaChat
+Из архивированного change `switch-models-to-deepseek-litellm` (tasks 1.1, 6.2–6.7). Ждут ключей. Код, прокси и документация проверены статически и в контейнерах на фиктивных ключах (`tmp/VERIFY.md`). Если проверка требует правки кода или design — новый change.
+- [ ] Ключи: владелец присылает `DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS` и scope (`GIGACHAT_API_PERS` или `GIGACHAT_API_B2B`); внести в `.env`, не печатая и не коммитя. Проверка: `grep -c` по именам ключей в `.env`.
+- [ ] Пересоздать локальную БД (`docker compose down -v`, эксплуатации не было): `shared_knowledge` создаётся с размерностью 1024; загрузить операторские документы с `reader_id`.
+- [ ] OS Manager: запрос с несколькими вызовами инструментов в режиме размышлений проходит без `400`. При `400` — стоп, решение владельца (design D2: прокси может не передавать `thinking`/`reasoning_content`).
+- [ ] Загрузка PDF длиннее 512 токенов с `reader_id=pdf` → `completed`, эмбеддинги 1024, поиск возвращает фрагмент. Та же загрузка без `reader_id`: записать ответ GigaChat на кусок 5000 символов.
+- [ ] `claude-engineer`: задача на чтение и задача на правку файла; в логах прокси запросы идут на `deepseek-thinking`, обращений к Anthropic нет.
+- [ ] `python -m evals --tag smoke` (тратит вызовы моделей); прочитать ответы и причины судьи. `./scripts/mcp_check.sh` на фиктивных ключах уже проходил.
+- [ ] Сверить SHA-256 Russian Trusted Root CA и Sub CA (`tasks.md` архива, 1.2) с опубликованными отпечатками до прода.
+- [ ] `GET /config` → `available_models` показывает только `deepseek-thinking` (модель менеджера); решить, нужен ли там `deepseek-fast`.
+- [ ] При старте планировщик взял `agentos-maintenance`, первая попытка — «All connection attempts failed»; разобрать.
+- [ ] Записать результаты в `tmp/VERIFY.md` раздельно: static, deterministic, model, container; что не проверено (sandbox, прод).
 
 ## Не покрыто или покрыто частично
 - [ ] Эндпоинты `openspec/specs/api/*` описаны по OpenAPI. Вживую проверены: 404 для неизвестных agent/team/workflow/session, 422 для `GET /agents/{id}/runs` без `session_id`, 401 в prd, списки Products/Routines/Sources/Schedules/Registry/Queue, переходы Task/Project и resolve Approval (см. ниже). Остальные негативные сценарии — из объявлений OpenAPI; дописываются в changes, затрагивающих домен.
@@ -20,7 +33,7 @@
 - [ ] Допустимые значения `status` у Schedule run и Queue job в OpenAPI не перечислены — по мере changes.
 - [x] Переходы Task/Project и `status` Approval — в `api/company`, `api/company-operations`, `api/approvals`; проверено по исходникам и вживую на одноразовой БД (`tmp/VERIFY.md`). Вживую не проверены переходы из `in_progress`/`in_review` и путь к `done` (нужен запуск Task с моделью), статусы `expired`/`cancelled` у Approval.
 - [x] `platform-builder-internal`, `platform-manager-internal`: в `api/teams` — ссылка на документацию Agno, без дублирования.
-- [ ] Slack описан только по коду `app/interfaces.py`; живая интеграция не запускалась. Интеграция не нужна; удаление из кода владелец отложил.
+- Снято: Slack — интеграция не нужна, удалена из кода, зависимостей и документации (change `remove-slack`).
 - [ ] Docker/AgentCore sandbox не запускались; поведение описано по `app/sandbox.py`. Для инженера на прокси sandbox понадобится `ANTHROPIC_BASE_URL` на адрес прокси (design D6 change `switch-models-to-deepseek-litellm`).
 - [ ] По `CLAUDE.md`: PATCH метаданных Product заменяет словарь целиком, декларации Product/Source не перезаписывают сохранённые правки. Не проверено (требует мутации), в спеку не внесено.
 - Снято: MCP OAuth (`MCP_CONNECT_SECRET`) — не проверяем (решение владельца); код `mcp_auth` остаётся.
@@ -28,18 +41,18 @@
 ## Расхождения с контекст-паком (целевое состояние)
 - [ ] Свои маршруты (ADR-002): отложены до ядра. Противоречие в правилах снято: `AGENTS.md` разрешает продуктовые маршруты без LLM только через `base_app`; `overview` описывает текущее отсутствие маршрутов. → `core-*`.
 - [ ] Продуктовое ядро (Д1–Д22, версии, чек-листы, граф связей, утверждения, журнал решений), Alembic, pytest — серия changes по вертикалям: Alembic + pytest + «документ и версия» → утверждение с маршрутом → граф связей и чек-листы. → `core-*`.
-- [ ] Модели: DeepSeek (`deepseek-fast` / `deepseek-thinking`) через LiteLLM-прокси; `claude-engineer` — Claude Code на DeepSeek через прокси; `codex-engineer` снимается. → `switch-models-to-deepseek-litellm`.
-- [ ] Эмбеддинги: у DeepSeek эмбеддингов в официальном API нет → GigaChat `Embeddings-2` (1024 изм.) через прокси. → `switch-models-to-deepseek-litellm`.
+- [x] Модели: DeepSeek (`deepseek-fast` / `deepseek-thinking`) через LiteLLM-прокси; `claude-engineer` — Claude Code на DeepSeek через прокси; `codex-engineer` снимается. → `switch-models-to-deepseek-litellm`.
+- [x] Эмбеддинги: у DeepSeek эмбеддингов в официальном API нет → GigaChat `Embeddings-2` (1024 изм.) через прокси. → `switch-models-to-deepseek-litellm`.
 - [ ] Авторизация: Authentik (JWT по JWKS) — настроить, как только поднят `authorled-auth`. → `authentik-jwt`.
 - [x] Shell и правка файлов: в `05-security-and-compliance.md` и `07-anti-patterns.md` разграничены инструменты разработки и продуктовый агент.
 - [ ] Телеметрия: в коде `AgentOS(telemetry=False)` и `AGNO_TELEMETRY=false` в compose (рабочее дерево); спеки и документация не обновлены. → `remove-config-fallbacks`.
 - [ ] ClamAV и фронтенд (Refine, CopilotKit, AG-UI) — дорожная карта, не расхождение: появятся вместе с загрузками и `authorled-web`.
-- [ ] Valkey — закладывается в change первой рассылки продуктовых событий; при одной инстанции API не нужен.
+- [ ] Redis — закладывается в change первой рассылки продуктовых событий; при одной инстанции API не нужен.
 
 ## Расхождения кода и документации
-- [ ] Ключи моделей в `README.md`, `AGENTS.md`, `example.env`, `docs/sandboxes.md`, скиллах `setup-platform`/`deploy-platform`, критерии `manager_explains_application`: нужны только DeepSeek, GigaChat и ключи прокси; `OPENAI_API_KEY`/`ANTHROPIC_API_KEY` не нужны; в `example.env` — комментарий, кто использует каждый ключ. → `switch-models-to-deepseek-litellm` (tasks 4.x).
+- [x] Ключи моделей в `README.md`, `AGENTS.md`, `example.env`, `docs/sandboxes.md`, скиллах `setup-platform`/`deploy-platform`, критерии `manager_explains_application`: нужны только DeepSeek, GigaChat и ключи прокси; `OPENAI_API_KEY`/`ANTHROPIC_API_KEY` не нужны; в `example.env` — комментарий, кто использует каждый ключ. → `switch-models-to-deepseek-litellm` (tasks 4.x).
 - [x] OpenAPI не объявляет схему безопасности для `/users*`, а в prd без токена — 401: факт записан в `api/identity`. Черновик issue в Agno подготовлен, не отправлен (нужно согласие владельца).
-- [ ] `GET /config` → `available_models` и реестр расходились (opus против opus+sonnet): реестр теперь объявляет обе модели DeepSeek; проверить вживую. → `switch-models-to-deepseek-litellm` (task 6.1).
+- [x] `GET /config` → `available_models` и реестр расходились (opus против opus+sonnet): реестр теперь объявляет обе модели DeepSeek; проверить вживую. → `switch-models-to-deepseek-litellm`: реестр — обе модели, `available_models` — только `deepseek-thinking` (см. «Живая проверка»).
 
 ## Fallback-и
 Удалены в рабочем дереве (не закоммичено); мастер-спека (`runtime`, `overview`, `integrations`, `api/core`) и документация ещё описывают старое поведение. → `remove-config-fallbacks`.

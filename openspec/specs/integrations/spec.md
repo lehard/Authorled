@@ -5,22 +5,6 @@
 
 ## Requirements
 
-### Requirement: Anthropic
-Система MUST обращаться к Anthropic API за моделями `claude-sonnet-5-5` и `claude-opus-5-5` (`agno.models.anthropic.Claude`) и через `claude-agent-sdk` для `claude-engineer`. Аутентификация MUST идти через `ANTHROPIC_API_KEY` или `CLAUDE_CODE_OAUTH_TOKEN` (для Claude Code).
-
-#### Scenario: Модели в конфигурации
-- GIVEN платформа запущена
-- WHEN клиент выполняет `GET /registry`
-- THEN ответ MUST содержать модели `claude-opus-5-5` и `claude-sonnet-5-5`
-
-### Requirement: OpenAI
-Система MUST использовать OpenAI для эмбеддингов `text-embedding-3-small` (`OpenAIEmbedder`) и для `codex-engineer` (`gpt-6.1-sol`). Аутентификация MUST идти через `OPENAI_API_KEY`.
-
-#### Scenario: Эмбеддинг знаний
-- GIVEN в `shared-knowledge` загружается контент
-- WHEN строится векторный индекс
-- THEN эмбеддинги MUST запрашиваться у OpenAI моделью `text-embedding-3-small`
-
 ### Requirement: Parallel
 Веб-инструмент MUST быть `ParallelTools()` при заданном `PARALLEL_API_KEY`; иначе MUST использоваться бесключевой MCP-сервер `https://search.parallel.ai/mcp`.
 
@@ -60,3 +44,19 @@ Product `this-agentos` MUST содержать Source `website` `https://github.
 - GIVEN `sandbox_provider()` возвращает `None`
 - WHEN платформа стартует
 - THEN AgentCore MUST NOT использоваться
+
+### Requirement: DeepSeek
+Система MUST использовать DeepSeek для всех чат-моделей через LiteLLM-прокси: псевдоним `deepseek-fast` для агентов по умолчанию и судьи evals, `deepseek-thinking` для OS Manager, Company Manager и `claude-engineer`. Ключ `DEEPSEEK_API_KEY` MUST задаваться только прокси.
+
+#### Scenario: Модели в реестре
+- GIVEN платформа запущена
+- WHEN клиент выполняет `GET /registry`
+- THEN ответ MUST содержать модели `deepseek-fast` и `deepseek-thinking`
+
+### Requirement: GigaChat
+Система MUST получать эмбеддинги знаний у GigaChat `Embeddings-2` (1024 измерения) через псевдоним прокси `gigachat-embeddings`. Учётные данные `GIGACHAT_CREDENTIALS` и `GIGACHAT_SCOPE` MUST задаваться только прокси.
+
+#### Scenario: Эмбеддинг знаний
+- GIVEN в `shared-knowledge` загружается контент
+- WHEN строится векторный индекс
+- THEN эмбеддинги MUST запрашиваться у прокси псевдонимом `gigachat-embeddings` и иметь 1024 измерения

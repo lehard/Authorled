@@ -8,7 +8,8 @@
 Стек (по `pyproject.toml`, `Dockerfile`, `compose.yaml`):
 - Backend: Python `>=3.14,<4`; ASGI-приложение `app.main:app` из `AgentOS.get_app()` (FastAPI), сервер uvicorn.
 - Хранилище: PostgreSQL 18 с pgvector (`agnohq/pgvector:18`), SQLAlchemy/psycopg.
-- Модели: Anthropic Claude `claude-sonnet-5-5` и `claude-opus-5-5`; OpenAI `gpt-6.1-sol` (Codex Engineer) и `text-embedding-3-small` (эмбеддинги).
+- Модели: DeepSeek через LiteLLM-прокси (`litellm/config.yaml`) по псевдонимам `deepseek-fast` (агенты по умолчанию) и `deepseek-thinking` (OS Manager, Company Manager, Claude Engineer); эмбеддинги — GigaChat `Embeddings-2` (1024 измерения), псевдоним `gigachat-embeddings` (ADR-003).
+- Шлюз моделей: LiteLLM-прокси `ghcr.io/berriai/litellm:v1.104.2` (сервис `litellm` в compose).
 - Развёртывание: Docker Compose (`compose.yaml` — разработка, `compose.prod.yaml` — production-override).
 - Frontend в репозитории отсутствует; каталог `ui/` не создаётся. Интерфейс управления — внешний AgentOS UI (`os.agno.com`).
 
@@ -32,12 +33,12 @@
 - THEN `runtime_env` MUST быть `prd`, а `agentos_url` MUST быть `http://127.0.0.1:8000`
 
 ### Requirement: Состав компонентов
-Система MUST регистрировать агентов `claude-engineer`, `codex-engineer` (из `agents/engineers.py`) и встроенного `company-manager-internal`, а также встроенную команду `os-manager-internal`. Система MUST NOT регистрировать workflows.
+Система MUST регистрировать агента `claude-engineer` (из `agents/engineers.py`) и встроенного `company-manager-internal`, а также встроенную команду `os-manager-internal`. Система MUST NOT регистрировать `codex-engineer` и workflows.
 
 #### Scenario: Счётчики инстанса
 - GIVEN платформа запущена
 - WHEN клиент выполняет `GET /info`
-- THEN ответ MUST содержать `agent_count: 3`, `team_count: 1`, `workflow_count: 0`
+- THEN ответ MUST содержать `agent_count: 2`, `team_count: 1`, `workflow_count: 0`
 
 ### Requirement: Каналы доступа
 Система MUST предоставлять REST API (`openspec/specs/api/*`) и MCP-endpoint `/mcp` (`openspec/specs/api/mcp/spec.md`). Интерфейс Slack MUST подключаться только при заданных `SLACK_BOT_TOKEN` и `SLACK_SIGNING_SECRET` (`openspec/specs/integrations/spec.md`).

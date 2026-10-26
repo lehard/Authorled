@@ -23,7 +23,9 @@ public and may be shared to complete configuration.
   before making changes. Use the inputs required by this repository's commands.
 - Set up the project environment if the deploy scripts need it. Use the production
   env file documented in the README; create it from `example.env` only if absent.
-  Configure credentials without printing them. Check how the deploy scripts load
+  Configure credentials without printing them: the LiteLLM, DeepSeek and GigaChat
+  keys from the Required block of `example.env`, and `litellm/certs/ca-bundle.pem`
+  on the host. Replace every `***` placeholder. Check how the deploy scripts load
   settings rather than assuming they read `.env` or exported shell variables.
 - Keep production authentication enabled. Do not upload `RUNTIME_ENV=dev`.
   Configure `JWT_VERIFICATION_KEY` or a `JWT_JWKS_FILE` available on the server.

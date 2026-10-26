@@ -1,4 +1,4 @@
-"""Reach OS Manager through MCP and, when configured, Slack."""
+"""Reach OS Manager through MCP."""
 
 from os import getenv
 
@@ -14,7 +14,7 @@ def mcp_auth(agentos_url: str) -> AgentOSBuiltinAuth | None:
 
 
 def attach_interfaces(agent_os: AgentOS) -> None:
-    """Publish agno alongside the built-in MCP tools; optionally attach Slack."""
+    """Publish agno alongside the built-in MCP tools."""
     manager = agent_os.manager
     if manager is None:
         raise RuntimeError("OS Manager must be configured before attaching interfaces.")
@@ -28,17 +28,3 @@ def attach_interfaces(agent_os: AgentOS) -> None:
             )
         ],
     )
-    token, secret = getenv("SLACK_BOT_TOKEN"), getenv("SLACK_SIGNING_SECRET")
-    if token and secret:
-        from agno.os.interfaces.slack import Slack
-
-        agent_os.interfaces.append(
-            Slack(
-                team=manager,
-                token=token,
-                streaming=True,
-                signing_secret=secret,
-                resolve_user_identity=True,
-                loading_text="Pulling the thread...",
-            )
-        )

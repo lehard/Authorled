@@ -8,7 +8,7 @@ license-files = ["LICENSE"]
 authors = [{ name = "Agno", email = "hello@agno.com" }]
 
 dependencies = [
-  "agno[os,mcp,slack,pgvector,psycopg,csv,excel,docx,pdf,website,claude,codex,agentcore-sandbox]==3.1.10",
+  "agno[os,mcp,pgvector,psycopg,csv,excel,docx,pdf,website,claude,agentcore-sandbox]==3.1.10",
   "anthropic",
   "cel-python",
   "openai",

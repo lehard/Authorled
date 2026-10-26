@@ -12,8 +12,9 @@
 | --- | --- | --- |
 | AgentOS | Runtime Agno: превращает агентов, команды и workflows в HTTP-сервис с MCP, планировщиком и очередью | `app/main.py` |
 | Agent | Исполнитель с моделью и инструментами | `GET /agents` |
-| ClaudeAgent / CodexAgent | Внешние агенты (`BaseExternalAgent`) на `claude-agent-sdk` и Codex SDK | `agents/engineers.py` |
-| Engineer | `claude-engineer` или `codex-engineer`: агент, работающий с кодом репозитория | `agents/engineers.py` |
+| ClaudeAgent | Внешний агент (`BaseExternalAgent`) на `claude-agent-sdk`: Claude Code, работающий на DeepSeek через Anthropic-endpoint LiteLLM-прокси | `agents/engineers.py` |
+| Engineer | `claude-engineer`: агент, работающий с кодом репозитория | `agents/engineers.py` |
+| LiteLLM-прокси | Единственный шлюз к моделям; приложение обращается к нему по псевдонимам `deepseek-fast`, `deepseek-thinking`, `gigachat-embeddings` | `litellm/config.yaml` |
 | Team | Группа агентов; `os-manager-internal` работает в режиме `coordinate` | `GET /teams` |
 | OS Manager | Встроенная команда управления платформой (`OSManager`) | `app/main.py` |
 | Company Manager | Встроенный агент CompanyOS `company-manager-internal` | `GET /agents` |

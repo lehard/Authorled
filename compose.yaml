@@ -11,6 +11,57 @@ services:
       POSTGRES_USER: ai
       POSTGRES_PASSWORD: ai
       POSTGRES_DB: ai
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai -d ai"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - agentos
+
+  # LiteLLM proxy: every chat and embedding call goes through it (litellm/config.yaml).
+  # GigaChat TLS is verified against litellm/certs/ca-bundle.pem: the certifi CA
+  # bundle with the Russian Trusted Root CA and Sub CA appended
+  # (scripts/build_ca_bundle.sh). The bind mount
+  # does not create a missing file, so the proxy refuses to start without it.
+  litellm:
+    image: ghcr.io/berriai/litellm:v1.104.2
+    container_name: agentos-litellm
+    restart: unless-stopped
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    ports:
+      - "127.0.0.1:4000:4000"
+    volumes:
+      - type: bind
+        source: ./litellm/config.yaml
+        target: /app/config.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./litellm/certs/ca-bundle.pem
+        target: /certs/ca-bundle.pem
+        read_only: true
+        bind:
+          create_host_path: false
+    environment:
+      SSL_CERT_FILE: /certs/ca-bundle.pem
+      REQUESTS_CA_BUNDLE: /certs/ca-bundle.pem
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?LITELLM_MASTER_KEY must be set in .env}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?DEEPSEEK_API_KEY must be set in .env}
+      GIGACHAT_CREDENTIALS: ${GIGACHAT_CREDENTIALS:?GIGACHAT_CREDENTIALS must be set in .env}
+      GIGACHAT_SCOPE: ${GIGACHAT_SCOPE:?GIGACHAT_SCOPE must be set in .env}
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4000/health/liveliness', timeout=5)"
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 20s
     networks:
       - agentos
 
@@ -45,8 +96,13 @@ services:
       DB_USER: ai
       DB_PASS: ai
       DB_DATABASE: ai
+      LITELLM_URL: http://litellm:4000
+      LITELLM_API_KEY: ${LITELLM_API_KEY:?LITELLM_API_KEY must be set in .env}
     depends_on:
-      - agentos-db
+      agentos-db:
+        condition: service_started
+      litellm:
+        condition: service_healthy
     networks:
       - agentos
     extra_hosts:

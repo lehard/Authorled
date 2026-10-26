@@ -50,24 +50,30 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 ## Where changes belong
 
 - `app/main.py`: AgentOS registration, shared database, OS Manager, Company and queue.
-- `app/interfaces.py`: MCP OAuth, `agno` and built-in MCP tools, optional Slack.
+- `app/interfaces.py`: MCP OAuth, `agno` and built-in MCP tools.
 - `app/company.py`: Product and Source declarations. `app/config.yaml`: component
   descriptions, prompts and optional additional Products.
 - `app/registry.py`: Studio palette, web tools, shared knowledge, learning and notes.
   `app/settings.py`: application model factories.
 - `app/sandbox.py`: providers, repository URL/branch and checkpoint paths.
-- `agents/`: application agents, including the Claude and Codex engineers.
+- `agents/`: application agents, including the Claude engineer (Claude Code on DeepSeek).
   `teams/`: user-defined teams; no Engineering team ships by default.
 - `db/`: cached OS database and distinct knowledge content adapters.
 - `evals/`: application cases and the Agno eval CLI entrypoint.
 - `scripts/`: local setup, validation and builds. Deployment files: `compose.prod.yaml`.
-- `compose.yaml`: local PostgreSQL and development API. `Dockerfile`: shared API and sandbox dependencies.
+- `compose.yaml`: local PostgreSQL, the LiteLLM proxy and development API. `litellm/config.yaml`:
+  model aliases and provider keys of the proxy. `Dockerfile`: shared API and sandbox dependencies.
 
 ## Local development
 
 Run commands from the repository root. Copy `example.env` to `.env` only if absent,
-set `OPENAI_API_KEY`, then use `docker compose up -d --build`. Compose exposes ports
+fill its Required block (LiteLLM, DeepSeek and GigaChat keys), check that the committed
+`litellm/certs/ca-bundle.pem` exists (rebuild: `./scripts/build_ca_bundle.sh`), then use `docker compose up -d --build`. Compose exposes ports
 on loopback and disables JWT for development; application code defaults to `prd`.
+
+To run the API on the host with `--reload`, use `./scripts/dev.sh api` (Postgres and
+LiteLLM in Docker). `./scripts/dev.sh db|stop|reset-db --yes|psql` manage the database;
+`.env` is required for every command because `compose.yaml` interpolates the whole file.
 
 For Python development:
 
@@ -121,8 +127,11 @@ executor restrictions.
 
 ## Engineers and sandboxes
 
-Keep the engineers' stable IDs and explicit models. Both are registered and run in the
-absolute project root on the AgentOS server when no sandbox is configured. A configured
+Keep the engineer's stable ID and explicit model alias. `claude-engineer` is the only
+engineer: Claude Code on `deepseek-thinking` through the LiteLLM proxy's Anthropic
+endpoint, configured by `ClaudeAgentOptions(env=...)` in `agents/engineers.py`; it needs
+no Anthropic key. It runs in the absolute project root on the AgentOS server when no
+sandbox is configured. A configured
 sandbox owns its repository checkout; invalid configuration must fail rather than fall
 back to server execution. Keep provider configuration in `app/sandbox.py` and agent
 declarations in `agents/engineers.py`.
@@ -131,7 +140,8 @@ Select the provider by returning `None`, `docker_sandbox()`, or
 `agentcore_sandbox("runtime-arn")` from `sandbox_provider()`. Sandbox selection, image
 and runtime ARN are code settings, not environment switches. Supply optional Bedrock
 settings or private-repository credentials explicitly through the provider's `env`;
-never put credential values in source. Agno forwards the harness model credentials.
+never put credential values in source. In a sandbox, `LITELLM_URL` must be an address
+of the proxy reachable from inside the sandbox (docs/sandboxes.md).
 
 For Docker engineering, run the API on the host using the [sandbox setup guide](docs/sandboxes.md#local-docker-sandbox).
 Build the sandbox with `docker build --target sandbox --load -t agno-sandbox:local .`.
