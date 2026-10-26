@@ -34,14 +34,17 @@ docker build --target sandbox --load -t agno-sandbox:local .
 ./scripts/dev.sh api
 ```
 
-`dev.sh api` starts `agentos-db` and `litellm`, stops the `agentos-api` container and runs
-the API on the host with `--reload`, `DB_HOST=127.0.0.1` and `LITELLM_URL=http://127.0.0.1:4000`.
+`dev.sh api` starts `agentos-db`, `litellm` and Authentik, exports the Authentik keys, stops the
+`agentos-api` container and runs the API on the host with `--reload`, `DB_HOST=127.0.0.1`,
+`LITELLM_URL=http://127.0.0.1:4000` and `JWT_JWKS_FILE` pointing at the exported keys.
 
 Keep that terminal running. From another terminal, check the API's MCP connection:
 
 ```sh
-MCP_CHECK_HOST=1 ./scripts/mcp_check.sh
+MCP_CHECK_HOST=1 MCP_CHECK_TOKEN=<Authentik access token> ./scripts/mcp_check.sh
 ```
+
+The token comes from the development service account (README, "Module auth").
 
 Checkpoints are saved in `tmp/checkpoints`. Agno passes the engineers' model credentials
 to the sandbox. For a private repository, also supply `GITHUB_READ_TOKEN` through the

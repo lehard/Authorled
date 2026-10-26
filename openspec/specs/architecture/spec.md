@@ -31,6 +31,8 @@ graph LR
 Код MUST разделяться так:
 - `app/main.py` — сборка `AgentOS`;
 - `app/interfaces.py` — MCP OAuth, MCP-инструменты;
+- `app/auth/` — кодовая часть модуля `auth`: проверка JWT Authentik, сопоставление групп и scopes, `Principal`, доступ к проекту;
+- `modules/auth/` — деплой-часть модуля `auth`: сервисы и blueprints Authentik, оформление, инициализация БД, выгрузка ключей;
 - `app/company.py` — Products, Sources, Routines;
 - `app/config.yaml` — манифест компонентов;
 - `app/registry.py` — реестр Studio, shared knowledge/learning/notes;
@@ -44,6 +46,11 @@ graph LR
 - GIVEN импортируется `app.main`
 - WHEN создаётся `AgentOS`
 - THEN `attach_interfaces(agent_os)` MUST вызываться после создания и до `agent_os.get_app()`
+
+#### Scenario: Авторизация подключается модулем
+- GIVEN импортируется `app.main`
+- WHEN создаётся `AgentOS`
+- THEN настройка авторизации и изоляции MUST браться из `app/auth/`, а `app/main.py` MUST NOT содержать разбора токенов и claims
 
 ### Requirement: Единая БД
 OS, Company, queue, learning, notes, реестр и инженеры MUST использовать один `PostgresDb` с ID `agentos-db`, возвращаемый кэшированной `get_postgres_db()`. Content-адаптер знаний MUST иметь собственный ID `agentos-db-<table>_contents`.

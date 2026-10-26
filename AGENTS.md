@@ -50,6 +50,11 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 ## Where changes belong
 
 - `app/main.py`: AgentOS registration, shared database, OS Manager, Company and queue.
+- `app/auth/` and `modules/auth/`: the auth module. `app/auth/` is the only code that reads JWT
+  or claims (other code uses `Principal`, `current_principal` and `can_access_project`);
+  `modules/auth/` holds the Authentik blueprints, database init and key export. Authentik runs
+  as separate containers in `compose.yaml`; `./scripts/check_auth_boundary.sh` (part of
+  `validate.sh`) enforces the boundary.
 - `app/interfaces.py`: MCP OAuth, `agno` and built-in MCP tools.
 - `app/company.py`: Product and Source declarations. `app/config.yaml`: component
   descriptions, prompts and optional additional Products.
@@ -67,12 +72,16 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 ## Local development
 
 Run commands from the repository root. Copy `example.env` to `.env` only if absent,
-fill its Required block (LiteLLM, DeepSeek and GigaChat keys), check that the committed
+fill its Required block (LiteLLM, DeepSeek and GigaChat keys, and the Authentik and `AUTH_*`
+settings), check that the committed
 `litellm/certs/ca-bundle.pem` exists (rebuild: `./scripts/build_ca_bundle.sh`), then use `docker compose up -d --build`. Compose exposes ports
-on loopback and disables JWT for development; application code defaults to `prd`.
+on loopback; token checks are on in `dev` too, so API calls need a token from Authentik
+(README, "Module auth"; `./scripts/auth_check.sh` checks the chain).
 
-To run the API on the host with `--reload`, use `./scripts/dev.sh api` (Postgres and
-LiteLLM in Docker). `./scripts/dev.sh db|stop|reset-db --yes|psql` manage the database;
+To run the API on the host with `--reload`, use `./scripts/dev.sh api` (Postgres, LiteLLM and
+Authentik in Docker; it exports the Authentik keys before the API starts).
+`./scripts/dev.sh db|stop|reset-db --yes|psql` manage the database (`reset-db` also wipes the
+Authentik data);
 `.env` is required for every command because `compose.yaml` interpolates the whole file.
 
 For Python development:

@@ -12,8 +12,8 @@ Do not assume every template has deploy scripts or supports the same flags.
 For Docker or an existing Kubernetes cluster, follow the repository's Compose or
 Helm instructions.
 
-Never print credentials or the MCP connect secret. The JWT verification key is
-public and may be shared to complete configuration.
+Never print credentials, the MCP connect secret or the Authentik secrets. The Authentik public
+keys (`modules/auth/jwks/jwks.json`) are public and may be shared to complete configuration.
 
 ## 1. Prepare
 
@@ -28,7 +28,11 @@ public and may be shared to complete configuration.
   on the host. Replace every `***` placeholder. Check how the deploy scripts load
   settings rather than assuming they read `.env` or exported shell variables.
 - Keep production authentication enabled. Do not upload `RUNTIME_ENV=dev`.
-  Configure `JWT_VERIFICATION_KEY` or a `JWT_JWKS_FILE` available on the server.
+  Tokens come from Authentik (module `auth`, runs in `compose.yaml`): fill the auth block of
+  the production env file with strong values (`AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`,
+  `AUTHENTIK_BOOTSTRAP_PASSWORD`, `AUTH_DEV_SERVICE_TOKEN`), the frontend's `AUTH_FRONTEND_*`
+  values, `AUTH_BRAND_DOMAIN` (host name of Authentik) and `AUTH_ISSUER` (public HTTPS address of Authentik plus `/application/o/authorled/`).
+  `authentik-jwks-export` writes `JWT_JWKS_FILE` at start; the API does not start without it.
 - If a sandbox is requested, configure its provider and `REPOSITORY` in
   `app/sandbox.py` using the [sandbox setup guide](../../../docs/sandboxes.md).
   AgentCore needs an existing runtime, host AWS access, and persistent checkpoints at `/data`. Confirm the
@@ -50,7 +54,9 @@ before deciding to create anything. Link an existing project where required.
 For a new deployment, explain which resources will be created, their billing,
 and the actual teardown command and data it deletes. Run the README's first-deploy
 procedure with the intended account and target explicitly selected.
-For owned infrastructure, configure its public URL and JWT key before first boot.
+For owned infrastructure, configure the public URLs of the API and Authentik before first boot.
+Authentik listens on `127.0.0.1:9000`: publish it on its own HTTPS domain through the host's
+reverse proxy and set `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS` to the proxy's address range.
 
 For an update, follow the README's code and environment update commands. Read the
 scripts to establish their order and whether updating settings also triggers a
@@ -60,12 +66,11 @@ before retrying. Do not create a second project to recover from a failed deploy.
 
 ## 3. Complete authentication and settings
 
-Some providers create a URL before the API can start. Follow this repository's
-handoff: use that URL to connect a Live OS at https://os.agno.com/?ref=docker-template, enable token-based
-JWT authorization, and obtain the public verification key. Save the full key as a
-quoted multiline `JWT_VERIFICATION_KEY` in the production settings, or configure
-`JWT_JWKS_FILE`. Then use the documented sync/deploy commands to finish.
-Do not treat an exit code or missing-key stop as identical across providers.
+Tokens are issued by Authentik, so there is no verification key to fetch from a Live OS.
+After the first boot check the chain with `./scripts/auth_check.sh` against the public URLs
+(it needs `AUTH_DEV_SERVICE_TOKEN` and `AUTH_ISSUER` from the production env file), and rotate
+the signing key with `docker compose run --rm authentik-jwks-export` followed by a restart of
+`agentos-api`. Do not treat an exit code or missing-key stop as identical across providers.
 
 Ensure `AGENTOS_URL` is the public HTTPS URL used by the scheduler and MCP OAuth.
 Keep `MCP_CONNECT_SECRET` in the production settings for browser MCP connections.

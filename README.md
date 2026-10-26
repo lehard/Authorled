@@ -56,17 +56,23 @@ cp example.env .env
 ```
 
 Open `.env` and fill the Required block: `LITELLM_MASTER_KEY`, `LITELLM_API_KEY`,
-`DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS` and `GIGACHAT_SCOPE`. The CA bundle for GigaChat
-ships in `litellm/certs/ca-bundle.pem` (see [Models](#models)). Then start the platform:
+`DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS` and `GIGACHAT_SCOPE`, and the block of the
+[auth module](#module-auth): `AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`,
+`AUTHENTIK_BOOTSTRAP_EMAIL`, `AUTHENTIK_BOOTSTRAP_PASSWORD`, `AUTH_FRONTEND_CLIENT_ID`,
+`AUTH_FRONTEND_REDIRECT_URI`, `AUTH_DEV_SERVICE_TOKEN`, `AUTH_BRAND_DOMAIN` and `AUTH_ISSUER`. The CA bundle for
+GigaChat ships in `litellm/certs/ca-bundle.pem` (see [Models](#models)). Then start the platform:
 
 ```sh
 docker compose up -d --build
 ```
 
-The first build can take a few minutes. When it's ready, open
-[http://localhost:8000/docs](http://localhost:8000/docs) to see the API.
+The first build can take a few minutes: Authentik applies its migrations and blueprints before
+the API starts. When it's ready, open [http://localhost:8000/docs](http://localhost:8000/docs)
+to see the API. Authorization is on in every environment, so API calls need a token from
+Authentik (see [Module auth](#module-auth)); `./scripts/auth_check.sh` checks the chain.
 
-Check that AI apps can connect through MCP:
+Check that AI apps can connect through MCP (export `MCP_CHECK_TOKEN` first, see
+[Module auth](#module-auth)):
 
 ```sh
 ./scripts/mcp_check.sh
@@ -76,8 +82,10 @@ The check should report `9 tools; required tools available`.
 
 ### Develop with the API on the host
 
-For code changes without rebuilding the image, run PostgreSQL and LiteLLM in Docker and the
-API on your computer with `--reload` (needs [uv](https://docs.astral.sh/uv/) and a filled `.env`):
+For code changes without rebuilding the image, run PostgreSQL, LiteLLM and Authentik in Docker
+and the API on your computer with `--reload` (needs [uv](https://docs.astral.sh/uv/) and a filled
+`.env`). The command also exports the Authentik keys to `modules/auth/jwks/jwks.json` before
+the API starts:
 
 ```sh
 ./scripts/dev.sh api
@@ -85,14 +93,18 @@ API on your computer with `--reload` (needs [uv](https://docs.astral.sh/uv/) and
 
 Other commands: `./scripts/dev.sh db` starts only PostgreSQL and waits until it is healthy,
 `stop` stops the services and keeps the data, `psql` opens `psql` in the database,
-`reset-db --yes` deletes the database volume. `.env` is needed even for `db`: Compose
-requires the LiteLLM keys for every service.
+`reset-db --yes` deletes the database volume, including the Authentik data. `.env` is needed even
+for `db`: Compose requires the LiteLLM and Authentik settings for every service.
 
 ### 2. Connect the UI
 
 1. Open [os.agno.com](https://os.agno.com) and sign in.
 2. Choose **Connect OS**, select a local connection, and enter `http://localhost:8000`.
 3. Name it **Local AgentOS**, then open the chat for **OS Manager**.
+
+The API accepts only tokens issued by Authentik, so the connection needs one. How AgentOS UI
+obtains it is not settled yet (`openspec/changes/auth-module/design.md`, Open Questions); until
+then use `curl` or the scripts with a token as described in [Module auth](#module-auth).
 
 ### 3. Build your first agent
 
@@ -214,9 +226,14 @@ password. Update the database password separately; do not delete the data volume
 
 ### 2. Set up authentication
 
-Open [os.agno.com](https://os.agno.com), choose **Connect OS → Live**, enter your
-public URL, and enable token-based authorization. Save the public verification
-key in `.env` as `JWT_VERIFICATION_KEY`, with the entire multiline value in quotes.
+Fill the auth block of `.env` (see [Module auth](#module-auth)): strong values for
+`AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`, `AUTHENTIK_BOOTSTRAP_PASSWORD` and
+`AUTH_DEV_SERVICE_TOKEN`, the real redirect URI of the frontend in
+`AUTH_FRONTEND_REDIRECT_URI`, `AUTH_BRAND_DOMAIN` (the Authentik host name) and `AUTH_ISSUER` set to the public address of Authentik plus
+`/application/o/authorled/`. Authentik listens on `127.0.0.1:9000`: publish it on its own
+HTTPS domain through the reverse proxy of the host (set `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS`
+for the proxy's address range). The Authentik data lives in the `authentik` schema of the same
+database, so the database backup covers it.
 
 ### 3. Start the production services
 
@@ -280,7 +297,12 @@ python -m evals --tag smoke
 `validate.sh` checks Python formatting, lint rules, and types. The smoke tests ask
 OS Manager to explain setup, check platform health, and explain agent memory.
 They use your model API keys and save results in the database for review in the UI.
-PostgreSQL must be running, even when you only want to list the tests.
+PostgreSQL must be running, even when you only want to list the tests. The evals import the
+application, so on the host they also need the auth settings in `.env` (`AUTH_ISSUER`,
+`AUTH_FRONTEND_CLIENT_ID`) and `JWT_JWKS_FILE` pointing at the exported keys
+(`modules/auth/jwks/jwks.json`, written by `./scripts/dev.sh api` or
+`docker compose run --rm authentik-jwks-export`); without them they stop with an error naming the
+missing variable.
 
 Add your own cases in [evals/cases.py](evals/cases.py), or use
 [/create-evals](.agents/skills/create-evals/SKILL.md). To save a report, add
@@ -314,6 +336,43 @@ them automatically. When you upload a file, pass the reader explicitly: `reader_
 `chunker` with `chunk_size=1200`. Without it, Agno 3.1.10 reads the file with its default
 reader and 5000-character chunks, which exceed the model's limit.
 
+## Module auth
+
+Authentication and authorization are a module of this repository: [Authentik](https://goauthentik.io)
+(sign-in, 2FA, profile, password reset, groups, service accounts, admin interface) runs next to
+the API, in the same database (schema `authentik`, own role). Its configuration is code in
+`modules/auth/` (blueprints, database init, key export); `app/auth/` is the only code that reads
+tokens. The API accepts only tokens issued by Authentik, in every environment.
+
+- **Start.** `docker compose up -d --build` (or `./scripts/dev.sh api`) creates the schema and
+  role, starts Authentik, applies the blueprints, exports the public keys to
+  `modules/auth/jwks/jwks.json` and only then starts the API. Authentik is on
+  [http://localhost:9000](http://localhost:9000); the first administrator is `akadmin` with
+  `AUTHENTIK_BOOTSTRAP_PASSWORD`.
+- **Groups.** `screenwriters` and `editors` (authors), `admins` (superusers, the only ones in the
+  Authentik admin interface and with full API access), `plugins` (service accounts). What each
+  group may call is in `app/auth/authorization.py`.
+- **Token for curl and scripts.** The service account `sa-dev` signs in with the secret
+  `AUTH_DEV_SERVICE_TOKEN`:
+
+  ```sh
+  curl -s -X POST "$AUTHENTIK_URL/application/o/token/" \
+    -d grant_type=client_credentials -d client_id="$AUTH_FRONTEND_CLIENT_ID" \
+    -d "scope=openid profile email" -d username=sa-dev -d password="$AUTH_DEV_SERVICE_TOKEN"
+  ```
+
+  `AUTHENTIK_URL` must be the address from `AUTH_ISSUER` (without `/application/o/...`):
+  a token requested through another host name has another issuer and is rejected. Send the
+  `access_token` as `Authorization: Bearer ...`; for `./scripts/mcp_check.sh` export it as
+  `MCP_CHECK_TOKEN`.
+- **Check.** `./scripts/auth_check.sh` gets that token and checks `401` (no token, forged
+  signature), `200` and `403`.
+- **Rotate the signing key.** After changing the signing key in Authentik, run
+  `docker compose run --rm authentik-jwks-export` and restart `agentos-api`: tokens signed with
+  the removed key are rejected after the restart.
+- **Boundary.** `./scripts/validate.sh` fails when code outside `app/auth/` touches JWT, claims
+  or Authentik.
+
 ## Configuration
 
 [example.env](example.env) shows the main settings. Start with its Required block;
@@ -327,11 +386,16 @@ add the others when you need them. Docker Compose reads `.env` for both local an
 | `DEEPSEEK_API_KEY` | DeepSeek models behind the proxy: agents, OS Manager, Company Manager and Claude Engineer (required). |
 | `GIGACHAT_CREDENTIALS` and `GIGACHAT_SCOPE` | GigaChat Embeddings-2 behind the proxy for knowledge bases (required). Scope is `GIGACHAT_API_PERS` or `GIGACHAT_API_B2B`. |
 | `PARALLEL_API_KEY` | Optional web search key. Without it, search uses Parallel's MCP server without an API key. |
-| `JWT_VERIFICATION_KEY` or `JWT_JWKS_FILE` | Check login tokens in production. A JWKS file must be available on the server. |
+| `AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`, `AUTHENTIK_BOOTSTRAP_EMAIL`, `AUTHENTIK_BOOTSTRAP_PASSWORD` | Authentik server secret, password of its database role, first administrator (required, see [Module auth](#module-auth)). |
+| `AUTH_FRONTEND_CLIENT_ID`, `AUTH_FRONTEND_REDIRECT_URI` | Client ID of the Authentik application (also the expected token audience) and the frontend's redirect URI (required). |
+| `AUTH_DEV_SERVICE_TOKEN` | Secret of the development service account `sa-dev` (required). |
+| `AUTH_BRAND_DOMAIN` | Host name of Authentik as users open it (no port); sign-in on this host requires a second factor (required). |
+| `AUTH_ISSUER` | Issuer of the tokens: the address clients use to reach Authentik plus `/application/o/authorled/` (required). |
+| `JWT_JWKS_FILE` | Public keys of Authentik, the only source of token verification keys. Compose writes the file at start and sets the path; set it yourself when the API or `python -m evals` runs on the host (`dev.sh api` does for the API). |
 | `AGENTOS_URL` | Public URL used by scheduled jobs and MCP. Set it to your public HTTPS URL. |
 | `MCP_CONNECT_SECRET` | Connect browser MCP clients. Generate it before deployment. |
 | `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `DB_DATABASE` | PostgreSQL connection settings. Local Compose configures these for you. |
-| `RUNTIME_ENV` | `prd` by default. Local Compose uses `dev`, which disables token checks. |
+| `RUNTIME_ENV` | `prd` by default. Local Compose uses `dev`; token checks are on in both. |
 
 ## Learn more
 

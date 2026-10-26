@@ -1,0 +1,4 @@
+# Public keys exported from Authentik at start (authentik-jwks-export); never committed.
+*
+!.gitignore
+!export.sh

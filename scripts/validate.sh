@@ -50,6 +50,12 @@ if ! mypy "${REPO_ROOT}" --config-file "${REPO_ROOT}/pyproject.toml"; then
 fi
 
 echo ""
+echo -e "${DIM}> check_auth_boundary${NC}"
+if ! "${CURR_DIR}/check_auth_boundary.sh"; then
+  failed=1
+fi
+
+echo ""
 if [[ $failed -eq 0 ]]; then
   echo -e "${BOLD}Done.${NC}"
 else

@@ -1,0 +1,87 @@
+version: 1
+metadata:
+  name: Authorled authentication flow
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+entries:
+  # A sign-in flow with its own stages (blueprints are applied in no fixed order, so nothing here
+  # depends on the default blueprints): identification with password, a second factor that a
+  # user without one must set up (the default flow skips the check), and login.
+  - model: authentik_stages_password.passwordstage
+    id: stage-password
+    identifiers:
+      name: authorled-authentication-password
+    attrs:
+      backends:
+        - authentik.core.auth.InbuiltBackend
+        - authentik.core.auth.TokenBackend
+      failed_attempts_before_cancel: 5
+  - model: authentik_stages_identification.identificationstage
+    id: stage-identification
+    identifiers:
+      name: authorled-authentication-identification
+    attrs:
+      user_fields:
+        - username
+        - email
+      password_stage: !KeyOf stage-password
+      show_matched_user: true
+  - model: authentik_stages_authenticator_totp.authenticatortotpstage
+    id: stage-totp-setup
+    identifiers:
+      name: authorled-authenticator-totp-setup
+    attrs:
+      friendly_name: Authorled
+      digits: 6
+  - model: authentik_stages_authenticator_validate.authenticatorvalidatestage
+    id: stage-mfa-validate
+    identifiers:
+      name: authorled-authentication-mfa-validation
+    attrs:
+      device_classes:
+        - totp
+        - static
+      not_configured_action: configure
+      configuration_stages:
+        - !KeyOf stage-totp-setup
+  - model: authentik_stages_user_login.userloginstage
+    id: stage-login
+    identifiers:
+      name: authorled-authentication-login
+    attrs:
+      session_duration: seconds=0
+  - model: authentik_flows.flow
+    id: flow-authentication
+    identifiers:
+      slug: authorled-authentication
+    attrs:
+      name: Authorled authentication
+      title: Welcome to Authorled
+      designation: authentication
+      authentication: require_unauthenticated
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      target: !KeyOf flow-authentication
+      order: 10
+    attrs:
+      stage: !KeyOf stage-identification
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      target: !KeyOf flow-authentication
+      order: 30
+    attrs:
+      stage: !KeyOf stage-mfa-validate
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      target: !KeyOf flow-authentication
+      order: 100
+    attrs:
+      stage: !KeyOf stage-login
+  # The brand of the Authentik domain of the product; the default brand stays untouched.
+  - model: authentik_brands.brand
+    identifiers:
+      domain: !Env AUTH_BRAND_DOMAIN
+    attrs:
+      default: false
+      branding_title: Authorled
+      flow_authentication: !KeyOf flow-authentication

@@ -9,10 +9,10 @@
 ## Requirements
 
 ### Requirement: Аутентификация защищённых маршрутов
-При `RUNTIME_ENV`, отличном от `dev`, система MUST включать авторизацию (`authorization=runtime_env != "dev"` в `app/main.py`) и MUST отклонять запросы к защищённым маршрутам без валидного Bearer-токена кодом `401`. Маршруты `GET /health` и `GET /info` MUST оставаться доступными без токена.
+Система MUST включать авторизацию при любом `RUNTIME_ENV`, включая `dev` (`authorization=build_authorization(db)` из `app/auth/` в `app/main.py`), и MUST отклонять запросы к защищённым маршрутам без валидного Bearer-токена кодом `401`. Маршруты `GET /health` и `GET /info` MUST оставаться доступными без токена.
 
 #### Scenario: Запрос без токена в prd
-- GIVEN приложение запущено с `RUNTIME_ENV=prd` и заданным `JWT_VERIFICATION_KEY`
+- GIVEN приложение запущено с `RUNTIME_ENV=prd` и заданным `JWT_JWKS_FILE`
 - WHEN клиент выполняет `GET /agents` без заголовка `Authorization`
 - THEN система MUST вернуть `401` с телом `{"detail":"Authorization header missing"}`
 
@@ -28,18 +28,23 @@
 - AND `GET /info` MUST вернуть `auth_mode: "jwt"`
 
 #### Scenario: Режим разработки
-- GIVEN приложение запущено с `RUNTIME_ENV=dev` (так задаёт `compose.yaml`)
-- WHEN клиент выполняет любой маршрут без токена
-- THEN система MUST обработать запрос без проверки токена
-- AND `GET /info` MUST вернуть `auth_mode: "none"` и `user_isolation: true`
+- GIVEN приложение запущено с `RUNTIME_ENV=dev` (так задаёт `compose.yaml`) и заданным `JWT_JWKS_FILE`
+- WHEN клиент выполняет `GET /agents` или `GET /sessions` без токена
+- THEN система MUST вернуть `401`
+- AND `GET /health` MUST вернуть `200` без токена
 
 ### Requirement: Отказ старта без ключа проверки JWT
-При включённой авторизации система MUST NOT стартовать без `JWT_VERIFICATION_KEY` или `JWT_JWKS_FILE`.
+Система MUST NOT стартовать без файла ключей `JWT_JWKS_FILE` при любом `RUNTIME_ENV`.
 
 #### Scenario: prd без ключа
-- GIVEN `RUNTIME_ENV=prd`, а `JWT_VERIFICATION_KEY` и `JWT_JWKS_FILE` пусты
+- GIVEN `JWT_JWKS_FILE` не задан (в `prd`, как и в `dev`)
 - WHEN запускается `uvicorn app.main:app`
-- THEN старт MUST завершиться ошибкой `ValueError: AgentOS(authorization=True) requires a JWT verification key`
+- THEN старт MUST завершиться ошибкой `RuntimeError: Required environment variable JWT_JWKS_FILE is not set`
+
+#### Scenario: Файла ключей нет
+- GIVEN `JWT_JWKS_FILE` указывает на несуществующий файл
+- WHEN запускается `uvicorn app.main:app`
+- THEN старт MUST завершиться ошибкой `RuntimeError`, называющей путь и необходимость выгрузить ключи из Authentik
 
 ### Requirement: Сведения об инстансе
 `GET /info` MUST возвращать `agno_version` `3.1.10`, `agent_count` `2`, `team_count` `1`, `workflow_count` `0` и блок `mcp` с `enabled: true` и `path: "/mcp"`. `GET /config` MUST возвращать `os_database: "agentos-db"`, единственную БД `agentos-db` в `databases`, `queue` с `durable: true` и `queue_per_session: true`, пустой `interfaces` и `manifest` с описаниями и quick prompts из `app/config.yaml` для `os-manager-internal`, `company-manager-internal`, `claude-engineer`.

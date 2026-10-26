@@ -2,18 +2,18 @@
 
 ############################################################################
 #
-#    Local development: PostgreSQL and LiteLLM in Docker, API on the host
+#    Local development: PostgreSQL, LiteLLM and Authentik in Docker, API on the host
 #
 #    Usage:
 #      ./scripts/dev.sh db              Start agentos-db and wait until healthy
-#      ./scripts/dev.sh api             Start agentos-db and litellm, run the API
-#                                       on the host with --reload
+#      ./scripts/dev.sh api             Start agentos-db, litellm and Authentik, export the
+#                                       Authentik keys, run the API on the host with --reload
 #      ./scripts/dev.sh stop            Stop the services, keep the data
 #      ./scripts/dev.sh reset-db --yes  Delete the agentos-db container and volume
 #      ./scripts/dev.sh psql            Open psql inside agentos-db
 #
 #    Needs Docker with Compose and a filled .env (compose.yaml requires the
-#    LiteLLM, DeepSeek and GigaChat keys for every service). `api` also needs uv.
+#    LiteLLM, DeepSeek, GigaChat and Authentik settings for every service). `api` also needs uv.
 #
 ############################################################################
 
@@ -23,9 +23,9 @@ cd "$(dirname "$0")/.."
 usage() {
     echo 'Usage: ./scripts/dev.sh db | api | stop | reset-db --yes | psql'
     echo '  db            start agentos-db and wait until healthy'
-    echo '  api           start agentos-db and litellm, run the API on the host (--reload)'
-    echo '  stop          stop agentos-api, litellm and agentos-db; data is kept'
-    echo '  reset-db      delete the agentos-db container and its volume (requires --yes)'
+    echo '  api           start agentos-db, litellm and Authentik, export the Authentik keys, run the API on the host (--reload)'
+    echo '  stop          stop agentos-api, litellm, Authentik and agentos-db; data is kept'
+    echo '  reset-db      delete the agentos-db container and its volume, with the Authentik data (requires --yes)'
     echo '  psql          open psql inside agentos-db'
 }
 
@@ -57,7 +57,9 @@ case "${command}" in
         ;;
     api)
         command -v uv > /dev/null || fail "uv not found. Install: https://docs.astral.sh/uv/"
-        docker compose up -d --wait agentos-db litellm
+        docker compose up -d --wait agentos-db litellm authentik-server authentik-worker
+        # Module auth: write the Authentik public keys to modules/auth/jwks/jwks.json (fails loudly).
+        docker compose run --rm authentik-jwks-export
         # The container publishes port 8000 too; stop it so the host API can bind.
         docker compose stop agentos-api
         # Host-side values of what compose.yaml sets for the agentos-api container
@@ -66,12 +68,13 @@ case "${command}" in
         export DB_DRIVER=postgresql+psycopg DB_HOST=127.0.0.1 DB_PORT=5432
         export DB_USER=ai DB_PASS=ai DB_DATABASE=ai
         export AGENTOS_URL=http://127.0.0.1:8000 LITELLM_URL=http://127.0.0.1:4000
+        export JWT_JWKS_FILE="$(pwd)/modules/auth/jwks/jwks.json"
         exec uv run --no-project --env-file .env --with-requirements requirements.txt \
             uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload \
             --reload-dir agents --reload-dir app --reload-dir db --reload-dir evals
         ;;
     stop)
-        docker compose stop agentos-api litellm agentos-db
+        docker compose stop agentos-api litellm authentik-server authentik-worker agentos-db
         ;;
     reset-db)
         [[ "${2:-}" == "--yes" ]] || fail "reset-db deletes all data in the agentos-db volume. Re-run with --yes to confirm."
@@ -83,7 +86,7 @@ case "${command}" in
         [[ -n "${volume}" ]] || fail "could not resolve the pgdata volume name from 'docker compose config'."
         docker compose rm -sf agentos-db
         docker volume rm "${volume}"
-        echo "Removed agentos-db and volume ${volume}. Run ./scripts/dev.sh db to create an empty database."
+        echo "Removed agentos-db and volume ${volume} (Authentik data included). Run ./scripts/dev.sh db to create an empty database."
         ;;
     psql)
         exec docker compose exec agentos-db psql -U ai -d ai

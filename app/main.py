@@ -10,6 +10,7 @@ from agno.job_queue import QueueConfig
 from agno.os import AgentOS, CompanyConfig, OSManager
 
 from agents.engineers import engineers
+from app.auth import build_authorization
 from app.company import products
 from app.interfaces import attach_interfaces, mcp_auth
 from app.registry import registry, shared_knowledge, shared_learning
@@ -41,7 +42,7 @@ agent_os = AgentOS(
     user_directory=True,
     scheduler_base_url=agentos_url,
     mcp_auth=mcp_auth(agentos_url),
-    authorization=runtime_env != "dev",
+    authorization=build_authorization(db),
     manager=OSManager(
         root=agentos_root,
         model=manager_model(),

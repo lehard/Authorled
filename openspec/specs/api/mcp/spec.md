@@ -40,12 +40,22 @@ MCP-endpoint `/mcp` (streamable HTTP) для подключения AI-прил�
 - AND при `is_error` скрипт MUST завершиться кодом `1`
 
 ### Requirement: Доступ к /mcp
-В режиме `dev` `GET /mcp` MUST отвечать `302` с переадресацией на `/mcp/server-card`. При включённой авторизации запрос к `/mcp` без токена MUST отклоняться кодом `401`.
+Авторизация включена при любом `RUNTIME_ENV`, включая `dev`, поэтому запрос к `/mcp` без токена MUST отклоняться кодом `401`. Для `./scripts/mcp_check.sh` токен Authentik MUST передаваться в `MCP_CHECK_TOKEN`.
 
 #### Scenario: prd без токена
-- GIVEN `RUNTIME_ENV=prd` и задан `JWT_VERIFICATION_KEY`
+- GIVEN `RUNTIME_ENV=prd` и задан `JWT_JWKS_FILE`
 - WHEN клиент выполняет `GET /mcp` без токена
 - THEN система MUST вернуть `401`
+
+#### Scenario: dev без токена
+- GIVEN `RUNTIME_ENV=dev` и задан `JWT_JWKS_FILE`
+- WHEN клиент выполняет `GET /mcp` без токена
+- THEN система MUST вернуть `401`
+
+#### Scenario: Проверка MCP с токеном
+- GIVEN платформа запущена и `MCP_CHECK_TOKEN` содержит действительный токен Authentik
+- WHEN выполняется `./scripts/mcp_check.sh`
+- THEN скрипт MUST выполнить handshake и получить `tools/list`
 
 ### Requirement: MCP OAuth
 Если задан `MCP_CONNECT_SECRET`, система MUST включать `AgentOSBuiltinAuth(url=AGENTOS_URL, secret=...)`, превращая `/mcp` в собственный сервер авторизации OAuth 2.1; иначе MCP OAuth MUST быть выключен.

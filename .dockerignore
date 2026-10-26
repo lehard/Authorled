@@ -39,3 +39,6 @@ tmp/
 node_modules
 package.json
 package-lock.json
+
+# Module auth: public signing keys exported from Authentik at start
+modules/auth/jwks/jwks.json*
