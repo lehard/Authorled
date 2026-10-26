@@ -30,7 +30,7 @@ graph LR
 ### Requirement: Слои приложения
 Код MUST разделяться так:
 - `app/main.py` — сборка `AgentOS`;
-- `app/interfaces.py` — MCP OAuth, MCP-инструменты, Slack;
+- `app/interfaces.py` — MCP OAuth, MCP-инструменты;
 - `app/company.py` — Products, Sources, Routines;
 - `app/config.yaml` — манифест компонентов;
 - `app/registry.py` — реестр Studio, shared knowledge/learning/notes;

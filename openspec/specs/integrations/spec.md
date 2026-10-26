@@ -13,14 +13,6 @@
 - WHEN клиент выполняет `GET /registry`
 - THEN ответ MUST содержать инструмент `parallel_tools`
 
-### Requirement: Slack
-При заданных `SLACK_BOT_TOKEN` и `SLACK_SIGNING_SECRET` система MUST подключать `Slack(team=manager, streaming=True, resolve_user_identity=True, loading_text="Pulling the thread...")`. Если задана только одна переменная, Slack MUST NOT подключаться.
-
-#### Scenario: Одна переменная Slack
-- GIVEN задан только `SLACK_BOT_TOKEN`
-- WHEN вызывается `attach_interfaces`
-- THEN `agent_os.interfaces` MUST остаться без Slack
-
 ### Requirement: GitHub releases Agno
 Product `this-agentos` MUST содержать Source `website` `https://github.com/agno-agi/agno/releases`, который читает Routine `agentos-maintenance`.
 
