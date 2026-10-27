@@ -313,6 +313,227 @@
     .meta { flex-wrap: wrap; }
     .approve { margin-left: 0; }
   }
+
+  /* ——— Связки: старт, этап с пустого листа, изменение решения, библия и карточки ——— */
+  .app.bare { grid-template-columns: 0 minmax(0, 1fr); }
+  .app.bare .rail { display: none; }
+  .calm .stage, .calm .note:not(.fresh) { animation: none; }
+  .step.link::before { display: none; }
+  .step.link .dot { color: var(--ink-3); }
+  .step.link.cur .dot { color: var(--accent); }
+  .lede { font-size: 16px; color: var(--ink-2); margin: -6px 0 28px; max-width: 56ch; }
+  .label { font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; color: var(--ink-3); margin-bottom: 10px; }
+  .row-acts { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .row-acts .approve { margin-left: 0; }
+  .pill.stale { background: var(--warn-soft); color: var(--warn); }
+
+  /* Полка историй */
+  .books { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 32px 26px; margin-top: 34px; }
+  .book { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left; }
+  .book .art { width: 100%; aspect-ratio: 3 / 4; margin-bottom: 12px; border-radius: 5px 12px 12px 5px; position: relative; overflow: hidden; box-shadow: inset 7px 0 0 oklch(0 0 0 / .16), var(--shadow); transition: transform .3s cubic-bezier(.2,.8,.2,1); }
+  .book:hover .art { transform: translateY(-5px) rotate(-.8deg); }
+  .art b { position: absolute; left: 24px; right: 18px; top: 26px; font-family: var(--font-prose); font-size: 25px; font-weight: 500; line-height: 1.1; color: oklch(0.97 0.015 85); }
+  .art.water { background: linear-gradient(165deg, oklch(0.58 0.07 230), oklch(0.3 0.06 252)); }
+  .art.wind { background: linear-gradient(165deg, oklch(0.62 0.04 210), oklch(0.36 0.035 235)); }
+  .art.fresh { background: linear-gradient(165deg, oklch(0.62 0.09 55), oklch(0.4 0.08 35)); }
+  .art.water::after, .art.wind::after { content: ""; position: absolute; left: -10%; right: -10%; bottom: 44px; height: 44px; border-radius: 50%; border-top: 2px solid oklch(1 0 0 / .4); }
+  .art.water::before { content: ""; position: absolute; left: -10%; right: -10%; bottom: 28px; height: 34px; border-radius: 50%; border-top: 2px solid oklch(1 0 0 / .25); }
+  .book h3 { margin: 0; font-family: var(--font-prose); font-size: 19px; font-weight: 600; }
+  .book p { margin: 0; font-size: 13px; color: var(--ink-3); }
+  .book.add .art { background: none; box-shadow: none; border: 1.5px dashed var(--ink-3); display: grid; place-items: center; color: var(--ink-3); transition: transform .3s, color .2s, border-color .2s; }
+  .book.add .art svg { width: 34px; height: 34px; stroke-width: 1.4; }
+  .book.add:hover .art { color: var(--accent); border-color: var(--accent); }
+
+  /* Новая история */
+  .namein { width: 100%; border: 0; border-bottom: 1.5px solid var(--line); background: none; outline: 0; font-family: var(--font-prose); font-size: 26px; color: var(--ink); padding: 6px 0 10px; margin-bottom: 28px; }
+  .namein:focus { border-color: var(--accent); }
+  .namein::placeholder { color: var(--ink-3); }
+  .ways { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .way { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; text-align: left; padding: 20px; border-radius: 16px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); transition: box-shadow .2s, transform .2s; }
+  .way:hover { transform: translateY(-2px); box-shadow: inset 0 0 0 1.5px var(--accent), var(--shadow-sm); }
+  .way.on { box-shadow: inset 0 0 0 2px var(--accent), var(--shadow-sm); }
+  .way svg { width: 22px; height: 22px; color: var(--accent); }
+  .way b { font-family: var(--font-prose); font-size: 20px; font-weight: 600; }
+  .way span { font-size: 14px; color: var(--ink-2); }
+  .hint { display: flex; gap: 8px; align-items: flex-start; font-size: 13.5px; color: var(--ink-3); margin: 16px 0 0; }
+  .hint svg { margin-top: 2px; }
+  .first { margin-top: 28px; padding: 20px; border-radius: 16px; background: var(--ai-soft); animation: rise .4s; }
+  .who-row { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--ai); }
+  .first label { display: block; font-family: var(--font-prose); font-size: 18px; margin: 6px 0 12px; }
+  .first textarea { width: 100%; border: 0; border-radius: 12px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--line); padding: 12px 14px; font-family: var(--font-prose); font-size: 17px; line-height: 1.55; color: var(--ink); resize: vertical; outline: 0; }
+  .first textarea:focus { box-shadow: inset 0 0 0 1.5px var(--ai-line); }
+  .first textarea::placeholder { color: var(--ink-3); }
+  .examples { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 10px 0 16px; font-size: 13px; color: var(--ink-3); }
+
+  /* Разбор рукописи */
+  .drop { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 54px 20px; border-radius: 18px; border: 1.5px dashed var(--ink-3); color: var(--ink-2); transition: border-color .2s, background .2s, color .2s; }
+  .drop:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+  .drop svg { width: 30px; height: 30px; stroke-width: 1.5; }
+  .drop b { font-size: 16px; color: var(--ink); }
+  .drop span { font-size: 13px; color: var(--ink-3); }
+  .file { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; background: var(--panel); margin-bottom: 18px; }
+  .file svg { width: 26px; height: 26px; color: var(--accent); }
+  .file small { display: block; color: var(--ink-3); font-size: 12.5px; }
+  .rrow { display: flex; align-items: center; gap: 10px; padding: 9px 2px; font-size: 15px; color: var(--ink-2); border-bottom: 1px solid var(--line); animation: rise .4s both; }
+  .rrow svg { color: var(--ok); }
+  .rrow b { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; font-family: var(--font-ui); }
+  .chip { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; border-radius: 16px; background: var(--panel); font-size: 14px; color: var(--ink); }
+  .chip small { color: var(--ink-3); font-size: 12px; }
+  .chip.flag { background: var(--ai-soft); box-shadow: inset 0 0 0 1px var(--ai-line); }
+  .chip.more { background: none; color: var(--ink-3); }
+  button.chip:hover { box-shadow: inset 0 0 0 1px var(--accent); }
+  .slist { list-style: none; padding: 0; margin: 0; font-family: var(--font-ui); font-size: 14.5px; line-height: 1.45; }
+  .slist li { display: grid; grid-template-columns: 28px 160px 1fr; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .slist li span { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .slist li em { font-style: normal; color: var(--ink-2); }
+  .slist li.flag b { color: var(--ai); }
+  .more-line { font-family: var(--font-ui); font-size: 13.5px; color: var(--ink-3); margin: 10px 0 0 !important; }
+
+  /* Этап с пустого листа и утверждение */
+  .ph { color: var(--ink-3); font-style: italic; border-bottom: 1px dashed var(--line); padding-bottom: 10px; }
+  .ph.now { color: var(--ink-2); border-bottom-color: var(--ai-line); box-shadow: inset 2px 0 0 var(--ai); padding-left: 16px; margin-left: -18px !important; }
+  .ph.now::after { content: ""; display: inline-block; width: 1.5px; height: 1.1em; background: var(--ai); margin-left: 4px; vertical-align: -.15em; animation: blink 1s infinite; }
+  [data-ans]:focus { outline: 0; background: var(--accent-soft); border-radius: 4px; }
+  .note .own { display: flex; gap: 6px; margin-top: 8px; }
+  .note .own input { flex: 1; min-width: 0; height: 32px; border: 0; border-radius: 10px; padding: 0 10px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--line); font: inherit; color: var(--ink); outline: 0; }
+  .note .own input:focus { box-shadow: inset 0 0 0 1.5px var(--ai-line); }
+  .note .own input::placeholder { color: var(--ink-3); }
+  .checklist { margin-top: 36px; padding: 22px 24px 12px; border-radius: 16px; background: var(--panel); font-family: var(--font-ui); animation: rise .4s; }
+  .checklist h2 { margin-top: 0 !important; }
+  .ck { display: flex; gap: 12px; align-items: flex-start; width: 100%; text-align: left; padding: 10px 0; font-size: 15px; line-height: 1.45; color: var(--ink); border-top: 1px solid var(--line); cursor: default; }
+  .checklist h2 + .ck { border-top: 0; }
+  .ck[data-act] { cursor: pointer; }
+  .ck .box { width: 20px; height: 20px; flex: none; border-radius: 6px; display: grid; place-items: center; margin-top: 1px; box-shadow: inset 0 0 0 1.5px var(--ink-3); color: var(--paper); }
+  .ck .box svg { width: 13px; height: 13px; stroke-width: 2.8; }
+  .ck.auto .box { background: var(--ok); box-shadow: none; border-radius: 50%; }
+  .ck.mine.on .box { background: var(--accent); box-shadow: none; color: var(--accent-ink); }
+  .ck small { display: block; color: var(--ink-3); font-size: 12.5px; }
+  .ck.need .box { animation: nudge .5s; box-shadow: inset 0 0 0 2px var(--bad); }
+  @keyframes nudge { 20%, 60% { transform: translateX(-3px); } 40%, 80% { transform: translateX(3px); } }
+  .ritual { position: fixed; inset: 0; z-index: 50; display: none; place-items: center; padding: 16px; background: oklch(from var(--desk) l c h / .74); }
+  .ritual.on { display: grid; animation: fade .3s; }
+  @keyframes fade { from { opacity: 0; } }
+  .rcard { width: min(540px, 100%); background: var(--paper); border-radius: 22px; box-shadow: var(--shadow); padding: 40px 44px 30px; text-align: center; animation: rise .45s cubic-bezier(.2,.8,.2,1); }
+  .seal svg { width: 72px; height: 72px; fill: none; stroke: var(--ok); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  .seal circle { stroke-dasharray: 190; stroke-dashoffset: 190; animation: draw .7s .1s forwards; }
+  .seal path { stroke-dasharray: 40; stroke-dashoffset: 40; animation: draw .4s .7s forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .rcard h2 { font-family: var(--font-prose); font-size: 30px; font-weight: 500; margin: 6px 0 14px; }
+  .rcard blockquote { margin: 0 0 20px; font-family: var(--font-prose); font-style: italic; font-size: 19px; line-height: 1.5; color: var(--ink); }
+  .rcard ul { text-align: left; margin: 0 0 24px; padding: 14px 18px 14px 34px; border-radius: 14px; background: var(--panel); color: var(--ink-2); font-size: 14px; }
+  .rcard li + li { margin-top: 6px; }
+  .rcard .acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+
+  /* Изменение утверждённого решения */
+  .sheet.wide { width: min(940px, 100%); }
+  .diff { border-radius: 16px; background: var(--panel); padding: 18px 22px; margin-bottom: 22px; }
+  .diff .was { font-family: var(--font-prose); font-size: 17px; color: var(--ink-3); text-decoration: line-through; text-decoration-color: oklch(from var(--bad) l c h / .6); margin: 0 0 10px; }
+  .diff .now { font-family: var(--font-prose); font-size: 19px; color: var(--ink); margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--paper); box-shadow: inset 0 0 0 1.5px var(--accent); outline: 0; }
+  .diff.fixed .now { padding: 0; background: none; box-shadow: none; }
+  .impact-grid { display: grid; grid-template-columns: 340px 1fr; gap: 30px; align-items: center; margin: 4px 0 26px; }
+  .graph { width: 100%; height: auto; overflow: visible; }
+  .graph text { font-family: var(--font-ui); font-size: 11.5px; fill: var(--ink-2); }
+  .graph text.n { font-size: 12px; font-weight: 600; fill: var(--ink); }
+  .tally b { font-family: var(--font-prose); font-size: 26px; font-weight: 500; display: block; line-height: 1.2; margin-bottom: 10px; }
+  .tally p { margin: 0 0 6px; color: var(--ink-2); font-size: 14.5px; }
+  .vitem { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; align-items: center; padding: 16px 18px; border-radius: 14px; background: var(--panel); margin-bottom: 10px; box-shadow: inset 3px 0 0 var(--warn); }
+  .vitem.conflict { box-shadow: inset 3px 0 0 var(--bad); }
+  .vitem h3 { margin: 0; font-size: 16px; font-weight: 600; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .vitem h3 small { color: var(--ink-3); font-weight: 400; font-size: 13px; }
+  .vitem .q { grid-column: 1 / -1; font-family: var(--font-prose); font-size: 16px; color: var(--ink); border-left: 2px solid var(--line); padding-left: 12px; margin: 4px 0; }
+  .vitem p { grid-column: 1 / -1; margin: 0; color: var(--ink-2); font-size: 14px; }
+  .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); white-space: nowrap; }
+  .toggle i { width: 32px; height: 18px; border-radius: 9px; background: var(--line); position: relative; transition: background .2s; }
+  .toggle i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--paper); transition: transform .2s; box-shadow: var(--shadow-sm); }
+  .toggle.on i { background: var(--accent); }
+  .toggle.on i::after { transform: translateX(14px); }
+  .calm-list { margin: 14px 0 26px; font-size: 14px; color: var(--ink-2); }
+  .calm-list summary { cursor: pointer; font-weight: 500; }
+  .calm-list li { margin: 6px 0; }
+  .calm-list li b { color: var(--ink); font-weight: 600; }
+  .plan { border-radius: 18px; padding: 22px 24px; background: linear-gradient(140deg, var(--paper), var(--ai-soft)); box-shadow: inset 0 0 0 1px var(--line); }
+  .plan h2 { font-family: var(--font-prose); font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+  .plan > p { margin: 0; color: var(--ink-2); font-size: 14.5px; }
+  .plan ol { list-style: none; padding: 0; margin: 14px 0 18px; counter-reset: p; }
+  .plan li { counter-increment: p; display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line); }
+  .plan li::before { content: counter(p); width: 22px; height: 22px; flex: none; border-radius: 50%; background: var(--ink); color: var(--paper); font-size: 12px; font-weight: 600; display: grid; place-items: center; }
+  .plan li small { display: block; color: var(--ink-3); font-size: 13px; }
+  .plan li .st { margin-left: auto; font-size: 12.5px; color: var(--ink-3); white-space: nowrap; }
+  .plan li .st.next { color: var(--accent); font-weight: 600; }
+
+  /* Карточки сцен */
+  .board-h { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+  .board-h h1 { font-size: 48px; margin: 0; }
+  .seg { margin-left: auto; display: inline-flex; gap: 2px; padding: 3px; border-radius: 18px; background: var(--panel); box-shadow: var(--shadow-sm); }
+  .seg button { height: 30px; padding: 0 14px; border-radius: 15px; font-size: 13px; color: var(--ink-2); }
+  .seg button[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: var(--shadow-sm); font-weight: 600; }
+  .board-note { color: var(--ink-3); font-size: 14px; margin: 14px 0 0; max-width: 72ch; }
+  .board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: start; margin-top: 22px; }
+  .act { background: var(--panel); border-radius: 20px; padding: 16px 14px 14px; box-shadow: var(--shadow-sm); }
+  .act-h { display: flex; align-items: baseline; gap: 8px; padding: 0 4px 12px; }
+  .act-h b { font-family: var(--font-prose); font-size: 19px; font-weight: 500; }
+  .act-h span { font-size: 12.5px; color: var(--ink-3); margin-left: auto; }
+  .act-list { display: flex; flex-direction: column; gap: 10px; min-height: 60px; }
+  .fold { font-size: 12.5px; color: var(--ink-3); padding: 2px 4px 0; }
+  .scard { position: relative; background: var(--paper); border-radius: 10px; padding: 12px 14px; box-shadow: var(--shadow-sm); cursor: grab; text-align: left; transition: transform .2s, box-shadow .2s, opacity .2s; }
+  .scard:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+  .scard.dragging { opacity: .35; }
+  .scard .top { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .scard .dot { width: 14px; height: 14px; }
+  .scard .dot i { width: 9px; height: 9px; background-color: var(--paper); }
+  .scard .dot.approved i { background: var(--ok); }
+  .scard .dot.conflict i { background: var(--bad); }
+  .scard h4 { margin: 5px 0 4px; font-family: var(--font-prose); font-size: 17px; font-weight: 600; }
+  .scard p { margin: 0; font-size: 13.5px; color: var(--ink-2); line-height: 1.4; }
+  .scard .cast { display: flex; gap: 3px; margin-left: auto; }
+  .av2 { width: 20px; height: 20px; flex: none; border-radius: 50%; display: grid; place-items: center; font-size: 10.5px; font-weight: 700; }
+  .av2.v { background: var(--accent-soft); color: var(--accent); }
+  .av2.a { background: var(--ai-soft); color: var(--ai); }
+  .av2.k { background: var(--warn-soft); color: var(--warn); }
+  .av2.m { background: var(--ok-soft); color: var(--ok); }
+  .scard.conflict { box-shadow: inset 3px 0 0 var(--bad), var(--shadow-sm); }
+  .scard.sketch { box-shadow: inset 2px 0 0 var(--ai-line), var(--shadow-sm); animation: rise .4s; }
+  .scard.ghost { background: none; box-shadow: none; border: 1.5px dashed var(--ai-line); cursor: default; }
+  .scard.ghost:hover { transform: none; }
+  .scard.ghost .top { color: var(--ai); font-weight: 600; }
+  .scard .acts { display: flex; gap: 6px; margin-top: 10px; }
+
+  /* Библия проекта */
+  .tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); margin: 14px 0 26px; }
+  .tabs button { padding: 0 0 10px; font-size: 14px; color: var(--ink-3); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tabs button[aria-pressed="true"] { color: var(--ink); border-color: var(--accent); font-weight: 600; }
+  .people { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+  .person { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px 0 5px; border-radius: 18px; background: var(--panel); font-size: 14px; color: var(--ink-2); }
+  .person .av2 { width: 26px; height: 26px; font-size: 12px; }
+  .person[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .person.add { padding: 0 12px; background: none; box-shadow: inset 0 0 0 1px var(--line); }
+  .rel { width: 100%; height: auto; display: block; margin: 4px 0 8px; }
+  .rel text { font-family: var(--font-ui); font-size: 12px; fill: var(--ink-2); }
+  .rel text.nm { font-size: 14px; font-weight: 600; fill: var(--ink); }
+  .src { font-family: var(--font-ui); font-size: 13px; color: var(--ink-3); margin: 28px 0 0; padding-top: 14px; border-top: 1px solid var(--line); }
+  .places { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-family: var(--font-ui); }
+  .place { padding: 16px; border-radius: 14px; background: var(--panel); }
+  .place b { font-family: var(--font-prose); font-size: 18px; font-weight: 600; display: block; }
+  .place p { font-size: 15px; line-height: 1.5; color: var(--ink-2); margin: 4px 0 8px; font-family: var(--font-prose); }
+  .place small { color: var(--ink-3); font-size: 12.5px; }
+  .rules { counter-reset: r; }
+  .rules p { counter-increment: r; display: flex; gap: 14px; }
+  .rules p::before { content: counter(r); font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: var(--accent); width: 24px; height: 24px; flex: none; border-radius: 50%; background: var(--accent-soft); display: grid; place-items: center; margin-top: 5px; }
+
+  @container (max-width: 1139px) {
+    .board, .impact-grid { grid-template-columns: 1fr; }
+    .impact-grid .graph { max-width: 360px; margin: 0 auto; }
+  }
+  @container (max-width: 760px) {
+    .ways, .places { grid-template-columns: 1fr; }
+    .slist li { grid-template-columns: 24px 1fr; }
+    .slist li em { grid-column: 2; }
+    .vitem { grid-template-columns: 1fr; }
+    .seg { margin-left: 0; }
+    .board-h h1 { font-size: 36px; }
+  }
+  @media (max-width: 600px) { .rcard { padding: 32px 22px 24px; } }
 </style>
 </head>
 <body>
@@ -327,6 +548,12 @@
   <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 8v5M12 16.5h.01"/><circle cx="12" cy="12" r="9"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.6M18 14.2a5 5 0 0 1 2.6 4.8"/></symbol>
+  <symbol id="i-cards" viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="6" rx="1.5"/><rect x="14" y="14" width="7" height="6" rx="1.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></symbol>
+  <symbol id="i-feather" viewBox="0 0 24 24"><path d="M20 4C12 4 8 9 8 16v4"/><path d="M8 16c5 0 9-3 10.5-8"/><path d="M4 20l4-4"/></symbol>
 </svg>
 
 <div class="app" id="app">
@@ -348,6 +575,7 @@
   </div>
 </div>
 <div class="toast" id="toast" role="status"></div>
+<div class="ritual" id="ritual" role="dialog" aria-modal="true"></div>
 <div class="ask" id="ask">
   <div class="convo" id="convo"></div>
   <div class="askbar" id="askbar">
@@ -364,13 +592,24 @@ const STEPS = [
   [1, "Карта импульсов", "approved"], [2, "Манифест темы", "ready", "d2"], [3, "Этический компас", "approved"],
   [4, "Мировоззренческий базис", "not_started"], [5, "Тональный манифест", "stale"], [6, "Паспорт места", "approved"],
   [7, "Атлас правил", "not_started"], [8, "Жанровый кодекс", "approved"], [9, "Концепт-вектор", "in_progress"],
-  [10, "Референсное поле", "draft"], [11, "Главный вопрос", "ready"], [12, "Выбор формата", "approved"],
+  [10, "Референсное поле", "draft"], [11, "Главный вопрос", "ready", "d11"], [12, "Выбор формата", "approved"],
   [13, "Скелетная карта", "approved"], [14, "Поэпизодник", "approved"], [15, "Кастинг-лист", "approved"],
   [16, "Психологические профили", "approved"], [17, "Диалоговая партитура", "in_progress"], [18, "Ансамбль и рентген", "not_started"],
   [19, "Битовая карта сцены", "in_progress"], [20, "Черновик сцены", "in_progress"], [21, "Обратный протокол", "not_started"], [22, "Финальный текст", "not_started"],
 ];
 let current = "home";
-const STATE = { d2Approved: false, sceneConflict: true, sceneOpen: 3 };
+const D2Q = "Можно ли защитить любимых правдой, которая их ранит, — или любая защищающая ложь в итоге разрушает то, что должна была сохранить?";
+const STATE = {
+  d2Approved: false, sceneConflict: true, sceneOpen: 3, lineFixed: false, d2q: D2Q,
+  way: null, draftName: "", fresh: null,
+  imp: "drop", impOpen: 2,
+  d11: { answers: [], own: [], checks: {}, approved: false },
+  chg: "edit", chgOld: D2Q, chgNew: "Имеет ли человек право решать за близких, какую правду они смогут вынести?", plan: new Set([5, 9, 13]), revision: false,
+  bibleTab: "people", gap: null,
+};
+const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const approvedCount = () => STEPS.filter((s) => s[2] === "approved").length;
+const nextStepN = () => (STATE.revision ? 5 : !STATE.d2Approved ? 2 : STATE.d11.approved ? 0 : 11);
 
 function renderPath() {
   const step = ([n, name, s, key]) => `<button class="step ${key && key === current ? "cur" : ""}" ${key ? `data-open="${key}"` : ""}><span class="dot ${s}"><i></i></span><span class="n">${n}</span><span class="lbl">${name}</span></button>`;
@@ -378,7 +617,10 @@ function renderPath() {
     <button class="step sub"><span class="dot approved"><i></i></span><span class="lbl">Сцена 13 · Озеро</span></button>
     <button class="step sub ${current === "scene" ? "cur" : ""}" data-open="scene"><span class="dot ${STATE.sceneConflict ? "conflict" : "in_progress"}"><i></i></span><span class="lbl">Сцена 14 · Кухня</span>${STATE.sceneOpen ? `<span class="ping">${STATE.sceneOpen}</span>` : ""}</button>
     <button class="step sub"><span class="dot not_started"><i></i></span><span class="lbl">Сцена 15 · Пристань</span></button>`;
+  const link = (key, icon, label) => `<button class="step link ${current === key ? "cur" : ""}" data-open="${key}"><span class="dot">${ico(icon)}</span><span class="n"></span><span class="lbl">${label}</span></button>`;
   document.getElementById("path").innerHTML =
+    link("shelf", "back", "Все истории") +
+    `<h4>Материалы</h4>` + link("bible", "people", "Библия проекта") + link("cards", "cards", "Карточки сцен") +
     `<h4>Основа истории</h4>` + STEPS.slice(0, 12).map(step).join("") +
     `<h4>Полный метр</h4>` + STEPS.slice(12, 20).map(step).join("") + scenes + STEPS.slice(20).map(step).join("");
 }
@@ -406,7 +648,7 @@ function journeySvg() {
   const nodes = pts.map(([x, y, [n, name, s, key]]) => {
     const words = name.split(" "); const l1 = words.slice(0, Math.ceil(words.length / 2)).join(" "), l2 = words.slice(Math.ceil(words.length / 2)).join(" ");
     const filled = s === "approved";
-    const next = n === 2;
+    const next = n === nextStepN();
     return `<g class="jnode" ${key ? `data-open="${key}"` : n === 20 ? `data-open="scene"` : ""}>
       ${next ? `<circle class="glow" cx="${x}" cy="${y}" r="20" fill="var(--accent)"/>` : ""}
       <circle class="ring" cx="${x}" cy="${y}" r="13" fill="${filled ? col[s] : "var(--paper)"}" stroke="${col[s]}" stroke-width="2" ${s === "not_started" ? 'stroke-dasharray="2 3"' : ""}/>
@@ -427,12 +669,12 @@ const VIEWS = {
       <h1>Тихая вода</h1>
       <p class="logline">Женщина двадцать лет молчит о гибели брата, чтобы сберечь семью, — пока дочь не находит фотографию с озера.</p>
       <div class="cards">
-        <button class="card next" data-open="d2"><div class="lbl">${ico("ai")}Следующий шаг</div><h3>Манифест темы</h3><p>Я добавил контртезис и задал один вопрос. Посмотрите — и можно утверждать.</p><span class="go">Продолжить ${ico("arrow")}</span></button>
+        ${nextCard()}
         <button class="card" data-open="scene"><div class="lbl" style="color:var(--bad)">${ico("warn")}Противоречие</div><h3>Сцена 14</h3><p>Аня узнаёт правду о брате раньше, чем задумано в структуре.</p></button>
         <button class="card"><div class="lbl" style="color:var(--warn)">${ico("clock")}Устарело</div><h3>Тональный манифест</h3><p>Тема изменилась — тон стоит перечитать.</p></button>
       </div>
       <div class="journey">
-        <div class="journey-h"><b>Путь истории</b><span>9 из 22 шагов утверждено · последняя правка вчера в 23:40</span></div>
+        <div class="journey-h"><b>Путь истории</b><span>${approvedCount()} из 22 шагов утверждено ·последняя правка вчера в 23:40</span></div>
         ${journeySvg()}
         <div class="legend">
           <span><i style="background:var(--ok);border-color:var(--ok)"></i>утверждён</span>
@@ -448,13 +690,13 @@ const VIEWS = {
       <article class="sheet">
         <div class="eyebrow">Шаг 2 · Основа истории</div>
         <h1>Манифест темы</h1>
-        <div class="meta">${STATE.d2Approved ? `<span class="pill approved"><i></i>Утверждён</span>только что<button class="approve" disabled>${ico("check")}Утверждено</button>` : `<span class="pill ready"><i></i>Ждёт утверждения</span>правка 2 ч назад<button class="approve" data-act="approve">${ico("check")}Утвердить</button>`}</div>
+        ${d2Meta()}
         <div class="prose">
           <h2>О чём эта история</h2>
           <p class="lead">Это история о&nbsp;том, как молчание, выбранное ради защиты близких, постепенно превращается в&nbsp;стену, за&nbsp;которой человек перестаёт узнавать самого себя.</p>
           <p class="by-ai">Вера двадцать лет хранит тайну гибели брата и&nbsp;уверена, что этим бережёт семью. Но&nbsp;каждый год тишины делает её всё более чужой собственной дочери.</p>
           <h2>Тематический вопрос</h2>
-          <p><span class="mark" data-a="q">Можно ли защитить любимых правдой, которая их ранит, — или любая защищающая ложь в&nbsp;итоге разрушает то, что должна была сохранить?</span></p>
+          <p><span class="mark" data-a="q">${esc(STATE.d2q)}</span></p>
           <h2>Контртезис</h2>
           <p><span class="mark sugg" data-a="s">Молчание Веры — не&nbsp;только страх, но&nbsp;и&nbsp;форма любви. История не&nbsp;осуждает её выбор, а&nbsp;показывает его цену.</span></p>
           <h2>Чего в этой истории не будет</h2>
@@ -500,11 +742,292 @@ const VIEWS = {
           <div class="q">«Аня узнаёт правду о брате только в кульминации.»<small>Скелетная карта · акт III, сцена 22</small></div>Что меняем — реплику или структуру?
           <div class="acts"><button class="chipbtn" data-act="conf-line" data-k="conf">Реплику</button><button class="chipbtn" data-act="conf-structure" data-k="conf">Структуру</button></div></div>
       </aside></div>`,
+
+  // ——— Связка 1: полка, новая история, разбор рукописи ———
+  shelf: () => `<div class="stage"><div class="home">
+      <div class="hello">Добрый вечер.</div>
+      <h1>Ваши истории</h1>
+      <div class="books">
+        <button class="book" data-open="home"><div class="art water"><b>Тихая вода</b></div><h3>Тихая вода</h3><p>Полный метр · драма</p><p>${approvedCount()} из 22 шагов · вчера в 23:40</p></button>
+        ${STATE.imp === "accepted" ? book("wind", "Северный ветер", "Роман · из рукописи", "Разбор принят · шаг 1 ждёт вас") : ""}
+        ${STATE.fresh ? book("fresh", STATE.fresh, "Формат выберем позже", "Шаг 1 · записан первый импульс") : ""}
+        <button class="book add" data-act="new-story"><div class="art">${ico("plus")}</div><h3>Новая история</h3><p>С чистого листа или из рукописи</p></button>
+      </div></div></div>`,
+
+  new: () => `<div class="stage"><article class="sheet">
+      <div class="eyebrow">Новая история</div>
+      <h1>С чего начнём?</h1>
+      <input class="namein" id="namein" autocomplete="off" placeholder="Название — можно придумать позже" value="${esc(STATE.draftName)}" />
+      <div class="ways">
+        <button class="way ${STATE.way === "blank" ? "on" : ""}" data-act="way-blank">${ico("feather")}<b>С чистого листа</b><span>Начнём с того, что вас зацепило: образ, сцена, фраза. Дальше я веду вопросами.</span></button>
+        <button class="way" data-act="way-file">${ico("upload")}<b>Из рукописи</b><span>DOCX, PDF, Fountain, Final Draft или файл STARC. Я разложу текст на сцены, персонажей и места — вы проверите.</span></button>
+      </div>
+      <p class="hint">${ico("clock")}Сценарий, пьеса или проза — решим на шаге 12, когда станет ясно, какая форма нужна этой истории.</p>
+      ${STATE.way === "blank" ? `<div class="first">
+        <div class="who-row">${ico("ai")}Первый вопрос</div>
+        <label for="impulse">Что вас зацепило? Как получится — одной фразой или страницей.</label>
+        <textarea id="impulse" rows="4" placeholder="Например: женщина каждую ночь моет чистую чашку…"></textarea>
+        <div class="examples">Можно начать с:<button class="chipbtn" data-act="ex">Я вижу…</button><button class="chipbtn" data-act="ex">Мне не даёт покоя…</button><button class="chipbtn" data-act="ex">Однажды мне рассказали…</button></div>
+        <div class="row-acts"><button class="approve" data-act="create">${ico("arrow")}Начать историю</button></div>
+      </div>` : ""}
+    </article></div>`,
+
+  import: () => {
+    if (STATE.imp === "drop" || STATE.imp === "reading") return `<div class="stage"><article class="sheet">
+      <div class="eyebrow">Новая история · из рукописи</div>
+      <h1>Загрузите рукопись</h1>
+      <p class="lede">Я разложу текст на сцены, персонажей и места. Ничего не перепишу и не стану оценивать — только разберу то, что уже есть. Проверять будете вы.</p>
+      ${STATE.imp === "drop"
+        ? `<button class="drop" data-act="file">${ico("upload")}<b>Перетащите файл сюда или выберите</b><span>DOCX · PDF · Fountain · Final Draft (FDX) · STARC</span></button>`
+        : `<div class="file">${ico("page")}<div><b>Северный ветер — черновик 3.docx</b><small>214 страниц</small></div></div>${READ.map(rrow).join("")}`}
+    </article></div>`;
+    const accepted = STATE.imp === "accepted";
+    return `<div class="stage doc"><article class="sheet">
+      <div class="eyebrow">Разбор рукописи · черновик 3.docx · 214 стр.</div>
+      <h1>Северный ветер</h1>
+      <div class="meta">${accepted ? `<span class="pill approved"><i></i>Разбор принят</span>` : `<span class="pill ready"><i></i>Ждёт вашей проверки</span><span id="impOpen">${impOpenText()}</span><button class="approve" data-act="accept-import">${ico("check")}Принять разбор</button>`}</div>
+      <div class="prose">
+        <h2 data-a="head">Персонажи · 11</h2>
+        <div class="chips">
+          <span class="chip">Марта <small>31 сц.</small></span><span class="chip">Илья <small>24</small></span>
+          <span class="chip flag" data-a="merge">Михаил · Миша · дядя Миша <small>12</small></span>
+          <span class="chip">Ольга <small>9</small></span><span class="chip">Савва <small>7</small></span><span class="chip">Нина Аркадьевна <small>5</small></span>
+          <span class="chip more">ещё 5 эпизодических</span>
+        </div>
+        <h2>Места · 14</h2>
+        <div class="chips"><span class="chip">Причал</span><span class="chip">Дом Марты</span><span class="chip">Контора</span><span class="chip">Паром</span><span class="chip">Маяк</span><span class="chip flag" data-loc>Вокзал?</span><span class="chip more">ещё 8</span></div>
+        <h2>Сцены · 41</h2>
+        <ol class="slist">
+          <li><span>1</span><b>Причал, рассвет</b><em>Марта встречает паром, которого не ждала.</em></li>
+          <li><span>2</span><b>Контора</b><em>Михаил Петрович отказывает в ссуде.</em></li>
+          <li><span>3</span><b>Дом Марты</b><em>Илья чинит ставни и молчит.</em></li>
+          <li><span>4</span><b>Паром</b><em>Разговор на ветру — половину слов уносит.</em></li>
+          <li><span>5</span><b>Маяк</b><em>Ольга зажигает фонарь, который давно не зажигают.</em></li>
+          <li class="flag" data-a="sc7"><span>7</span><b>Без заголовка</b><em>Марта идёт не к вагону, а к выходу.</em></li>
+        </ol>
+        <p class="more-line">и ещё 35 сцен</p>
+        <h2>Что дальше</h2>
+        <p>Из разбора я соберу черновики трёх документов: «Поэпизодник», «Кастинг-лист» и «Психологические профили». Утверждать их вы будете на своих шагах. Сам путь начнётся с шага 1 — с того, что для вас главное в этой истории. По рукописи я этого не решаю.</p>
+      </div></article>
+      <aside class="margin" id="margin">
+        <div class="note" data-for="head"><div class="who"><span class="av">${ico("ai")}</span>Соавтор<small>разбор</small></div>Я ничего не дописывал и не оценивал — только разметил то, что уже есть в тексте. Любую находку можно открыть в рукописи.</div>
+        <div class="note pending" data-for="merge"><div class="who"><span class="av">${ico("ai")}</span>Один человек?</div>«Миша» — у Марты, «Михаил Петрович» — в конторе, «дядя Миша» — у Ильи. Похоже, это один персонаж.
+          <div class="q">«— Дядя Миша опять про ссуду?»<small>сцена 3 · Илья</small></div>
+          <div class="acts"><button class="chipbtn main" data-act="merge">Один человек</button><button class="chipbtn" data-act="apart">Разные люди</button></div></div>
+        <div class="note pending" data-for="sc7"><div class="who"><span class="av">${ico("ai")}</span>Место не указано</div>У сцены 7 нет заголовка. По тексту это вокзал:
+          <div class="q">«Объявили посадку на дальний, и Марта пошла не к вагону, а к выходу.»<small>сцена 7</small></div>
+          <div class="acts"><button class="chipbtn main" data-act="loc-yes">Да, вокзал</button><button class="chipbtn" data-act="loc-own">Укажу место</button></div></div>
+      </aside></div>`;
+  },
+
+  // ——— Связка 2: этап с пустого листа и утверждение ———
+  d11: () => {
+    const s = STATE.d11, at = s.answers.length, full = at === D11.length;
+    const body = D11.map((q, i) => `<h2>${q.h}</h2>` + (i < at
+      ? `<p class="${s.own[i] ? "" : "by-ai"}" data-a="${q.k}" data-ans="${i}" ${s.approved ? "" : 'contenteditable="true"'}>${esc(s.answers[i])}</p>`
+      : `<p class="ph ${i === at ? "now" : ""}" data-a="${q.k}">${q.ph}</p>`)).join("");
+    const pill = s.approved ? `<span class="pill approved"><i></i>Утверждён</span>только что`
+      : full ? `<span class="pill ready"><i></i>Ждёт утверждения</span>остались ваши пункты`
+      : `<span class="pill in_progress"><i></i>Черновик</span>${at} из ${D11.length} ответов`;
+    const notes = D11.slice(0, at).map((q, i) => `<div class="note done" data-for="${q.k}"><div class="who"><span class="av">${ico("check")}</span>${s.own[i] ? "Ваш вариант" : "Вариант соавтора"}<small>правится в тексте</small></div></div>`).join("")
+      + (full ? `<div class="note fresh" data-for="check"><div class="who"><span class="av">${ico("ai")}</span>Перед утверждением</div>${s.approved ? "Утверждено вами. Если передумаете — сначала покажу, что изменение заденет." : "Три формальных пункта я проверил сам. Два последних — о вашем отношении к истории: их отмечаете только вы."}</div>` : qNote(D11[at], at));
+    return `<div class="stage doc"><article class="sheet">
+        <div class="eyebrow">Шаг 11 · Основа истории</div>
+        <h1>Главный вопрос</h1>
+        <div class="meta">${pill}${s.approved ? `<button class="approve" disabled>${ico("check")}Утверждено</button>` : `<button class="approve" data-act="approve">${ico("check")}Утвердить</button>`}</div>
+        <div class="prose">${body}${full ? `<div class="checklist" data-a="check"><h2>Перед утверждением</h2>${CHECKS.map(ckRow).join("")}</div>` : ""}</div>
+      </article><aside class="margin" id="margin">${notes}</aside></div>`;
+  },
+
+  // ——— Связка 3: изменение утверждённого решения ———
+  impact: () => {
+    const c = STATE.chg;
+    const head = `<div class="eyebrow">Изменение утверждённого решения</div><h1>${c === "planned" ? "План пересмотра" : "Вы меняете «Манифест темы»"}</h1>`;
+    const diff = (editable) => `<div class="diff ${editable ? "" : "fixed"}"><div class="label">Тематический вопрос</div><p class="was">${esc(STATE.chgOld)}</p><p class="now" id="newq" ${editable ? 'contenteditable="true"' : ""}>${esc(STATE.chgNew)}</p></div>`;
+    const wrap = (inner) => `<div class="stage"><article class="sheet wide">${head}${inner}</article></div>`;
+    if (c === "edit") return wrap(`<p class="lede">На этот документ опираются другие. Прежде чем сохранить, я проверю, что изменение задевает. Без вашего согласия ничего не поменяется.</p>${diff(true)}
+      <div class="row-acts"><button class="approve" data-act="scan">${ico("ai")}Проверить последствия</button><button class="chipbtn quiet" data-act="cancel-change">Отменить</button></div>`);
+    if (c === "scan") return wrap(`${diff(false)}${SCAN.map(rrow).join("")}`);
+    if (c === "planned") return wrap(`<p class="lede">Новая формулировка темы сохранена. Задетые документы отмечены на пути слева.</p>${diff(false)}${planBox()}`);
+    const n = IMPACT.length + UNTOUCHED.length;
+    return wrap(`${diff(false)}
+      <div class="impact-grid">${graphSvg()}<div class="tally"><b>Задето ${IMPACT.length} документа из ${n}</b><p>Два устарели — их стоит перечитать с новой темой.</p><p>Один противоречит: кульминация отвечает на старый вопрос.</p><p>Остальные ${UNTOUCHED.length} я проверил — они держатся.</p></div></div>
+      <div class="label">Что задето</div>
+      ${IMPACT.map(vitem).join("")}
+      <details class="calm-list"><summary>Проверено и не задето · ${UNTOUCHED.length}</summary><ul>${UNTOUCHED.map(([, name, why]) => `<li><b>${name}</b> — ${why}</li>`).join("")}</ul></details>
+      ${planBox()}`);
+  },
+
+  // ——— Связка 4: библия проекта и карточки сцен ———
+  bible: () => {
+    const tab = STATE.bibleTab;
+    const tabs = [["people", "Персонажи"], ["places", "Места"], ["rules", "Правила мира"]].map(([k, t]) => `<button data-act="bible-tab" data-k="${k}" aria-pressed="${k === tab}">${t}</button>`).join("");
+    return `<div class="stage doc"><article class="sheet">
+        <div class="eyebrow">Библия проекта · «Тихая вода»</div>
+        <div class="tabs">${tabs}</div>
+        ${tab === "people" ? biblePeople() : tab === "places" ? BIBLE_PLACES : BIBLE_RULES}
+      </article><aside class="margin" id="margin">${tab === "people" ? bibleNotes() : ""}</aside></div>`;
+  },
+
+  cards: () => `<div class="stage"><div class="home">
+      <div class="board-h"><div><div class="hello">Тихая вода · полный метр</div><h1>Карточки сцен</h1></div>
+        <div class="seg"><button aria-pressed="true">Карточки</button><button aria-pressed="false" data-open="scene">Текст сценария</button><button aria-pressed="false" data-act="demo" data-k="Таймлайн в макете пока не нарисован.">Таймлайн</button></div></div>
+      <p class="board-note">Карточки и сценарий — одна история в двух видах: переставили карточку — сцены в тексте встали так же. Карточки можно перетаскивать.</p>
+      <div class="board">${ACTS.map(actCol).join("")}</div>
+    </div></div>`,
 };
+
+const book = (art, title, meta, info) => `<button class="book" data-act="demo" data-k="В макете подробно проработана «Тихая вода»."><div class="art ${art}"><b>${esc(title)}</b></div><h3>${esc(title)}</h3><p>${meta}</p><p>${info}</p></button>`;
+const rrow = ([text, value], i) => `<div class="rrow" style="animation-delay:${i * 0.5}s">${ico("check")}${text}<b>${value}</b></div>`;
+const READ = [["Читаю текст", "214 стр."], ["Нахожу сцены", "41"], ["Узнаю персонажей и их прозвища", "11"], ["Отмечаю места", "14"], ["Сверяю, кто где появляется", "готово"]];
+const impOpenText = () => (STATE.impOpen ? `${STATE.impOpen} ${STATE.impOpen === 1 ? "вопрос" : "вопроса"} на полях` : "вопросов нет");
+
+const D11 = [
+  { k: "mq", h: "Главный вопрос", ph: "Один вопрос, на который история отвечает финалом.", ask: "С какого вопроса начнём? Выберите вариант или напишите свой.",
+    opts: ["Можно ли сберечь семью, если её фундамент — молчание?", "Чья это правда — того, кто её хранит, или того, кого она касается?", "Что дочь должна узнать о матери, чтобы её понять?"] },
+  { k: "who", h: "Через чей выбор звучит ответ", ph: "Чьё решение в финале отвечает на вопрос.", ask: "Чей выбор отвечает на этот вопрос?",
+    opts: ["Веры — она решает, рассказать ли правду", "Ани — она решает, простить ли мать", "Обеих — каждая отвечает по-своему"] },
+  { k: "ans", h: "Ответ финала", ph: "Каким будет ответ — пусть даже неудобным.", ask: "Какой ответ даёт финал? Он не обязан утешать.",
+    opts: ["Нет: семья держится на молчании — и рушится, когда оно кончается", "Да, но иначе: правда не разрушает семью, а меняет её", "Ответа нет — его даёт зритель"] },
+];
+const CHECKS = [
+  { k: "one", t: "Вопрос сформулирован одним предложением", note: "проверил соавтор" },
+  { k: "theme", t: "Не спорит с «Манифестом темы»", note: "проверил соавтор · сверено с тематическим вопросом" },
+  { k: "act", t: "Ответ не звучит раньше третьего акта", note: "проверил соавтор · по «Скелетной карте»" },
+  { k: "want", t: "Ответ на этот вопрос хочется найти и мне", note: "отмечаете вы", mine: true },
+  { k: "lines", t: "Вопрос звучит не только у Веры, но и у Ани", note: "отмечаете вы", mine: true },
+];
+const qNote = (q, i) => `<div class="note fresh pending" data-for="${q.k}"><div class="who"><span class="av">${ico("ai")}</span>Вопрос ${i + 1} из ${D11.length}<small>по «Манифесту темы»</small></div>${q.ask}
+  <div class="opts">${q.opts.map((o) => `<button class="opt" data-act="pick">${o}</button>`).join("")}</div>
+  <div class="own"><input data-own autocomplete="off" placeholder="Свой вариант…" /><button class="chipbtn main" data-act="own">Записать</button></div></div>`;
+const ckRow = (c) => {
+  const s = STATE.d11, on = c.mine ? !!s.checks[c.k] : true;
+  return `<button class="ck ${c.mine ? "mine" : "auto"} ${on ? "on" : ""}" ${c.mine && !s.approved ? `data-act="ck" data-k="${c.k}"` : ""} data-ck="${c.k}"><span class="box">${on ? ico("check") : ""}</span><span>${c.t}<small>${c.note}</small></span></button>`;
+};
+
+const IMPACT = [
+  { n: 5, name: "Тональный манифест", short: "Тон", v: "stale", q: "«Тон истории — тихая вина, которую некому предъявить.»", why: "Тон держится на вине. Новый вопрос — о праве решать за других: тону нужно напряжение выбора, а не покаяние." },
+  { n: 9, name: "Концепт-вектор", short: "Вектор", v: "stale", q: "«Движение истории: от молчания к исповеди.»", why: "Вектор ведёт к признанию. Теперь важнее, кто и когда решает рассказать." },
+  { n: 13, name: "Скелетная карта", short: "Скелет", v: "conflict", q: "«Акт III, сцена 22: Вера не выдерживает и рассказывает всё.»", why: "Кульминация отвечает на старый вопрос: Вера говорит, потому что больше не может молчать. Новый вопрос требует выбора, а не срыва." },
+];
+const UNTOUCHED = [["1", "Карта импульсов", "из импульсов новый вопрос вырастает так же", "Импульсы"], ["8", "Жанровый кодекс", "жанр от формулировки вопроса не зависит", "Жанр"], ["16", "Психологические профили", "страх Веры потерять дочь работает и с новым вопросом", "Профили"], ["С", "Сцена 14", "пока черновик; сверю, когда дойдём до «Скелетной карты»", "Сцена 14"]];
+const SCAN = [["Ищу документы, которые опираются на тему", "7"], ["Сверяю каждый с новой формулировкой", "7 из 7"], ["Подбираю цитаты", "готово"]];
+function graphSvg() {
+  const nodes = [...IMPACT.map((d) => [d.n, d.short, d.v]), ...UNTOUCHED.map(([n, , , short]) => [n, short, "ok"])];
+  const cx = 170, cy = 150, R = 112, col = { stale: "var(--warn)", conflict: "var(--bad)", ok: "var(--ink-3)" };
+  const pts = nodes.map(([n, short, v], i) => {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / nodes.length;
+    return [cx + R * Math.cos(a), cy + R * Math.sin(a), n, short, v];
+  });
+  const lines = pts.map(([x, y, , , v]) => `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="${col[v]}" stroke-width="${v === "ok" ? 1.2 : 2}" ${v === "ok" ? 'stroke-dasharray="3 4" opacity=".6"' : ""}/>`).join("");
+  const dots = pts.map(([x, y, n, short, v]) => `<circle cx="${x}" cy="${y}" r="17" fill="${v === "ok" ? "var(--paper)" : v === "stale" ? "var(--warn-soft)" : "var(--bad-soft)"}" stroke="${col[v]}" stroke-width="2"/>
+    <text class="n" x="${x}" y="${y + 4}" text-anchor="middle">${n}</text><text x="${x}" y="${y >= cy ? y + 33 : y - 25}" text-anchor="middle">${short}</text>`).join("");
+  return `<svg class="graph" viewBox="0 0 340 300" role="img" aria-label="Связи «Манифеста темы» с другими документами">${lines}${dots}
+    <circle cx="${cx}" cy="${cy}" r="30" fill="var(--accent)"/><text x="${cx}" y="${cy + 4}" text-anchor="middle" style="fill:var(--accent-ink);font-weight:600">Тема</text></svg>`;
+}
+const vitem = (d) => {
+  const on = STATE.plan.has(d.n);
+  return `<div class="vitem ${d.v}"><h3><span class="pill ${d.v}"><i></i>${d.v === "conflict" ? "Противоречит" : "Устарело"}</span>${d.name}<small>шаг ${d.n}</small></h3>
+    <button class="toggle ${on ? "on" : ""}" data-act="plan-toggle" data-k="${d.n}"><i></i>${on ? "в плане" : "не пересматривать"}</button>
+    <div class="q">${d.q}</div><p>${d.why}</p></div>`;
+};
+function planBox() {
+  const items = IMPACT.filter((d) => STATE.plan.has(d.n)), planned = STATE.chg === "planned";
+  const list = items.length
+    ? `<ol>${items.map((d, i) => `<li><div><b>${d.name}</b>${d.n === 13 ? "<small>после неё проверю сцены 20–24 — они на неё опираются</small>" : ""}</div><span class="st ${planned && i === 0 ? "next" : ""}">${planned ? (i === 0 ? "следующий" : "ждёт") : `шаг ${d.n}`}</span></li>`).join("")}</ol>`
+    : `<p style="margin:14px 0 18px">В плане ничего нет: вы решили, что новая тема ничего не ломает.</p>`;
+  const acts = planned
+    ? (items.length ? `<button class="approve" data-act="plan-start">${ico("arrow")}Начать с «${items[0].name}»</button>` : `<button class="approve" data-open="home">${ico("arrow")}К пути истории</button>`)
+    : `<button class="approve" data-act="plan-approve">${ico("check")}${items.length ? "Утвердить план и сохранить" : "Сохранить без пересмотра"}</button><button class="chipbtn quiet" data-act="cancel-change">Отменить изменение</button>`;
+  return `<div class="plan"><h2>${planned ? "Идём по порядку" : "План пересмотра"}</h2>
+    <p>${planned ? "Документы открываются по одному, в порядке пути." : "Пройдём задетые документы по одному, в порядке пути. Утвердите план — и я сохраню новую тему."}</p>
+    ${list}<div class="row-acts">${acts}</div></div>`;
+}
+
+const biblePeople = () => `<div class="people">
+    <button class="person" aria-pressed="true"><span class="av2 v">В</span>Вера</button>
+    <button class="person" aria-pressed="false" data-act="demo" data-k="В макете заполнен профиль Веры."><span class="av2 a">А</span>Аня</button>
+    <button class="person" aria-pressed="false" data-act="demo" data-k="В макете заполнен профиль Веры."><span class="av2 k">К</span>Дядя Коля</button>
+    <button class="person" aria-pressed="false" data-act="demo" data-k="В макете заполнен профиль Веры."><span class="av2 m">М</span>Миша, 1998</button>
+    <button class="person add" data-act="demo" data-k="Новый персонаж попадёт в «Кастинг-лист» черновиком — утвердите его там.">${ico("plus")}Добавить</button>
+  </div>
+  <h1>Вера Сомова</h1>
+  <div class="meta"><span class="pill approved"><i></i>Профиль утверждён</span>52 года · мать Ани · сестра Миши</div>
+  <div class="prose">
+    <h2>Чего хочет</h2><p>Чтобы дочь жила так, будто той ночи на&nbsp;озере не&nbsp;было.</p>
+    <h2>Чего боится</h2><p>Что правда сделает её в&nbsp;глазах Ани виноватой — и&nbsp;Аня уйдёт.</p>
+    <h2>Как говорит</h2><p><span class="mark" data-a="voice">Никогда не&nbsp;говорит о&nbsp;тревоге прямо — только через заботу: еда, сон, тёплая куртка.</span> Злится тише обычного.</p>
+    <h2>Что скрывает</h2><p><span class="mark" data-a="secret">В&nbsp;ту ночь она была на&nbsp;мостках. Миша просил её не&nbsp;уходить.</span></p>
+    <h2>Связи</h2>${relSvg()}
+    <h2 data-a="where">Где появляется</h2>
+    <div class="chips">${[2, 3, 7, 13, 14, 22].map((n) => (n === 14 ? `<button class="chip" data-open="scene">Сцена 14</button>` : `<span class="chip">Сцена ${n}</span>`)).join("")}</div>
+  </div>
+  <p class="src">Собрано из «Кастинг-листа» (шаг 15) и «Психологических профилей» (шаг 16). Правка здесь меняет эти документы — через проверку последствий.</p>`;
+const bibleNotes = () => (STATE.lineFixed ? "" : `<div class="note k-conflict" data-for="voice"><div class="who"><span class="av">${ico("warn")}</span>Расходится со сценой 14</div>
+    <div class="q">«Я же просила звонить, когда едешь так поздно.»<small>Сцена 14 · реплика Веры</small></div>Здесь тревога звучит прямо. Править лучше сцену, а не профиль.
+    <div class="acts"><button class="chipbtn" data-open="scene">Открыть сцену</button></div></div>`)
+  + `<div class="note pending" data-for="secret"><div class="who"><span class="av">${ico("ai")}</span>Вопрос к вам</div>Знает ли дядя Коля, что Вера была на мостках? От этого зависит, что он скажет Ане в сцене 9.
+    <div class="opts"><button class="opt" data-act="kolya">Знает — и молчит ради неё</button><button class="opt" data-act="kolya">Догадывается</button><button class="opt" data-act="kolya">Не знает</button></div></div>
+  <div class="note" data-for="where"><div class="who"><span class="av">${ico("ai")}</span>Из черновиков сцен</div>У Веры 34 реплики, 19 из них — про еду, сон и одежду. Это совпадает с профилем.</div>`;
+function relSvg() {
+  // [имя, x, y, цвет, подпись связи, x подписи, y подписи, выравнивание]
+  const P = [["Аня", 60, 40, "ai", "дочь · бережёт и отдаляет", 96, 30, "start"], ["Миша", 60, 160, "ok", "брат · вина, о которой молчит", 96, 182, "start"], ["Коля", 490, 100, "warn", "деверь · догадывается", 383, 88, "middle"]];
+  return `<svg class="rel" viewBox="0 0 540 200" role="img" aria-label="Связи Веры с другими персонажами">
+    ${P.map(([, x, y, c]) => `<line x1="270" y1="100" x2="${x}" y2="${y}" stroke="var(--${c === "ai" ? "ai-line" : c})" stroke-width="1.5"/>`).join("")}
+    <circle cx="270" cy="100" r="32" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><text class="nm" x="270" y="105" text-anchor="middle">Вера</text>
+    ${P.map(([name, x, y, c]) => `<circle cx="${x}" cy="${y}" r="26" fill="var(--${c}-soft)" stroke="var(--${c})" stroke-width="1.5"/><text class="nm" x="${x}" y="${y + 5}" text-anchor="middle">${name}</text>`).join("")}
+    ${P.map(([, , , , label, lx, ly, anchor]) => `<text x="${lx}" y="${ly}" text-anchor="${anchor}">${label}</text>`).join("")}
+  </svg>`;
+}
+const BIBLE_PLACES = `<h1>Места</h1><div class="places">${[
+  ["Дом Веры", "Кухня со светом над раковиной, веранда, где никто не сидит.", "сцены 2, 14, 24"],
+  ["Озеро и мостки", "Тёмная вода и доски, на которых Миша стоял в последний раз.", "сцены 1, 13, 22"],
+  ["Дом дяди Коли", "Гараж, где всё разобрано и ничего не собрано.", "сцена 9"],
+  ["Пристань", "Место, куда Вера не ходит двадцать лет.", "сцена 15"],
+].map(([name, line, sc]) => `<div class="place"><b>${name}</b><p>${line}</p><small>${sc}</small></div>`).join("")}</div>
+  <p class="src">Собрано из «Паспорта места» (шаг 6) и заголовков сцен.</p>`;
+const BIBLE_RULES = `<h1>Правила мира</h1><div class="prose rules">
+    <p>В посёлке все всё помнят, но вслух не говорят.</p>
+    <p>На озеро не ходят отдыхать — только по делу или по горю.</p>
+    <p>Новости приходят через магазин и пристань, никогда — по телефону.</p>
+  </div>
+  <p class="src">«Атлас правил» (шаг 7) ещё не начат, поэтому правила взяты из «Паспорта места». Утвердятся вместе с атласом.</p>`;
+
+const CAST = { В: "v", А: "a", К: "k", М: "m" };
+const ACTS = [
+  ["I", "Тишина", "сцены 1–8", [[1, "Озеро, 1998", "Миша на мостках просит сестру не уходить.", "МВ", "approved"], [2, "Дом Веры, утро", "Всё на своих местах. Вера собирает дочь на поезд.", "ВА", "approved"], [3, "Вокзал", "Аня уезжает в город. Вера не машет.", "ВА", "approved"], [5, "Квартира Ани", "В коробке от бабушки — фото с озера.", "А", "approved"], [7, "Звонок", "«Кто этот мальчик?» — «Соседский».", "ВА", "approved"]], "+ 3 короткие сцены"],
+  ["II", "Трещина", "сцены 9–18", [[9, "Дядя Коля", "Аня едет к дяде за ответами.", "АК", "approved"], "gap", [13, "Озеро, наши дни", "Аня стоит на тех самых мостках.", "А", "approved"], [14, "Кухня, ночь", "Аня приносит слова дяди домой.", "ВА", "conflict", "scene"], [15, "Пристань", "Вера идёт туда, где не была двадцать лет.", "В", "not_started"], [17, "Архив", "Заметка в газете за август 1998-го.", "А", "not_started"]], "+ 4 короткие сцены"],
+  ["III", "Правда", "сцены 19–26", [[20, "Ссора", "Аня уходит из дома среди ночи.", "ВА", "not_started"], [22, "Мостки", "Вера решает рассказать.", "ВА", "not_started"], [24, "Утро", "Две чашки на столе.", "ВА", "not_started"]], "+ 5 коротких сцен"],
+];
+const SKETCH = [11, "Дорога обратно", "Аня в автобусе перечитывает сообщение дяди и не отвечает матери.", "А", "draft"];
+const scard = ([n, title, line, cast, st, open]) => `<div class="scard ${st === "conflict" ? "conflict" : st === "draft" ? "sketch" : ""}" draggable="true" data-sc="${n}" ${open ? `data-open="${open}"` : ""}>
+  <div class="top"><span class="dot ${st}"><i></i></span>Сцена ${n}${st === "draft" ? " · набросок соавтора" : ""}<span class="cast">${[...cast].map((c) => `<span class="av2 ${CAST[c]}">${c}</span>`).join("")}</span></div>
+  <h4>${title}</h4><p>${line}</p></div>`;
+const GHOST = `<div class="scard ghost" data-ghost><div class="top">${ico("ai")}Здесь провисает линия Ани</div><p>После сцены 9 Ани нет на экране до сцены 13 — зритель теряет её. Нужна короткая сцена-связка?</p>
+  <div class="acts"><button class="chipbtn main" data-act="gap-yes">Набросать</button><button class="chipbtn quiet" data-act="gap-no">Не нужно</button></div></div>`;
+const actCol = ([num, name, range, list, fold]) => `<section class="act"><div class="act-h"><b>Акт ${num} · ${name}</b><span>${range}</span></div>
+  <div class="act-list" data-actn="${num}">${list.map((c) => (c === "gap" ? (STATE.gap === null ? GHOST : STATE.gap ? scard(SKETCH) : "") : scard(c))).join("")}</div><div class="fold">${fold}</div></section>`;
+function nextCard() {
+  const card = (key, label, title, text, go) => `<button class="card next" data-open="${key}"><div class="lbl">${ico("ai")}${label}</div><h3>${title}</h3><p>${text}</p><span class="go">${go} ${ico("arrow")}</span></button>`;
+  if (STATE.revision) return card("impact", "План пересмотра", `0 из ${STATE.plan.size} документов`, "Тема изменилась. Начнём с «Тонального манифеста» — я отметил, что в нём устарело.", "Открыть план");
+  if (!STATE.d2Approved) return card("d2", "Следующий шаг", "Манифест темы", "Я добавил контртезис и задал один вопрос. Посмотрите — и можно утверждать.", "Продолжить");
+  if (!STATE.d11.approved) return card("d11", "Следующий шаг", "Главный вопрос", "Лист пока пустой. Начнём с трёх вопросов — варианты я подготовил по «Манифесту темы».", "Начать");
+  return card("cards", "Следующий шаг", "Карточки сцен", "Основа держится. Посмотрим, как сцены стоят по актам и где провисает ритм.", "Открыть");
+}
+const d2Meta = () => (STATE.d2Approved
+  ? `<div class="meta"><span class="pill approved"><i></i>Утверждён</span>только что<button class="chipbtn" data-act="change" style="margin-left:auto">Изменить решение</button><button class="approve" disabled style="margin-left:0">${ico("check")}Утверждено</button></div>`
+  : `<div class="meta"><span class="pill ready"><i></i>Ждёт утверждения</span>правка 2 ч назад<button class="approve" data-act="approve">${ico("check")}Утвердить</button></div>`);
 const ASK = {
   home: ["Спросите о проекте: что мешает двигаться дальше?", "весь проект", []],
   d2: ["Попросите правку или спросите о теме…", "Манифест темы", [["me", "Не хочу, чтобы Вера выглядела виноватой."], ["ai", "Тогда держим контртезис: её молчание — тоже любовь. Я отметил его на полях, рядом с текстом."]]],
   scene: ["Спросите о сцене или выделите реплику…", "Сцена 14 + профиль Веры", [["me", "Почему Аня приходит ночью?"], ["ai", "По битовой карте она едет от дяди сразу после разговора — не может ждать до утра. Добавить это в ремарку?"]]],
+  shelf: ["Спросите: с какой истории продолжить?", "все истории", []],
+  new: ["Не знаете, с чего начать? Спросите…", "новая история", []],
+  import: ["Спросите о разборе: почему так, что пропущено…", "Северный ветер · рукопись", []],
+  d11: ["Попросите другие варианты или спросите о вопросе…", "Главный вопрос + Манифест темы", [["me", "А если вопрос будет про Аню, а не про Веру?"], ["ai", "Можно: тогда ответ даёт её выбор — простить ли мать. Этот вариант есть во втором вопросе на полях."]]],
+  impact: ["Спросите, почему документ задет…", "Манифест темы → 7 документов", []],
+  bible: ["Спросите о персонаже: как бы Вера ответила…", "Библия · Вера", [["me", "Как Вера говорит, когда злится?"], ["ai", "Тише, чем обычно, и о бытовом: «Куртку повесь». Так в профиле — гнев у неё тоже уходит в заботу."]]],
+  cards: ["Спросите о структуре: где провисает ритм…", "Карточки · 3 акта", []],
 };
 
 function layoutNotes() {
@@ -540,8 +1063,23 @@ function highlight(key) {
   document.querySelectorAll(".hl").forEach((e) => e.classList.remove("hl"));
   document.querySelectorAll(`[data-a="${key}"], .note[data-for="${key}"]`).forEach((e) => e.classList.add("hl"));
 }
+// Redraw the current view after a state change, keeping the scroll position
+function paint() {
+  const desk = $("#desk"), y = desk.scrollTop;
+  desk.classList.add("calm");
+  desk.innerHTML = VIEWS[current]();
+  desk.scrollTop = y;
+  renderPath();
+  requestAnimationFrame(relayout);
+}
+function flashAt(key) {
+  const el = $(`[data-a="${key}"]`); el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+}
+function ritual(html) { const r = $("#ritual"); r.innerHTML = `<div class="rcard">${html}</div>`; r.classList.add("on"); }
 function open(key) {
   current = key;
+  $("#desk").classList.remove("calm");
+  $("#app").classList.toggle("bare", ["shelf", "new", "import"].includes(key));
   document.getElementById("desk").innerHTML = VIEWS[key]();
   document.getElementById("desk").scrollTop = 0;
   const [ph, ctx, msgs] = ASK[key];
@@ -591,13 +1129,13 @@ const ACTIONS = {
     resolveNote(note, "Убрано", "Хорошо, без этого."); dropNote(note);
   },
   variant(b, k, note) {
-    const m = $(`[data-a="${k}"]`); m.textContent = b.textContent; m.classList.remove("flash"); void m.offsetWidth; m.classList.add("flash");
+    const m = $(`[data-a="${k}"]`); m.textContent = b.textContent; STATE.d2q = b.textContent; STATE.chgOld = b.textContent; m.classList.remove("flash"); void m.offsetWidth; m.classList.add("flash");
     resolveNote(note, "Вопрос заменён", "Вы выбрали вариант — старая формулировка сохранена в истории.");
   },
   keep(b, k, note) { resolveNote(note, "Оставили ваш вариант", "Больше не предлагаю."); dropNote(note); },
   "show-opts"(b, k, note) { note.querySelector(".opts").hidden = false; b.remove(); layoutNotes(); },
   line(b, k, note) {
-    const m = $(`[data-a="${k}"]`); m.textContent = b.textContent; m.classList.remove("stale"); m.classList.add("flash");
+    const m = $(`[data-a="${k}"]`); m.textContent = b.textContent; m.classList.remove("stale"); m.classList.add("flash"); STATE.lineFixed = true;
     resolveNote(note, "Реплика обновлена", "Теперь она звучит как Вера из профиля: тревога через заботу.");
   },
   "conf-line"(b, k, note) {
@@ -608,6 +1146,7 @@ const ACTIONS = {
   },
   "conf-structure"(b, k, note) { toast("Откроется «Скелетная карта» с предложением перенести узнавание в сцену 14. Утверждённые документы ниже по пути станут «устаревшими»."); },
   approve(b) {
+    if (current === "d11") return approveD11();
     if (current === "scene" && STATE.sceneConflict) {
       toast("Пока нельзя утвердить: сцена спорит со «Скелетной картой». Решите противоречие на полях — и можно будет."); highlight("conf"); return;
     }
@@ -617,11 +1156,116 @@ const ACTIONS = {
       b.disabled = true; b.innerHTML = `${ico("check")}Утверждено`; return;
     }
     STATE.d2Approved = true; STEPS[1][2] = "approved";
-    $(".meta").outerHTML = `<div class="meta"><span class="pill approved"><i></i>Утверждён</span>только что<button class="approve" disabled>${ico("check")}Утверждено</button></div>`;
+    $(".meta").outerHTML = d2Meta();
     renderPath(); toast("Манифест темы утверждён. «Тональный манифест» пересоберу с учётом новой темы.");
   },
+  demo(b, k) { toast(k); },
+
+  // Связка 1
+  "new-story"() { STATE.way = null; open("new"); },
+  "way-blank"() { STATE.way = "blank"; paint(); $("#impulse").focus(); },
+  "way-file"() { STATE.imp = "drop"; STATE.impOpen = 2; open("import"); },
+  ex(b) { const t = $("#impulse"); t.value = b.textContent.replace("…", " "); t.focus(); },
+  create() {
+    const text = $("#impulse").value.trim();
+    if (!text) { toast("Напишите хоть пару слов — это станет первым импульсом истории."); $("#impulse").focus(); return; }
+    STATE.fresh = STATE.draftName.trim() || "Без названия";
+    open("shelf");
+    toast(`История «${esc(STATE.fresh)}» создана. Ваши слова записаны первым импульсом в «Карту импульсов».`);
+  },
+  file() {
+    STATE.imp = "reading"; paint();
+    setTimeout(() => { STATE.imp = "result"; if (current === "import") open("import"); }, 3000);
+  },
+  merge(b, k, note) {
+    const chip = $('[data-a="merge"]'); chip.classList.remove("flag"); chip.innerHTML = "Михаил <small>Миша, дядя Миша · 12</small>";
+    impResolve(note, "Объединил", "Теперь это один персонаж с тремя именами в тексте.");
+  },
+  apart(b, k, note) { $('[data-a="merge"]').classList.remove("flag"); impResolve(note, "Оставил разными", "Михаил, Миша и дядя Миша — три персонажа."); },
+  "loc-yes"(b, k, note) {
+    const row = $('[data-a="sc7"]'); row.classList.remove("flag"); row.querySelector("b").textContent = "Вокзал";
+    const chip = $("[data-loc]"); chip.classList.remove("flag"); chip.textContent = "Вокзал";
+    impResolve(note, "Записал", "Сцена 7 — вокзал.");
+  },
+  "loc-own"(b, k, note) {
+    const name = $('[data-a="sc7"] b'); name.contentEditable = "true"; name.focus(); document.getSelection().selectAllChildren(name);
+    impResolve(note, "Место впишете вы", "Я не угадываю — поправьте заголовок прямо в строке.");
+  },
+  "accept-import"() {
+    if (STATE.impOpen) {
+      toast(`Осталось ${impOpenText()}. Ответьте — тогда черновики соберутся без ошибок.`);
+      highlight($("#margin .note.pending:not(.done)").dataset.for); return;
+    }
+    STATE.imp = "accepted"; open("shelf");
+    toast("Разбор принят. Черновики «Поэпизодника», «Кастинг-листа» и «Профилей» собраны — утвердите их на своих шагах.");
+  },
+
+  // Связка 2
+  pick(b) {
+    const s = STATE.d11; s.answers.push(b.textContent.trim()); s.own.push(false);
+    paint(); flashAt(D11[s.answers.length - 1].k);
+  },
+  own(b, k, note) {
+    const input = note.querySelector("[data-own]"), text = input.value.trim();
+    if (!text) { toast("Напишите свой вариант или выберите один из предложенных."); input.focus(); return; }
+    const s = STATE.d11; s.answers.push(text); s.own.push(true);
+    paint(); flashAt(D11[s.answers.length - 1].k);
+  },
+  ck(b, k) { STATE.d11.checks[k] = !STATE.d11.checks[k]; paint(); },
+
+  // Связка 3
+  change() { STATE.chgOld = STATE.d2q; if (STATE.chg !== "planned") STATE.chg = "edit"; open("impact"); },
+  scan() {
+    const text = $("#newq").textContent.trim();
+    if (!text) { toast("Новая формулировка пустая — напишите её или отмените изменение."); $("#newq").focus(); return; }
+    if (text === STATE.chgOld) { toast("Формулировка не изменилась — проверять нечего."); return; }
+    STATE.chgNew = text; STATE.chg = "scan"; paint();
+    setTimeout(() => { STATE.chg = "result"; if (current === "impact") open("impact"); }, 2200);
+  },
+  "plan-toggle"(b, k) { const n = Number(k); STATE.plan.has(n) ? STATE.plan.delete(n) : STATE.plan.add(n); paint(); },
+  "plan-approve"() {
+    STATE.d2q = STATE.chgNew; STATE.d2Approved = true; STEPS[1][2] = "approved";
+    IMPACT.forEach((d) => { if (STATE.plan.has(d.n)) STEPS[d.n - 1][2] = d.v; });
+    STATE.revision = STATE.plan.size > 0; STATE.chg = "planned"; paint();
+    toast(STATE.revision ? "Новая тема сохранена. Задетые документы отмечены на пути — пройдём их по одному." : "Новая тема сохранена без пересмотра.");
+  },
+  "plan-start"() { toast("Дальше откроется «Тональный манифест» с пометками «устарело» на полях — как реплика в сцене 14. В макете этот лист не нарисован."); },
+  "cancel-change"() { STATE.chg = "edit"; open("d2"); toast("Изменение отменено. «Манифест темы» остался прежним."); },
+
+  // Связка 4
+  "bible-tab"(b, k) { STATE.bibleTab = k; open("bible"); },
+  kolya(b, k, note) { resolveNote(note, "Записал в профиль Коли", `«${b.textContent}» — черновиком. Утвердите его в профиле Коли.`); },
+  "gap-yes"(b) {
+    STATE.gap = true; const g = b.closest("[data-ghost]");
+    g.outerHTML = scard(SKETCH); toast("Набросал сцену 11. Это черновик: в «Поэпизодник» она попадёт, только когда вы её утвердите.");
+  },
+  "gap-no"(b) { STATE.gap = false; b.closest("[data-ghost]").remove(); toast("Хорошо. Для этого места больше не предлагаю."); },
 };
+function impResolve(note, title, text) {
+  STATE.impOpen -= 1; $("#impOpen").textContent = impOpenText(); note.classList.remove("pending");
+  resolveNote(note, title, text);
+}
+function approveD11() {
+  const s = STATE.d11;
+  if (s.answers.length < D11.length) {
+    toast(`Пока нельзя утвердить: заполнено ${s.answers.length} из ${D11.length}. Ответьте на вопрос на полях.`);
+    highlight(D11[s.answers.length].k); return;
+  }
+  const missing = CHECKS.filter((c) => c.mine && !s.checks[c.k]);
+  if (missing.length) {
+    toast("Пункты, которые отмечаете вы, ещё пустые — за вас их не отметить.");
+    missing.forEach((c) => { const el = $(`[data-ck="${c.k}"]`); el.classList.remove("need"); void el.offsetWidth; el.classList.add("need"); });
+    return;
+  }
+  s.approved = true; STEPS[10][2] = "approved"; paint();
+  ritual(`<div class="seal"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="30"/><path d="M20 33l8 8 16-17"/></svg></div>
+    <div class="eyebrow">Шаг 11 утверждён</div><h2>Главный вопрос</h2><blockquote>${esc(s.answers[0])}</blockquote>
+    <ul><li>На шагах 18 и 21 я сверю с ним каждую сцену и покажу расхождения с цитатами.</li><li>Если вы его измените, сначала покажу, что это заденет.</li><li>Утверждено ${approvedCount()} из 22 шагов.</li></ul>
+    <div class="acts"><button class="chipbtn main" data-open="home">К пути истории</button><button class="chipbtn quiet">Остаться на листе</button></div>`);
+}
 document.addEventListener("click", (e) => {
+  const rit = e.target.closest("#ritual");
+  if (rit && (e.target === rit || e.target.closest("button"))) rit.classList.remove("on");
   const act = e.target.closest("[data-act]");
   if (act) return ACTIONS[act.dataset.act](act, act.dataset.k, act.closest(".note"));
   const o = e.target.closest("[data-open]"); if (o) return open(o.dataset.open);
@@ -645,8 +1289,36 @@ $("#askin").addEventListener("keydown", (e) => {
     convo.scrollTop = convo.scrollHeight;
   }, 1100);
 });
+document.addEventListener("input", (e) => {
+  if (e.target.id === "namein") STATE.draftName = e.target.value;
+  if (e.target.dataset.ans) STATE.d11.answers[Number(e.target.dataset.ans)] = e.target.textContent.trim();
+});
 document.addEventListener("keydown", (e) => {
-  if (e.target.closest("input, [contenteditable=true]")) return;
+  if (e.key === "Enter" && e.target.matches("[data-own]")) { e.preventDefault(); ACTIONS.own(null, null, e.target.closest(".note")); }
+  if (e.key === "Escape" && $("#ritual").classList.contains("on")) $("#ritual").classList.remove("on");
+});
+// Карточки сцен: перетаскивание внутри акта и между актами
+let dragged = null, dragFrom = "";
+const spot = (card) => `${card.parentElement.dataset.actn}:${[...card.parentElement.children].indexOf(card)}`;
+document.addEventListener("dragstart", (e) => {
+  const card = e.target instanceof Element && e.target.closest(".scard[draggable]"); if (!card) return;
+  dragged = card; dragFrom = spot(card); card.classList.add("dragging"); e.dataTransfer.effectAllowed = "move";
+});
+document.addEventListener("dragover", (e) => {
+  const list = dragged && e.target instanceof Element && e.target.closest(".act-list"); if (!list) return;
+  e.preventDefault();
+  const after = [...list.querySelectorAll(".scard:not(.dragging)")].find((c) => e.clientY < c.getBoundingClientRect().top + c.offsetHeight / 2);
+  list.insertBefore(dragged, after || null);
+});
+document.addEventListener("dragend", () => {
+  if (!dragged) return;
+  dragged.classList.remove("dragging");
+  const to = spot(dragged), act = to.split(":")[0];
+  if (to !== dragFrom) toast(`Сцена ${dragged.dataset.sc} ${act !== dragFrom.split(":")[0] ? `теперь в акте ${act}` : "на новом месте"}. Это меняет утверждённую «Скелетную карту» — перед сохранением я покажу, что задето.`);
+  dragged = null;
+});
+document.addEventListener("keydown", (e) => {
+  if (e.target.closest("input, textarea, [contenteditable=true]")) return;
   if (e.key === "Escape" && $("#app").classList.contains("focus")) toggleFocus();
   if (["f", "F", "а", "А"].includes(e.key)) toggleFocus();
 });
@@ -655,8 +1327,16 @@ addEventListener("resize", relayout);
 $("#app").addEventListener("transitionend", placeAsk);
 new ResizeObserver(placeAsk).observe($("#desk"));
 // Ссылка вида #scene/dark открывает нужный экран и тему сразу
-const [hashView, hashTheme] = location.hash.slice(1).split("/");
+// Третья часть ссылки открывает экран в промежуточном состоянии: #d11/light/checklist
+const PRESETS = {
+  "new/blank": () => { STATE.way = "blank"; },
+  "import/result": () => { STATE.imp = "result"; },
+  "d11/checklist": () => { STATE.d11.answers = D11.map((q) => q.opts[0]); STATE.d11.own = D11.map(() => false); STATE.d11.checks = { want: true }; },
+  "impact/result": () => { STATE.d2Approved = true; STEPS[1][2] = "approved"; STATE.chg = "result"; },
+};
+const [hashView, hashTheme, hashPreset] = location.hash.slice(1).split("/");
 if (hashTheme) document.documentElement.dataset.theme = hashTheme;
+if (hashPreset) PRESETS[`${hashView}/${hashPreset}`]();
 document.querySelectorAll("[data-theme-btn]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.themeBtn === document.documentElement.dataset.theme)));
 open(hashView || "home");
 </script>
