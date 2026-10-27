@@ -11,7 +11,7 @@
 ## 2. Проверки фронтенда в общем гейте
 
 - [x] 2.1 `scripts/validate.sh`: если нет `web/node_modules`, ошибка с подсказкой `npm ci --prefix web` и код `1`; иначе `format:check`, `lint`, `typecheck`, `build` (D11). `scripts/format.sh`: добавить `npm run format --prefix web`. Проверка: с переименованным `web/node_modules` скрипт выдаёт подсказку и `1`; с неотформатированным файлом в `web/src` подсказывает `./scripts/format.sh` и возвращает `1`; на чистом дереве — `0`.
-- [ ] 2.2 `.github/workflows/validate.yml`: `actions/setup-node` с `node-version-file: web/.nvmrc` и кэшем npm по `web/package-lock.json`, затем `npm ci --prefix web` перед `validate.sh`. Проверка: `actionlint` или прогон workflow на ветке; результат в `tmp/VERIFY.md`.
+- [x] 2.2 `.github/workflows/validate.yml`: `actions/setup-node` с `node-version-file: web/.nvmrc` и кэшем npm по `web/package-lock.json`, затем `npm ci --prefix web` перед `validate.sh`. Проверка: `actionlint` или прогон workflow на ветке; результат в `tmp/VERIFY.md`.
 - [x] 2.3 `AGENTS.md`: в «Where changes belong» добавить `web/` и `web/src/design-system/`; в «Local development» и «Verification» — `npm ci --prefix web`, `npm run dev --prefix web`, требование установленных зависимостей для `validate.sh`. `README.md`: короткий раздел «Фронтенд». Проверка: `git diff --check`; команды из документов выполняются как написано.
 
 ## 3. Токены, темы и их проверки
