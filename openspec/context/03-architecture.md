@@ -61,3 +61,4 @@ updated: 2026-10-26
 - Свои продуктовые маршруты через `base_app`, утверждение только маршрутом — ADR-002.
 - Модели DeepSeek и эмбеддинги GigaChat через LiteLLM-прокси — ADR-003.
 - Фронтенд: Refine, CopilotKit, `@plotwell/editor` на shadcn/ui — ADR-004.
+- Писательские потоки по образцу STARC; партнёрство или своё — ADR-005.
