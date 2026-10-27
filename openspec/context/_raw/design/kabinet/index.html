@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Authorled — концепт «Кабинет»</title>
+<link rel="stylesheet" href="assets/index-QpOuAosh.css" />
+<style>
+  /* Концепт «Кабинет»: бумага на тёплом столе, свет лампы, заметки соавтора на полях.
+     Палитра здесь экспериментальная и ещё не перенесена в tokens.css. */
+  :root, [data-theme="light"] {
+    --desk: oklch(0.935 0.017 78);
+    --desk-glow: oklch(0.985 0.03 85 / 0.9);
+    --panel: oklch(0.972 0.011 82);
+    --panel-solid: oklch(0.972 0.011 82);
+    --line: oklch(0.87 0.016 75);
+    --paper: oklch(0.993 0.005 90);
+    --ink: oklch(0.25 0.028 262);
+    --ink-2: oklch(0.47 0.02 70);
+    --ink-3: oklch(0.62 0.016 72);
+    --accent: oklch(0.43 0.115 262);
+    --accent-ink: oklch(0.99 0.005 90);
+    --accent-soft: oklch(0.93 0.035 262);
+    --ai: oklch(0.5 0.13 318);
+    --ai-soft: oklch(0.95 0.028 318);
+    --ai-line: oklch(0.8 0.07 318);
+    --ok: oklch(0.55 0.085 155);
+    --ok-soft: oklch(0.94 0.03 155);
+    --warn: oklch(0.6 0.12 70);
+    --warn-soft: oklch(0.95 0.045 80);
+    --bad: oklch(0.53 0.16 25);
+    --bad-soft: oklch(0.95 0.03 25);
+    --wip: oklch(0.5 0.1 250);
+    --shadow: 0 1px 1px oklch(0.4 0.03 60 / 0.05), 0 8px 24px -6px oklch(0.4 0.04 60 / 0.16), 0 32px 64px -24px oklch(0.4 0.05 60 / 0.22);
+    --shadow-sm: 0 1px 2px oklch(0.4 0.03 60 / 0.08), 0 6px 16px -8px oklch(0.4 0.04 60 / 0.2);
+    --grain: 0.05;
+  }
+  [data-theme="sepia"] {
+    --desk: oklch(0.83 0.042 70);
+    --desk-glow: oklch(0.93 0.05 80 / 0.85);
+    --panel: oklch(0.91 0.035 78);
+    --panel-solid: oklch(0.91 0.035 78);
+    --line: oklch(0.78 0.04 70);
+    --paper: oklch(0.955 0.033 84);
+    --ink: oklch(0.29 0.04 50);
+    --ink-2: oklch(0.45 0.045 55);
+    --ink-3: oklch(0.58 0.04 60);
+    --accent: oklch(0.42 0.09 255);
+    --accent-ink: oklch(0.96 0.03 84);
+    --accent-soft: oklch(0.88 0.03 250);
+    --ai: oklch(0.47 0.12 335);
+    --ai-soft: oklch(0.91 0.035 340);
+    --ai-line: oklch(0.74 0.07 335);
+    --ok: oklch(0.5 0.08 150); --ok-soft: oklch(0.89 0.04 140);
+    --warn: oklch(0.55 0.12 60); --warn-soft: oklch(0.9 0.06 75);
+    --bad: oklch(0.5 0.15 28); --bad-soft: oklch(0.9 0.04 35);
+    --wip: oklch(0.47 0.09 250);
+    --shadow: 0 1px 1px oklch(0.3 0.05 50 / 0.08), 0 8px 24px -6px oklch(0.3 0.06 50 / 0.22), 0 32px 64px -24px oklch(0.3 0.06 50 / 0.3);
+    --shadow-sm: 0 1px 2px oklch(0.3 0.05 50 / 0.1), 0 6px 16px -8px oklch(0.3 0.06 50 / 0.25);
+    --grain: 0.08;
+  }
+  [data-theme="dark"] {
+    --desk: oklch(0.175 0.012 60);
+    --desk-glow: oklch(0.36 0.055 70 / 0.55);
+    --panel: oklch(0.215 0.013 62);
+    --panel-solid: oklch(0.215 0.013 62);
+    --line: oklch(0.3 0.014 65);
+    --paper: oklch(0.235 0.013 68);
+    --ink: oklch(0.91 0.022 85);
+    --ink-2: oklch(0.74 0.02 80);
+    --ink-3: oklch(0.58 0.018 75);
+    --accent: oklch(0.78 0.085 255);
+    --accent-ink: oklch(0.2 0.02 260);
+    --accent-soft: oklch(0.3 0.04 258);
+    --ai: oklch(0.79 0.1 318);
+    --ai-soft: oklch(0.29 0.045 318);
+    --ai-line: oklch(0.5 0.08 318);
+    --ok: oklch(0.76 0.09 155); --ok-soft: oklch(0.28 0.035 155);
+    --warn: oklch(0.8 0.11 78); --warn-soft: oklch(0.3 0.045 75);
+    --bad: oklch(0.73 0.13 25); --bad-soft: oklch(0.29 0.05 25);
+    --wip: oklch(0.76 0.08 250);
+    --shadow: 0 1px 1px oklch(0 0 0 / 0.3), 0 10px 30px -8px oklch(0 0 0 / 0.55), 0 40px 80px -30px oklch(0 0 0 / 0.6);
+    --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.35), 0 6px 16px -8px oklch(0 0 0 / 0.5);
+    --grain: 0.06;
+  }
+
+  :root { --grain-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.22 0 0 0 0 0.12 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); --rail-w: 284px; }
+  [data-theme="dark"] { --grain-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 0.9 0 0 0 0 0.75 0 0 0 .035 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .28s; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; color: var(--ink); font-family: var(--font-ui); font-size: 15px; line-height: 1.5; overflow: hidden;
+    background: var(--grain-img), radial-gradient(1100px 520px at 58% -140px, var(--desk-glow), transparent 70%), var(--desk);
+  }
+  button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; padding: 0; }
+  svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .serif { font-family: var(--font-prose); }
+
+  .app { display: grid; grid-template-columns: var(--rail-w) minmax(0, 1fr); height: 100%; transition: grid-template-columns .45s cubic-bezier(.2,.8,.2,1); }
+  .app.focus { grid-template-columns: 0 minmax(0, 1fr); }
+
+  /* ——— Левая колонка: обложка проекта и путь ——— */
+  .rail { margin: 12px 0 12px 12px; border-radius: 20px; background: var(--panel); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; overflow: hidden; transition: opacity .3s, transform .45s; }
+  .app.focus .rail { opacity: 0; transform: translateX(-24px); pointer-events: none; }
+  .cover { display: flex; gap: 12px; align-items: center; padding: 18px 18px 14px; cursor: pointer; }
+  .cover-art { width: 46px; height: 58px; border-radius: 4px 8px 8px 4px; flex: none; position: relative; overflow: hidden;
+    background: linear-gradient(160deg, oklch(0.55 0.07 230), oklch(0.32 0.06 250)); box-shadow: inset 3px 0 0 oklch(0 0 0 / .18), var(--shadow-sm); }
+  .cover-art::after { content: ""; position: absolute; left: -10%; right: -10%; bottom: 14px; height: 18px; border-radius: 50%; border-top: 1.5px solid oklch(1 0 0 / .45); }
+  .cover-art::before { content: ""; position: absolute; left: -10%; right: -10%; bottom: 8px; height: 14px; border-radius: 50%; border-top: 1.5px solid oklch(1 0 0 / .3); }
+  .cover b { display: block; font-family: var(--font-prose); font-size: 19px; font-weight: 600; letter-spacing: -.01em; line-height: 1.2; }
+  .cover small { color: var(--ink-3); font-size: 12.5px; }
+  .path { flex: 1; overflow: auto; padding: 4px 10px 20px; }
+  .path h4 { margin: 16px 10px 6px 34px; font-size: 11px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); }
+  .step { white-space: nowrap; position: relative; display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 5px 10px; border-radius: 10px; font-size: 13.5px; color: var(--ink-2); transition: background .2s, color .2s; }
+  .step::before { content: ""; position: absolute; left: 19px; top: -6px; bottom: -6px; width: 1.5px; background: var(--line); z-index: 0; }
+  .step:hover { background: oklch(from var(--ink) l c h / .05); color: var(--ink); }
+  .step.cur { background: var(--paper); color: var(--ink); font-weight: 600; box-shadow: var(--shadow-sm); }
+  .step.sub { padding-left: 34px; font-size: 13px; }
+  .step.sub::before { left: 19px; }
+  .dot { position: relative; z-index: 1; width: 20px; height: 20px; flex: none; display: grid; place-items: center; }
+  .dot i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--ink-3); background: var(--panel-solid); display: block; }
+  .dot.approved i { background: var(--ok); border-color: var(--ok); }
+  .dot.ready i { border-color: var(--accent); background: radial-gradient(circle, var(--accent) 35%, var(--panel-solid) 40%); }
+  .dot.in_progress i { border-color: var(--wip); background: linear-gradient(90deg, var(--wip) 50%, var(--panel-solid) 50%); }
+  .dot.draft i { border-style: dashed; border-color: var(--wip); }
+  .dot.stale i { border-color: var(--warn); background: var(--warn-soft); }
+  .dot.conflict i { border-color: var(--bad); background: var(--bad); }
+  .dot.not_started i { border-style: dotted; border-color: var(--ink-2); }
+  .dot.locked i { opacity: .5; }
+  .step .n { flex: none; color: var(--ink-3); font-variant-numeric: tabular-nums; width: 16px; font-size: 12px; }
+  .step .lbl { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .step .ping { margin-left: auto; min-width: 18px; height: 18px; border-radius: 9px; background: var(--ai); color: var(--accent-ink); font-size: 11px; font-weight: 600; display: grid; place-items: center; padding: 0 5px; }
+  [data-theme="dark"] .step .ping { color: var(--desk); }
+
+  /* ——— Стол ——— */
+  .desk { position: relative; overflow: auto; scroll-behavior: smooth; }
+  .tools { position: fixed; top: 18px; right: 22px; display: flex; gap: 8px; z-index: 20; }
+  .tool { height: 36px; min-width: 36px; padding: 0 10px; border-radius: 18px; background: var(--panel); box-shadow: var(--shadow-sm); display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; color: var(--ink-2); transition: transform .15s; }
+  .tool:hover { transform: translateY(-1px); color: var(--ink); }
+  .themes { display: inline-flex; gap: 2px; padding: 3px; border-radius: 18px; background: var(--panel); box-shadow: var(--shadow-sm); }
+  .themes button { width: 30px; height: 30px; border-radius: 15px; display: grid; place-items: center; color: var(--ink-3); transition: background .2s, color .2s; }
+  .themes button[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: var(--shadow-sm); }
+
+  .stage { min-height: 100%; padding: 64px 40px 160px; display: flex; justify-content: center; gap: 28px; animation: rise .5s cubic-bezier(.2,.8,.2,1); }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  .sheet { position: relative; width: min(720px, 100%); flex: none; background: var(--paper); border-radius: 6px; box-shadow: var(--shadow); padding: 72px 84px 96px; }
+  .sheet::after { /* загнутый край стопки */
+    content: ""; position: absolute; left: 10px; right: 10px; bottom: -6px; height: 12px; border-radius: 0 0 6px 6px; background: var(--paper); filter: brightness(.97); box-shadow: var(--shadow-sm); z-index: -1;
+  }
+  .eyebrow { font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+  .sheet h1 { font-family: var(--font-prose); font-optical-sizing: auto; font-size: 44px; line-height: 1.08; font-weight: 500; letter-spacing: -.02em; margin: 12px 0 18px; }
+  .meta { display: flex; align-items: center; gap: 12px; padding-bottom: 26px; margin-bottom: 30px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--ink-3); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 11px; border-radius: 13px; font-size: 12.5px; font-weight: 500; }
+  .pill i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .pill.ready { background: var(--accent-soft); color: var(--accent); }
+  .pill.in_progress { background: var(--accent-soft); color: var(--wip); }
+  .pill.conflict { background: var(--bad-soft); color: var(--bad); }
+  .approve { margin-left: auto; height: 32px; padding: 0 14px; border-radius: 16px; background: var(--accent); color: var(--accent-ink); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 6px 16px -6px oklch(from var(--accent) l c h / .6); transition: transform .15s; }
+  .approve:hover { transform: translateY(-1px); }
+  .prose { font-family: var(--font-prose); font-size: 19px; line-height: 1.7; hyphens: auto; }
+  .prose h2 { font-family: var(--font-ui); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; margin: 34px 0 10px; }
+  .prose h2:first-child { margin-top: 0; }
+  .prose p { margin: 0 0 16px; }
+  .prose .lead::first-letter { font-size: 3.3em; float: left; line-height: .9; margin: 6px 10px 0 -2px; font-weight: 500; color: var(--accent); }
+  .by-ai { box-shadow: inset 2px 0 0 var(--ai-line); padding-left: 16px; margin-left: -18px !important; }
+  .mark { border-radius: 3px; transition: background .25s, box-shadow .25s; cursor: pointer; }
+  .mark.sugg { background: var(--ai-soft); box-shadow: inset 0 -2px 0 var(--ai-line); }
+  .mark.stale { background: linear-gradient(transparent 62%, var(--warn-soft) 62%); }
+  .mark.conflict { text-decoration: underline wavy 1.5px var(--bad); text-underline-offset: .22em; }
+  .mark.hl { background: var(--accent-soft); box-shadow: 0 0 0 4px var(--accent-soft); }
+
+  /* Сценарная страница */
+  .sheet.script { width: min(760px, 100%); padding: 80px 76px 96px 112px; }
+  .script-body { font-family: var(--font-script); font-size: 15.5px; line-height: 1.25; }
+  .script-body p { margin: 0 0 1.25em; max-width: 60ch; }
+  .script-body .sh { font-weight: 700; letter-spacing: .02em; }
+  .script-body .ch { margin: 0 0 0 22ch; }
+  .script-body .par { margin: 0 0 0 16ch; }
+  .script-body .dl { margin-left: 10ch; max-width: 35ch; }
+  .pageno { position: absolute; top: 36px; right: 56px; font-family: var(--font-script); color: var(--ink-3); }
+
+  /* Поля: заметки соавтора рядом с текстом */
+  .stage.doc { --sheet-w: 720px; padding-left: 24px; padding-right: 24px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, var(--sheet-w)) 332px minmax(0, 1fr); align-items: start; gap: 0; }
+  .stage.doc:has(.script) { --sheet-w: 760px; }
+  .stage.doc .sheet { width: 100%; }
+  .stage.doc .sheet { grid-column: 2; }
+  .stage.doc .margin { grid-column: 3; margin-left: 32px; }
+  .margin { position: relative; width: 300px; flex: none; transition: opacity .3s, transform .45s, width .45s; }
+  /* Фокус: только лист по центру; заметки, строка соавтора и кнопки уходят */
+  .app.focus .margin { display: none; }
+  .app.focus .stage.doc { grid-template-columns: minmax(0, 1fr) minmax(0, var(--sheet-w)) minmax(0, 1fr); }
+  .app.focus ~ .ask { opacity: 0; transform: translate(-50%, 24px); pointer-events: none; }
+  .app.focus ~ .tools { opacity: .25; }
+  .app.focus ~ .tools:hover { opacity: 1; }
+  .ask, .tools { transition: opacity .3s, transform .3s; }
+  .note { position: absolute; left: 0; right: 0; background: var(--panel); border-radius: 14px; padding: 12px 14px 12px; box-shadow: var(--shadow-sm); font-size: 13.5px; line-height: 1.45; color: var(--ink-2); transition: top .35s cubic-bezier(.2,.8,.2,1), box-shadow .25s, transform .25s; animation: rise .5s both; }
+  /* Нить от края листа к заметке: точка на кромке бумаги и линия через поле */
+  .note::before { content: ""; position: absolute; left: -32px; top: 20px; width: 32px; height: 1.5px; background: var(--ink-3); opacity: .5; transition: background .2s, opacity .2s; }
+  .note::after { content: ""; position: absolute; left: -35px; top: 18px; width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); opacity: .6; transition: background .2s, opacity .2s; }
+  .note:hover::before, .note:hover::after { opacity: 1; }
+  .note.hl::before, .note.hl::after { background: var(--accent); opacity: 1; }
+  .note.hl { box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
+  .note.k-stale::after { background: var(--warn); } .note.k-conflict::after { background: var(--bad); }
+  .note .who { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--ink); margin-bottom: 5px; }
+  .note .who .av { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: var(--ai-soft); color: var(--ai); }
+  .note .who .av svg { width: 12px; height: 12px; }
+  .note .who small { margin-left: auto; font-weight: 400; color: var(--ink-3); }
+  .note.k-stale .av { background: var(--warn-soft); color: var(--warn); }
+  .note.k-conflict .av { background: var(--bad-soft); color: var(--bad); }
+  .note .q { font-family: var(--font-prose); font-size: 14.5px; color: var(--ink); border-left: 2px solid var(--line); padding: 1px 0 1px 10px; margin: 8px 0; }
+  .note .q small { display: block; font-family: var(--font-ui); font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
+  .note .opts { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .note .opt { text-align: left; font-family: var(--font-prose); font-size: 14.5px; color: var(--ink); padding: 8px 10px; border-radius: 10px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--line); transition: box-shadow .2s, transform .2s; }
+  .note .opt:hover { box-shadow: inset 0 0 0 1.5px var(--ai-line); transform: translateX(2px); }
+  .note .acts { display: flex; gap: 6px; margin-top: 10px; }
+  .chipbtn { height: 28px; padding: 0 11px; border-radius: 14px; font-size: 12.5px; font-weight: 500; background: var(--paper); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); transition: background .2s; }
+  .chipbtn.main { background: var(--ink); color: var(--paper); box-shadow: none; }
+  .chipbtn.quiet { background: none; box-shadow: none; color: var(--ink-3); }
+
+  /* Плавающая строка соавтора */
+  .ask { position: fixed; left: calc(var(--rail-w) + (100% - var(--rail-w)) / 2); bottom: 22px; transform: translateX(-50%); width: min(640px, calc(100% - var(--rail-w) - 40px)); z-index: 20; transition: left .45s cubic-bezier(.2,.8,.2,1); }
+  .convo { background: var(--panel-solid); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); padding: 14px 16px 6px; margin-bottom: 10px; display: none; flex-direction: column; gap: 8px; font-size: 14px; max-height: 300px; overflow: auto; }
+  .ask.open .convo { display: flex; animation: rise .3s; }
+  .bubble { max-width: 85%; padding: 8px 12px; border-radius: 14px; line-height: 1.45; }
+  .bubble.me { align-self: flex-end; background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 4px; }
+  .bubble.ai { background: var(--ai-soft); color: var(--ink); border-bottom-left-radius: 4px; }
+  .bubble.typing { display: inline-flex; gap: 4px; padding: 12px 14px; }
+  .bubble.typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--ai); animation: blink 1s infinite; }
+  .bubble.typing i:nth-child(2) { animation-delay: .15s; } .bubble.typing i:nth-child(3) { animation-delay: .3s; }
+  @keyframes blink { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+  .askbar { display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 8px 0 18px; border-radius: 26px; background: var(--panel-solid); border: 1px solid var(--line); box-shadow: var(--shadow); color: var(--ink-3); cursor: text; }
+  .askbar .glyph { color: var(--ai); }
+  .askbar .ctx { font-size: 12px; padding: 3px 9px; border-radius: 10px; background: var(--ai-soft); color: var(--ai); white-space: nowrap; }
+  .askbar .send { width: 36px; height: 36px; border-radius: 18px; background: var(--ink); color: var(--paper); display: grid; place-items: center; }
+  .askbar input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font: inherit; color: var(--ink); }
+  .askbar input::placeholder { color: var(--ink-3); }
+  .askbar:focus-within { border-color: var(--ai-line); }
+
+  /* ——— Карта пути ——— */
+  .home { width: 1040px; max-width: 100%; }
+  .home .hello { color: var(--ink-3); font-size: 14px; margin-bottom: 6px; }
+  .home h1 { font-family: var(--font-prose); font-size: 64px; font-weight: 500; letter-spacing: -.03em; line-height: 1; margin: 0 0 14px; }
+  .home .logline { font-family: var(--font-prose); font-style: italic; font-size: 21px; line-height: 1.5; color: var(--ink-2); max-width: 680px; margin: 0 0 32px; }
+  .journey { position: relative; background: var(--panel); border-radius: 24px; box-shadow: var(--shadow-sm); padding: 26px 30px 18px; margin-bottom: 26px; }
+  .journey-h { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+  .journey-h b { font-family: var(--font-prose); font-size: 22px; font-weight: 500; }
+  .journey-h span { color: var(--ink-3); font-size: 13.5px; }
+  .journey svg.map { width: 100%; height: auto; display: block; overflow: visible; }
+  .jnode { cursor: pointer; }
+  .jnode text { font-family: var(--font-ui); fill: var(--ink-2); font-size: 12.5px; }
+  .jnode text.num { fill: var(--ink-3); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .jnode:hover circle.ring { stroke: var(--accent); }
+  .glow { animation: breathe 2.6s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+  @keyframes breathe { 0%,100% { opacity: .25; transform: scale(1); } 50% { opacity: .55; transform: scale(1.35); } }
+  .cards { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 16px; margin-bottom: 26px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 12px 0 2px; margin-top: 6px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--ink-3); }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .legend i { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid var(--ink-2); display: inline-block; }
+  .card { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; background: var(--panel); border-radius: 20px; box-shadow: var(--shadow-sm); padding: 20px 22px; text-align: left; transition: transform .2s, box-shadow .2s; }
+  .card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+  .card .lbl { font-size: 11.5px; letter-spacing: .09em; text-transform: uppercase; font-weight: 600; color: var(--ink-3); display: flex; align-items: center; gap: 6px; }
+  .card h3 { font-family: var(--font-prose); font-size: 23px; font-weight: 500; margin: 10px 0 6px; letter-spacing: -.01em; }
+  .card p { margin: 0; color: var(--ink-2); font-size: 14px; }
+  .card.next { background: linear-gradient(140deg, var(--paper), var(--ai-soft)); }
+  .card.next .lbl { color: var(--ai); }
+  .card .go { margin-top: 16px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13.5px; color: var(--accent); }
+  .opts[hidden] { display: none; }
+  .pill.approved { background: var(--ok-soft); color: var(--ok); }
+  .approve:disabled { background: var(--ok-soft); color: var(--ok); box-shadow: none; cursor: default; transform: none; }
+  .note.done { color: var(--ink-3); }
+  .note.done .av { background: var(--ok-soft); color: var(--ok); }
+  .note.gone { opacity: 0; transform: translateX(16px); transition: opacity .35s, transform .35s; }
+  .mark.flash { animation: flash 1.2s; }
+  @keyframes flash { 0% { background: var(--ai-soft); box-shadow: 0 0 0 4px var(--ai-soft); } 100% { background: transparent; box-shadow: none; } }
+  p.gone { opacity: 0; transition: opacity .35s; }
+  .toast { position: fixed; top: 18px; left: 50%; transform: translate(-50%, -12px); opacity: 0; z-index: 40; background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 14px; box-shadow: var(--shadow); font-size: 14px; max-width: min(520px, calc(100% - 32px)); transition: opacity .25s, transform .25s; pointer-events: none; }
+  .toast.on { opacity: 1; transform: translate(-50%, 0); }
+  .desk { container-type: inline-size; grid-column: 2; }
+
+  /* Узкое окно: путь сворачивается в полоску с точками и раскрывается при наведении */
+  @media (max-width: 1180px) {
+    :root { --rail-w: 76px; }
+    .rail { position: fixed; left: 12px; top: 12px; bottom: 12px; width: 52px; margin: 0; z-index: 30; transition: width .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s, opacity .3s, transform .45s; }
+    .rail:hover { width: 284px; box-shadow: var(--shadow); }
+    .rail .cover { padding: 14px 3px 10px; }
+    .rail:not(:hover) .cover > div:last-child, .rail:not(:hover) h4, .rail:not(:hover) .step .n, .rail:not(:hover) .step .lbl, .rail:not(:hover) .ping { opacity: 0; }
+    .rail:not(:hover) .path { padding: 4px 0 20px; overflow: hidden; }
+    .rail:not(:hover) .step { padding-left: 16px; padding-right: 0; }
+    .rail:not(:hover) .step.cur { background: none; box-shadow: none; }
+    .rail:not(:hover) .step.cur .dot { box-shadow: 0 0 0 3px var(--accent-soft); border-radius: 50%; }
+    .rail:not(:hover) .step::before { left: 25.25px; }
+  }
+  /* Узкий стол: заметки соавтора уходят под лист */
+  @container (max-width: 1139px) {
+    .stage { flex-direction: column; align-items: center; padding: 72px 20px 160px; gap: 18px; }
+    .stage.doc, .app.focus .stage.doc { grid-template-columns: minmax(0, var(--sheet-w)); justify-content: center; row-gap: 18px; }
+    .stage.doc .sheet, .stage.doc .margin { grid-column: 1; margin-left: 0; }
+    .margin { width: min(720px, 100%); min-height: 0 !important; }
+    .margin::before { content: "На полях"; display: block; font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; color: var(--ink-3); margin: 6px 4px 10px; }
+    .note { position: static; margin-bottom: 12px; }
+    .note::before, .note::after { display: none; }
+    .cards { grid-template-columns: 1fr; }
+  }
+  @container (max-width: 760px) {
+    .sheet { padding: 48px 28px 64px; }
+    .sheet.script { padding: 48px 18px 64px 26px; }
+    .sheet h1 { font-size: 34px; }
+    .script-body { font-size: 12.5px; }
+    .home h1 { font-size: 44px; }
+    .home .logline { font-size: 18px; }
+    .meta { flex-wrap: wrap; }
+    .approve { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-ai" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-page" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></symbol>
+  <symbol id="i-focus" viewBox="0 0 24 24"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 8v5M12 16.5h.01"/><circle cx="12" cy="12" r="9"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+</svg>
+
+<div class="app" id="app">
+  <aside class="rail">
+    <div class="cover" data-open="home">
+      <div class="cover-art"></div>
+      <div><b>Тихая вода</b><small>полный метр · драма</small></div>
+    </div>
+    <div class="path" id="path"></div>
+  </aside>
+  <main class="desk" id="desk"></main>
+</div>
+<div class="tools">
+  <button class="tool" id="focusBtn" title="Режим фокуса (F)"><svg class="i"><use href="#i-focus"/></svg>Фокус</button>
+  <div class="themes" role="group" aria-label="Освещение">
+    <button data-theme-btn="light" aria-pressed="true" title="Утро"><svg class="i"><use href="#i-sun"/></svg></button>
+    <button data-theme-btn="sepia" aria-pressed="false" title="Бумага"><svg class="i"><use href="#i-page"/></svg></button>
+    <button data-theme-btn="dark" aria-pressed="false" title="Вечер у лампы"><svg class="i"><use href="#i-moon"/></svg></button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<div class="ask" id="ask">
+  <div class="convo" id="convo"></div>
+  <div class="askbar" id="askbar">
+    <svg class="i glyph"><use href="#i-ai"/></svg>
+    <input id="askin" autocomplete="off" />
+    <span class="ctx" id="askctx"></span>
+    <button class="send" aria-label="Отправить"><svg class="i"><use href="#i-send"/></svg></button>
+  </div>
+</div>
+
+<script>
+const ico = (id) => `<svg class="i"><use href="#i-${id}"/></svg>`;
+const STEPS = [
+  [1, "Карта импульсов", "approved"], [2, "Манифест темы", "ready", "d2"], [3, "Этический компас", "approved"],
+  [4, "Мировоззренческий базис", "not_started"], [5, "Тональный манифест", "stale"], [6, "Паспорт места", "approved"],
+  [7, "Атлас правил", "not_started"], [8, "Жанровый кодекс", "approved"], [9, "Концепт-вектор", "in_progress"],
+  [10, "Референсное поле", "draft"], [11, "Главный вопрос", "ready"], [12, "Выбор формата", "approved"],
+  [13, "Скелетная карта", "approved"], [14, "Поэпизодник", "approved"], [15, "Кастинг-лист", "approved"],
+  [16, "Психологические профили", "approved"], [17, "Диалоговая партитура", "in_progress"], [18, "Ансамбль и рентген", "not_started"],
+  [19, "Битовая карта сцены", "in_progress"], [20, "Черновик сцены", "in_progress"], [21, "Обратный протокол", "not_started"], [22, "Финальный текст", "not_started"],
+];
+let current = "home";
+const STATE = { d2Approved: false, sceneConflict: true, sceneOpen: 3 };
+
+function renderPath() {
+  const step = ([n, name, s, key]) => `<button class="step ${key && key === current ? "cur" : ""}" ${key ? `data-open="${key}"` : ""}><span class="dot ${s}"><i></i></span><span class="n">${n}</span><span class="lbl">${name}</span></button>`;
+  const scenes = `
+    <button class="step sub"><span class="dot approved"><i></i></span><span class="lbl">Сцена 13 · Озеро</span></button>
+    <button class="step sub ${current === "scene" ? "cur" : ""}" data-open="scene"><span class="dot ${STATE.sceneConflict ? "conflict" : "in_progress"}"><i></i></span><span class="lbl">Сцена 14 · Кухня</span>${STATE.sceneOpen ? `<span class="ping">${STATE.sceneOpen}</span>` : ""}</button>
+    <button class="step sub"><span class="dot not_started"><i></i></span><span class="lbl">Сцена 15 · Пристань</span></button>`;
+  document.getElementById("path").innerHTML =
+    `<h4>Основа истории</h4>` + STEPS.slice(0, 12).map(step).join("") +
+    `<h4>Полный метр</h4>` + STEPS.slice(12, 20).map(step).join("") + scenes + STEPS.slice(20).map(step).join("");
+}
+
+// ——— Карта пути: извилистая дорога из 22 шагов ———
+function journeySvg() {
+  const W = 980, perRow = [8, 8, 6], rowH = 132, x0 = 50, x1 = W - 50;
+  const pts = []; let i = 0;
+  perRow.forEach((cnt, r) => {
+    for (let k = 0; k < cnt; k++) {
+      const t = perRow[0] === 1 ? 0 : k / (perRow[0] - 1);
+      const x = r % 2 === 0 ? x0 + t * (x1 - x0) : x1 - t * (x1 - x0);
+      pts.push([x, 46 + r * rowH, STEPS[i++]]);
+    }
+  });
+  const pathD = (ps) => ps.reduce((acc, [bx, by], k) => {
+    if (k === 0) return `M ${bx} ${by}`;
+    const [ax, ay] = ps[k - 1];
+    if (ay === by) return acc + ` L ${bx} ${by}`;
+    const dir = ax > W / 2 ? 1 : -1;
+    return acc + ` C ${ax + dir * 90} ${ay}, ${bx + dir * 90} ${by}, ${bx} ${by}`;
+  }, "");
+  const d = pathD(pts);
+  const col = { approved: "var(--ok)", ready: "var(--accent)", in_progress: "var(--wip)", draft: "var(--wip)", stale: "var(--warn)", conflict: "var(--bad)", not_started: "var(--ink-3)" };
+  const nodes = pts.map(([x, y, [n, name, s, key]]) => {
+    const words = name.split(" "); const l1 = words.slice(0, Math.ceil(words.length / 2)).join(" "), l2 = words.slice(Math.ceil(words.length / 2)).join(" ");
+    const filled = s === "approved";
+    const next = n === 2;
+    return `<g class="jnode" ${key ? `data-open="${key}"` : n === 20 ? `data-open="scene"` : ""}>
+      ${next ? `<circle class="glow" cx="${x}" cy="${y}" r="20" fill="var(--accent)"/>` : ""}
+      <circle class="ring" cx="${x}" cy="${y}" r="13" fill="${filled ? col[s] : "var(--paper)"}" stroke="${col[s]}" stroke-width="2" ${s === "not_started" ? 'stroke-dasharray="2 3"' : ""}/>
+      ${filled ? `<path d="M${x - 5} ${y} l3.5 3.5 l6.5 -7" stroke="var(--paper)" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>` : `<text class="num" x="${x}" y="${y + 4}" text-anchor="middle">${n}</text>`}
+      <text x="${x}" y="${y + 34}" text-anchor="middle">${l1}</text>${l2 ? `<text x="${x}" y="${y + 50}" text-anchor="middle">${l2}</text>` : ""}
+    </g>`;
+  }).join("");
+  const fork = pts[11];
+  return `<svg class="map" viewBox="0 0 ${W} ${46 + 2 * rowH + 70}">
+    <path d="${d}" fill="none" stroke="var(--line)" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 7"/>
+    <g><rect x="${fork[0] - 64}" y="${fork[1] - 46}" width="128" height="22" rx="11" fill="var(--ai-soft)"/><text x="${fork[0]}" y="${fork[1] - 31}" text-anchor="middle" style="font: 600 11px var(--font-ui); fill: var(--ai)">развилка формата</text></g>
+    ${nodes}</svg>`;
+}
+
+const VIEWS = {
+  home: () => `<div class="stage"><div class="home">
+      <div class="hello">Добрый вечер. С возвращением к истории.</div>
+      <h1>Тихая вода</h1>
+      <p class="logline">Женщина двадцать лет молчит о гибели брата, чтобы сберечь семью, — пока дочь не находит фотографию с озера.</p>
+      <div class="cards">
+        <button class="card next" data-open="d2"><div class="lbl">${ico("ai")}Следующий шаг</div><h3>Манифест темы</h3><p>Я добавил контртезис и задал один вопрос. Посмотрите — и можно утверждать.</p><span class="go">Продолжить ${ico("arrow")}</span></button>
+        <button class="card" data-open="scene"><div class="lbl" style="color:var(--bad)">${ico("warn")}Противоречие</div><h3>Сцена 14</h3><p>Аня узнаёт правду о брате раньше, чем задумано в структуре.</p></button>
+        <button class="card"><div class="lbl" style="color:var(--warn)">${ico("clock")}Устарело</div><h3>Тональный манифест</h3><p>Тема изменилась — тон стоит перечитать.</p></button>
+      </div>
+      <div class="journey">
+        <div class="journey-h"><b>Путь истории</b><span>9 из 22 шагов утверждено · последняя правка вчера в 23:40</span></div>
+        ${journeySvg()}
+        <div class="legend">
+          <span><i style="background:var(--ok);border-color:var(--ok)"></i>утверждён</span>
+          <span><i style="border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)"></i>ждёт вас</span>
+          <span><i style="border-color:var(--wip);background:linear-gradient(90deg,var(--wip) 50%,transparent 50%)"></i>в работе</span>
+          <span><i style="border-color:var(--warn)"></i>устарел</span>
+          <span><i style="border-style:dotted"></i>не начат</span>
+        </div>
+      </div>
+      </div></div>`,
+
+  d2: () => `<div class="stage doc">
+      <article class="sheet">
+        <div class="eyebrow">Шаг 2 · Основа истории</div>
+        <h1>Манифест темы</h1>
+        <div class="meta">${STATE.d2Approved ? `<span class="pill approved"><i></i>Утверждён</span>только что<button class="approve" disabled>${ico("check")}Утверждено</button>` : `<span class="pill ready"><i></i>Ждёт утверждения</span>правка 2 ч назад<button class="approve" data-act="approve">${ico("check")}Утвердить</button>`}</div>
+        <div class="prose">
+          <h2>О чём эта история</h2>
+          <p class="lead">Это история о&nbsp;том, как молчание, выбранное ради защиты близких, постепенно превращается в&nbsp;стену, за&nbsp;которой человек перестаёт узнавать самого себя.</p>
+          <p class="by-ai">Вера двадцать лет хранит тайну гибели брата и&nbsp;уверена, что этим бережёт семью. Но&nbsp;каждый год тишины делает её всё более чужой собственной дочери.</p>
+          <h2>Тематический вопрос</h2>
+          <p><span class="mark" data-a="q">Можно ли защитить любимых правдой, которая их ранит, — или любая защищающая ложь в&nbsp;итоге разрушает то, что должна была сохранить?</span></p>
+          <h2>Контртезис</h2>
+          <p><span class="mark sugg" data-a="s">Молчание Веры — не&nbsp;только страх, но&nbsp;и&nbsp;форма любви. История не&nbsp;осуждает её выбор, а&nbsp;показывает его цену.</span></p>
+          <h2>Чего в этой истории не будет</h2>
+          <p>Простого разоблачения злодея. Сцены, где правда звучит как приговор. Финала, в&nbsp;котором все прощают друг друга за&nbsp;одну ночь.</p>
+        </div>
+      </article>
+      <aside class="margin" id="margin">
+        <div class="note" data-for="by-ai"><div class="who"><span class="av">${ico("ai")}</span>Соавтор<small>принято вами · 24 окт</small></div>Этот абзац я предложил из «Карты импульсов», вы его приняли.</div>
+        <div class="note" data-for="q"><div class="who"><span class="av">${ico("ai")}</span>Вопрос к вам<small>сейчас</small></div>Сейчас выбор звучит как «правда или ложь». А&nbsp;если для Веры это выбор между двумя видами любви? Варианты для размышления:
+          <div class="opts"><button class="opt" data-act="variant" data-k="q">Что сильнее защищает — правда, которая ранит, или тишина, которая отдаляет?</button><button class="opt" data-act="variant" data-k="q">Сколько лет можно любить человека, не&nbsp;говоря ему главного?</button></div>
+          <div class="acts"><button class="chipbtn quiet" data-act="keep" data-k="q">Оставить мой вариант</button></div></div>
+        <div class="note" data-for="s"><div class="who"><span class="av">${ico("ai")}</span>Предлагаю добавить<small>импульс №3</small></div>Вы писали, что не хотите делать Веру виноватой. Контртезис держит это в&nbsp;теме.
+          <div class="acts"><button class="chipbtn main" data-act="accept" data-k="s">Принять</button><button class="chipbtn" data-act="edit" data-k="s">Изменить</button><button class="chipbtn quiet" data-act="reject" data-k="s">Убрать</button></div></div>
+      </aside></div>`,
+
+  scene: () => `<div class="stage doc">
+      <article class="sheet script">
+        <span class="pageno">14.</span>
+        <div class="eyebrow">Шаг 20 · Черновик сцены · биты 1–4</div>
+        <h1 style="font-size:36px">Кухня, ночь</h1>
+        <div class="meta">${STATE.sceneConflict ? `<span class="pill conflict"><i></i>Есть противоречие</span>` : `<span class="pill in_progress"><i></i>В работе</span>`}заметки соавтора на полях<button class="approve" data-act="approve">${ico("check")}Утвердить</button></div>
+        <div class="script-body">
+          <p class="sh">ИНТ. КУХНЯ В ДОМЕ ВЕРЫ — НОЧЬ</p>
+          <p>Свет только над раковиной. ВЕРА (52) моет чашку. Чашка давно чистая. Она всё равно трёт её губкой.</p>
+          <p><span class="mark sugg" data-a="door">Хлопает входная дверь. Вера замирает, не выключая воду.</span></p>
+          <p class="ch">АНЯ (З.К.)</p><p class="dl">Мам, ты опять не спишь?</p>
+          <p>Входит АНЯ (24), в куртке, с рюкзаком. Ставит рюкзак на стул.</p>
+          <p class="ch">ВЕРА</p><p class="par">(не оборачиваясь)</p>
+          <p class="dl"><span class="mark stale" data-a="stale">Я же просила звонить, когда едешь так поздно.</span></p>
+          <p class="ch">АНЯ</p>
+          <p class="dl">Я была у дяди Коли. <span class="mark conflict" data-a="conf">Он сказал, что Миша утонул не&nbsp;случайно.</span></p>
+          <p>Вода продолжает течь. Вера закрывает кран.</p>
+        </div>
+      </article>
+      <aside class="margin" id="margin">
+        <div class="note" data-for="door"><div class="who"><span class="av">${ico("ai")}</span>Предлагаю добавить<small>бит 2</small></div>Чтобы появление Ани было неожиданным.
+          <div class="acts"><button class="chipbtn main" data-act="accept" data-k="door">Принять</button><button class="chipbtn quiet" data-act="reject" data-k="door">Убрать</button></div></div>
+        <div class="note k-stale" data-for="stale"><div class="who"><span class="av">${ico("clock")}</span>Устарело<small>после правки профиля</small></div>
+          <div class="q">«Вера никогда не говорит о тревоге прямо — только через заботу.»<small>Психологический профиль Веры</small></div>
+          <div class="opts" hidden><button class="opt" data-act="line" data-k="stale">Ты поела хоть что-нибудь? Я оставила суп.</button><button class="opt" data-act="line" data-k="stale">Я уже и чайник второй раз поставила.</button></div>
+          <div class="acts"><button class="chipbtn" data-act="show-opts">Варианты реплики</button></div></div>
+        <div class="note k-conflict" data-for="conf"><div class="who"><span class="av">${ico("warn")}</span>Противоречие</div>
+          <div class="q">«Аня узнаёт правду о брате только в кульминации.»<small>Скелетная карта · акт III, сцена 22</small></div>Что меняем — реплику или структуру?
+          <div class="acts"><button class="chipbtn" data-act="conf-line" data-k="conf">Реплику</button><button class="chipbtn" data-act="conf-structure" data-k="conf">Структуру</button></div></div>
+      </aside></div>`,
+};
+const ASK = {
+  home: ["Спросите о проекте: что мешает двигаться дальше?", "весь проект", []],
+  d2: ["Попросите правку или спросите о теме…", "Манифест темы", [["me", "Не хочу, чтобы Вера выглядела виноватой."], ["ai", "Тогда держим контртезис: её молчание — тоже любовь. Я отметил его на полях, рядом с текстом."]]],
+  scene: ["Спросите о сцене или выделите реплику…", "Сцена 14 + профиль Веры", [["me", "Почему Аня приходит ночью?"], ["ai", "По битовой карте она едет от дяди сразу после разговора — не может ждать до утра. Добавить это в ремарку?"]]],
+};
+
+function layoutNotes() {
+  const margin = document.getElementById("margin"); if (!margin) return;
+  const sheet = margin.previousElementSibling;
+  let floor = 0;
+  if (getComputedStyle(margin.querySelector(".note") || margin).position === "static") return;
+  margin.querySelectorAll(".note").forEach((n) => {
+    const key = n.dataset.for;
+    const a = key === "by-ai" ? sheet.querySelector(".by-ai") : sheet.querySelector(`[data-a="${key}"]`);
+    const want = a ? a.getBoundingClientRect().top - sheet.getBoundingClientRect().top - 10 : floor;
+    const top = Math.max(want, floor);
+    n.style.top = top + "px";
+    floor = top + n.offsetHeight + 12;
+  });
+  margin.style.minHeight = floor + "px";
+}
+function placeAsk() {
+  const target = document.querySelector("#desk .sheet, #desk .home");
+  const r = target.getBoundingClientRect();
+  const ask = $("#ask");
+  ask.style.left = r.left + r.width / 2 + "px";
+  ask.style.width = Math.min(640, r.width - 32) + "px";
+}
+function toggleFocus() {
+  const on = $("#app").classList.toggle("focus");
+  $("#focusBtn").lastChild.textContent = on ? "Выйти" : "Фокус";
+  if (on) toast("Только текст. F или Esc — вернуть всё.");
+  requestAnimationFrame(relayout);
+}
+function relayout() { layoutNotes(); placeAsk(); }
+function highlight(key) {
+  document.querySelectorAll(".hl").forEach((e) => e.classList.remove("hl"));
+  document.querySelectorAll(`[data-a="${key}"], .note[data-for="${key}"]`).forEach((e) => e.classList.add("hl"));
+}
+function open(key) {
+  current = key;
+  document.getElementById("desk").innerHTML = VIEWS[key]();
+  document.getElementById("desk").scrollTop = 0;
+  const [ph, ctx, msgs] = ASK[key];
+  document.getElementById("askin").placeholder = ph;
+  document.getElementById("askctx").textContent = ctx;
+  document.getElementById("convo").innerHTML = msgs.map(([w, t]) => `<div class="bubble ${w}">${t}</div>`).join("");
+  document.getElementById("ask").classList.remove("open");
+  renderPath();
+  document.querySelectorAll(".note").forEach((n, i) => (n.style.animationDelay = 120 + i * 90 + "ms"));
+  requestAnimationFrame(relayout);
+  document.fonts.ready.then(relayout);
+}
+const $ = (q) => document.querySelector(q);
+let toastTimer;
+function toast(text) {
+  const t = $("#toast"); t.innerHTML = text; t.classList.add("on");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("on"), 3600);
+}
+function resolveNote(note, title, text) {
+  // the counter next to the scene in the path shows unresolved notes
+  if (current === "scene" && !note.classList.contains("done")) { STATE.sceneOpen -= 1; renderPath(); }
+  note.classList.add("done");
+  note.innerHTML = `<div class="who"><span class="av">${ico("check")}</span>${title}<small>сейчас</small></div>${text}`;
+  requestAnimationFrame(layoutNotes);
+}
+function dropNote(note, delay = 2200) {
+  setTimeout(() => { note.classList.add("gone"); setTimeout(() => { note.remove(); layoutNotes(); }, 360); }, delay);
+}
+function setTheme(theme) {
+  const apply = () => {
+    document.documentElement.dataset.theme = theme;
+    document.querySelectorAll("[data-theme-btn]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.themeBtn === theme)));
+  };
+  // A crossfade needs a visible page; a hidden tab just switches.
+  if (document.visibilityState === "visible") document.startViewTransition(apply);
+  else apply();
+}
+const ACTIONS = {
+  accept(b, k, note) {
+    const m = $(`[data-a="${k}"]`); m.classList.remove("sugg"); m.closest("p").classList.add("by-ai");
+    resolveNote(note, "Принято", "Тонкая черта слева напоминает, что абзац написан с соавтором.");
+  },
+  edit(b, k) { const m = $(`[data-a="${k}"]`); m.contentEditable = "true"; m.focus(); toast("Правьте прямо в тексте — заметка останется, пока вы не примете."); },
+  reject(b, k, note) {
+    const p = $(`[data-a="${k}"]`).closest("p"); p.classList.add("gone");
+    setTimeout(() => { p.remove(); layoutNotes(); }, 360);
+    resolveNote(note, "Убрано", "Хорошо, без этого."); dropNote(note);
+  },
+  variant(b, k, note) {
+    const m = $(`[data-a="${k}"]`); m.textContent = b.textContent; m.classList.remove("flash"); void m.offsetWidth; m.classList.add("flash");
+    resolveNote(note, "Вопрос заменён", "Вы выбрали вариант — старая формулировка сохранена в истории.");
+  },
+  keep(b, k, note) { resolveNote(note, "Оставили ваш вариант", "Больше не предлагаю."); dropNote(note); },
+  "show-opts"(b, k, note) { note.querySelector(".opts").hidden = false; b.remove(); layoutNotes(); },
+  line(b, k, note) {
+    const m = $(`[data-a="${k}"]`); m.textContent = b.textContent; m.classList.remove("stale"); m.classList.add("flash");
+    resolveNote(note, "Реплика обновлена", "Теперь она звучит как Вера из профиля: тревога через заботу.");
+  },
+  "conf-line"(b, k, note) {
+    const m = $(`[data-a="${k}"]`); m.textContent = "Он сказал, ты знаешь что-то про озеро."; m.classList.remove("conflict"); m.classList.add("flash");
+    STATE.sceneConflict = false; renderPath();
+    $(".pill.conflict").outerHTML = `<span class="pill in_progress"><i></i>В работе</span>`;
+    resolveNote(note, "Противоречие снято", "Аня только подозревает — правду она узнает в сцене 22, как в структуре.");
+  },
+  "conf-structure"(b, k, note) { toast("Откроется «Скелетная карта» с предложением перенести узнавание в сцену 14. Утверждённые документы ниже по пути станут «устаревшими»."); },
+  approve(b) {
+    if (current === "scene" && STATE.sceneConflict) {
+      toast("Пока нельзя утвердить: сцена спорит со «Скелетной картой». Решите противоречие на полях — и можно будет."); highlight("conf"); return;
+    }
+    if (current === "scene") {
+      toast("Сцена 14 утверждена. Следующая — «Пристань».");
+      $(".meta .pill").outerHTML = `<span class="pill approved"><i></i>Утверждена</span>`;
+      b.disabled = true; b.innerHTML = `${ico("check")}Утверждено`; return;
+    }
+    STATE.d2Approved = true; STEPS[1][2] = "approved";
+    $(".meta").outerHTML = `<div class="meta"><span class="pill approved"><i></i>Утверждён</span>только что<button class="approve" disabled>${ico("check")}Утверждено</button></div>`;
+    renderPath(); toast("Манифест темы утверждён. «Тональный манифест» пересоберу с учётом новой темы.");
+  },
+};
+document.addEventListener("click", (e) => {
+  const act = e.target.closest("[data-act]");
+  if (act) return ACTIONS[act.dataset.act](act, act.dataset.k, act.closest(".note"));
+  const o = e.target.closest("[data-open]"); if (o) return open(o.dataset.open);
+  const t = e.target.closest("[data-theme-btn]"); if (t) return setTheme(t.dataset.themeBtn);
+  if (e.target.closest("#focusBtn")) return toggleFocus();
+  const m = e.target.closest("[data-a]"); if (m && m.contentEditable !== "true") return highlight(m.dataset.a);
+  const n = e.target.closest(".note[data-for]"); if (n) return highlight(n.dataset.for);
+  if (e.target.closest("#askbar")) { if ($("#convo").children.length) $("#ask").classList.add("open"); return; }
+  if (!e.target.closest("#ask")) $("#ask").classList.remove("open");
+});
+$("#askin").addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { $("#ask").classList.remove("open"); e.target.blur(); return; }
+  if (e.key !== "Enter" || !e.target.value.trim()) return;
+  const convo = $("#convo");
+  convo.insertAdjacentHTML("beforeend", `<div class="bubble me"></div><div class="bubble ai typing"><i></i><i></i><i></i></div>`);
+  [...convo.querySelectorAll(".bubble.me")].at(-1).textContent = e.target.value;
+  e.target.value = ""; $("#ask").classList.add("open"); convo.scrollTop = convo.scrollHeight;
+  setTimeout(() => {
+    const t = convo.querySelector(".typing"); t.classList.remove("typing");
+    t.textContent = "Понял. Посмотрю текст и оставлю заметку на полях, рядом с нужным местом.";
+    convo.scrollTop = convo.scrollHeight;
+  }, 1100);
+});
+document.addEventListener("keydown", (e) => {
+  if (e.target.closest("input, [contenteditable=true]")) return;
+  if (e.key === "Escape" && $("#app").classList.contains("focus")) toggleFocus();
+  if (["f", "F", "а", "А"].includes(e.key)) toggleFocus();
+});
+addEventListener("resize", relayout);
+// The ask bar follows the page while the rail and notes slide in and out of focus mode
+$("#app").addEventListener("transitionend", placeAsk);
+new ResizeObserver(placeAsk).observe($("#desk"));
+// Ссылка вида #scene/dark открывает нужный экран и тему сразу
+const [hashView, hashTheme] = location.hash.slice(1).split("/");
+if (hashTheme) document.documentElement.dataset.theme = hashTheme;
+document.querySelectorAll("[data-theme-btn]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.themeBtn === document.documentElement.dataset.theme)));
+open(hashView || "home");
+</script>
+</body>
+</html>
