@@ -91,3 +91,6 @@ package-lock.json
 # =========================
 web/node_modules/
 web/dist/
+# The Node rules above are for root deploy tooling; the frontend manifest and lockfile ship.
+!web/package.json
+!web/package-lock.json
