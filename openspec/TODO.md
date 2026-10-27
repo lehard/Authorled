@@ -48,7 +48,7 @@
 - [ ] Мелкие замечания `/opsx:verify auth-module` (не блокировали архив): (1) проверки просроченного токена и токена чужой аудитории в `scripts/auth_check.sh` и вживую; (2) в `openspec/specs/overview` сценарий «Значения по умолчанию окружения» (`RUNTIME_ENV=prd` и `AGENTOS_URL` по умолчанию) противоречит коду, который падает без этих переменных (`app/main.py`) — решить, спека или код верны, → `remove-config-fallbacks`; (3) строка документации в `app/auth/authorization.py` называет `AUTH_AUDIENCE`, код читает `AUTH_FRONTEND_CLIENT_ID`; (4) в интенте `business-intents/authentik-identity-and-isolation.md` три группы, в коде четыре (`plugins`); (5) базовые сценарии `GET /config`, `/teams`, `/registry`, `/company/sources` (`architecture`, `api/core`, `integrations`) не упоминают, что теперь нужен токен; (6) без токена в `dev` отвечают `/docs`, `/openapi.json`, `/mcp/server-card` — решить, закрывать ли.
 - [x] Shell и правка файлов: в `05-security-and-compliance.md` и `07-anti-patterns.md` разграничены инструменты разработки и продуктовый агент.
 - [ ] Телеметрия: в коде `AgentOS(telemetry=False)` и `AGNO_TELEMETRY=false` в compose (рабочее дерево); спеки и документация не обновлены. → `remove-config-fallbacks`.
-- [ ] ClamAV и фронтенд (Refine, CopilotKit, AG-UI) — дорожная карта, не расхождение: появятся вместе с загрузками и `authorled-web`.
+- [ ] ClamAV и фронтенд (Refine, CopilotKit, AG-UI) — дорожная карта, не расхождение: появятся вместе с загрузками и фронтендом в `web/`.
 - [ ] Redis — закладывается в change первой рассылки продуктовых событий; при одной инстанции API не нужен.
 
 ## Расхождения кода и документации
