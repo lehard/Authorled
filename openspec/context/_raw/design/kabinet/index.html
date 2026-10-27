@@ -618,6 +618,10 @@
   .vrow { display: grid; grid-template-columns: 96px 1fr 92px; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-2); }
   .vrow i { height: 8px; width: max(var(--w), 3px); background: var(--c); border-radius: 4px; }
   .vrow b { font-weight: 500; color: var(--ink); text-align: right; }
+  .scp-voices { display: grid; gap: 6px; width: 100%; max-width: 460px; }
+  .scp-v { grid-template-columns: 128px 1fr 128px; }
+  .scp-v > span { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+  @container (max-width: 760px) { .scp-v { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; } .scp-v i { grid-column: 1 / -1; grid-row: 2; } }
   .tl-alert.warn { box-shadow: var(--shadow-sm), inset 3px 0 0 var(--warn); }
   .tl-alert.warn .av { background: var(--ai-soft); color: var(--ai); }
   .tn .tn-act { fill: oklch(from var(--ink) l c h / .025); }
@@ -628,6 +632,14 @@
   .tn .tn-beat.off { stroke: var(--warn); }
   .tn .tn-bl { font-size: 11.5px; font-weight: 600; fill: var(--ink-2); }
   .tn .tn-area { fill: var(--accent-soft); opacity: .55; }
+  .tn .tn-mband { fill: oklch(from var(--ink) l c h / .025); }
+  .tn .tn-mood { fill: none; stroke: var(--c); stroke-width: 2; opacity: .9; }
+  .tn .tn-mpt { fill: var(--paper); stroke: var(--c); stroke-width: 1.6; cursor: pointer; }
+  .tn .tn-mpt.on { fill: var(--c); }
+  .tn .tn-msel { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 2 3; opacity: .6; }
+  .tn-who { display: inline-flex; align-items: center; gap: 6px; }
+  .tn-who i { width: 10px; height: 3px; border-radius: 2px; }
+  .tn-who[aria-pressed="false"] i { opacity: .35; }
   .tn .tn-line { fill: none; stroke: var(--accent); stroke-width: 2.2; }
   .tn .tn-pt { fill: var(--paper); stroke: var(--accent); stroke-width: 2; cursor: ns-resize; transition: r .15s; }
   .tn .tn-pt:hover { r: 7; }
@@ -755,15 +767,12 @@
   .ibl-k { width: 62px; flex: none; font-size: 12px; color: var(--ink-3); }
   .ibl-t { flex: 1; min-width: 0; font-family: var(--font-prose); font-size: 15.5px; color: var(--ink); }
   .ibp { width: 340px; flex: none; margin-top: 60px; overflow: auto; padding: 14px 14px 110px; border-radius: 20px; background: var(--panel); box-shadow: var(--shadow-sm); }
-  .ib-add { display: flex; gap: 6px; }
-  .ib-add input { flex: 1; min-width: 0; height: 36px; padding: 0 14px; border-radius: 18px; border: 0; background: var(--paper); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); font: inherit; font-size: 14px; }
-  .ib-add .chipbtn { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; }
-  .ib-add .chipbtn svg, .ib-sel-acts .chipbtn svg { width: 13px; height: 13px; }
   .ib-sel { margin-top: 4px; padding: 14px; border-radius: 16px; background: var(--paper); box-shadow: var(--shadow-sm); }
   .ib-sel-h { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; }
   .ib-sel-h b { font-family: var(--font-prose); font-size: 18px; font-weight: 600; }
   .ib-in { font-size: 12px; color: var(--ink-3); }
   .ib-sel > p { margin: 6px 0 4px; font-family: var(--font-prose); font-size: 16px; line-height: 1.4; color: var(--ink); }
+  .ib-sel-acts .chipbtn svg { width: 13px; height: 13px; }
   .ib-sel-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
   .ib-sel-acts .chipbtn { display: inline-flex; align-items: center; gap: 5px; }
   .ib-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin-top: 8px; font-size: 13px; color: var(--ink-2); }
@@ -1427,7 +1436,7 @@ const STATE = {
   d11: { answers: [], own: [], checks: {}, approved: false },
   chg: "edit", chgOld: D2Q, chgNew: "Имеет ли человек право решать за близких, какую правду они смогут вынести?", plan: new Set([5, 9, 13]), revision: false,
   bibleTab: "people", gap: null,
-  tlSel: 14, tlThreads: true, tlKnow: true, grSel: 14, tnSel: 14, tension: {}, relAt: 14, relSel: "va", relFocus: "v", relView: "arcs",
+  tlSel: 14, tlThreads: true, tlKnow: true, grSel: 14, tnSel: 14, tnMood: ["v", "a"], tension: {}, relAt: 14, relSel: "va", relFocus: "v", relView: "arcs",
   ibSel: 10, ibEdit: null, ibRename: null, ibGone: [], ibUndo: null, ibPos: {}, ibLinks: ["1-9", "1-4", "13-14", "3-5", "2-5", "2-16", "5-17", "6-8", "7-8"], ibSugg: ["4-10", "6-12"], ibLink: null, ibYes: {}, ibNo: [], ibNew: [], ibWires: true, ibShowGrew: true, ibGroups: true, ibView: "board", ibCam: null, ibGroupSugg: true,
   // Рамки групп на доске импульсов: координаты в точках доски
   ibFrames: [{ id: "lake", name: "Озеро", x: 0, y: 0, w: 620, h: 452 }, { id: "vera", name: "Вера и тема", x: 700, y: 0, w: 620, h: 452 }, { id: "kitchen", name: "Кухня, ночь", x: 1400, y: 0, w: 420, h: 452 }],
@@ -1718,7 +1727,8 @@ const VIEWS = {
 
   rhythm: () => `<div class="stage"><div class="home">
       <div class="board-h"><div><div class="hello">Тихая вода · полный метр</div><h1>Ритм</h1></div>${boardSeg("rhythm")}</div>
-      <p class="board-note">Кривая напряжения по страницам сценария поверх опорных точек «Скелетной карты». Кривую предлагает соавтор; если чувствуете сцену иначе — потяните точку вверх или вниз. Полосы — где эти точки обычно ждёт зритель полного метра.</p>
+      <p class="board-note">Кривая напряжения по страницам сценария поверх опорных точек «Скелетной карты». Кривую предлагает соавтор; если чувствуете сцену иначе — потяните точку вверх или вниз. Полосы — где эти точки обычно ждёт зритель полного метра. Ниже — настроение героинь: лучше или хуже им от сцены к сцене.</p>
+      <div class="tl-tools"><span>Настроение</span>${TN_WHO.map(([k, name, c]) => `<button class="chipbtn tn-who" aria-pressed="${STATE.tnMood.includes(k)}" data-act="tn-mood" data-k="${k}"><i style="background:var(--${c})"></i>${name}</button>`).join("")}</div>
       <div class="tl-wrap tn-wrap">${tnSvg()}
         <div class="tl-legend tn-legend"><span><i class="lg tn-l"></i>напряжение</span><span><i class="tn-d"></i>ваша правка</span><span><i class="tn-d g"></i>оценка соавтора</span><span><i class="tn-b"></i>где точку обычно ждут</span></div></div>
       ${tnSel()}
@@ -2366,6 +2376,15 @@ const TN_PAGES = { 1: 3, 2: 5, 3: 3, 4: 2, 5: 4, 6: 3, 7: 4, 8: 2, 9: 7, 10: 4, 
 // Оценка соавтора, 0–10. Сцены 14 и 22 зависят от того, где Аня узнаёт правду.
 const TN_AI = { 1: 6, 2: 2, 3: 3, 4: 2, 5: 5, 6: 3, 7: 5, 8: 3, 9: 7, 10: 3, 11: 5, 12: 3, 13: 5, 15: 6, 16: 8, 17: 7, 18: 5, 19: 6, 20: 8, 21: 7, 23: 5, 24: 4, 25: 3, 26: 4 };
 const tnAI = (n) => (n === 14 ? (STATE.sceneConflict ? 9 : 6) : n === 22 ? (STATE.sceneConflict ? 8 : 10) : TN_AI[n]);
+// Настроение героинь по сценам, −5 (хуже некуда) … +5 (лучше всего). Предлагает соавтор по тексту и профилям.
+// Аня в сцене 14 и 22 зависит от того, где она узнаёт правду.
+const TN_MOOD = {
+  v: { 1: -1, 2: 1, 3: 1, 4: 0, 5: -2, 6: -1, 7: -2, 8: -3, 9: -3, 10: -2, 11: -2, 12: -4, 13: -3, 14: -4, 15: -3, 16: -5, 17: -4, 18: -3, 19: -4, 20: -5, 21: -4, 22: -2, 23: 0, 24: 1, 25: 2, 26: 3 },
+  a: { 1: 0, 2: 2, 3: 2, 4: 1, 5: 1, 6: 0, 7: -1, 8: -1, 9: -3, 10: -2, 11: -2, 12: -2, 13: -3, 15: -3, 16: -3, 17: -2, 18: -1, 19: -3, 20: -5, 21: -4, 23: -2, 24: 0, 25: 1, 26: 3 },
+};
+const TN_WHO = [["v", "Вера", "accent"], ["a", "Аня", "ai"]];
+const tnMood = (k, n) => (k === "a" && n === 14 ? (STATE.sceneConflict ? -4 : -3) : k === "a" && n === 22 ? (STATE.sceneConflict ? -2 : -4) : TN_MOOD[k][n]);
+const signed = (v) => (v > 0 ? `+${v}` : v < 0 ? `−${-v}` : "0");
 const TN_WHY = {
   1: "Пролог: зритель видит мостки и чувствует беду, но не знает, что случилось.",
   5: "Фото с озера — первый крючок: вопрос, который держит до конца.",
@@ -2427,7 +2446,14 @@ function tnSvg() {
   const ghosts = scs.filter((s) => s.v !== s.ai).map((s) => `<circle class="tn-ghost" cx="${mid(s)}" cy="${tnY(s.ai)}" r="4"/><line class="tn-gl" x1="${mid(s)}" y1="${tnY(s.ai)}" x2="${mid(s)}" y2="${tnY(s.v)}"/>`).join("");
   const dots = scs.map((s) => `<circle class="tn-pt ${s.v !== s.ai ? "mine" : ""} ${s.n === STATE.tnSel ? "on" : ""} ${s.n === 11 ? "draft" : ""}" data-k="${s.n}" cx="${mid(s)}" cy="${tnY(s.v)}" r="${s.n === STATE.tnSel ? 7 : 5.5}"><title>Сцена ${s.n} · ${s.title} — ${s.v} из 10</title></circle>`).join("");
   const line = tnPath(pts);
-  return `<svg class="tl tn" viewBox="0 0 1040 ${TN_Y0 + 60}" role="img" aria-label="Кривая напряжения по страницам сценария и опорные точки структуры">
+  // Полоса настроения под напряжением: та же ось страниц, своя шкала «лучше — хуже»
+  const MY = TN_Y0 + 150, MK = 11, my = (v) => MY - v * MK, sel = scs.find((s) => s.n === STATE.tnSel);
+  const mood = STATE.tnMood.length ? `<rect class="tn-mband" x="${TN_X0}" y="${my(5) - 6}" width="${TN_X1 - TN_X0}" height="${10 * MK + 12}" rx="8"/>
+    <line class="tn-grid" x1="${TN_X0}" y1="${MY}" x2="${TN_X1}" y2="${MY}"/><text class="sub" x="0" y="${my(4) + 4}">лучше</text><text class="sub" x="0" y="${my(-4) + 4}">хуже</text>
+    <line class="tn-msel" x1="${mid(sel)}" y1="${my(5) - 6}" x2="${mid(sel)}" y2="${my(-5) + 6}"/>
+    ${TN_WHO.filter(([k]) => STATE.tnMood.includes(k)).map(([k, , c]) => `<path class="tn-mood" style="--c:var(--${c})" d="${tnPath(scs.map((s) => [mid(s), my(tnMood(k, s.n))]))}"/>
+      ${scs.map((s) => `<circle class="tn-mpt ${s.n === STATE.tnSel ? "on" : ""}" style="--c:var(--${c})" data-act="tn-sel" data-k="${s.n}" cx="${mid(s)}" cy="${my(tnMood(k, s.n))}" r="${s.n === STATE.tnSel ? 5 : 3}"><title>Сцена ${s.n} · ${k === "v" ? "Вера" : "Аня"}: ${signed(tnMood(k, s.n))}</title></circle>`).join("")}`).join("")}` : "";
+  return `<svg class="tl tn" viewBox="0 0 1040 ${TN_Y0 + 60 + (STATE.tnMood.length ? 160 : 0)}" role="img" aria-label="Кривая напряжения по страницам сценария, опорные точки структуры и настроение героинь">${mood}
     ${acts}${beats}${grid}${sag}
     <path class="tn-area" d="${line}L${pts.at(-1)[0]} ${TN_Y0}L${pts[0][0]} ${TN_Y0}Z"/><path class="tn-line" d="${line}"/>
     ${ghosts}${dots}${peak}
@@ -2437,7 +2463,7 @@ function tnSel() {
   const s = tnScenes().find((x) => x.n === STATE.tnSel);
   return `<div class="tl-sel"><div class="tl-sel-h"><span class="dot ${s.n === 11 ? "draft" : grStatus(s.n)}"><i></i></span><b>Сцена ${s.n} · ${s.title}</b>${SCRIPT[s.n] ? `<button class="chipbtn" data-act="sc-open" data-k="${s.n}">Открыть сцену</button>` : ""}</div>
     <p>${tnWhy(s.n)}</p>
-    <div class="tl-facts"><span>с. ${Math.round(s.from) + 1}–${s.to} · ${TN_PAGES[s.n]} ${plural(TN_PAGES[s.n], "страница", "страницы", "страниц")}</span><span>напряжение: ${s.v} из 10${s.v !== s.ai ? ` · соавтор оценил ${s.ai}` : " · оценка соавтора"}</span></div></div>`;
+    <div class="tl-facts"><span>с. ${Math.round(s.from) + 1}–${s.to} · ${TN_PAGES[s.n]} ${plural(TN_PAGES[s.n], "страница", "страницы", "страниц")}</span><span>напряжение: ${s.v} из 10${s.v !== s.ai ? ` · соавтор оценил ${s.ai}` : " · оценка соавтора"}</span>${STATE.tnMood.length ? `<span>настроение: ${TN_WHO.filter(([k]) => STATE.tnMood.includes(k)).map(([k, name]) => `${name} ${signed(tnMood(k, s.n))}`).join(" · ")}</span>` : ""}</div></div>`;
 }
 function tnNotes() {
   const scs = tnScenes(), iss = tnIssues(scs), off = iss.beats.filter((b) => !b.ok);
@@ -2449,6 +2475,12 @@ function tnNotes() {
       `${STATE.gap === null ? `<button class="chipbtn main" data-act="gr-gap" data-k="1">Набросать связку</button>` : ""}<button class="chipbtn" data-open="grid">Открыть «Линии»</button>`) : "",
     off.length ? note("warn", "ai", "Опорные точки не на своих местах", off.map((b) => `${b.name} — на с. ${b.page}, обычно с. ${b.lo}–${b.hi}`).join("; ") + ".")
       : note("ok", "check", "Опорные точки на своих местах", "Завязка, поворот, середина, кризис и кульминация стоят там, где их обычно ждёт зритель полного метра. Это ориентир, а не правило."),
+    STATE.tnMood.length ? (() => {
+      const who = TN_WHO.filter(([k]) => STATE.tnMood.includes(k)).map(([k, name]) => { const low = scs.reduce((a, s) => (tnMood(k, s.n) < tnMood(k, a.n) ? s : a)); return { name, low: low.n, lv: tnMood(k, low.n), end: tnMood(k, scs.at(-1).n) }; });
+      const lows = who.map((w) => `${w.name} — в сцене ${w.low} (${signed(w.lv)})`).join(", ");
+      const apart = who.length === 2 && who[0].low !== who[1].low;
+      return note("warn", "ai", "Настроение героинь", `Ниже всего: ${lows}. ${apart ? "Дно у них в разных сценах — зритель не сидит на одной ноте, а сцены 16–20 держатся на том, что одной из них хуже. " : ""}К финалу ${who.length === 2 ? "обе поднимаются" : "она поднимается"}: ${who.map((w) => `${w.name} до ${signed(w.end)}`).join(", ")}.${STATE.sceneConflict && STATE.tnMood.includes("a") ? " Пока в сцене 14 Аня по тексту уже знает правду, её настроение проседает там, а не в сцене 22, где правду говорит Вера." : ""}`);
+    })() : "",
     Object.keys(STATE.tension).length ? `<div class="tn-mine">${ico("pencil")}Вы поправили ${Object.keys(STATE.tension).length} ${plural(Object.keys(STATE.tension).length, "точку", "точки", "точек")}; пунктиром — оценка соавтора.<button class="chipbtn quiet" data-act="tn-reset">Вернуть оценку соавтора</button></div>` : "",
   ].join("");
 }
@@ -3787,6 +3819,8 @@ Object.assign(ACTIONS, {
   "rel-focus"(b, k) { STATE.relFocus = k; const own = RELS.find(([id]) => id.includes(k)); if (!STATE.relSel.includes(k) && own) STATE.relSel = own[0]; relUpdate(); },
   "rel-view"(b, k) { STATE.relView = k; relUpdate(); },
   "tn-reset"() { STATE.tension = {}; paint(); },
+  "tn-sel"(b, k) { STATE.tnSel = Number(k); paint(); },
+  "tn-mood"(b, k) { STATE.tnMood = STATE.tnMood.includes(k) ? STATE.tnMood.filter((x) => x !== k) : [...STATE.tnMood, k]; paint(); },
   "ib-sel"(b, k) { ibPick(Number(k)); },
   "ib-link"(b, k) { STATE.ibLink = k ? Number(k) : null; if (STATE.ibLink && STATE.ibView === "list") STATE.ibView = "board"; paint(); },
   "ib-view"(b, k) { STATE.ibView = k; STATE.ibLink = null; paint(); },
@@ -3905,14 +3939,16 @@ function scpHtml(n) {
     ${cast ? `<span class="sp cast">${cast}</span>` : ""}<span class="sp" title="Страница сценария — около минуты экранного времени">${st.pages} · ${st.dur}</span>
     <button class="scp-btn" data-act="scp" aria-expanded="${open}">Параметры${ico("down")}</button></div>`;
   if (!open) return strip;
-  const speaks = Object.entries(st.lines).map(([k, c]) => `<span class="who-chip"><span class="av2 ${k}">${PEOPLE[k].l}</span>${PEOPLE[k].full}<span class="ps">${c} ${plural(c, "реплика", "реплики", "реплик")}</span></span>`).join("");
+  // Голоса сцены: кто сколько говорит, по тексту на лету
+  const said = Object.values(st.lines).reduce((a, b) => a + b, 0), most = Math.max(1, ...Object.values(st.lines));
+  const speaks = Object.entries(st.lines).sort((a, b) => b[1] - a[1]).map(([k, c]) => `<div class="vrow scp-v"><span><span class="av2 ${k}">${PEOPLE[k].l}</span>${PEOPLE[k].full}</span><i style="--w:${(c / most) * 100}%;--c:var(--${GR_WHO.find((w) => w[0] === k)[2]})"></i><b>${c} ${plural(c, "реплика", "реплики", "реплик")} · ${Math.round((c / said) * 100)}%</b></div>`).join("");
   const ments = [...st.ment].map((k) => `<span class="who-chip ment"><span class="av2 ${k}">${PEOPLE[k].l}</span>${PEOPLE[k].full}<span class="ps">упоминается</span></span>`).join("");
   const beatsDone = SCRIPT[n].beats.filter((b, i) => SCRIPT[n].html.includes(`data-beat="${i + 1}"`)).length;
   return strip + `<dl class="scp-panel" id="scpp">
     <dt>Место</dt><dd>${st.place ? `${placeName(st.place)}<span class="ps">${PLACES.some(([pl]) => pl === st.place) ? "из библии · берётся из заголовка" : "нет в «Паспорте места» — добавить при утверждении"}</span>` : `<span class="ps">появится из заголовка сцены</span>`}</dd>
     <dt>Время</dt><dd>${st.time ? cap(st.time) : "—"}<span class="ps">${st.io === "НАТ." ? "на улице" : st.io ? "в помещении" : ""}</span></dd>
     <dt>День истории</dt><dd><input class="day" data-day value="${esc(p.day)}" aria-label="День истории" /><span class="ps">для таймлайна</span></dd>
-    <dt>Участники</dt><dd>${speaks + ments || `<span class="ps">появятся, когда персонажи заговорят</span>`}</dd>
+    <dt>Голоса</dt><dd>${speaks ? `<div class="scp-voices">${speaks}</div>` : ""}${ments}${speaks || ments ? "" : `<span class="ps">появятся, когда персонажи заговорят</span>`}${speaks ? `<span class="ps">кто сколько говорит — по тексту сцены, как в «Линиях»</span>` : ""}</dd>
     <dt>Цель сцены</dt><dd><span class="goal" contenteditable="true" data-goal spellcheck="false">${esc(p.goal)}</span><span class="ps">из «Поэпизодника» (шаг 14) — правка здесь пройдёт через проверку последствий</span></dd>
     <dt>Биты</dt><dd>${beatsDone} из ${SCRIPT[n].beats.length} написаны<span class="ps">«Битовая карта сцены», шаг 19</span></dd>
     <dt>Цвет и метки</dt><dd>${SWATCH.map((c) => `<button class="sw" style="background:var(--${c})" aria-pressed="${p.color === c}" data-act="scp-color" data-k="${c}" aria-label="Цвет карточки"></button>`).join("")}<span style="width:6px"></span>${p.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("")}<button class="tag add" data-act="demo" data-k="Метки общие для сценария: по ним фильтруются карточки и поиск.">+ метка</button></dd>
