@@ -648,6 +648,111 @@
   .tn-b { width: 18px; height: 10px; border-radius: 2px; background: var(--ok-soft); display: inline-block; }
   .tn-mine { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 12px; font-size: 13px; color: var(--ink-2); }
   .tn-mine svg { width: 14px; height: 14px; color: var(--accent); }
+  .rel-more { display: inline-flex; align-items: center; gap: 4px; font-size: 13.5px; margin: -2px 0 6px; }
+  .rel-more svg { width: 14px; height: 14px; }
+  .rslider { margin: -8px 0 18px; }
+  .rslider input { width: 100%; accent-color: var(--accent); }
+  .rstops { position: relative; height: 26px; margin: 2px 9px 0; }
+  .rstops .chip { position: absolute; translate: -50% 0; top: 0; height: 22px; min-width: 26px; padding: 0 6px; font-size: 11.5px; }
+  .rstops .chip.on { background: var(--accent); color: var(--accent-ink); box-shadow: none; }
+  .rcap { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; font-size: 14px; }
+  .rcap b { font-family: var(--font-prose); font-size: 18px; font-weight: 600; }
+  .rcap span { color: var(--ink-3); font-size: 13px; }
+  .relwrap { overflow-x: auto; margin: 6px 0 4px; }
+  .relw { min-width: 470px; margin: 0; }
+  .relw .rn text { font-size: 14px; font-weight: 600; fill: var(--ink); }
+  .relw .rn circle { stroke-width: 1.5; }
+  .relw .re { cursor: pointer; }
+  .relw .re .hit { stroke: transparent; stroke-width: 18; }
+  .relw .re .ln { stroke: var(--ink-3); transition: stroke-width .2s; }
+  .relw .re text { font-size: 11.5px; fill: var(--ink-2); paint-order: stroke; stroke: var(--paper); stroke-width: 5px; stroke-linejoin: round; }
+  .relw .t-warm .ln { stroke: var(--ok); }
+  .relw .t-tense .ln { stroke: var(--warn); }
+  .relw .t-distant .ln { stroke: var(--ink-3); stroke-dasharray: 5 4; }
+  .relw .t-broken .ln { stroke: var(--bad); stroke-dasharray: 2 5; stroke-linecap: round; }
+  .relw .re.now text { fill: var(--ink); font-weight: 700; }
+  .relw .re.on text { fill: var(--accent); font-weight: 700; }
+  .relw .re:hover .ln { filter: drop-shadow(0 0 3px var(--accent-soft)); }
+  .rlegend { margin: 0 0 6px; }
+  .rl { width: 22px; height: 0; border-top: 2.5px solid var(--ink-3); display: inline-block; }
+  .rl.t-warm { border-color: var(--ok); } .rl.t-tense { border-color: var(--warn); } .rl.t-distant { border-top-style: dashed; } .rl.t-broken { border-color: var(--bad); border-top-style: dotted; }
+  .rstrip { position: relative; height: 10px; border-radius: 5px; background: oklch(from var(--ink) l c h / .06); margin: 4px 0 12px; overflow: hidden; }
+  .rstrip i { position: absolute; top: 0; bottom: 0; }
+  .rstrip .t-warm, .rh .sw.t-warm { background: var(--ok); }
+  .rstrip .t-tense, .rh .sw.t-tense { background: var(--warn); }
+  .rstrip .t-distant, .rh .sw.t-distant { background: oklch(from var(--ink-3) l c h / .45); }
+  .rstrip .t-broken, .rh .sw.t-broken { background: var(--bad); }
+  .rnow { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--ink); translate: -1px 0; }
+  .rhist { display: grid; gap: 2px; }
+  .rh { display: grid; grid-template-columns: 12px 76px 1fr auto; align-items: center; gap: 10px; text-align: left; padding: 6px 8px; border-radius: 8px; font-family: var(--font-prose); font-size: 15px; color: var(--ink); }
+  .rh:hover { background: oklch(from var(--ink) l c h / .04); }
+  .rh .sw { width: 10px; height: 10px; border-radius: 3px; }
+  .rh b { font-family: var(--font-ui); font-size: 12.5px; font-weight: 600; color: var(--ink-3); }
+  .rh em { font-style: normal; }
+  .rh small { font-family: var(--font-ui); font-size: 12px; color: var(--ink-3); }
+  .rh.cur { background: var(--accent-soft); }
+  .rh.cur b { color: var(--accent); }
+  .rh.later { opacity: .5; }
+  .rviews { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 18px; background: oklch(from var(--ink) l c h / .05); margin: -6px 0 16px; }
+  .rviews button { height: 28px; padding: 0 12px; border-radius: 14px; font-size: 13px; color: var(--ink-2); white-space: nowrap; }
+  .rviews button[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: var(--shadow-sm); font-weight: 600; }
+  .rhint { margin: 4px 0 8px; font-size: 13px; color: var(--ink-3); }
+  .rfocus { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 0 0 6px; font-size: 12px; color: var(--ink-3); }
+  .rfocus span { margin-right: 4px; }
+  .rfocus .chip { height: 24px; padding: 0 9px; font-size: 12px; }
+  .rfocus .chip.on { background: var(--ink); color: var(--paper); }
+  .relw .cap { font-size: 11px; font-weight: 400; fill: var(--ink-2); paint-order: stroke; stroke: var(--paper); stroke-width: 4px; stroke-linejoin: round; }
+  .relw .cap.now { fill: var(--ink); font-weight: 600; }
+  .relw .cap.on { fill: var(--accent); font-weight: 600; }
+  .relw .re.mine .ln { opacity: 1; }
+  .relw .re.dim .ln { opacity: .35; }
+  .relw .re.dim:hover .ln { opacity: .9; }
+  .relw .rn { cursor: pointer; }
+  .relw .rn.sec text { font-size: 11.5px; font-weight: 500; fill: var(--ink-2); paint-order: stroke; stroke: var(--paper); stroke-width: 4px; }
+  .relw .rn.f circle { stroke-width: 3; }
+  .rel .selline { stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 2 3; }
+  .relm rect.t-warm { fill: var(--ok); }
+  .relm rect.t-tense { fill: var(--warn); }
+  .relm rect.t-distant { fill: var(--ink-3); }
+  .relm rect.t-broken { fill: var(--bad); }
+  .relm .mh, .relm .mr { font-size: 12px; fill: var(--ink-2); }
+  .relm .mdg { fill: oklch(from var(--ink) l c h / .06); }
+  .relm .mno { fill: var(--ink-3); opacity: .5; }
+  .relm .mc { cursor: pointer; }
+  .relm .mc .bg { fill: oklch(from var(--ink) l c h / .03); stroke: transparent; stroke-width: 2; }
+  .relm .mc.t-warm .bg { fill: var(--ok-soft); }
+  .relm .mc.t-tense .bg { fill: var(--warn-soft); }
+  .relm .mc.t-distant .bg { fill: oklch(from var(--ink) l c h / .07); }
+  .relm .mc.t-broken .bg { fill: var(--bad-soft); }
+  .relm .mc:hover .bg { stroke: var(--line); }
+  .relm .mc.on .bg { stroke: var(--accent); }
+  .relm .now { fill: var(--accent); }
+  .rela .row { fill: transparent; }
+  .rela .arc { cursor: pointer; }
+  .rela .arc:hover .row { fill: oklch(from var(--ink) l c h / .03); }
+  .rela .arc.on .row { fill: var(--accent-soft); opacity: .6; }
+  .rela .an { font-size: 12.5px; font-weight: 600; fill: var(--ink); }
+  .rela .seg.t-warm { fill: var(--ok); } .rela .seg.t-tense { fill: var(--warn); } .rela .seg.t-distant { fill: oklch(from var(--ink-3) l c h / .5); } .rela .seg.t-broken { fill: var(--bad); }
+  .rela .seg.later { opacity: .35; }
+  .rela .sl { font-size: 11px; fill: var(--ink-2); }
+  .rela .sl.cur { fill: var(--ink); font-weight: 700; }
+  .rela .sl.later { fill: var(--ink-3); }
+  .rela .static .sl, .rela .static .sl.cur { font-weight: 400; fill: var(--ink-3); }
+  .rela .static .an { font-weight: 500; fill: var(--ink-2); }
+  .relo .ring { fill: none; stroke: var(--line); stroke-dasharray: 3 4; }
+  .relo .rl { font-size: 10.5px; fill: var(--ink-3); }
+  .relo .on-node { cursor: pointer; transition: transform .6s cubic-bezier(.3,.8,.3,1); }
+  .relo .spoke { stroke: var(--line); stroke-width: 1; }
+  .relo .on-node circle { stroke-width: 2.5; stroke: var(--ink-3); }
+  .relo .t-warm circle { stroke: var(--ok); } .relo .t-tense circle { stroke: var(--warn); } .relo .t-distant circle { stroke: var(--ink-3); stroke-dasharray: 3 2; } .relo .t-broken circle { stroke: var(--bad); stroke-dasharray: 2 3; }
+  .relo .t-warm .spoke { stroke: var(--ok); opacity: .5; } .relo .t-tense .spoke { stroke: var(--warn); opacity: .5; } .relo .t-broken .spoke { stroke: var(--bad); opacity: .4; stroke-dasharray: 2 4; }
+  .relo .onm { font-size: 12.5px; font-weight: 600; fill: var(--ink); paint-order: stroke; stroke: var(--paper); stroke-width: 4px; }
+  .relo .ocap { font-size: 11px; fill: var(--ink-2); paint-order: stroke; stroke: var(--paper); stroke-width: 4px; stroke-linejoin: round; }
+  .relo .now .onm { fill: var(--accent); }
+  .relo .now circle { stroke-width: 4; }
+  .relo .on .ocap, .relo .on .onm { fill: var(--accent); }
+  .relo .core text { font-size: 14px; font-weight: 700; fill: var(--ink); }
+  .relo .core circle { stroke-width: 2.5; }
   .tl-alert .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .src { font-family: var(--font-ui); font-size: 13px; color: var(--ink-3); margin: 28px 0 0; padding-top: 14px; border-top: 1px solid var(--line); }
   .places { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-family: var(--font-ui); }
@@ -671,7 +776,9 @@
     .seg { margin-left: 0; }
     .board-h h1 { font-size: 36px; }
   }
-  @media (max-width: 600px) { .rcard { padding: 32px 22px 24px; } .seg .wide { display: none; } .seg { flex-wrap: wrap; gap: 6px; padding: 0; background: none; box-shadow: none; overflow: visible; } .seg button { padding: 0 12px; background: var(--panel); box-shadow: var(--shadow-sm); } }
+  @media (max-width: 600px) { .rcard { padding: 32px 22px 24px; } .seg .wide { display: none; } .seg { flex-wrap: wrap; gap: 6px; padding: 0; background: none; box-shadow: none; overflow: visible; } .seg button { padding: 0 12px; background: var(--panel); box-shadow: var(--shadow-sm); }
+    .tabs { flex-wrap: wrap; row-gap: 8px; } .rstops { display: none; } .rslider { margin-bottom: 12px; }
+    .rh { grid-template-columns: 10px 1fr; row-gap: 0; } .rh b, .rh em { grid-column: 2; } .rh small { display: none; } .rh { font-size: 14.5px; } }
 
   /* ——— Стандартное: поиск, сохранение, версии, экспорт, настройки, состояния ——— */
   .saved { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; border-radius: 18px; font-size: 12.5px; color: var(--ink-3); white-space: nowrap; transition: background .2s, color .2s; }
@@ -1167,7 +1274,7 @@ const STATE = {
   d11: { answers: [], own: [], checks: {}, approved: false },
   chg: "edit", chgOld: D2Q, chgNew: "Имеет ли человек право решать за близких, какую правду они смогут вынести?", plan: new Set([5, 9, 13]), revision: false,
   bibleTab: "people", gap: null,
-  tlSel: 14, tlThreads: true, tlKnow: true, grSel: 14, tnSel: 14, tension: {},
+  tlSel: 14, tlThreads: true, tlKnow: true, grSel: 14, tnSel: 14, tension: {}, relAt: 14, relSel: "va", relFocus: "v", relView: "arcs",
 };
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const approvedCount = () => STEPS.filter((s) => s[2] === "approved").length;
@@ -1414,12 +1521,12 @@ const VIEWS = {
   // ——— Связка 4: библия проекта и карточки сцен ———
   bible: () => {
     const tab = STATE.bibleTab;
-    const tabs = [["people", "Персонажи"], ["places", "Места"], ["rules", "Правила мира"]].map(([k, t]) => `<button data-act="bible-tab" data-k="${k}" aria-pressed="${k === tab}">${t}</button>`).join("");
+    const tabs = [["people", "Персонажи"], ["rels", "Отношения"], ["places", "Места"], ["rules", "Правила мира"]].map(([k, t]) => `<button data-act="bible-tab" data-k="${k}" aria-pressed="${k === tab}">${t}</button>`).join("");
     return `<div class="stage doc"><article class="sheet">
         <div class="eyebrow">Библия проекта · «Тихая вода»</div>
         <div class="tabs">${tabs}</div>
-        ${tab === "people" ? biblePeople() : tab === "places" ? BIBLE_PLACES : BIBLE_RULES}
-      </article><aside class="margin" id="margin">${tab === "people" ? bibleNotes() : ""}</aside></div>`;
+        ${tab === "people" ? biblePeople() : tab === "rels" ? bibleRels() : tab === "places" ? BIBLE_PLACES : BIBLE_RULES}
+      </article><aside class="margin" id="margin">${tab === "people" ? bibleNotes() : tab === "rels" ? relNotes() : ""}</aside></div>`;
   },
 
   cards: () => `<div class="stage"><div class="home">
@@ -1719,6 +1826,7 @@ function paletteSource() {
     .map(([q, hint, key]) => ({ g: "Цитаты", label: `«${q}»`, hint, quote: true, lead: ico("page"), run: () => (key ? open(key) : toast("«Тональный манифест» в макете не нарисован.")) }));
   const actions = [
     ["Найти и заменить в сцене", "⌘F", () => setTimeout(openFind, 0), "search"],
+    ["Отношения персонажей", "как связи меняются по сценам", () => { STATE.bibleTab = "rels"; open("bible"); }, "people"],
     ["Ритм и структура", "кривая напряжения, опорные точки", () => open("rhythm"), "chart"],
     ["Линии и персонажи", "кто в какой сцене, голоса, обрывы линий", () => open("grid"), "people"],
     ["Таймлайн истории", "время, порядок сцен, кто что знает", () => open("timeline"), "clock"],
@@ -1844,7 +1952,7 @@ const biblePeople = () => `<div class="people">
     <h2>Чего боится</h2><p>Что правда сделает её в&nbsp;глазах Ани виноватой — и&nbsp;Аня уйдёт.</p>
     <h2>Как говорит</h2><p><span class="mark" data-a="voice">Никогда не&nbsp;говорит о&nbsp;тревоге прямо — только через заботу: еда, сон, тёплая куртка.</span> Злится тише обычного.</p>
     <h2>Что скрывает</h2><p><span class="mark" data-a="secret">В&nbsp;ту ночь она была на&nbsp;мостках. Миша просил её не&nbsp;уходить.</span></p>
-    <h2>Связи</h2>${relSvg()}
+    <h2>Связи</h2>${relSvg()}<button class="linkbtn rel-more" data-act="bible-tab" data-k="rels">Как связи меняются по сценам ${ico("arrow")}</button>
     <h2 data-a="where">Где появляется</h2>
     <div class="chips">${[2, 3, 7, 13, 14, 22].map((n) => (n === 14 ? `<button class="chip" data-act="sc-open" data-k="14">Сцена 14</button>` : `<span class="chip">Сцена ${n}</span>`)).join("")}</div>
   </div>
@@ -2185,6 +2293,179 @@ document.addEventListener("pointerup", () => {
   if (d.moved && d.v !== undefined) { if (d.v === tnScenes().find((s) => s.n === d.n).ai) delete STATE.tension[d.n]; else STATE.tension[d.n] = d.v; touched(); }
   STATE.tnSel = d.n; paint();
 });
+// ——— Отношения по ходу истории: четыре вида одних и тех же данных ———
+// Состав: четверо главных и шестеро второстепенных — чтобы видеть, как вид держит большой состав.
+const CAST10 = {
+  v: ["Вера", "accent", "мать Ани"], a: ["Аня", "ai", "дочь Веры"], k: ["Дядя Коля", "warn", "деверь Веры"], m: ["Миша", "ok", "брат Веры, 1998"],
+  t: ["Тамара", "", "мать Веры и Миши"], s: ["Сергей", "", "отец Ани"], l: ["Лиза", "", "подруга Ани"],
+  n: ["Нина", "", "соседка Веры"], g: ["Галя", "", "жена Коли"], p: ["Петрович", "", "участковый в 1998"],
+};
+const CAST_ORDER = ["v", "a", "k", "m", "t", "s", "l", "n", "g", "p"];
+const castName = (k) => CAST10[k][0].replace("Дядя ", "");
+const castColor = (k) => (CAST10[k][1] ? `var(--${CAST10[k][1]})` : "var(--ink-3)");
+const REL_TONE = { warm: "тепло", tense: "напряжение", distant: "отчуждение", broken: "разрыв" };
+// [пара, подпись, [[с какой сцены, состояние, тон, близость 0–10]]]
+const RELS = [
+  ["va", "Вера и Аня", [[2, "бережёт и отдаляет", "distant", 5], [7, "первая ложь о Мише", "tense", 4], [14, "не верит матери", "tense", 3], [20, "Аня ушла", "broken", 1], [22, "слышит правду", "tense", 4], [24, "прощает — не сразу", "warm", 8]]],
+  ["vm", "Вера и Миша", [[1, "сестра, которая ушла", "warm", 9], [2, "вина, о которой молчит", "broken", 2], [15, "возвращается на пристань", "tense", 4], [22, "говорит о нём вслух", "warm", 6]]],
+  ["vk", "Вера и дядя Коля", [[2, "двадцать лет не разговаривают", "distant", 1]]],
+  ["ak", "Аня и дядя Коля", [[2, "почти не знает", "distant", 2], [9, "верит ему больше, чем матери", "warm", 7]]],
+  ["am", "Аня и Миша", [[5, "мальчик на фото", "distant", 2], [9, "дядя, о котором молчали", "tense", 3], [22, "знает, как он погиб", "warm", 6]]],
+  ["vt", "Вера и Тамара", [[1, "мать, которая не простила", "broken", 2]]],
+  ["mt", "Миша и Тамара", [[1, "любимый сын", "warm", 9]]],
+  ["at", "Аня и Тамара", [[5, "коробка от бабушки", "warm", 4]]],
+  ["vs", "Вера и Сергей", [[2, "развелись, говорят через Аню", "distant", 2]]],
+  ["as", "Аня и Сергей", [[2, "звонит раз в месяц", "distant", 3], [25, "едет к нему", "warm", 6]]],
+  ["al", "Аня и Лиза", [[2, "лучшая подруга", "warm", 8]]],
+  ["vn", "Вера и Нина", [[2, "знает больше, чем говорит", "tense", 5]]],
+  ["kg", "Коля и Галя", [[2, "просит его молчать", "tense", 6]]],
+  ["kp", "Коля и Петрович", [[1, "вместе искали Мишу", "warm", 6]]],
+  ["vp", "Вера и Петрович", [[16, "допрашивал её в 1998", "tense", 2]]],
+];
+const relTitle = (n) => (SCRIPT[n] ? SCRIPT[n].title : GR.find((g) => g[0] === n)[1]);
+const relAt = (steps, n) => steps.filter(([m]) => m <= n).at(-1);
+const relOf = (id) => RELS.find((r) => r[0] === id) || RELS.find((r) => r[0] === id[1] + id[0]);
+const REL_POS = { v: [280, 170], a: [150, 92], m: [150, 262], t: [48, 178], k: [420, 92], g: [512, 172], p: [420, 268], n: [282, 298], s: [282, 40], l: [44, 48] };
+const REL_VIEWS = [["arcs", "Дуги"], ["orbit", "Орбиты"], ["matrix", "Таблица"], ["web", "Паутина"]];
+
+// 1. Паутина: вся сеть к выбранной сцене; подписи — только у связей героя в центре внимания
+function relWeb() {
+  const n = STATE.relAt, f = STATE.relFocus;
+  const edges = RELS.map(([id, , steps]) => {
+    const st = relAt(steps, n); if (!st) return "";
+    const [x1, y1] = REL_POS[id[0]], [x2, y2] = REL_POS[id[1]], mine = id.includes(f);
+    return `<g class="re t-${st[2]} ${mine ? "mine" : "dim"} ${id === STATE.relSel ? "on" : ""} ${st[0] === n ? "now" : ""}" data-act="rel-sel" data-k="${id}" data-a="rel-${id}"><title>${relOf(id)[1]}: ${st[1]}</title>
+      <line class="hit" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><line class="ln" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" style="stroke-width:${1 + st[3] / 3}"/></g>`;
+  }).join("");
+  const nodes = CAST_ORDER.map((k) => {
+    const [x, y] = REL_POS[k], main = !!CAST10[k][1], r = k === f ? 30 : main ? 24 : 15;
+    const fill = main ? `var(--${CAST10[k][1]}-soft)` : "var(--panel)";
+    // подпись связи с героем в центре — под именем персонажа
+    const rel = k === f ? null : relOf(f + k), st = rel && relAt(rel[2], n), cy = y < 60 ? y - r - 8 : main ? y + r + 14 : y + r + 28;
+    const anchor = x < 90 ? "start" : x > 470 ? "end" : "middle", cx = anchor === "start" ? x - r : anchor === "end" ? x + r : x;
+    return `<g class="rn ${main ? "" : "sec"} ${k === f ? "f" : ""}" data-act="rel-focus" data-k="${k}"><title>${CAST10[k][0]} — ${CAST10[k][2]}</title><circle cx="${x}" cy="${y}" r="${r}" style="fill:${fill};stroke:${castColor(k)}"/>
+      <text x="${x}" y="${main ? y + 5 : y + r + 14}" text-anchor="middle">${castName(k)}</text>${st ? `<text class="cap ${st[0] === n ? "now" : ""} ${rel[0] === STATE.relSel ? "on" : ""}" x="${cx}" y="${cy}" text-anchor="${anchor}">${st[1]}</text>` : ""}</g>`;
+  }).join("");
+  return `<svg class="rel relw" viewBox="0 0 552 352" role="img" aria-label="Паутина отношений к сцене ${n}">${edges}${nodes}</svg>`;
+}
+// 2. Дуги: одна строка на каждую связь героя, история читается слева направо
+function relArcs() {
+  const f = STATE.relFocus, X0 = 104, X1 = 544, sx = (n) => X0 + ((n - 1) / 26) * (X1 - X0), RH = 50, n = STATE.relAt;
+  const mine = RELS.filter(([id]) => id.includes(f)).sort((a, b) => b[2].length - a[2].length);
+  // связи, которые не меняются, — строки пониже, внизу списка
+  const rh = (steps) => (steps.length > 1 ? RH : 34), tops = mine.reduce((acc, r) => [...acc, acc.at(-1) + rh(r[2])], [34]);
+  const rows = mine.map(([id, name, steps], i) => {
+    const o = id[0] === f ? id[1] : id[0], y = tops[i], mid = steps.length > 1 ? y + 22 : y + 20;
+    // подписи — над полосой, а если не помещаются, под ней; у правого края прижимаются влево
+    const end = { up: -Infinity, down: -Infinity };
+    const segs = steps.map(([from, label, tone, close], q) => {
+      const x1 = sx(from), x2 = q + 1 < steps.length ? sx(steps[q + 1][0]) : X1, h = 4 + close * 0.9;
+      const text = steps.length === 1 ? `${label} · не меняется` : label, w = text.length * 6.1;
+      const row = x1 + 2 >= end.up + 6 ? "up" : x1 + 2 >= end.down + 6 ? "down" : end.up <= end.down ? "up" : "down", below = row === "down";
+      const tx = Math.min(Math.max(x1 + 2, end[row] + 6), 550 - w), fits = tx >= end[row] + 6; if (fits) end[row] = tx + w;
+      return `<rect class="seg t-${tone} ${from <= n ? "" : "later"}" x="${x1 + 1}" y="${mid - h / 2}" width="${x2 - x1 - 2}" height="${h}" rx="${Math.min(h / 2, 4)}"><title>Сцена ${from}: ${label}</title></rect>
+        ${fits ? `<text class="sl ${relAt(steps, n)?.[0] === from ? "cur" : ""} ${from <= n ? "" : "later"}" x="${tx}" y="${below ? mid + 20 : mid - 9}">${text}</text>` : ""}`;
+    }).join("");
+    return `<g class="arc ${steps.length > 1 ? "" : "static"} ${id === STATE.relSel ? "on" : ""}" data-act="rel-sel" data-k="${id}" ${id === "va" ? 'data-a="rh-14"' : id === "vk" ? 'data-a="rel-vk"' : ""}>
+      <rect class="row" x="0" y="${y}" width="552" height="${rh(steps) - 4}" rx="8"/><circle cx="12" cy="${mid}" r="5" style="fill:${castColor(o)}"/><text class="an" x="24" y="${mid + 4}">${castName(o)}</text>${segs}</g>`;
+  }).join("");
+  const ticks = [1, 9, 19, 26].map((s) => `<text class="sub" x="${sx(s) + 8}" y="16" text-anchor="middle">${s}</text>`).join("");
+  return `<svg class="rel relw rela" viewBox="0 0 552 ${tops.at(-1)}" role="img" aria-label="Дуги отношений: ${CAST10[f][0]}">${ticks}
+    <line class="selline" x1="${sx(n) + 8}" y1="22" x2="${sx(n) + 8}" y2="${tops.at(-1) - 4}"/>${rows}</svg>`;
+}
+// 4. Орбиты: герой в центре, остальные тем ближе, чем ближе по отношениям к выбранной сцене
+const ORB_C = [276, 192], orbR = (close) => 58 + (10 - close) * 11;
+function relOrbitPos(k, f, n) {
+  const others = CAST_ORDER.filter((x) => x !== f), rel = relOf(f + k), st = rel && relAt(rel[2], n);
+  if (!st) return null;
+  const a = -Math.PI / 2 + (others.indexOf(k) / others.length) * Math.PI * 2, r = orbR(st[3]);
+  return { x: ORB_C[0] + Math.cos(a) * r, y: ORB_C[1] + Math.sin(a) * r * 0.82, a, st, id: rel[0] };
+}
+function relOrbit() {
+  const f = STATE.relFocus, n = STATE.relAt;
+  const rings = [[8, "близко"], [5, "рядом"], [2, "далеко"]].map(([c, l]) => `<ellipse class="ring" cx="${ORB_C[0]}" cy="${ORB_C[1]}" rx="${orbR(c)}" ry="${orbR(c) * 0.82}"><title>${l}</title></ellipse>`).join("");
+  const nodes = CAST_ORDER.filter((k) => k !== f).map((k) => {
+    const p = relOrbitPos(k, f, n); if (!p) return "";
+    const main = !!CAST10[k][1], r = main ? 17 : 12, cos = Math.cos(p.a), sin = Math.sin(p.a);
+    // подпись связи — только у выбранной; не выходит за край
+    const cap = p.id === STATE.relSel, w = Math.max(castName(k).length * 7.4, cap ? p.st[1].length * 6.6 : 0);
+    // имя и подпись — снаружи орбиты; если сбоку не помещаются, встают под кружком и сдвигаются внутрь листа
+    let anchor = cos > 0.35 ? "start" : cos < -0.35 ? "end" : "middle", dx = anchor === "start" ? r + 6 : anchor === "end" ? -r - 6 : 0;
+    const fitsSide = anchor === "start" ? p.x + dx + w <= 548 : anchor === "end" ? p.x + dx - w >= 4 : true;
+    if (!fitsSide) { anchor = "middle"; dx = 0; }
+    if (anchor === "middle") dx = Math.min(Math.max(dx, 4 + w / 2 - p.x), 548 - w / 2 - p.x);
+    const side = anchor !== "middle", up = !side && sin < 0 && fitsSide;
+    const ny = side ? (cap ? -2 : 4) : up ? -r - (cap ? 20 : 6) : r + 14, cy = ny + 13;
+    return `<g class="on-node t-${p.st[2]} ${p.id === STATE.relSel ? "on" : ""} ${p.st[0] === n ? "now" : ""}" data-act="rel-sel" data-k="${p.id}" data-o="${k}" style="transform:translate(${p.x}px,${p.y}px)"><title>${CAST10[k][0]}: ${p.st[1]}</title>
+      <line class="spoke" x1="0" y1="0" x2="${ORB_C[0] - p.x}" y2="${ORB_C[1] - p.y}"/><circle r="${r}" style="fill:${main ? `var(--${CAST10[k][1]}-soft)` : "var(--panel)"}"/>
+      <text class="onm" x="${dx}" y="${ny}" text-anchor="${anchor}">${castName(k)}</text>${cap ? `<text class="ocap" x="${dx}" y="${cy}" text-anchor="${anchor}">${p.st[1]}</text>` : ""}</g>`;
+  }).join("");
+  const c = CAST10[f];
+  return `<svg class="rel relw relo" viewBox="0 0 552 380" role="img" aria-label="Орбиты: кто близок к герою к сцене ${n}">${rings}${nodes}
+    <g class="core"><circle cx="${ORB_C[0]}" cy="${ORB_C[1]}" r="26" style="fill:${c[1] ? `var(--${c[1]}-soft)` : "var(--panel)"};stroke:${castColor(f)}"/><text x="${ORB_C[0]}" y="${ORB_C[1] + 5}" text-anchor="middle">${castName(f)}</text></g></svg>`;
+}
+// 3. Таблица «кто — кому»: тон к выбранной сцене и полоска того, как связь менялась
+function relMatrix() {
+  const n = STATE.relAt, C = 42, L = 88, T = 70;
+  const head = CAST_ORDER.map((k, i) => `<text class="mh" transform="translate(${L + i * C + C / 2 + 4} ${T - 6}) rotate(-45)">${castName(k)}</text>
+    <text class="mr" x="${L - 8}" y="${T + i * C + C / 2 + 4}" text-anchor="end">${castName(k)}</text>`).join("");
+  const cells = CAST_ORDER.flatMap((r, i) => CAST_ORDER.map((c, j) => {
+    const x = L + j * C, y = T + i * C;
+    if (i === j) return `<rect class="mdg" x="${x + 1}" y="${y + 1}" width="${C - 2}" height="${C - 2}" rx="6"/>`;
+    const rel = relOf(r + c); if (!rel) return `<circle class="mno" cx="${x + C / 2}" cy="${y + C / 2}" r="1.5"/>`;
+    const [id, name, steps] = rel, st = relAt(steps, n);
+    const strip = steps.map(([from, , tone], q) => { const to = q + 1 < steps.length ? steps[q + 1][0] : 27; return `<rect class="t-${tone}" x="${x + 5 + ((from - 1) / 26) * (C - 10)}" y="${y + C - 10}" width="${((to - from) / 26) * (C - 10)}" height="4"/>`; }).join("");
+    return `<g class="mc ${st ? `t-${st[2]}` : "none"} ${id === STATE.relSel ? "on" : ""}" data-act="rel-sel" data-k="${id}"><title>${name}: ${st ? st[1] : "ещё не встретились"}</title>
+      <rect class="bg" x="${x + 1}" y="${y + 1}" width="${C - 2}" height="${C - 2}" rx="6"/>${st && st[0] === n ? `<circle class="now" cx="${x + C - 9}" cy="${y + 9}" r="3"/>` : ""}${strip}</g>`;
+  })).join("");
+  return `<svg class="rel relw relm" viewBox="0 0 552 ${T + 10 * C + 6}" role="img" aria-label="Таблица связей к сцене ${n}">${head}${cells}</svg>`;
+}
+const REL_HINT = {
+  arcs: "Каждая связь героя — строка; читается слева направо, как история. Цвет — тон, толщина — насколько близки, подпись — что случилось в этой сцене.",
+  orbit: "Герой в центре; чем ближе персонаж по отношениям, тем ближе к центру, цвет обводки — тон. Жирным — связь меняется в этой сцене; клик по персонажу — что между ними. Двигайте ползунок — персонажи переходят с орбиты на орбиту.",
+  matrix: "Кто кому кем приходится. Цвет — тон к выбранной сцене, полоска внизу — как связь менялась; точка в углу — меняется в этой сцене. Держит и 20 персонажей.",
+  web: "Вся сеть к выбранной сцене. Подписаны связи того, кто в центре внимания; клик по персонажу — поставить его в центр.",
+};
+function relHistory() {
+  const [id, name, steps] = relOf(STATE.relSel), n = STATE.relAt;
+  const strip = steps.map(([from, , tone], i) => { const to = i + 1 < steps.length ? steps[i + 1][0] : 27; return `<i class="t-${tone}" style="left:${((from - 1) / 26) * 100}%;width:${((to - from) / 26) * 100}%"></i>`; }).join("");
+  const items = steps.map(([from, label, tone]) => `<button class="rh ${from <= n ? "" : "later"} ${relAt(steps, n)?.[0] === from ? "cur" : ""}" data-act="rel-at" data-k="${from}" ${id === "va" ? `data-a="rh-${from}"` : ""}><span class="sw t-${tone}"></span><b>Сцена ${from}</b><em>${label}</em><small>${REL_TONE[tone]}</small></button>`).join("");
+  return `<h2>${name} по сценам</h2><div class="rstrip">${strip}<span class="rnow" style="left:${((n - 0.5) / 26) * 100}%"></span></div><div class="rhist">${items}</div>`;
+}
+function relBox() {
+  const n = STATE.relAt, v = STATE.relView, changed = RELS.filter(([, , steps]) => relAt(steps, n)?.[0] === n).map((r) => r[1]);
+  const focus = ["web", "arcs", "orbit"].includes(v) ? `<div class="rfocus"><span>В центре</span>${CAST_ORDER.map((k) => `<button class="chip ${k === STATE.relFocus ? "on" : ""}" data-act="rel-focus" data-k="${k}">${castName(k)}</button>`).join("")}</div>` : "";
+  const legend = `<div class="tl-legend rlegend">${Object.entries(REL_TONE).map(([t, l]) => `<span><i class="rl t-${t}"></i>${l}</span>`).join("")}${v === "orbit" ? "<span>кольца от центра: близко · рядом · далеко</span>" : v === "arcs" ? "<span>толщина — насколько близки</span>" : ""}</div>`;
+  const body = { web: relWeb, arcs: relArcs, orbit: relOrbit, matrix: relMatrix }[v]();
+  return `<div class="rcap"><b>К сцене ${n} · ${relTitle(n)}</b>${changed.length ? `<span>меняется здесь: ${changed.join(", ")}</span>` : "<span>связи как в прошлой сцене</span>"}</div>
+    <p class="rhint">${REL_HINT[v]}</p>${focus}<div class="relwrap">${body}</div>${legend}
+    ${relHistory()}`;
+}
+const REL_STOPS = [2, 5, 9, 14, 20, 22, 24];
+const bibleRels = () => `<h1>Отношения</h1>
+  <div class="meta"><span class="pill approved"><i></i>Из профилей и «Поэпизодника»</span>10 персонажей · ${RELS.length} связей</div>
+  <div class="rviews" role="group" aria-label="Вид">${REL_VIEWS.map(([k, l]) => `<button aria-pressed="${k === STATE.relView}" data-act="rel-view" data-k="${k}">${l}</button>`).join("")}</div>
+  <div class="rslider"><input id="relrange" type="range" min="1" max="26" step="1" value="${STATE.relAt}" aria-label="Сцена">
+    <div class="rstops">${REL_STOPS.map((n) => `<button class="chip ${n === STATE.relAt ? "on" : ""}" style="left:${((n - 1) / 25) * 100}%" data-act="rel-at" data-k="${n}" title="Сцена ${n} · ${relTitle(n)}">${n}</button>`).join("")}</div></div>
+  <div id="relbox">${relBox()}</div>
+  <p class="src">Связи собраны из «Психологических профилей» (шаг 16) и «Поэпизодника» (шаг 14), кто в какой сцене — из «Линий». Правка здесь меняет эти документы — через проверку последствий.</p>`;
+const relNotes = () => (STATE.sceneConflict ? `<div class="note k-conflict" data-for="rh-14"><div class="who"><span class="av">${ico("warn")}</span>Сцена 14 ломает дугу</div>
+    По тексту сцены 14 Аня уже знает правду. Тогда здесь не «не верит», а «обвиняет» — и ссоре в сцене 20 больше не нужна причина: дуга теряет ступень.
+    <div class="acts"><button class="chipbtn" data-act="sc-open" data-k="14">Открыть сцену</button><button class="chipbtn quiet" data-act="rel-sel" data-k="va">Показать дугу</button></div></div>` : "")
+  + `<div class="note" data-for="rel-vk"><div class="who"><span class="av">${ico("ai")}</span>Связь не меняется</div>
+    Вера и дядя Коля двадцать лет не разговаривают — и за всю историю у них нет ни одной сцены вдвоём. В «Линиях» его линия обрывается после сцены 9; их разговор мог бы её закрыть.
+    <div class="acts"><button class="chipbtn" data-act="rel-sel" data-k="vk">Показать связь</button><button class="chipbtn quiet" data-open="grid">Открыть «Линии»</button></div></div>`;
+function relUpdate() {
+  const was = Object.fromEntries([...document.querySelectorAll(".relo .on-node")].map((g) => [g.dataset.o, g.style.transform]));
+  $("#relbox").innerHTML = relBox();
+  // орбиты: персонажи плавно переезжают с прошлого места на новое
+  document.querySelectorAll(".relo .on-node").forEach((g) => { if (!was[g.dataset.o]) return; const to = g.style.transform; g.style.transition = "none"; g.style.transform = was[g.dataset.o]; requestAnimationFrame(() => requestAnimationFrame(() => { g.style.transition = ""; g.style.transform = to; })); });
+  document.querySelectorAll(".rstops .chip").forEach((c) => c.classList.toggle("on", Number(c.dataset.k) === STATE.relAt));
+  document.querySelectorAll(".rviews button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.k === STATE.relView));
+  $("#relrange").value = STATE.relAt;
+  layoutNotes();
+}
+document.addEventListener("input", (e) => { if (e.target.id === "relrange") { STATE.relAt = Number(e.target.value); relUpdate(); } });
 const boardSeg = (cur) => `<div class="seg">${[["cards", "Карточки"], ["scene", 'Текст<span class="wide"> сценария</span>'], ["timeline", "Таймлайн"], ["grid", "Линии"], ["rhythm", "Ритм"]].map(([k, l]) => `<button aria-pressed="${k === cur}" ${k === cur ? "" : `data-open="${k}"`}>${l}</button>`).join("")}</div>`;
 function nextCard() {
   const card = (key, label, title, text, go) => `<button class="card next" data-open="${key}"><div class="lbl">${ico("ai")}${label}</div><h3>${title}</h3><p>${text}</p><span class="go">${go} ${ico("arrow")}</span></button>`;
@@ -2982,6 +3263,10 @@ Object.assign(ACTIONS, {
     if (STATE.scMode === "act") { STATE.sc = n; renderPath(); const sh = $(`#desk .script-body[data-sc="${n}"]`); sh.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
     STATE.sc = n; open("scene");
   },
+  "rel-at"(b, k) { STATE.relAt = Number(k); relUpdate(); },
+  "rel-sel"(b, k) { STATE.relSel = k; relUpdate(); },
+  "rel-focus"(b, k) { STATE.relFocus = k; const own = RELS.find(([id]) => id.includes(k)); if (!STATE.relSel.includes(k) && own) STATE.relSel = own[0]; relUpdate(); },
+  "rel-view"(b, k) { STATE.relView = k; relUpdate(); },
   "tn-reset"() { STATE.tension = {}; paint(); },
   "gr-sel"(b, k) { STATE.grSel = Number(k); paint(); },
   "gr-gap"(b, k) { STATE.gap = k === "1"; paint(); toast(STATE.gap ? "Набросал сцену 11. Это черновик: в «Поэпизодник» она попадёт, только когда вы её утвердите." : "Хорошо. Для этого места больше не предлагаю."); },
@@ -3299,6 +3584,10 @@ const SCENE_DEMO = {
   },
 };
 const PRESETS = {
+  "bible/rels": () => { STATE.bibleTab = "rels"; },
+  "bible/orbit": () => { STATE.bibleTab = "rels"; STATE.relView = "orbit"; },
+  "bible/matrix": () => { STATE.bibleTab = "rels"; STATE.relView = "matrix"; },
+  "bible/web": () => { STATE.bibleTab = "rels"; STATE.relView = "web"; },
   "scene/act": () => { STATE.scMode = "act"; },
   "scene/empty": () => { STATE.sc = 15; },
   "scene/typing": () => { STATE.demo = "typing"; },
