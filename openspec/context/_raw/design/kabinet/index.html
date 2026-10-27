@@ -648,6 +648,159 @@
   .tn-b { width: 18px; height: 10px; border-radius: 2px; background: var(--ok-soft); display: inline-block; }
   .tn-mine { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 12px; font-size: 13px; color: var(--ink-2); }
   .tn-mine svg { width: 14px; height: 14px; color: var(--accent); }
+  /* ——— Карта импульсов: доска во весь стол, путь свёрнут в полоску ——— */
+  :root:has(.app.canvas) { --rail-w: 76px; }
+  .app.canvas .desk { overflow: hidden; }
+  .app.canvas .rail { position: fixed; left: 12px; top: 12px; bottom: 12px; width: 52px; margin: 0; z-index: 30; transition: width .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s, opacity .3s, transform .45s; }
+  .app.canvas .rail:hover { width: 284px; box-shadow: var(--shadow); }
+  .app.canvas .rail .cover { padding: 14px 3px 10px; }
+  .app.canvas .rail:not(:hover) :is(.cover > div:last-child, h4, .step .n, .step .lbl, .ping, .rtabs, .pg, .more, .total, .beats-h) { opacity: 0; }
+  .app.canvas .rail:not(:hover) .path { padding: 4px 0 20px; overflow: hidden; }
+  .app.canvas .rail:not(:hover) .step { padding-left: 16px; padding-right: 0; }
+  .app.canvas .rail:not(:hover) .step.cur { background: none; box-shadow: none; }
+  .app.canvas .rail:not(:hover) .step.cur .dot { box-shadow: 0 0 0 3px var(--accent-soft); border-radius: 50%; }
+  .app.canvas .rail:not(:hover) .step::before { left: 25.25px; }
+  .ibx { display: flex; gap: 12px; height: 100%; padding: 12px 12px 12px 0; animation: rise .5s cubic-bezier(.2,.8,.2,1); }
+  .app.focus .ibx { padding-left: 12px; }
+  .calm .ibx { animation: none; }
+  .app.focus .ibp { display: none; }
+  .ibmain { position: relative; flex: 1; min-width: 0; border-radius: 20px; overflow: hidden; background: var(--paper); box-shadow: var(--shadow-sm); }
+  .ibx.list .ibmain { overflow: auto; }
+  .ibv { position: absolute; inset: 0; cursor: grab; touch-action: none; user-select: none; overflow: hidden; background-image: radial-gradient(oklch(from var(--ink) l c h / .14) 1px, transparent 1.3px); }
+  .ibv.grabbing { cursor: grabbing; }
+  .ib { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; }
+  .ib-frame { position: absolute; border-radius: 22px; background: oklch(from var(--ink) l c h / .035); box-shadow: inset 0 0 0 1px oklch(from var(--ink) l c h / .09); }
+  .ib-fl { position: absolute; margin: 12px 0 0 14px; padding: 3px 9px; border-radius: 9px; font: 600 13.5px var(--font-ui); color: var(--ink-2); white-space: nowrap; cursor: move; }
+  .ib-fl:hover { background: oklch(from var(--ink) l c h / .07); }
+  .ib-wires { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+  .ib-wires line { stroke: var(--ink-3); stroke-width: 1.6; }
+  .ib-wires line.sugg { stroke: var(--ai); stroke-dasharray: 5 5; }
+  .ib-wl { position: absolute; translate: -50% -50%; padding: 2px 9px; border-radius: 10px; background: var(--ai-soft); color: var(--ai); font-size: 11.5px; white-space: nowrap; pointer-events: none; }
+  .ib-card { position: absolute; width: 180px; padding: 9px 12px 10px; border-radius: 12px; background: var(--paper); box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--line); cursor: grab; touch-action: none; user-select: none; transition: box-shadow .2s; }
+  .ib-card:hover { box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--ink-3); }
+  .ib-card.on { box-shadow: var(--shadow-sm), inset 0 0 0 2px var(--accent); }
+  .ib-card.src { box-shadow: var(--shadow-sm), inset 0 0 0 2px var(--ai); }
+  .ib-card.drag { cursor: grabbing; z-index: 2; box-shadow: 0 14px 30px -12px oklch(0 0 0 / .35), inset 0 0 0 1px var(--ink-3); }
+  .ib.linking .ib-card:not(.src) { cursor: copy; }
+  .ib.linking .ib-card:not(.src):hover { box-shadow: var(--shadow-sm), inset 0 0 0 2px var(--ai); }
+  .ib-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .ib-h { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-3); }
+  .ib-n { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: oklch(from var(--ink) l c h / .07); color: var(--ink-2); font-size: 10.5px; font-weight: 700; flex: none; }
+  .ib-card p { margin: 5px 0 7px; font-family: var(--font-prose); font-size: 14.5px; line-height: 1.35; color: var(--ink); }
+  .ib-card.k-line p { font-style: italic; }
+  .ib-card.k-q p { font-weight: 600; }
+  /* Издалека: только начало текста крупным шрифтом, цвет слева — во что импульс вырос */
+  /* дальше 42% подписи мельчают вместе с доской, иначе карточки не вмещают текст */
+  .ib.far .ib-card { --zf: max(var(--z), .42); padding: calc(8px / var(--zf)) calc(10px / var(--zf)); border-radius: calc(8px / var(--zf)); }
+  .ib.far .ib-card :is(.ib-h, .ib-g) { display: none; }
+  .ib.far .ib-card p { margin: 0; font-size: calc(11px / var(--zf)); line-height: 1.2; font-style: normal; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .ib.far .ib-card { --bar: transparent; box-shadow: inset calc(4px / var(--z)) 0 0 var(--bar), 0 0 0 1px var(--line); }
+  .ib.far .ib-card.has-theme { --bar: var(--accent); }
+  .ib.far .ib-card.has-char { --bar: var(--ok); }
+  .ib.far .ib-card.has-scene { --bar: var(--warn); }
+  .ib.far .ib-card:is(.has-tone, .has-place) { --bar: var(--ink-3); }
+  .ib.far .ib-card.on { box-shadow: inset calc(4px / var(--z)) 0 0 var(--bar), 0 0 0 calc(2.5px / var(--z)) var(--accent); }
+  .ib.far .ib-fl { font-size: calc(15px / var(--z)); margin: 0; padding: 0 calc(4px / var(--z)); translate: 0 calc(-100% - 4px / var(--z)); }
+  .ib.far .ib-wl { display: none; }
+  .ib.far .ib-wires line { stroke-width: calc(1.4px / var(--z)); }
+  .ib-g { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 8px; border-radius: 10px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+  .ib-g svg { width: 11px; height: 11px; }
+  .ib-g.c-theme { background: var(--accent-soft); color: var(--accent); }
+  .ib-g.c-char { background: var(--ok-soft); color: var(--ok); }
+  .ib-g.c-scene { background: var(--warn-soft); color: var(--warn); }
+  .ib-g:is(.c-tone, .c-place) { background: oklch(from var(--ink) l c h / .07); color: var(--ink-2); }
+  .ib-g.guess { background: none; box-shadow: inset 0 0 0 1px var(--ai); color: var(--ai); }
+  .ib-g.none { background: none; color: var(--ink-3); padding: 0; }
+  .ib-top { position: absolute; left: 14px; top: 14px; z-index: 3; max-width: min(520px, calc(100% - 28px)); padding: 12px 16px 12px; border-radius: 16px; background: var(--panel); box-shadow: var(--shadow-sm); }
+  .ib-top .hello { font-size: 12.5px; }
+  .ib-title { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; }
+  .ib-title h1 { margin: 0; font-family: var(--font-prose); font-size: 28px; font-weight: 500; letter-spacing: -.01em; }
+  .ib-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .ib-tools .seg { margin: 0 6px 0 0; }
+  .ib-tools .chipbtn[aria-pressed="true"] { background: var(--ink); color: var(--paper); box-shadow: none; }
+  .ibx.list .ib-top { position: static; max-width: none; background: none; box-shadow: none; padding: 24px 28px 6px; }
+  .ib-hint { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin-top: 10px; padding: 7px 7px 7px 12px; border-radius: 12px; background: var(--ai-soft); color: var(--ai); font-size: 13px; }
+  .ib-hint svg { width: 14px; height: 14px; }
+  .ib-hint span { flex: 1; min-width: 180px; }
+  .ib-hint .chipbtn { color: var(--ai); }
+  .ib-zoom { position: absolute; right: 14px; top: 50%; translate: 0 -50%; z-index: 3; display: flex; flex-direction: column; gap: 2px; padding: 4px; border-radius: 14px; background: var(--panel); box-shadow: var(--shadow-sm); }
+  .ib-zoom button { width: 40px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: var(--ink-2); }
+  .ib-zoom button:hover { background: oklch(from var(--ink) l c h / .07); color: var(--ink); }
+  .ib-zoom #ibz { font-size: 11px; font-weight: 600; }
+  .ib-make { position: absolute; left: 14px; top: 50%; translate: 0 -50%; z-index: 3; display: flex; flex-direction: column; gap: 4px; padding: 5px; border-radius: 16px; background: var(--panel); box-shadow: var(--shadow-sm); }
+  .ib-make button { width: 64px; padding: 8px 0 6px; border-radius: 11px; display: grid; justify-items: center; gap: 3px; font-size: 11px; font-weight: 500; color: var(--ink-2); }
+  .ib-make button:hover { background: oklch(from var(--ink) l c h / .07); color: var(--ink); }
+  .ib-make svg { width: 18px; height: 18px; }
+  .ib-help { margin-top: 10px; font-size: 12px; color: var(--ink-3); line-height: 1.45; }
+  .ib-tools .chipbtn.main { display: inline-flex; align-items: center; gap: 5px; }
+  .ib-tools .chipbtn svg { width: 13px; height: 13px; }
+  .ib-card.editing { cursor: text; box-shadow: var(--shadow-sm), inset 0 0 0 2px var(--accent); }
+  .ib-card p[contenteditable] { min-height: 2.7em; outline: none; user-select: text; }
+  .ib-card p[contenteditable]:empty::before { content: attr(data-ph); color: var(--ink-3); font-style: normal; font-weight: 400; }
+  .ib-edh { font-size: 10.5px; color: var(--ink-3); }
+  .ib-fl-in { border: 0; outline: 2px solid var(--accent); background: var(--paper); width: 220px; }
+  .ib.far .ib-fl-in { width: calc(220px / var(--z)); }
+  .ib-undo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; padding: 10px 12px; border-radius: 14px; background: var(--paper); font-size: 13px; color: var(--ink-2); }
+  .ib-undo .chipbtn { margin-left: auto; }
+  .ib-howto b { font-family: var(--font-ui); font-size: 13.5px; }
+  .ib-howto ul { margin: 8px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+  .ib-howto li + li { margin-top: 6px; }
+  .ib-howto li b { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .ibl { padding: 0 20px 120px; }
+  .ibl h3 { display: flex; align-items: baseline; gap: 8px; margin: 22px 8px 6px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+  .ibl h3 small { font-size: 12px; letter-spacing: 0; }
+  .ibl-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border-radius: 10px; text-align: left; }
+  .ibl-row:hover { background: oklch(from var(--ink) l c h / .04); }
+  .ibl-row.on { background: var(--accent-soft); }
+  .ibl-k { width: 62px; flex: none; font-size: 12px; color: var(--ink-3); }
+  .ibl-t { flex: 1; min-width: 0; font-family: var(--font-prose); font-size: 15.5px; color: var(--ink); }
+  .ibp { width: 340px; flex: none; margin-top: 60px; overflow: auto; padding: 14px 14px 110px; border-radius: 20px; background: var(--panel); box-shadow: var(--shadow-sm); }
+  .ib-add { display: flex; gap: 6px; }
+  .ib-add input { flex: 1; min-width: 0; height: 36px; padding: 0 14px; border-radius: 18px; border: 0; background: var(--paper); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); font: inherit; font-size: 14px; }
+  .ib-add .chipbtn { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; }
+  .ib-add .chipbtn svg, .ib-sel-acts .chipbtn svg { width: 13px; height: 13px; }
+  .ib-sel { margin-top: 4px; padding: 14px; border-radius: 16px; background: var(--paper); box-shadow: var(--shadow-sm); }
+  .ib-sel-h { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; }
+  .ib-sel-h b { font-family: var(--font-prose); font-size: 18px; font-weight: 600; }
+  .ib-in { font-size: 12px; color: var(--ink-3); }
+  .ib-sel > p { margin: 6px 0 4px; font-family: var(--font-prose); font-size: 16px; line-height: 1.4; color: var(--ink); }
+  .ib-sel-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .ib-sel-acts .chipbtn { display: inline-flex; align-items: center; gap: 5px; }
+  .ib-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin-top: 8px; font-size: 13px; color: var(--ink-2); }
+  .ib-row small { width: 100%; color: var(--ink-3); font-size: 11.5px; }
+  .ib-row .chip { height: 26px; padding: 0 10px; gap: 5px; font-size: 12.5px; background: var(--panel); }
+  .ib-row .chip b { color: var(--ink-3); font-size: 11px; }
+  .ib-guess { display: flex; gap: 10px; margin-top: 12px; padding: 12px; border-radius: 14px; background: var(--ai-soft); font-size: 13px; color: var(--ink-2); }
+  .ib-guess .av { flex: none; width: 24px; height: 24px; border-radius: 12px; display: grid; place-items: center; background: var(--paper); color: var(--ai); }
+  .ib-guess .av svg { width: 13px; height: 13px; }
+  .ib-guess b { color: var(--ink); }
+  .ib-guess p { margin: 4px 0 8px; font-size: 13px; }
+  .ibp-h { margin: 20px 4px 0; font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; color: var(--ink-3); }
+  .ibp .tl-alert { margin-top: 10px; padding: 12px; gap: 10px; font-size: 13px; }
+  /* Узкий стол: панель уходит под доску */
+  @media (max-width: 1000px) {
+    .ibx { flex-direction: column; }
+    .ibmain { flex: 1 1 58%; }
+    .ibp { width: auto; flex: 1 1 42%; margin-top: 0; }
+    .ib-top { top: 64px; }
+    .ibx.list .ib-top { padding-top: 64px; }
+    .ib-zoom { top: auto; bottom: 10px; right: 10px; translate: none; flex-direction: row; }
+    .ib-make { top: auto; bottom: 10px; left: 10px; translate: none; flex-direction: row; }
+    .ib-make button { width: auto; padding: 0 12px; height: 34px; display: flex; align-items: center; gap: 6px; font-size: 12.5px; }
+  }
+  @media (max-width: 600px) {
+    .ib-top { left: 8px; top: 60px; padding: 10px 12px; max-width: calc(100% - 16px); }
+    .ib-top .hello { display: none; }
+    .ib-title h1 { font-size: 22px; }
+    .ib-make button { width: 36px; height: 30px; padding: 0; place-items: center; }
+    .ib-make button span { display: none; }
+    .ib-zoom button { width: 32px; }
+    .ib-help { display: none; }
+    .ib-zoom button { width: 34px; height: 30px; }
+    .ibl { padding: 0 8px 120px; }
+    .ibx.list .ib-top { padding: 60px 14px 4px; }
+    .ibl-k { display: none; }
+  }
   .rel-more { display: inline-flex; align-items: center; gap: 4px; font-size: 13.5px; margin: -2px 0 6px; }
   .rel-more svg { width: 14px; height: 14px; }
   .rslider { margin: -8px 0 18px; }
@@ -1246,7 +1399,7 @@
 <script>
 const ico = (id) => `<svg class="i"><use href="#i-${id}"/></svg>`;
 const STEPS = [
-  [1, "Карта импульсов", "approved"], [2, "Манифест темы", "ready", "d2"], [3, "Этический компас", "approved"],
+  [1, "Карта импульсов", "approved", "d1"], [2, "Манифест темы", "ready", "d2"], [3, "Этический компас", "approved"],
   [4, "Мировоззренческий базис", "not_started"], [5, "Тональный манифест", "stale"], [6, "Паспорт места", "approved"],
   [7, "Атлас правил", "not_started"], [8, "Жанровый кодекс", "approved"], [9, "Концепт-вектор", "in_progress"],
   [10, "Референсное поле", "draft"], [11, "Главный вопрос", "ready", "d11"], [12, "Выбор формата", "approved"],
@@ -1275,6 +1428,9 @@ const STATE = {
   chg: "edit", chgOld: D2Q, chgNew: "Имеет ли человек право решать за близких, какую правду они смогут вынести?", plan: new Set([5, 9, 13]), revision: false,
   bibleTab: "people", gap: null,
   tlSel: 14, tlThreads: true, tlKnow: true, grSel: 14, tnSel: 14, tension: {}, relAt: 14, relSel: "va", relFocus: "v", relView: "arcs",
+  ibSel: 10, ibEdit: null, ibRename: null, ibGone: [], ibUndo: null, ibPos: {}, ibLinks: ["1-9", "1-4", "13-14", "3-5", "2-5", "2-16", "5-17", "6-8", "7-8"], ibSugg: ["4-10", "6-12"], ibLink: null, ibYes: {}, ibNo: [], ibNew: [], ibWires: true, ibShowGrew: true, ibGroups: true, ibView: "board", ibCam: null, ibGroupSugg: true,
+  // Рамки групп на доске импульсов: координаты в точках доски
+  ibFrames: [{ id: "lake", name: "Озеро", x: 0, y: 0, w: 620, h: 452 }, { id: "vera", name: "Вера и тема", x: 700, y: 0, w: 620, h: 452 }, { id: "kitchen", name: "Кухня, ночь", x: 1400, y: 0, w: 420, h: 452 }],
 };
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const approvedCount = () => STEPS.filter((s) => s[2] === "approved").length;
@@ -1356,6 +1512,30 @@ const VIEWS = {
         </div>
       </div>
       </div></div>`,
+
+  d1: () => {
+    const board = STATE.ibView === "board", lay = (k, t) => `<button class="chipbtn" aria-pressed="${STATE[k]}" data-act="tl-layer" data-k="${k}">${t}</button>`;
+    return `<div class="ibx ${board ? "" : "list"}">
+      <div class="ibmain">
+        <div class="ib-top">
+          <div class="hello">Шаг 1 · Основа истории</div>
+          <div class="ib-title"><h1>Карта импульсов</h1><span class="pill approved"><i></i>Утверждена</span></div>
+          <div class="ib-tools"><div class="seg" role="group" aria-label="Вид"><button aria-pressed="${board}" data-act="ib-view" data-k="board">Доска</button><button aria-pressed="${!board}" data-act="ib-view" data-k="list">Список</button></div>
+            ${board ? lay("ibGroups", "Группы") + lay("ibWires", "Связи") + lay("ibShowGrew", "Во что выросло") : `<button class="chipbtn main" data-act="ib-new">${ico("plus")}Новый импульс</button>`}</div>
+          ${board ? `<div class="ib-help">Двойной клик по пустому месту — новый импульс · тяните пустое место — двигать доску · Ctrl или ⌘ + колесо — масштаб</div>` : ""}
+          ${STATE.ibLink ? `<div class="ib-hint">${ico("plus")}<span>Выберите импульс для связи с №${STATE.ibLink}. Клик по связанному — убрать связь.</span><button class="chipbtn quiet" data-act="ib-link" data-k="">Отмена · Esc</button></div>` : ""}
+        </div>
+        ${board ? `<div class="ibv" id="ibv">${ibBoard()}</div>
+        <div class="ib-make" role="group" aria-label="Создать"><button data-act="ib-new" title="Новый импульс — или двойной клик по пустому месту">${ico("plus")}<span>Импульс</span></button><button data-act="ib-frame-new" title="Новая группа: рамка, в которую перетаскивают импульсы"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M4 9.5h16"/></svg><span>Группа</span></button></div>
+        <div class="ib-zoom" role="group" aria-label="Масштаб"><button data-act="ib-zoom" data-k="in" title="Крупнее (+)" aria-label="Крупнее">${ico("plus")}</button><button data-act="ib-zoom" data-k="1" title="100% (0)" id="ibz">100%</button><button data-act="ib-zoom" data-k="out" title="Мельче (−)" aria-label="Мельче"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button><button data-act="ib-zoom" data-k="fit" title="Вписать всё (Shift+1)" aria-label="Вписать всё">${ico("focus")}</button></div>` : ibList()}
+      </div>
+      <aside class="ibp">
+        ${ibSel()}
+        <div class="ibp-h">Соавтор</div>
+        ${ibNotes()}
+      </aside>
+    </div>`;
+  },
 
   d2: () => `<div class="stage doc">
       <article class="sheet">
@@ -2477,8 +2657,346 @@ function nextCard() {
 const d2Meta = () => (STATE.d2Approved
   ? `<div class="meta"><span class="pill approved"><i></i>Утверждён</span><button class="linkbtn quiet-link" data-open="versions" title="Открыть историю версий">только что</button><button class="chipbtn quiet" data-open="versions" style="margin-left:auto">Версии</button><button class="chipbtn" data-act="change">Изменить решение</button><button class="approve" disabled style="margin-left:0">${ico("check")}Утверждено</button></div>`
   : `<div class="meta"><span class="pill ready"><i></i>Ждёт утверждения</span><button class="linkbtn quiet-link" data-open="versions" title="Открыть историю версий">правка 2 ч назад</button><button class="chipbtn quiet" data-open="versions" style="margin-left:auto">Версии</button><button class="approve" data-act="approve" style="margin-left:0">${ico("check")}Утвердить</button></div>`);
+// ——— Шаг 1. Карта импульсов: бесконечная доска ———
+// Импульс — сырой материал до сюжета. Доска занимает весь стол: масштаб, «Вписать всё», группы-рамки и тот же материал списком.
+// Соавтор показывает, во что импульс вырос в следующих шагах, и предлагает связи, группы и место для остальных.
+const IB_KIND = { img: "Образ", line: "Фраза", q: "Вопрос", scene: "Сцена", who: "Человек", sound: "Звук" };
+const IB_CAT = { theme: "тема", char: "персонаж", scene: "сцена", tone: "тон", place: "место" };
+const IB_W = 180;
+// [№, вид, текст, x, y, во что вырос: [категория, куда, атрибуты ссылки] | null, догадка соавтора: [категория, куда, почему] | null]
+const IB = [
+  [1, "img", "Фотография с озера: двое детей на мостках, лицо второго отрезано сгибом", 20, 52, ["scene", "завязка в «Скелетной карте»", ""], null],
+  [9, "img", "Дом бабушки у озера, окна заколочены", 220, 52, ["place", "«Паспорт места»", ""], null],
+  [13, "img", "Мостки, у которых не хватает одной доски", 420, 52, ["place", "«Паспорт места»", ""], null],
+  [4, "img", "Зимнее озеро: тонкий лёд поверх тёмной воды", 20, 252, ["tone", "«Тональный манифест»", ""], null],
+  [14, "line", "«Он просто заплыл дальше, чем можно»", 220, 252, ["scene", "флешбэк 16", ""], null],
+  [15, "sound", "Скрип уключин в тумане", 420, 252, ["tone", "«Тональный манифест»", ""], null],
+  [3, "line", "Не хочу делать Веру виноватой", 720, 52, ["theme", "контртезис", 'data-open="d2"'], null],
+  [5, "q", "Сколько лет можно любить человека, не говоря ему главного?", 920, 52, ["theme", "тематический вопрос", 'data-open="d2"'], null],
+  [2, "line", "«Куртку повесь» — вместо «я тебя люблю»", 1120, 52, ["char", "Вера, речь", 'data-open="bible"'], null],
+  [16, "who", "Женщина, которая гладит бельё, когда злится", 720, 252, ["char", "Вера", 'data-open="bible"'], null],
+  [17, "q", "Что Вера скажет Ане, если та спросит прямо?", 920, 252, ["scene", "кульминация, сцена 22", ""], null],
+  [18, "line", "«Я не врала. Я просто не говорила»", 1120, 252, null, ["scene", "реплика Веры в сцене 22", "Это её защита в одной фразе — и ровно то, что Аня не сможет простить сразу. В кульминации она сработает сильнее, чем в начале."]],
+  [6, "scene", "Ночь, кухня. Мать и взрослая дочь, чайник давно вскипел", 1420, 52, ["scene", "сцена 14 · Кухня", 'data-act="sc-open" data-k="14"'], null],
+  [8, "line", "«Миша утонул не случайно»", 1620, 52, ["scene", "реплика в сцене 14", 'data-act="sc-open" data-k="14"'], null],
+  [7, "who", "Дядя, который всё знал и двадцать лет пил", 1420, 252, ["char", "Дядя Коля", 'data-open="bible"'], null],
+  [19, "img", "Кружка Миши, из которой никто не пьёт", 1620, 252, ["place", "реквизит кухни", ""], null],
+  [10, "img", "Лодку каждый год красят и не спускают на воду", 30, 540, null, ["tone", "«Тональный манифест»", "Её красят и не спускают — как семья, которая делает всё, кроме главного. Рядом с зимним озером это один мотив: вода, к которой не подходят."]],
+  [11, "scene", "Похороны, на которых никто не плачет", 250, 566, null, ["scene", "флешбэк 1998 в «Поэпизоднике»", "Флешбэк 16 показывает день на озере, но не то, что было после. Похороны покажут, с чего началось молчание."]],
+  [12, "sound", "На кухне всегда включено радио — чтобы не было тишины", 470, 536, null, null],
+  [20, "scene", "Аня едет ночью в электричке, телефон на трёх процентах", 720, 556, null, ["scene", "связка между сценами 10 и 12", "В «Линиях» Аня пропадает на сцены 10–12. Эта поездка — готовая связка: зритель видит её решение, а не только результат."]],
+  [21, "who", "Отец Ани, который ушёл и ни о чём не спрашивал", 950, 540, ["char", "Сергей", 'data-open="bible"'], null],
+  [22, "img", "Фотография в рамке, повёрнутая стеклом к стене", 1180, 570, null, null],
+  [23, "line", "«В нашей семье не плачут — в нашей семье моют посуду»", 1420, 540, null, null],
+  [24, "q", "Можно ли простить того, кто молчал ради тебя?", 1650, 560, null, ["theme", "«Главный вопрос», шаг 11", "Это вопрос Ани, а не Веры. На шаге 11 он уже звучал вариантом — можно связать, чтобы он не потерялся."]],
+];
+// Группа, которую предлагает соавтор: её ещё нет на доске, «Собрать» раскладывает импульсы в новую рамку
+const IB_GROUP_SUGG = { id: "silence", name: "Молчание в семье", cards: [10, 11, 12, 22, 23], why: "Лодка, похороны, радио, фотография стеклом к стене и «моют посуду» — всё о том, как семья обходит горе молча. Вместе это мотив второго акта." };
+const IB_SUGG = { "4-10": "вода, к которой не подходят", "6-12": "тишина на кухне" };
+const ibKey = (a, b) => (a < b ? `${a}-${b}` : `${b}-${a}`);
+const ibAll = () => [...IB, ...STATE.ibNew].filter((c) => !STATE.ibGone.includes(c[0]));
+const ibCard = (n) => ibAll().find((c) => c[0] === n);
+const ibXY = (c) => STATE.ibPos[c[0]] || [c[3], c[4]];
+const ibGrew = (c) => c[5] || STATE.ibYes[c[0]] || null;
+const ibGuess = (c) => (!ibGrew(c) && c[6] && !STATE.ibNo.includes(c[0]) ? c[6] : null);
+// Связь видна, пока оба её импульса на доске
+const ibLive = (k) => k.split("-").map(Number).every((n) => ibCard(n));
+const ibLinked = (n) => STATE.ibLinks.filter(ibLive).filter((k) => k.split("-").map(Number).includes(n)).map((k) => k.split("-").map(Number).find((x) => x !== n));
+// Импульс в группе, если его верх-середина лежит в рамке: так перетаскивание в рамку и из неё меняет группу
+const ibFrameOf = (c) => { const [x, y] = ibXY(c); return STATE.ibFrames.find((f) => x + IB_W / 2 > f.x && x + IB_W / 2 < f.x + f.w && y + 30 > f.y && y + 30 < f.y + f.h) || null; };
+const ibShort = (c) => c[2].split(/[:—,.]/)[0].replace(/[«»]/g, "").trim();
+
+function ibTag(c) {
+  const g = ibGrew(c), q = ibGuess(c);
+  if (g) return `<span class="ib-g c-${g[0]}">→ ${IB_CAT[g[0]]}</span>`;
+  if (q) return `<span class="ib-g guess">${ico("ai")}${IB_CAT[q[0]]}?</span>`;
+  return `<span class="ib-g none">пока никуда</span>`;
+}
+function ibBoard() {
+  const card = (c) => {
+    const [n, kind, text] = c, [x, y] = ibXY(c), g = ibGrew(c), ed = n === STATE.ibEdit;
+    return `<div class="ib-card k-${kind} ${g ? `has-${g[0]}` : ""} ${n === STATE.ibSel ? "on" : ""} ${n === STATE.ibLink ? "src" : ""} ${ed ? "editing" : ""}" data-ib="${n}" role="button" tabindex="0" style="left:${x}px;top:${y}px" aria-label="Импульс ${n}: ${esc(text)}">
+      <div class="ib-h"><span class="ib-n">${n}</span>${text ? IB_KIND[kind] : "Новый импульс"}</div>${ed ? `<p contenteditable="true" spellcheck="false" data-ph="Образ, фраза, сцена, вопрос…">${esc(text)}</p><div class="ib-edh">Enter — готово · Esc — отмена</div>` : `<p>${esc(text)}</p>${STATE.ibShowGrew ? ibTag(c) : ""}`}</div>`;
+  };
+  const frame = (f) => `<div class="ib-frame" style="left:${f.x}px;top:${f.y}px;width:${f.w}px;height:${f.h}px"></div>${f.id === STATE.ibRename
+    ? `<input class="ib-fl ib-fl-in" data-fr-in="${f.id}" style="left:${f.x}px;top:${f.y}px" value="${esc(f.name)}" aria-label="Название группы" />`
+    : `<div class="ib-fl" data-fr="${f.id}" style="left:${f.x}px;top:${f.y}px" title="Потяните — сдвинуть группу целиком, двойной клик — переименовать">${esc(f.name)}</div>`}`;
+  const wires = STATE.ibWires ? [...STATE.ibLinks.filter(ibLive).map((k) => [k, "mine"]), ...STATE.ibSugg.filter(ibLive).map((k) => [k, "sugg"])] : [];
+  return `<div class="ib ${STATE.ibLink ? "linking" : ""}" id="ib">
+    ${STATE.ibGroups ? STATE.ibFrames.map(frame).join("") : ""}
+    <svg class="ib-wires" width="1" height="1">${wires.map(([k, cls]) => `<line class="${cls}" data-l="${k}"/>`).join("")}</svg>
+    ${wires.filter(([, cls]) => cls === "sugg").map(([k]) => `<span class="ib-wl" data-l="${k}">${IB_SUGG[k]}</span>`).join("")}
+    ${ibAll().map(card).join("")}</div>`;
+}
+function ibList() {
+  const groups = [...STATE.ibFrames.map((f) => [f.name, ibAll().filter((c) => ibFrameOf(c) === f)]), ["Без группы", ibAll().filter((c) => !ibFrameOf(c))]].filter(([, cs]) => cs.length);
+  const row = (c) => `<button class="ibl-row ${c[0] === STATE.ibSel ? "on" : ""}" data-act="ib-sel" data-k="${c[0]}"><span class="ib-n">${c[0]}</span><span class="ibl-k">${IB_KIND[c[1]]}</span><span class="ibl-t">${esc(c[2])}</span>${ibTag(c)}</button>`;
+  return `<div class="ibl">${groups.map(([name, cs]) => `<h3>${esc(name)}<small>${cs.length}</small></h3>${cs.map(row).join("")}`).join("")}</div>`;
+}
+// Нити считаются от центров карточек, когда карточки уже на месте
+function ibWire() {
+  const b = $("#ib"); if (!b) return;
+  const mid = (n) => { const el = b.querySelector(`[data-ib="${n}"]`); return [el.offsetLeft + el.offsetWidth / 2, el.offsetTop + el.offsetHeight / 2]; };
+  b.querySelectorAll("[data-l]").forEach((el) => {
+    const [p, q] = el.dataset.l.split("-").map(Number).map(mid);
+    if (el.tagName === "line") { el.setAttribute("x1", p[0]); el.setAttribute("y1", p[1]); el.setAttribute("x2", q[0]); el.setAttribute("y2", q[1]); }
+    else {
+      // Подпись встаёт на линии туда, где она не закрывает карточки: от середины к концам
+      const w = el.offsetWidth / 2 + 4, h = el.offsetHeight / 2 + 4, cards = [...b.querySelectorAll(".ib-card")];
+      const free = (x, y) => !cards.some((c) => x + w > c.offsetLeft && x - w < c.offsetLeft + c.offsetWidth && y + h > c.offsetTop && y - h < c.offsetTop + c.offsetHeight);
+      const t = [0.5, 0.42, 0.58, 0.34, 0.66, 0.26, 0.74].find((t) => free(p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t));
+      if (t === undefined) { el.hidden = true; return; }
+      el.hidden = false; el.style.left = p[0] + (q[0] - p[0]) * t + "px"; el.style.top = p[1] + (q[1] - p[1]) * t + "px";
+    }
+  });
+}
+// ——— Камера: сдвиг и масштаб ———
+const IB_ZMIN = 0.25, IB_ZMAX = 2;
+function ibApply() {
+  const b = $("#ib"), v = $("#ibv"); if (!b) return;
+  const { x, y, z } = STATE.ibCam;
+  b.style.transform = `translate(${x}px, ${y}px) scale(${z})`;
+  b.style.setProperty("--z", z);
+  // Издалека карточка показывает только начало текста крупнее, а рамки — крупные подписи
+  const far = z < 0.62;
+  if (far !== b.classList.contains("far")) { b.classList.toggle("far", far); ibWire(); }
+  v.style.backgroundPosition = `${x}px ${y}px`; v.style.backgroundSize = `${22 * z}px ${22 * z}px`;
+  $("#ibz").textContent = Math.round(z * 100) + "%";
+}
+function ibBounds() {
+  const els = [...$("#ib").querySelectorAll(".ib-card, .ib-frame")];
+  const l = Math.min(...els.map((e) => e.offsetLeft)), t = Math.min(...els.map((e) => e.offsetTop));
+  return { l, t, r: Math.max(...els.map((e) => e.offsetLeft + e.offsetWidth)), b: Math.max(...els.map((e) => e.offsetTop + e.offsetHeight)) };
+}
+function ibFit(box = ibBounds()) {
+  // Вписываем между плашкой сверху и панелями создания и масштаба: сбоку на широком окне, снизу на телефоне
+  const v = $("#ibv"), hd = $(".ib-top"), mk = $(".ib-make"), side = getComputedStyle(mk).flexDirection === "column";
+  const top = hd.offsetTop + hd.offsetHeight + 44, pl = side ? mk.offsetWidth + 34 : 24, pr = side ? $(".ib-zoom").offsetWidth + 34 : 24, pb = side ? 40 : mk.offsetHeight + 24;
+  const z = Math.max(IB_ZMIN, Math.min(1, (v.clientWidth - pl - pr) / (box.r - box.l), (v.clientHeight - top - pb) / (box.b - box.t)));
+  STATE.ibCam = { z, x: pl + (v.clientWidth - pl - pr - (box.r - box.l) * z) / 2 - box.l * z, y: top - box.t * z };
+  ibApply();
+}
+function ibZoom(z, cx, cy) {
+  const v = $("#ibv"), c = STATE.ibCam, nz = Math.max(IB_ZMIN, Math.min(IB_ZMAX, z));
+  if (cx === undefined) { cx = v.clientWidth / 2; cy = v.clientHeight / 2; }
+  STATE.ibCam = { z: nz, x: cx - ((cx - c.x) / c.z) * nz, y: cy - ((cy - c.y) / c.z) * nz };
+  ibApply();
+}
+// Показать карточку, если она за краем видимой части доски
+function ibReveal(n) {
+  const el = $(`[data-ib="${n}"]`), v = $("#ibv"); if (!el || !v) return;
+  const c = STATE.ibCam, sx = c.x + el.offsetLeft * c.z, sy = c.y + el.offsetTop * c.z, w = el.offsetWidth * c.z, h = el.offsetHeight * c.z;
+  if (sx > 0 && sy > $(".ib-top").offsetTop + $(".ib-top").offsetHeight && sx + w < v.clientWidth && sy + h < v.clientHeight) return;
+  STATE.ibCam = { ...c, x: v.clientWidth / 2 - (el.offsetLeft + el.offsetWidth / 2) * c.z, y: v.clientHeight / 2 - (el.offsetTop + el.offsetHeight / 2) * c.z };
+  ibApply();
+}
+function ibLayout() {
+  if (STATE.ibView !== "board") return;
+  ibWire();
+  if (!STATE.ibCam) ibFit(); else ibApply();
+  const ed = $(".ib-card p[contenteditable]"), fi = $(".ib-fl-in");
+  if (ed && document.activeElement !== ed) { ed.focus(); getSelection().selectAllChildren(ed); getSelection().collapseToEnd(); }
+  if (fi && document.activeElement !== fi) { fi.focus(); fi.select(); }
+}
+// Без выбранного импульса панель объясняет, как работать с доской
+function ibHelp() {
+  return `${STATE.ibUndo ? `<div class="ib-undo">Импульс №${STATE.ibUndo} убран с доски.<button class="chipbtn" data-act="ib-undo" data-k="${STATE.ibUndo}">Вернуть</button></div>` : ""}
+    <div class="ib-sel ib-howto"><b>Как работать с доской</b><ul>
+      <li><b>Импульс</b> — кнопка слева или двойной клик по пустому месту. Пишите прямо на карточке.</li>
+      <li><b>Группа</b> — кнопка слева, затем перетащите в рамку импульсы. Двойной клик по названию — переименовать.</li>
+      <li><b>Связь</b> — выберите импульс и «Связать с другим».</li>
+      <li><b>Править</b> — двойной клик по карточке; <b>убрать</b> — Delete.</li>
+      <li><b>Двигать доску</b> — тяните пустое место; <b>масштаб</b> — Ctrl или ⌘ с колесом, кнопки справа.</li></ul></div>`;
+}
+function ibSel() {
+  if (STATE.ibSel === null) return ibHelp();
+  const c = ibCard(STATE.ibSel), [n, kind, text] = c, g = ibGrew(c), q = ibGuess(c), links = ibLinked(n), f = ibFrameOf(c);
+  const grew = g ? `<div class="ib-row"><small>Во что вырос</small><span class="ib-g c-${g[0]}">→ ${IB_CAT[g[0]]}</span>${g[2] ? `<button class="linkbtn" ${g[2]}>${g[1]}</button>` : `<span>${g[1]}</span>`}</div>`
+    : q ? `<div class="ib-guess"><span class="av">${ico("ai")}</span><div><b>Похоже на ${IB_CAT[q[0]]}: ${q[1]}</b><p>${q[2]}</p><div class="acts"><button class="chipbtn main" data-act="ib-yes" data-k="${n}">Да, туда</button><button class="chipbtn quiet" data-act="ib-no" data-k="${n}">Пусть лежит</button></div></div></div>`
+    : `<div class="ib-row"><small>Во что вырос</small><span>пока никуда — импульс лежит и ничего не обязан</span></div>`;
+  return `<div class="ib-sel"><div class="ib-sel-h"><span class="ib-n">${n}</span><b>${IB_KIND[kind]}</b>${f ? `<span class="ib-in">в группе «${esc(f.name)}»</span>` : ""}</div>
+    <p>${esc(text)}</p>
+    <div class="ib-row"><small>Связан с</small>${links.length ? links.map((m) => `<button class="chip" data-act="ib-sel" data-k="${m}"><b>${m}</b>${esc(ibShort(ibCard(m)))}</button>`).join("") : "<span>ни с чем</span>"}</div>
+    ${grew}
+    <div class="ib-sel-acts"><button class="chipbtn" data-act="ib-link" data-k="${n}">${ico("plus")}Связать с другим</button>${STATE.ibView === "list" ? `<button class="chipbtn quiet" data-act="ib-show" data-k="${n}">Показать на доске</button>` : `<button class="chipbtn quiet" data-act="ib-edit" data-k="${n}">${ico("pencil")}Править</button>`}<button class="chipbtn quiet" data-act="ib-del" data-k="${n}">Убрать</button></div></div>`;
+}
+function ibNotes() {
+  const note = (kind, icon, title, text, acts = "") => `<div class="tl-alert ${kind}"><span class="av">${ico(icon)}</span><div><b>${title}</b><p>${text}</p>${acts ? `<div class="acts">${acts}</div>` : ""}</div></div>`;
+  const idle = ibAll().filter((c) => !ibGrew(c)), loose = ibAll().filter((c) => !ibFrameOf(c));
+  return [
+    STATE.ibGroupSugg ? note("warn", "ai", `Похоже на группу: «${IB_GROUP_SUGG.name}»`, IB_GROUP_SUGG.why, `<button class="chipbtn main" data-act="ib-group">Собрать в рамку</button><button class="chipbtn quiet" data-act="ib-group-no">Не надо</button>`) : "",
+    ...STATE.ibSugg.filter(ibLive).map((k) => { const [a, b] = k.split("-").map(Number); return note("warn", "ai", `№${a} и №${b} — об одном: ${IB_SUGG[k]}`, `«${esc(ibShort(ibCard(a)))}» и «${esc(ibShort(ibCard(b)))}». Вы их не связывали — я провёл пунктир.`,
+      `<button class="chipbtn main" data-act="ib-sugg" data-k="${k}">Связать</button><button class="chipbtn quiet" data-act="ib-sugg-no" data-k="${k}">Не связывать</button>`); }),
+    idle.length ? note("warn", "ai", `${idle.length} ${plural(idle.length, "импульс", "импульса", "импульсов")} пока никуда не ${idle.length === 1 ? "вошёл" : "вошли"}`, `${idle.map((c) => `№${c[0]}`).join(", ")}${loose.length ? `; без группы — ${loose.length}` : ""}. Импульс не обязан никуда вырасти: доска — склад, а не план.`,
+      `<button class="chipbtn" data-act="ib-sel" data-k="${idle[0][0]}">Показать №${idle[0][0]}</button>`)
+      : note("ok", "check", "Все импульсы при деле", "Каждый вырос в тему, персонажа, сцену, тон или место."),
+  ].join("");
+}
+// ——— Мышь: карточка, рамка группы, пустое место ———
+let ibDrag = null;
+const ibWorld = (e) => { const r = $("#ibv").getBoundingClientRect(), c = STATE.ibCam; return [(e.clientX - r.left - c.x) / c.z, (e.clientY - r.top - c.y) / c.z]; };
+document.addEventListener("pointerdown", (e) => {
+  if (current !== "d1" || e.button !== 0 || !e.target.closest?.("#ibv") || e.target.closest(".ib-top, .ib-zoom, .ib-make, [contenteditable=true], input")) return;
+  const card = e.target.closest(".ib-card"), fl = e.target.closest(".ib-fl");
+  if (card) ibDrag = { kind: "card", el: card, n: Number(card.dataset.ib), l0: card.offsetLeft, t0: card.offsetTop };
+  else if (fl) {
+    const f = STATE.ibFrames.find((x) => x.id === fl.dataset.fr);
+    ibDrag = { kind: "frame", f, fx: f.x, fy: f.y, cards: ibAll().filter((c) => ibFrameOf(c) === f).map((c) => [c[0], ...ibXY(c)]) };
+  } else ibDrag = { kind: "pan", cx: STATE.ibCam.x, cy: STATE.ibCam.y };
+  Object.assign(ibDrag, { x0: e.clientX, y0: e.clientY, moved: false });
+  e.target.setPointerCapture(e.pointerId);
+});
+document.addEventListener("pointermove", (e) => {
+  if (!ibDrag) return;
+  const d = ibDrag, dx = e.clientX - d.x0, dy = e.clientY - d.y0, z = STATE.ibCam.z;
+  if (!d.moved && Math.hypot(dx, dy) < 4) return;
+  d.moved = true; $("#ibv").classList.add("grabbing");
+  if (d.kind === "pan") { STATE.ibCam = { ...STATE.ibCam, x: d.cx + dx, y: d.cy + dy }; ibApply(); return; }
+  if (d.kind === "card") { d.el.classList.add("drag"); d.x = Math.round(d.l0 + dx / z); d.y = Math.round(d.t0 + dy / z); d.el.style.left = d.x + "px"; d.el.style.top = d.y + "px"; }
+  else {
+    const mx = Math.round(dx / z), my = Math.round(dy / z);
+    d.f.x = d.fx + mx; d.f.y = d.fy + my;
+    const fe = $(`[data-fr="${d.f.id}"]`); fe.style.left = d.f.x + "px"; fe.style.top = d.f.y + "px"; fe.previousElementSibling.style.left = d.f.x + "px"; fe.previousElementSibling.style.top = d.f.y + "px";
+    d.cards.forEach(([n, x, y]) => { STATE.ibPos[n] = [x + mx, y + my]; const el = $(`[data-ib="${n}"]`); el.style.left = x + mx + "px"; el.style.top = y + my + "px"; });
+  }
+  ibWire();
+});
+document.addEventListener("pointerup", () => {
+  if (!ibDrag) return;
+  const d = ibDrag; ibDrag = null; $("#ibv").classList.remove("grabbing");
+  if (d.kind === "pan") { if (!d.moved && STATE.ibLink) { STATE.ibLink = null; paint(); } return; }
+  if (!d.moved) { if (d.kind === "card") ibPick(d.n); return; }
+  if (d.kind === "card") {
+    const before = ibFrameOf(ibCard(d.n));
+    STATE.ibPos[d.n] = [d.x, d.y]; d.el.classList.remove("drag");
+    const after = ibFrameOf(ibCard(d.n));
+    // Рамка растёт, чтобы вместить импульс, который в неё положили
+    if (after) { after.w = Math.max(after.w, d.x + d.el.offsetWidth + 20 - after.x); after.h = Math.max(after.h, d.y + d.el.offsetHeight + 20 - after.y); paint(); }
+    if (before !== after) { paint(); toast(after ? `№${d.n} теперь в группе «${esc(after.name)}».` : `№${d.n} вынесен из группы «${esc(before.name)}».`); }
+  }
+  touched();
+});
+// Колесо и тачпад: прокрутка двигает доску, с Ctrl или ⌘ (и щипок) — масштаб вокруг курсора
+document.addEventListener("wheel", (e) => {
+  const v = e.target.closest?.("#ibv"); if (!v || e.target.closest(".ib-top")) return;
+  e.preventDefault();
+  if (e.ctrlKey || e.metaKey) { const r = v.getBoundingClientRect(); ibZoom(STATE.ibCam.z * Math.exp(-e.deltaY * 0.003), e.clientX - r.left, e.clientY - r.top); return; }
+  STATE.ibCam = { ...STATE.ibCam, x: STATE.ibCam.x - e.deltaX, y: STATE.ibCam.y - e.deltaY }; ibApply();
+}, { passive: false });
+document.addEventListener("keydown", (e) => {
+  if (current !== "d1") return;
+  const ed = e.target.closest?.(".ib-card p[contenteditable]"), fi = e.target.closest?.(".ib-fl-in");
+  if (ed && (e.key === "Enter" && !e.shiftKey || e.key === "Escape")) { e.preventDefault(); ibEditDone(ed, e.key === "Escape"); return; }
+  if (fi && (e.key === "Enter" || e.key === "Escape")) { e.preventDefault(); ibRenameDone(fi, e.key === "Escape"); return; }
+  if (e.target.closest?.("input, textarea, [contenteditable=true]")) return;
+  if ((e.key === "Delete" || e.key === "Backspace") && STATE.ibSel !== null) { e.preventDefault(); ibRemove(STATE.ibSel); return; }
+  if (e.key === "Escape" && STATE.ibLink) { STATE.ibLink = null; paint(); return; }
+  const card = e.target.closest?.(".ib-card");
+  if (card && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); ibPick(Number(card.dataset.ib)); return; }
+  if (STATE.ibView !== "board") return;
+  if (e.key === "+" || e.key === "=") ibZoom(STATE.ibCam.z * 1.25);
+  else if (e.key === "-") ibZoom(STATE.ibCam.z / 1.25);
+  else if (e.key === "!" && e.shiftKey) ibFit();
+  else if (e.key === "0") ibZoom(1);
+});
+// Клик по карточке: выбрать её или, в режиме связывания, связать с выбранной
+function ibPick(n) {
+  const src = STATE.ibLink;
+  if (src && src !== n) {
+    const k = ibKey(src, n), had = STATE.ibLinks.includes(k);
+    STATE.ibLinks = had ? STATE.ibLinks.filter((x) => x !== k) : [...STATE.ibLinks, k];
+    STATE.ibSugg = STATE.ibSugg.filter((x) => x !== k);
+    STATE.ibLink = null; paint(); touched();
+    return toast(had ? `Убрал связь №${src} и №${n}.` : `Связал №${src} и №${n}.`);
+  }
+  if (!src && STATE.ibSel === n) return;
+  STATE.ibLink = null; STATE.ibSel = n; STATE.ibUndo = null; paint();
+  requestAnimationFrame(() => ibReveal(n));
+}
+// ——— Создание и правка прямо на доске ———
+// Новый импульс — пустая карточка в точке двойного клика или посередине видимой части; текст пишется прямо на ней
+function ibNewAt(x, y) {
+  const n = Math.max(...[...IB, ...STATE.ibNew].map((c) => c[0])) + 1;
+  STATE.ibNew.push([n, "img", "", Math.round(x), Math.round(y), null, null]);
+  // Издалека писать нельзя: доска приближается к новой карточке
+  const c = STATE.ibCam;
+  if (c.z < 0.9) STATE.ibCam = { z: 0.9, x: c.x + (x + IB_W / 2) * (c.z - 0.9), y: c.y + (y + 50) * (c.z - 0.9) };
+  STATE.ibSel = n; STATE.ibEdit = n; STATE.ibUndo = null; paint();
+}
+// Из списка инструменты доски сначала переключают на доску: камере нужна разметка
+function ibOnBoard(fn) {
+  if (STATE.ibView === "board") return fn();
+  STATE.ibView = "board"; paint(); requestAnimationFrame(() => requestAnimationFrame(fn));
+}
+// Кнопка ставит импульс в ближайшее к середине экрана свободное место, чтобы он не лёг поверх других
+function ibNewCenter() {
+  const v = $("#ibv"), c = STATE.ibCam, cx = (v.clientWidth / 2 - c.x) / c.z - IB_W / 2, cy = (v.clientHeight / 2 - c.y) / c.z - 60;
+  const busy = [...$("#ib").querySelectorAll(".ib-card")].map((e) => [e.offsetLeft - 16, e.offsetTop - 16, e.offsetLeft + e.offsetWidth + 16, e.offsetTop + e.offsetHeight + 16]);
+  const free = (x, y) => !busy.some(([l, t, r, b]) => x < r && x + IB_W > l && y < b && y + 140 > t);
+  const spots = [];
+  for (let r = 0; r <= 8; r++) for (let i = -r; i <= r; i++) for (let k = -r; k <= r; k++) if (Math.max(Math.abs(i), Math.abs(k)) === r) spots.push([cx + i * 110, cy + k * 90]);
+  const spot = spots.find(([x, y]) => free(x, y));
+  if (!spot) { toast("Рядом нет свободного места — сдвиньте доску или поставьте импульс двойным кликом."); return; }
+  ibNewAt(...spot);
+}
+function ibEditDone(el, cancel) {
+  const n = Number(el.closest(".ib-card").dataset.ib); if (STATE.ibEdit !== n) return;
+  const c = ibCard(n), text = el.textContent.trim(), fresh = !c[2];
+  STATE.ibEdit = null;
+  if (fresh && (cancel || !text)) { STATE.ibNew = STATE.ibNew.filter((x) => x[0] !== n); STATE.ibSel = null; paint(); return; }
+  if (cancel) { paint(); return; }
+  if (!text) { paint(); toast("Пустой импульс не сохраню — текст остался прежним. Убрать импульс — Delete."); return; }
+  c[2] = text;
+  if (fresh) c[1] = /^«/.test(text) ? "line" : /\?$/.test(text) ? "q" : "img";
+  paint(); touched();
+  if (fresh) toast(`Импульс №${n} на доске. Вид угадан по тексту: ${IB_KIND[c[1]].toLowerCase()}. Перетащите его к тем, с чем он связан.`);
+}
+// Новая группа встаёт справа от всего, что есть на доске, — чтобы не захватить чужие импульсы
+function ibFrameNew() {
+  const b = ibBounds(), id = "g" + (STATE.ibFrames.length + 1), f = { id, name: "Новая группа", x: b.r + 80, y: b.t, w: 440, h: 300 };
+  STATE.ibFrames.push(f); STATE.ibGroups = true; STATE.ibRename = id;
+  const v = $("#ibv"), c = STATE.ibCam;
+  STATE.ibCam = { ...c, x: v.clientWidth / 2 - (f.x + f.w / 2) * c.z, y: v.clientHeight / 2 - (f.y + f.h / 2) * c.z };
+  paint(); touched();
+  toast("Новая группа справа от остальных. Назовите её и перетащите в рамку импульсы.");
+}
+function ibRenameDone(el, cancel) {
+  const f = STATE.ibFrames.find((x) => x.id === el.dataset.frIn); if (STATE.ibRename !== f.id) return;
+  const name = el.value.trim();
+  if (!cancel && !name) { toast("У группы должно быть название — оставил прежнее."); }
+  if (!cancel && name) f.name = name;
+  STATE.ibRename = null; paint(); if (!cancel && name) touched();
+}
+function ibRemove(n) {
+  STATE.ibGone.push(n); STATE.ibUndo = n; STATE.ibSel = null; STATE.ibEdit = null;
+  if (STATE.ibLink === n) STATE.ibLink = null;
+  paint(); touched();
+}
+document.addEventListener("focusout", (e) => {
+  if (current !== "d1") return;
+  if (e.target.matches?.(".ib-card p[contenteditable]")) ibEditDone(e.target);
+  else if (e.target.matches?.(".ib-fl-in")) ibRenameDone(e.target);
+});
+document.addEventListener("dblclick", (e) => {
+  if (current !== "d1" || !e.target.closest?.("#ibv") || e.target.closest(".ib-top, .ib-zoom, .ib-make, [contenteditable=true], input")) return;
+  const card = e.target.closest(".ib-card"), fl = e.target.closest(".ib-fl");
+  if (card) { STATE.ibSel = Number(card.dataset.ib); STATE.ibEdit = STATE.ibSel; paint(); return; }
+  if (fl) { STATE.ibRename = fl.dataset.fr; paint(); return; }
+  const [x, y] = ibWorld(e); ibNewAt(x - IB_W / 2, y - 30);
+});
+// «Собрать в рамку»: новая рамка под остальными, импульсы группы раскладываются в ней по три в ряд
+function ibGroup() {
+  const g = IB_GROUP_SUGG, bottom = Math.max(...STATE.ibFrames.map((f) => f.y + f.h), ...ibAll().map((c) => { const el = $(`[data-ib="${c[0]}"]`); return ibXY(c)[1] + (el ? el.offsetHeight : 150); }));
+  const f = { id: g.id, name: g.name, x: 0, y: bottom + 80, w: 620, h: 52 + Math.ceil(g.cards.length / 3) * 200 };
+  g.cards.forEach((n, i) => (STATE.ibPos[n] = [f.x + 20 + (i % 3) * 200, f.y + 52 + Math.floor(i / 3) * 200]));
+  STATE.ibFrames.push(f); STATE.ibGroupSugg = false; STATE.ibSel = g.cards[0];
+  paint();
+  requestAnimationFrame(() => { if (STATE.ibView === "board") ibFit(); });
+  toast(`Рамка «${g.name}» на доске: ${g.cards.length} импульсов. Рамку можно сдвинуть за подпись.`);
+}
 const ASK = {
   home: ["Спросите о проекте: что мешает двигаться дальше?", "весь проект", []],
+  d1: ["Спросите: что из этого может стать историей…", "Карта импульсов", [["me", "Зачем мне лодка, если она никуда не вошла?"], ["ai", "Её красят и не спускают — как семья, которая делает всё, кроме главного. Я бы связал её с зимним озером и отдал в «Тональный манифест». Но решать вам: импульс может просто лежать."]]],
   d2: ["Попросите правку или спросите о теме…", "Манифест темы", [["me", "Не хочу, чтобы Вера выглядела виноватой."], ["ai", "Тогда держим контртезис: её молчание — тоже любовь. Я отметил его на полях, рядом с текстом."]]],
   scene: ["Спросите о сцене или выделите реплику…", "Сцена 14 + профиль Веры", [["me", "Почему Аня приходит ночью?"], ["ai", "По битовой карте она едет от дяди сразу после разговора — не может ждать до утра. Добавить это в ремарку?"]]],
   shelf: ["Спросите: с какой истории продолжить?", "все истории", []],
@@ -2518,7 +3036,7 @@ function layoutNotes() {
   margin.style.minHeight = floor + "px";
 }
 function placeAsk() {
-  const target = document.querySelector("#desk .sheet, #desk .home");
+  const target = document.querySelector("#desk .sheet, #desk .home, #desk .ibmain");
   const r = target.getBoundingClientRect();
   const ask = $("#ask");
   ask.style.left = r.left + r.width / 2 + "px";
@@ -2527,7 +3045,7 @@ function placeAsk() {
 function toggleFocus() {
   const on = $("#app").classList.toggle("focus");
   $("#focusBtn").lastChild.textContent = on ? "Выйти" : "Фокус";
-  if (on) toast("Только текст. F или Esc — вернуть всё.");
+  if (on) toast(current === "d1" ? "Только доска. F или Esc — вернуть всё." : "Только текст. F или Esc — вернуть всё.");
   requestAnimationFrame(relayout);
 }
 function tlCenter() {
@@ -2546,7 +3064,7 @@ function segCenter() {
   const sg = $("#desk .seg"), b = sg && sg.querySelector('[aria-pressed="true"]');
   if (b && sg.scrollWidth > sg.clientWidth) sg.scrollLeft = b.offsetLeft - (sg.clientWidth - b.offsetWidth) / 2;
 }
-function relayout() { layoutNotes(); placeAsk(); segCenter(); if (current === "timeline") tlCenter(); if (current === "grid") grCenter(); if (current === "rhythm") tnCenter(); }
+function relayout() { layoutNotes(); placeAsk(); segCenter(); if (current === "timeline") tlCenter(); if (current === "grid") grCenter(); if (current === "rhythm") tnCenter(); if (current === "d1") ibLayout(); }
 function highlight(key) {
   document.querySelectorAll(".hl").forEach((e) => e.classList.remove("hl"));
   document.querySelectorAll(`[data-a="${key}"], .note[data-for="${key}"]`).forEach((e) => e.classList.add("hl"));
@@ -2573,6 +3091,7 @@ function open(key) {
   current = key;
   $("#desk").classList.remove("calm");
   $("#app").classList.toggle("bare", ["shelf", "new", "import", "settings"].includes(key));
+  $("#app").classList.toggle("canvas", key === "d1");
   document.getElementById("desk").innerHTML = VIEWS[key]();
   document.getElementById("desk").scrollTop = 0;
   const [ph, ctx, msgs] = ASK[key];
@@ -2842,7 +3361,7 @@ const ACTIONS = {
   },
 };
 // Действия, после которых меняется текст или решение, и значит — сохранение
-const SAVES = new Set(["accept", "reject", "variant", "keep", "line", "conf-line", "approve", "create", "merge", "apart", "loc-yes", "accept-import", "pick", "own", "ck", "plan-approve", "kolya", "gap-yes", "gr-gap", "tn-reset", "ver-name-save", "ver-restore-go", "ver-sec", "ver-rename-save", "set", "set-t"]);
+const SAVES = new Set(["accept", "reject", "variant", "keep", "line", "conf-line", "approve", "create", "merge", "apart", "loc-yes", "accept-import", "pick", "own", "ck", "plan-approve", "kolya", "gap-yes", "gr-gap", "tn-reset", "ib-yes", "ib-no", "ib-sugg", "ib-sugg-no", "ib-group", "ib-group-no", "ver-name-save", "ver-restore-go", "ver-sec", "ver-rename-save", "set", "set-t"]);
 function impResolve(note, title, text) {
   STATE.impOpen -= 1; $("#impOpen").textContent = impOpenText(); note.classList.remove("pending");
   resolveNote(note, title, text);
@@ -3268,6 +3787,22 @@ Object.assign(ACTIONS, {
   "rel-focus"(b, k) { STATE.relFocus = k; const own = RELS.find(([id]) => id.includes(k)); if (!STATE.relSel.includes(k) && own) STATE.relSel = own[0]; relUpdate(); },
   "rel-view"(b, k) { STATE.relView = k; relUpdate(); },
   "tn-reset"() { STATE.tension = {}; paint(); },
+  "ib-sel"(b, k) { ibPick(Number(k)); },
+  "ib-link"(b, k) { STATE.ibLink = k ? Number(k) : null; if (STATE.ibLink && STATE.ibView === "list") STATE.ibView = "board"; paint(); },
+  "ib-view"(b, k) { STATE.ibView = k; STATE.ibLink = null; paint(); },
+  "ib-show"(b, k) { STATE.ibView = "board"; paint(); requestAnimationFrame(() => ibReveal(Number(k))); },
+  "ib-zoom"(b, k) { if (k === "fit") ibFit(); else if (k === "1") ibZoom(1); else ibZoom(STATE.ibCam.z * (k === "in" ? 1.25 : 0.8)); },
+  "ib-group"() { ibGroup(); },
+  "ib-group-no"() { STATE.ibGroupSugg = false; paint(); toast("Хорошо, без этой группы."); },
+  "ib-new"() { ibOnBoard(ibNewCenter); },
+  "ib-frame-new"() { ibOnBoard(ibFrameNew); },
+  "ib-edit"(b, k) { STATE.ibSel = Number(k); STATE.ibEdit = STATE.ibSel; paint(); },
+  "ib-del"(b, k) { ibRemove(Number(k)); },
+  "ib-undo"(b, k) { STATE.ibGone = STATE.ibGone.filter((x) => x !== Number(k)); STATE.ibUndo = null; STATE.ibSel = Number(k); paint(); touched(); },
+  "ib-yes"(b, k) { const c = ibCard(Number(k)); STATE.ibYes[c[0]] = [c[6][0], c[6][1], ""]; paint(); toast(`Импульс №${c[0]} отдан в ${c[6][1]}. Сам документ я не правил: в нём появится заметка на полях с этим импульсом.`); },
+  "ib-no"(b, k) { STATE.ibNo.push(Number(k)); paint(); toast("Хорошо, пусть лежит. Для этого импульса больше не предлагаю."); },
+  "ib-sugg"(b, k) { STATE.ibSugg = STATE.ibSugg.filter((x) => x !== k); STATE.ibLinks.push(k); paint(); },
+  "ib-sugg-no"(b, k) { STATE.ibSugg = STATE.ibSugg.filter((x) => x !== k); paint(); },
   "gr-sel"(b, k) { STATE.grSel = Number(k); paint(); },
   "gr-gap"(b, k) { STATE.gap = k === "1"; paint(); toast(STATE.gap ? "Набросал сцену 11. Это черновик: в «Поэпизодник» она попадёт, только когда вы её утвердите." : "Хорошо. Для этого места больше не предлагаю."); },
   "tl-sel"(b, k) { STATE.tlSel = Number(k); paint(); },
@@ -3584,6 +4119,10 @@ const SCENE_DEMO = {
   },
 };
 const PRESETS = {
+  "d1/link": () => { STATE.ibSel = 5; STATE.ibLink = 5; STATE.ibCam = { x: 40, y: 170, z: 0.9 }; },
+  "d1/zoom": () => { STATE.ibCam = { x: 30, y: 160, z: 1 }; },
+  "d1/list": () => { STATE.ibView = "list"; },
+  "d1/help": () => { STATE.ibSel = null; },
   "bible/rels": () => { STATE.bibleTab = "rels"; },
   "bible/orbit": () => { STATE.bibleTab = "rels"; STATE.relView = "orbit"; },
   "bible/matrix": () => { STATE.bibleTab = "rels"; STATE.relView = "matrix"; },
