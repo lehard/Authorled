@@ -854,6 +854,68 @@
   .path .more { margin: 2px 10px 0 34px; font-size: 12px; color: var(--ink-3); }
   .path .total { margin: 18px 10px 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--ink-3); }
   @container (max-width: 760px) { .elt { display: none; } .script-body .sh[data-no]::after { right: -16px; } .script-body.locked > .sh::before { display: none; } }
+  /* параметры сцены: строка под шапкой листа и раскрытая карточка */
+  .meta:has(.scp) { flex-wrap: wrap; row-gap: 14px; }
+  .scp { flex-basis: 100%; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-3); }
+  .scp .sp { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .scp .sp .i { width: 14px; height: 14px; }
+  .scp .cast { display: inline-flex; padding-left: 4px; }
+  .scp .cast .av2 { margin-left: -4px; box-shadow: 0 0 0 2px var(--paper); }
+  .scp .cast .av2.ment { opacity: .45; }
+  .scp-btn { margin-left: auto; }
+  .scp .swd { width: 9px; height: 9px; border-radius: 50%; }
+  .scp-btn { display: inline-flex; align-items: center; gap: 4px; color: var(--accent); font-weight: 500; }
+  .scp-btn .i { width: 13px; height: 13px; transition: transform .2s; }
+  .scp-btn[aria-expanded="true"] .i { transform: rotate(180deg); }
+  .scp-panel { flex-basis: 100%; display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 11px 16px; padding: 16px 18px; border-radius: 14px; background: var(--panel); font-size: 13.5px; color: var(--ink); animation: rise .25s both; }
+  .scp-panel dt { color: var(--ink-3); padding-top: 2px; }
+  .scp-panel dd { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0; }
+  .scp-panel .ps { font-size: 11.5px; color: var(--ink-3); }
+  .scp-panel .who-chip { display: inline-flex; align-items: center; gap: 6px; }
+  .scp-panel .who-chip.ment { color: var(--ink-3); }
+  .scp-panel .goal { flex-basis: 100%; font-family: var(--font-prose); font-size: 15px; line-height: 1.4; outline: 0; padding-bottom: 3px; border-bottom: 1px dashed var(--line); }
+  .scp-panel .goal:focus { border-bottom-color: var(--accent); }
+  .scp-panel .day { width: 9.5em; height: 28px; border: 0; border-radius: 9px; padding: 0 9px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--line); font: inherit; color: var(--ink); outline: 0; }
+  .scp-panel .day:focus { box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .scp-panel .sw { width: 20px; height: 20px; border-radius: 50%; }
+  .scp-panel .sw[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--panel), 0 0 0 3.5px var(--ink-2); }
+  .scp-panel .tag { display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 12px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--line); font-size: 12.5px; color: var(--ink-2); }
+  .scp-panel .tag.add { color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent-soft); }
+  .scp-panel .num { font-variant-numeric: tabular-nums; }
+  @container (max-width: 760px) { .scp-panel { grid-template-columns: 1fr; gap: 4px; } .scp-panel dd { margin-bottom: 8px; } }
+
+  /* поиск и замена */
+  #find { top: 66px; right: 22px; width: min(440px, calc(100% - var(--rail-w) - 34px)); padding: 8px; border-radius: 16px; animation: rise .16s both; }
+  #find .f-row { display: flex; align-items: center; gap: 4px; }
+  #find .f-row + .f-row { margin-top: 6px; }
+  #find .f-row > .i { margin: 0 4px 0 6px; color: var(--ink-3); }
+  #find input { flex: 1; min-width: 0; height: 32px; border: 0; border-radius: 9px; padding: 0 9px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--line); font: inherit; font-size: 14px; color: var(--ink); outline: 0; }
+  #find input:focus { box-shadow: inset 0 0 0 1.5px var(--accent); }
+  #find .f-n { min-width: 58px; text-align: center; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #find .f-b { height: 30px; min-width: 30px; padding: 0 8px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; font-size: 12.5px; color: var(--ink-2); white-space: nowrap; }
+  #find .f-b:hover { background: oklch(from var(--ink) l c h / .06); color: var(--ink); }
+  #find .f-b[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); }
+  #find .f-b:disabled { opacity: .4; pointer-events: none; }
+  #find .f-scope { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 0 4px; font-size: 12px; color: var(--ink-3); }
+  #find .f-scope .seg { margin-left: 0; box-shadow: none; background: oklch(from var(--ink) l c h / .05); }
+  #find .f-scope .seg button { height: 24px; padding: 0 10px; border-radius: 12px; font-size: 12px; color: var(--ink-2); }
+  #find .f-scope .seg button[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: var(--shadow-sm); font-weight: 600; }
+  #find .f-note { margin-left: auto; text-align: right; }
+  ::highlight(find) { background-color: var(--warn-soft); }
+  ::highlight(find-cur) { background-color: var(--warn); color: var(--paper); }
+  #find .lbl-rep { margin-left: 5px; }
+  @media (max-width: 600px) { #find { right: 12px; } #find .lbl-rep { display: none; } #find .f-n { min-width: 44px; } }
+
+  /* заметки на полях: все, соавтор, мои */
+  .mfilter { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 12px; color: var(--ink-3); }
+  .mfilter .seg { margin-left: 0; box-shadow: none; background: oklch(from var(--ink) l c h / .05); }
+  .mfilter .seg button { height: 26px; padding: 0 10px; border-radius: 13px; font-size: 12.5px; color: var(--ink-2); white-space: nowrap; }
+  .mfilter .seg button[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: var(--shadow-sm); font-weight: 600; }
+  .mfilter .seg small { margin-left: 4px; color: var(--ink-3); font-weight: 400; }
+  .margin[data-f="ai"] .note.k-mine, .margin[data-f="mine"] .note:not(.k-mine) { display: none; }
+  .stage[data-f="mine"] .script-body .mark:not(.mine) { background: none; box-shadow: none; text-decoration: none; }
+  .stage[data-f="ai"] .script-body .mark.mine { background: none; }
+  .step.mynote .dot i { background: var(--accent-soft); border-color: var(--accent); }
 </style>
 </head>
 <body>
@@ -914,6 +976,11 @@
 </div>
 <div class="toast" id="toast" role="status"></div>
 <div class="pop" id="acpop" hidden role="listbox" aria-label="Подсказки"></div>
+<div class="pop" id="find" hidden role="search" aria-label="Найти и заменить">
+  <div class="f-row"><svg class="i"><use href="#i-search"/></svg><input id="findin" autocomplete="off" placeholder="Найти" /><span class="f-n" id="findn"></span><button class="f-b" id="findprev" data-act="find-step" data-k="-1" title="Предыдущее (Shift+Enter)"><svg class="i"><use href="#i-up"/></svg></button><button class="f-b" id="findnext" data-act="find-step" data-k="1" title="Следующее (Enter)"><svg class="i"><use href="#i-down"/></svg></button><button class="f-b" data-act="find-rep-toggle" aria-pressed="false" title="Заменить"><svg class="i"><use href="#i-pencil"/></svg><span class="lbl-rep">Заменить</span></button><button class="f-b" data-act="find-close" title="Закрыть (Esc)"><svg class="i"><use href="#i-close"/></svg></button></div>
+  <div class="f-row" id="findrep" hidden><svg class="i"><use href="#i-pencil"/></svg><input id="repin" autocomplete="off" placeholder="Заменить на" /><button class="f-b" id="reponce" data-act="find-rep">Заменить</button><button class="f-b" id="repall" data-act="find-rep-all">Все</button></div>
+  <div class="f-scope"><span>Где</span><div class="seg" id="findscope" role="group" aria-label="Где искать"></div><span class="f-note" id="findnote"></span></div>
+</div>
 <div class="pop" id="eltbar" hidden role="toolbar" aria-label="Тип абзаца"></div>
 <div class="pop" id="pcard" hidden role="dialog" aria-label="Персонаж"></div>
 <div class="pop" id="selbar" hidden role="toolbar" aria-label="Выделенный текст">
@@ -1079,15 +1146,15 @@ const VIEWS = {
     const seg = `<div class="seg" role="group" aria-label="Что показывать"><button aria-pressed="${one}" data-act="sc-mode" data-k="scene">Сцена ${n}</button><button aria-pressed="${!one}" data-act="sc-mode" data-k="act">Весь акт II</button></div>`;
     const pill = { conflict: `<span class="pill conflict"><i></i>Есть противоречие</span>`, in_progress: `<span class="pill in_progress"><i></i>В работе</span>`, approved: `<span class="pill approved"><i></i>Утверждена</span>`, not_started: `<span class="pill not_started"><i></i>Не начата</span>` }[scStatus(n)];
     const btn = n === 13 ? (s.unlocked ? "" : `<button class="chipbtn" data-act="sc-unlock">Править</button>`) : `<button class="approve" data-act="approve" style="margin-left:0">${ico("check")}Утвердить</button>`;
-    return `<div class="stage doc">
+    return `<div class="stage doc" data-f="${STATE.mfilter}">
       <article class="sheet script">
         <div class="eyebrow">Шаг 20 · Черновик сцены${one ? ` · биты из шага 19` : " · акт II"}</div>
         <h1 style="font-size:36px">${one ? s.title : "Трещина"}</h1>
-        <div class="meta">${one ? pill : `<span class="pill in_progress"><i></i>3 из 10 сцен написаны</span>`}${seg}${one ? btn : ""}</div>
+        <div class="meta">${one ? pill : `<span class="pill in_progress"><i></i>3 из 10 сцен написаны</span>`}${seg}${one ? btn : ""}${one ? scpHtml(n) : ""}</div>
         ${ids.map(body).join("")}
         <div class="elt" id="elt" hidden></div>
       </article>
-      <aside class="margin" id="margin">${ids.includes(14) ? sceneNotes() : ""}${STATE.dyn.filter((d) => ids.includes(d.sc)).map(dynNote).join("")}</aside></div>`;
+      <aside class="margin" id="margin" data-f="${STATE.mfilter}">${mfilterHtml(ids)}${ids.includes(14) ? sceneNotes() : ""}${STATE.dyn.filter((d) => ids.includes(d.sc)).map(dynNote).join("")}</aside></div>`;
   },
 
   // ——— Связка 1: полка, новая история, разбор рукописи ———
@@ -1479,11 +1546,12 @@ function setOffline(on) {
 let palItems = [], palSel = 0;
 function paletteSource() {
   const docs = STEPS.map(([n, name, s, key]) => ({ g: "Документы", label: name, hint: `шаг ${n}`, lead: `<span class="dot ${s}"><i></i></span>`, run: () => (key ? open(key) : toast(`«${name}» в макете не нарисован.`)) }));
-  const scenes = ACTS.flatMap(([, , , list]) => list.filter((c) => c !== "gap")).map(([n, title, line, , st]) => ({ g: "Сцены", label: `Сцена ${n} · ${title}`, hint: line, lead: `<span class="dot ${st}"><i></i></span>`, run: () => open(n === 14 ? "scene" : "cards") }));
+  const scenes = ACTS.flatMap(([, , , list]) => list.filter((c) => c !== "gap")).map(([n, title, line, , st]) => ({ g: "Сцены", label: `Сцена ${n} · ${title}`, hint: line, lead: `<span class="dot ${st}"><i></i></span>`, run: () => (SCRIPT[n] ? ACTIONS["sc-open"](null, n) : open("cards")) }));
   const people = [["В", "Вера Сомова", "мать Ани"], ["А", "Аня", "дочь Веры"], ["К", "Дядя Коля", "деверь Веры"], ["М", "Миша", "брат Веры, 1998"]].map(([l, name, hint]) => ({ g: "Персонажи", label: name, hint, lead: `<span class="av2 ${CAST[l]}">${l}</span>`, run: () => open("bible") }));
   const quotes = [["Я же просила звонить, когда едешь так поздно.", "Сцена 14 · Вера", "scene"], ["Он сказал, что Миша утонул не случайно.", "Сцена 14 · Аня", "scene"], [STATE.d2.q, "Манифест темы", "d2"], ["Тон истории — тихая вина, которую некому предъявить.", "Тональный манифест", null]]
     .map(([q, hint, key]) => ({ g: "Цитаты", label: `«${q}»`, hint, quote: true, lead: ico("page"), run: () => (key ? open(key) : toast("«Тональный манифест» в макете не нарисован.")) }));
   const actions = [
+    ["Найти и заменить в сцене", "⌘F", () => setTimeout(openFind, 0), "search"],
     ["Экспорт", "сценарий, поэпизодник, библия", () => open("export"), "download"],
     ["Настройки", "внешний вид, соавтор, данные", () => open("settings"), "gear"],
     ["История версий «Манифеста темы»", "сравнить и вернуть", () => open("versions"), "clock"],
@@ -1495,7 +1563,8 @@ function paletteSource() {
     ["Галерея состояний", "для ревью дизайна", () => open("states"), "warn"],
     [STATE.offline ? "Вернуть связь" : "Имитировать: нет связи", "для проверки", () => setOffline(!STATE.offline), "warn"],
   ].map(([label, hint, run, icon]) => ({ g: "Действия", label, hint, run, lead: ico(icon) }));
-  return [...docs, ...scenes, ...people, ...quotes, ...actions];
+  const mine = STATE.dyn.filter((d) => d.kind === "mine" && d.phase === "saved").map((d) => ({ g: "Мои заметки", label: d.text, hint: `Сцена ${d.sc} · «${d.old}»`, lead: ico("pencil"), run: () => { STATE.sc = d.sc; STATE.scMode = "scene"; open("scene"); setTimeout(() => ACTIONS["my-go"](null, d.k), 300); } }));
+  return [...docs, ...scenes, ...people, ...mine, ...quotes, ...actions];
 }
 function hl(text, q) {
   const i = q ? text.toLowerCase().indexOf(q) : -1;
@@ -1683,8 +1752,10 @@ const ASK = {
 
 function layoutNotes() {
   const margin = document.getElementById("margin"); if (!margin) return;
-  const sheet = margin.previousElementSibling;
-  let floor = 0;
+  const sheet = margin.previousElementSibling, head = margin.querySelector(".mfilter");
+  // фильтр заметок встаёт вровень со строкой статуса листа
+  if (head) head.style.marginTop = (sheet.querySelector(".meta")?.offsetTop || 0) + "px";
+  let floor = head ? head.offsetTop + head.offsetHeight + 14 : 0;
   if (getComputedStyle(margin.querySelector(".note") || margin).position === "static") return;
   // Заметки встают по порядку мест в тексте, а не по порядку появления
   const anchorTop = (n) => {
@@ -1692,7 +1763,7 @@ function layoutNotes() {
     const a = key === "by-ai" ? sheet.querySelector(".by-ai") : sheet.querySelector(`[data-a="${key}"]`);
     return a ? a.getBoundingClientRect().top - sheet.getBoundingClientRect().top - 10 : Infinity;
   };
-  [...margin.querySelectorAll(".note")].map((n) => [n, anchorTop(n)]).sort((x, y) => x[1] - y[1]).forEach(([n, want]) => {
+  [...margin.querySelectorAll(".note")].filter((n) => n.offsetParent).map((n) => [n, anchorTop(n)]).sort((x, y) => x[1] - y[1]).forEach(([n, want]) => {
     const top = Math.max(want === Infinity ? floor : want, floor);
     n.style.top = top + "px";
     floor = top + n.offsetHeight + 12;
@@ -1733,6 +1804,7 @@ function flashAt(key) {
 }
 function ritual(html) { const r = $("#ritual"); r.innerHTML = `<div class="rcard">${html}</div>`; r.classList.add("on"); }
 function open(key) {
+  if (current === "scene" && key !== "scene") closeFind();
   if (current === "scene") { saveScript(); CSS.highlights.delete("name-hover"); ["#acpop", "#pcard", "#selbar", "#eltbar"].forEach((q) => ($(q).hidden = true)); }
   if (key === "settings" && current !== "settings") STATE.back = current;
   current = key;
@@ -1749,7 +1821,7 @@ function open(key) {
   document.querySelectorAll(".note").forEach((n, i) => (n.style.animationDelay = 120 + i * 90 + "ms"));
   requestAnimationFrame(relayout);
   document.fonts.ready.then(relayout);
-  if (key === "scene") { $("#askctx").textContent = `Сцена ${STATE.sc} + профили`; nameMarks(); if (STATE.demo) document.fonts.ready.then(() => setTimeout(SCENE_DEMO[STATE.demo], 300)); }
+  if (key === "scene") { $("#askctx").textContent = `Сцена ${STATE.sc} + профили`; nameMarks(); if (STATE.demo) { const demo = SCENE_DEMO[STATE.demo]; STATE.demo = null; document.fonts.ready.then(() => setTimeout(demo, 300)); } }
 }
 const $ = (q) => document.querySelector(q);
 let toastTimer;
@@ -2071,7 +2143,7 @@ $("#askin").addEventListener("keydown", (e) => {
 document.addEventListener("input", (e) => {
   const id = e.target.id;
   if (id === "palin") { palSel = 0; renderPalette(); return; }
-  if (id === "askin" || id === "vername") return;
+  if (["askin", "vername", "findin", "repin"].includes(id)) return;
   if (id === "confirmDel") { $("#confirmBtn").disabled = e.target.value.trim().toLowerCase() !== "удалить"; return; }
   if (id === "namein") STATE.draftName = e.target.value;
   if (id === "authorin") STATE.set.author = e.target.value;
@@ -2138,11 +2210,12 @@ new ResizeObserver(placeAsk).observe($("#desk"));
 // ——— Редактор сцены ———
 // Акт II в макете: сцена 13 утверждена, 14 в работе, 15 ещё пустая
 const SCRIPT = {
-  13: { title: "Озеро, наши дни", st: "approved", beats: ["Аня выходит на мостки", "Трогает воду", "Не берёт трубку матери"], html: `<p class="sh" data-no="13">НАТ. ОЗЕРО, МОСТКИ — ДЕНЬ</p><p class="ac" data-beat="1">Доски потемнели и прогнулись. АНЯ стоит на самом краю, смотрит в воду.</p><p class="ac" data-beat="2">Садится, опускает ладонь в воду. Вода холодная даже в июле.</p><p class="ac" data-beat="3">Звонит телефон. На экране: «Мама». Аня смотрит, пока звонок не обрывается.</p><p class="tr">СКЛЕЙКА:</p>` },
-  14: { title: "Кухня, ночь", st: "work", beats: ["Вера не спит и ждёт", "Аня возвращается от дяди", "Аня приносит его слова", "Вера закрывает кран"], html: `<p class="sh" data-no="14">ИНТ. КУХНЯ В ДОМЕ ВЕРЫ — НОЧЬ</p><p class="ac" data-beat="1">Свет только над раковиной. ВЕРА (52) моет чашку. Чашка давно чистая. Она всё равно трёт её губкой.</p><p class="ac"><span class="mark sugg" data-a="door">Хлопает входная дверь. Вера замирает, не выключая воду.</span></p><p class="ch">АНЯ (З.К.)</p><p class="dl">Мам, ты опять не спишь?</p><p class="ac" data-beat="2">Входит АНЯ (24), в куртке, с рюкзаком. Ставит рюкзак на стул.</p><p class="ch">ВЕРА</p><p class="par">(не оборачиваясь)</p><p class="dl"><span class="mark stale" data-a="stale">Я же просила звонить, когда едешь так поздно.</span></p><p class="ch">АНЯ</p><p class="dl" data-beat="3">Я была у дяди Коли. <span class="mark conflict" data-a="conf">Он сказал, что Миша утонул не&nbsp;случайно.</span></p><p class="ac" data-beat="4">Вода продолжает течь. Вера закрывает кран.</p>` },
-  15: { title: "Пристань", st: "not_started", beats: ["Вера выходит из дома до рассвета", "Пристань: всё как тогда", "Вера ступает на мостки"], html: `<p class="sh" data-no="15">НАТ. ПРИСТАНЬ — РАССВЕТ</p><p class="ac blank"><br></p>` },
+  13: { title: "Озеро, наши дни", st: "approved", params: { day: "3-й день", goal: "Аня впервые приходит туда, где погиб Миша.", color: "ok", tags: ["прошлое"] }, beats: ["Аня выходит на мостки", "Трогает воду", "Не берёт трубку матери"], html: `<p class="sh" data-no="13">НАТ. ОЗЕРО, МОСТКИ — ДЕНЬ</p><p class="ac" data-beat="1">Доски потемнели и прогнулись. АНЯ стоит на самом краю, смотрит в воду.</p><p class="ac" data-beat="2">Садится, опускает ладонь в воду. Вода холодная даже в июле.</p><p class="ac" data-beat="3">Звонит телефон. На экране: «Мама». Аня смотрит, пока звонок не обрывается.</p><p class="tr">СКЛЕЙКА:</p>` },
+  14: { title: "Кухня, ночь", st: "work", params: { day: "3-й день, ночь", goal: "Аня приносит слова дяди домой — и Вера впервые не может промолчать.", color: "bad", tags: ["тайна", "мать и дочь"] }, beats: ["Вера не спит и ждёт", "Аня возвращается от дяди", "Аня приносит его слова", "Вера закрывает кран"], html: `<p class="sh" data-no="14">ИНТ. КУХНЯ В ДОМЕ ВЕРЫ — НОЧЬ</p><p class="ac" data-beat="1">Свет только над раковиной. ВЕРА (52) моет чашку. Чашка давно чистая. Она всё равно трёт её губкой.</p><p class="ac"><span class="mark sugg" data-a="door">Хлопает входная дверь. Вера замирает, не выключая воду.</span></p><p class="ch">АНЯ (З.К.)</p><p class="dl">Мам, ты опять не спишь?</p><p class="ac" data-beat="2">Входит АНЯ (24), в куртке, с рюкзаком. <span class="mark mine" data-a="my1">Ставит рюкзак на стул.</span></p><p class="ch">ВЕРА</p><p class="par">(не оборачиваясь)</p><p class="dl"><span class="mark stale" data-a="stale">Я же просила звонить, когда едешь так поздно.</span></p><p class="ch">АНЯ</p><p class="dl" data-beat="3">Я была у дяди Коли. <span class="mark conflict" data-a="conf">Он сказал, что Миша утонул не&nbsp;случайно.</span></p><p class="ac" data-beat="4">Вода продолжает течь. Вера закрывает кран.</p>` },
+  15: { title: "Пристань", st: "not_started", params: { day: "4-й день, рассвет", goal: "Вера идёт туда, где не была двадцать лет.", color: "ai", tags: [] }, beats: ["Вера выходит из дома до рассвета", "Пристань: всё как тогда", "Вера ступает на мостки"], html: `<p class="sh" data-no="15">НАТ. ПРИСТАНЬ — РАССВЕТ</p><p class="ac blank"><br></p>` },
 };
-Object.assign(STATE, { sc: 14, scMode: "scene", rail: "scenes", dyn: [], demo: null });
+Object.assign(STATE, { sc: 14, scMode: "scene", rail: "scenes", demo: null, scpOpen: false, mfilter: "all", findScope: "scene",
+  dyn: [{ kind: "mine", phase: "saved", k: "my1", sc: 14, old: "Ставит рюкзак на стул.", text: "Что в рюкзаке? Вернуться, когда будет сцена 17 — там архив.", when: "вчера" }] });
 const SC_TYPES = [["sh", "Заголовок сцены"], ["ac", "Описание"], ["ch", "Персонаж"], ["par", "Ремарка"], ["dl", "Реплика"], ["tr", "Переход"]];
 const TYPE_NAME = { ...Object.fromEntries(SC_TYPES), sh: "Заголовок" };
 const ON_ENTER = { sh: "ac", ac: "ac", ch: "dl", par: "dl", dl: "ac", tr: "sh" };
@@ -2195,8 +2268,12 @@ function sceneNav() {
     const on = SCRIPT[n].html.includes(`data-beat="${i + 1}"`), st = n === 14 && i === 2 && STATE.sceneConflict ? "conflict" : on ? "approved" : "not_started";
     return `<button class="step sub beat" data-act="beat" data-k="${i + 1}" title="${on ? "Перейти к биту" : "Бит ещё не написан"}"><span class="dot ${st}"><i></i></span><span class="lbl">${t}</span></button>`;
   }).join("");
+  const mine = (n) => {
+    const list = STATE.dyn.filter((d) => d.kind === "mine" && d.phase === "saved" && d.sc === n);
+    return list.length ? `<div class="beats-h">Мои заметки</div>` + list.map((d) => `<button class="step sub beat mynote" data-act="my-go" data-k="${d.k}" title="«${esc(d.old)}»"><span class="dot"><i></i></span><span class="lbl">${esc(d.text)}</span></button>`).join("") : "";
+  };
   return ACTS.map(([r, name, , list, more]) => `<h4>Акт ${r} · ${name}</h4>` + list.filter((c) => c !== "gap").map(([n, title]) =>
-    `<button class="step scn ${n === STATE.sc ? "cur" : ""}" data-act="sc-go" data-k="${n}"><span class="dot ${scStatus(n)}"><i></i></span><span class="n">${n}</span><span class="lbl">${title}</span>${n === 14 && STATE.sceneOpen ? `<span class="ping">${STATE.sceneOpen}</span>` : ""}<span class="pg">${pagesLabel(n)}</span></button>` + (n === STATE.sc && SCRIPT[n] ? beats(n) : "")
+    `<button class="step scn ${n === STATE.sc ? "cur" : ""}" data-act="sc-go" data-k="${n}"><span class="dot ${scStatus(n)}"><i></i></span><span class="n">${n}</span><span class="lbl">${title}</span>${n === 14 && STATE.sceneOpen ? `<span class="ping">${STATE.sceneOpen}</span>` : ""}<span class="pg">${pagesLabel(n)}</span></button>` + (n === STATE.sc && SCRIPT[n] ? beats(n) + mine(n) : "")
   ).join("") + `<p class="more">${more}</p>`).join("") + `<p class="total">26 сцен · около 104 страниц</p>`;
 }
 
@@ -2338,7 +2415,7 @@ function showCard(k, rect) {
     <div class="pc-a">${k === "v" ? `<button class="chipbtn" data-open="bible">Профиль в библии</button>` : `<button class="chipbtn" data-act="demo" data-k="В макете заполнен профиль Веры.">Профиль в библии</button>`}<button class="chipbtn quiet" data-act="ask-about" data-k="${k}">Спросить соавтора</button></div>`;
   card.hidden = false; cardKey = k;
   CSS.highlights.set("name-hover", new Highlight(...nameHits.filter((h) => h.k === k && h.r.getClientRects().length && h.r.getBoundingClientRect().top === rect.top).map((h) => h.r)));
-  const top = rect.bottom + 8 + card.offsetHeight > innerHeight ? rect.top - card.offsetHeight - 8 : rect.bottom + 8;
+  const top = rect.bottom + 8 + card.offsetHeight > bottomLimit() - 8 ? rect.top - card.offsetHeight - 8 : rect.bottom + 8;
   card.style.left = Math.max(12, Math.min(rect.left - 16, innerWidth - 326)) + "px"; card.style.top = top + "px";
 }
 function hideCard() { $("#pcard").hidden = true; cardKey = null; CSS.highlights.delete("name-hover"); }
@@ -2392,7 +2469,7 @@ function dynNote(d) {
   return d.phase === "edit"
     ? `<div class="note fresh k-mine" data-for="${d.k}"><div class="who"><span class="av">${ico("pencil")}</span>Заметка себе<small>видна только вам</small></div>${quote}<textarea class="mine-in" data-mine="${d.k}" placeholder="Что вернуть, проверить, переписать…"></textarea>
       <div class="acts"><button class="chipbtn main" data-act="mine-save" data-k="${d.k}">Сохранить</button><button class="chipbtn quiet" data-act="dv-drop" data-k="${d.k}">Отмена</button></div></div>`
-    : `<div class="note k-mine" data-for="${d.k}"><div class="who"><span class="av">${ico("pencil")}</span>Заметка себе<small>сейчас</small></div><div class="mine-t">${esc(d.text)}</div>
+    : `<div class="note k-mine" data-for="${d.k}"><div class="who"><span class="av">${ico("pencil")}</span>Заметка себе<small>${d.when || "сейчас"}</small></div><div class="mine-t">${esc(d.text)}</div>
       <div class="acts"><button class="chipbtn quiet" data-act="dv-drop" data-k="${d.k}">Готово, убрать</button></div></div>`;
 }
 const dynOf = (k) => STATE.dyn.find((d) => d.k === k);
@@ -2408,11 +2485,12 @@ function startVars(a, type) {
   STATE.dyn.push(d); redrawNote(d); highlight(a.k);
   setTimeout(() => { d.phase = "opts"; if (dynOf(d.k) && $(`.note[data-for="${d.k}"]`)) redrawNote(d); }, 1100);
 }
+function refreshFilter() { const f = $("#margin .mfilter"); if (f) f.outerHTML = mfilterHtml(STATE.scMode === "scene" ? [STATE.sc] : Object.keys(SCRIPT).map(Number)); }
 function unwrap(k) {
   const m = $(`#desk [data-a="${k}"]`); if (m) m.replaceWith(...m.childNodes);
   STATE.dyn = STATE.dyn.filter((d) => d.k !== k);
   const n = $(`.note[data-for="${k}"]`); if (n) { n.classList.add("gone"); setTimeout(() => { n.remove(); layoutNotes(); }, 360); }
-  nameMarks();
+  nameMarks(); renderPath(); refreshFilter();
 }
 
 Object.assign(ACTIONS, {
@@ -2489,11 +2567,156 @@ Object.assign(ACTIONS, {
   "mine-save"(b, k) {
     const d = dynOf(k), v = $(`[data-mine="${k}"]`).value.trim();
     if (!v) { $(`[data-mine="${k}"]`).focus(); return toast("Напишите пару слов — или нажмите «Отмена»."); }
-    d.phase = "saved"; d.text = v; redrawNote(d);
+    d.phase = "saved"; d.text = v; redrawNote(d); renderPath(); refreshFilter();
   },
 });
 ["dv-accept", "mine-save", "elt-set", "sc-unlock"].forEach((a) => SAVES.add(a));
 
+// ——— Параметры сцены и счётчики ———
+const SWATCH = ["bad", "warn", "ok", "accent", "ai"];
+// Считаем по живому тексту, если сцена на листе, иначе по сохранённому
+function sceneStats(n) {
+  const body = $(`#desk .script-body[data-sc="${n}"]`), host = body || Object.assign(document.createElement("div"), { innerHTML: SCRIPT[n].html });
+  const text = (sel) => [...host.querySelectorAll(sel)].map((p) => [...p.childNodes].map((x) => (x.nodeName === "DEL" ? "" : x.textContent)).join(""));
+  const heading = text(".sh")[0] || "";
+  const m = heading.toUpperCase().match(/^(ИНТ\.\/НАТ\.|ИНТ\.|НАТ\.)\s*(.*?)\s*[—-]\s*(.*)$/);
+  const lines = {}; text(".ch").forEach((c) => { const k = FORM_KEY[c.replace(/\(.*$/, "").trim()]; if (k) lines[k] = (lines[k] || 0) + 1; });
+  const all = text("p:not(.sh)").join(" "), words = all.split(/\s+/).filter((w) => /\p{L}/u.test(w)).length;
+  const ment = new Set([...all.matchAll(NAME_RE)].map((x) => FORM_KEY[x[0]]).filter((k) => !lines[k]));
+  const q = all.trim() ? Math.max(1, Math.round((all.length / 1100) * 4)) : 0, sec = q * 15;
+  return { place: m ? m[2] : "", time: m ? m[3] : "", io: m ? m[1] : "", lines, ment, words, pages: pagesLabel(n), dur: q ? `≈ ${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}` : "—" };
+}
+const cap = (t) => t.charAt(0) + t.slice(1).toLowerCase();
+// Места из библии пишутся по-человечески; новое место — просто с заглавной
+const PLACE_LABEL = { "КУХНЯ В ДОМЕ ВЕРЫ": "Кухня в доме Веры", "ДОМ ВЕРЫ, ПРИХОЖАЯ": "Дом Веры, прихожая", "ОЗЕРО, МОСТКИ": "Озеро, мостки", "ПРИСТАНЬ": "Пристань", "ДОМ ДЯДИ КОЛИ": "Дом дяди Коли", "ГОРОДСКОЙ АРХИВ": "Городской архив" };
+const placeName = (pl) => PLACE_LABEL[pl] || cap(pl);
+function scpHtml(n) {
+  const st = sceneStats(n), p = SCRIPT[n].params, open = STATE.scpOpen;
+  const cast = Object.keys(st.lines).map((k) => `<span class="av2 ${k}" title="${PEOPLE[k].full} — говорит">${PEOPLE[k].l}</span>`).join("") + [...st.ment].map((k) => `<span class="av2 ${k} ment" title="${PEOPLE[k].full} — упоминается">${PEOPLE[k].l}</span>`).join("");
+  const strip = `<div class="scp" id="scp">
+    <span class="sp"><span class="swd" style="background:var(--${p.color})"></span>${st.place ? placeName(st.place) : "место не указано"}${st.time ? ` · ${st.time.toLowerCase()}` : ""}</span>
+    ${cast ? `<span class="sp cast">${cast}</span>` : ""}<span class="sp" title="Страница сценария — около минуты экранного времени">${st.pages} · ${st.dur}</span>
+    <button class="scp-btn" data-act="scp" aria-expanded="${open}">Параметры${ico("down")}</button></div>`;
+  if (!open) return strip;
+  const speaks = Object.entries(st.lines).map(([k, c]) => `<span class="who-chip"><span class="av2 ${k}">${PEOPLE[k].l}</span>${PEOPLE[k].full}<span class="ps">${c} ${plural(c, "реплика", "реплики", "реплик")}</span></span>`).join("");
+  const ments = [...st.ment].map((k) => `<span class="who-chip ment"><span class="av2 ${k}">${PEOPLE[k].l}</span>${PEOPLE[k].full}<span class="ps">упоминается</span></span>`).join("");
+  const beatsDone = SCRIPT[n].beats.filter((b, i) => SCRIPT[n].html.includes(`data-beat="${i + 1}"`)).length;
+  return strip + `<dl class="scp-panel" id="scpp">
+    <dt>Место</dt><dd>${st.place ? `${placeName(st.place)}<span class="ps">${PLACES.some(([pl]) => pl === st.place) ? "из библии · берётся из заголовка" : "нет в «Паспорте места» — добавить при утверждении"}</span>` : `<span class="ps">появится из заголовка сцены</span>`}</dd>
+    <dt>Время</dt><dd>${st.time ? cap(st.time) : "—"}<span class="ps">${st.io === "НАТ." ? "на улице" : st.io ? "в помещении" : ""}</span></dd>
+    <dt>День истории</dt><dd><input class="day" data-day value="${esc(p.day)}" aria-label="День истории" /><span class="ps">для таймлайна</span></dd>
+    <dt>Участники</dt><dd>${speaks + ments || `<span class="ps">появятся, когда персонажи заговорят</span>`}</dd>
+    <dt>Цель сцены</dt><dd><span class="goal" contenteditable="true" data-goal spellcheck="false">${esc(p.goal)}</span><span class="ps">из «Поэпизодника» (шаг 14) — правка здесь пройдёт через проверку последствий</span></dd>
+    <dt>Биты</dt><dd>${beatsDone} из ${SCRIPT[n].beats.length} написаны<span class="ps">«Битовая карта сцены», шаг 19</span></dd>
+    <dt>Цвет и метки</dt><dd>${SWATCH.map((c) => `<button class="sw" style="background:var(--${c})" aria-pressed="${p.color === c}" data-act="scp-color" data-k="${c}" aria-label="Цвет карточки"></button>`).join("")}<span style="width:6px"></span>${p.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("")}<button class="tag add" data-act="demo" data-k="Метки общие для сценария: по ним фильтруются карточки и поиск.">+ метка</button></dd>
+    <dt>Объём</dt><dd class="num">${st.pages} · ${st.dur} экранного времени · ${st.words} ${plural(st.words, "слово", "слова", "слов")}</dd></dl>`;
+}
+// Обновляет строку параметров на лету, не трогая поле, в котором сейчас пишут
+function refreshScp() {
+  const meta = $("#desk .meta"); if (!meta || STATE.scMode !== "scene" || !$("#scp")) return;
+  if (document.activeElement && document.activeElement.closest("#scpp")) return;
+  $("#scpp")?.remove(); $("#scp").remove();
+  meta.insertAdjacentHTML("beforeend", scpHtml(STATE.sc));
+  requestAnimationFrame(layoutNotes);
+}
+
+// ——— Заметки на полях: фильтр «все · соавтор · мои» ———
+function mfilterHtml(ids) {
+  const mine = STATE.dyn.filter((d) => d.kind === "mine" && ids.includes(d.sc)).length;
+  const h = SCRIPT[14].html, ai = (ids.includes(14) ? [/mark sugg" data-a="door"/.test(h), /mark stale" data-a="stale"/.test(h), STATE.sceneConflict].filter(Boolean).length : 0) + STATE.dyn.filter((d) => d.kind !== "mine" && ids.includes(d.sc)).length;
+  const b = (k, label, c) => `<button aria-pressed="${STATE.mfilter === k}" data-act="mfilter" data-k="${k}">${label}${c === null ? "" : `<small>${c}</small>`}</button>`;
+  return `<div class="mfilter"><div class="seg" role="group" aria-label="Какие заметки показывать">${b("all", "Все", null)}${b("ai", "Соавтор", ai)}${b("mine", "Мои", mine)}</div></div>`;
+}
+
+// ——— Поиск и замена ———
+let finds = [], findI = 0;
+function openFind() {
+  if (current !== "scene") { STATE.sc = 14; open("scene"); }
+  const f = $("#find"), sel = getSelection(), pre = sel.rangeCount && !sel.isCollapsed && sel.toString().length < 60 ? sel.toString().trim() : "";
+  f.hidden = false; $("#selbar").hidden = true;
+  if (pre) $("#findin").value = pre;
+  renderFindScope(); $("#findin").focus(); $("#findin").select(); runFind();
+}
+function closeFind() { $("#find").hidden = true; CSS.highlights.delete("find"); CSS.highlights.delete("find-cur"); finds = []; }
+function renderFindScope() {
+  $("#findscope").innerHTML = `<button aria-pressed="${STATE.findScope === "scene"}" data-act="find-scope" data-k="scene">Сцена ${STATE.sc}</button><button aria-pressed="${STATE.findScope === "act"}" data-act="find-scope" data-k="act">Весь акт II</button>`;
+}
+function runFind(keep) {
+  const q = $("#findin").value.toLowerCase(); finds = [];
+  if (q) bodies().forEach((b) => {
+    const w = document.createTreeWalker(b, NodeFilter.SHOW_TEXT);
+    for (let n = w.nextNode(); n; n = w.nextNode()) {
+      if (n.parentElement.closest("del")) continue;
+      const t = n.data.toLowerCase();
+      for (let i = t.indexOf(q); i >= 0; i = t.indexOf(q, i + q.length)) {
+        const r = document.createRange(); r.setStart(n, i); r.setEnd(n, i + q.length);
+        finds.push({ r, sc: Number(b.dataset.sc), locked: b.classList.contains("locked") });
+      }
+    }
+  });
+  findI = finds.length ? (keep ? Math.min(findI, finds.length - 1) : 0) : 0;
+  CSS.highlights.set("find", new Highlight(...finds.map((f) => f.r)));
+  markFind(!keep);
+}
+function markFind(scroll) {
+  const f = finds[findI], q = $("#findin").value;
+  CSS.highlights.set("find-cur", new Highlight(...(f ? [f.r] : [])));
+  $("#findn").textContent = !q ? "" : finds.length ? `${findI + 1} из ${finds.length}` : "нет";
+  const locked = finds.filter((x) => x.locked).length;
+  $("#findnote").textContent = locked ? `${locked} в утверждённой сцене — не заменяется` : "";
+  ["#findprev", "#findnext"].forEach((x) => ($(x).disabled = finds.length < 2));
+  ["#reponce", "#repall"].forEach((x) => ($(x).disabled = !finds.some((y) => !y.locked)));
+  if (f && scroll) {
+    const r = f.r.getBoundingClientRect(), mid = (64 + bottomLimit()) / 2;
+    if (r.top < 140 || r.bottom > bottomLimit() - 20) $("#desk").scrollBy({ top: r.top - mid, behavior: "instant" });
+  }
+}
+function replaceAt(f, text) {
+  f.r.deleteContents(); f.r.insertNode(document.createTextNode(text)); f.r.startContainer.parentElement.normalize();
+}
+function afterReplace() { saveScript(); nameMarks(); touched(); runFind(true); renderPath(); refreshScp(); requestAnimationFrame(layoutNotes); }
+
+Object.assign(ACTIONS, {
+  scp() { STATE.scpOpen = !STATE.scpOpen; refreshScp(); },
+  "scp-color"(b, k) { SCRIPT[STATE.sc].params.color = k; refreshScp(); toast("Цвет карточки сцены изменён — так она выглядит и в «Карточках сцен»."); },
+  mfilter(b, k) { STATE.mfilter = k; $("#margin").dataset.f = k; $("#desk .stage").dataset.f = k; $("#margin .mfilter").outerHTML = mfilterHtml(STATE.scMode === "scene" ? [STATE.sc] : Object.keys(SCRIPT).map(Number)); requestAnimationFrame(layoutNotes); },
+  "my-go"(b, k) {
+    const d = dynOf(k);
+    if (d.sc !== STATE.sc && STATE.scMode === "scene") { STATE.sc = d.sc; open("scene"); }
+    const m = $(`#desk [data-a="${k}"]`); m.scrollIntoView({ behavior: "smooth", block: "center" }); highlight(k);
+  },
+  "find-step"(b, k) { if (!finds.length) return; findI = (findI + Number(k) + finds.length) % finds.length; markFind(true); },
+  "find-close"() { closeFind(); },
+  "find-rep-toggle"(b) { const row = $("#findrep"); row.hidden = !row.hidden; b.setAttribute("aria-pressed", String(!row.hidden)); if (!row.hidden) $("#repin").focus(); },
+  "find-scope"(b, k) {
+    STATE.findScope = k; STATE.scMode = k; open("scene"); renderFindScope();
+    requestAnimationFrame(() => { runFind(); $("#findin").focus(); });
+  },
+  "find-rep"() {
+    const f = finds[findI]; if (!f) return;
+    if (f.locked) { const i = finds.findIndex((x, j) => j > findI && !x.locked); findI = i >= 0 ? i : finds.findIndex((x) => !x.locked); markFind(true); return toast("Это утверждённая сцена 13 — перешёл к следующему совпадению."); }
+    replaceAt(f, $("#repin").value); afterReplace();
+  },
+  "find-rep-all"() {
+    const todo = finds.filter((f) => !f.locked), skip = finds.length - todo.length;
+    todo.reverse().forEach((f) => replaceAt(f, $("#repin").value)); afterReplace();
+    toast(`Заменено: ${todo.length}.${skip ? ` В утверждённой сцене 13 не тронуто: ${skip} — её правка идёт через проверку последствий.` : ""} Вернуть можно в истории версий.`);
+  },
+});
+["scp-color", "find-rep", "find-rep-all"].forEach((a) => SAVES.add(a));
+document.addEventListener("input", (e) => {
+  if (e.target.id === "findin") { runFind(); return; }
+  if (e.target.matches && e.target.matches("[data-day]")) { SCRIPT[STATE.sc].params.day = e.target.value; return; }
+  if (e.target.matches && e.target.matches("[data-goal]")) { SCRIPT[STATE.sc].params.goal = e.target.textContent; }
+});
+document.addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && ["f", "F", "а", "А"].includes(e.key) && ["scene"].includes(current)) { e.preventDefault(); openFind(); return; }
+  if (e.target.id === "findin" || e.target.id === "repin") {
+    if (e.key === "Escape") { e.preventDefault(); closeFind(); return; }
+    if (e.key === "Enter") { e.preventDefault(); if (e.target.id === "repin") ACTIONS["find-rep"](); else ACTIONS["find-step"](null, e.shiftKey ? "-1" : "1"); }
+  }
+  if (e.target.matches && e.target.matches("[data-goal]") && e.key === "Enter") { e.preventDefault(); e.target.blur(); toast("Цель сцены записана. «Поэпизодник» обновлю после проверки последствий."); }
+});
 // Ввод в редакторе
 let editTimer;
 document.addEventListener("input", (e) => {
@@ -2507,7 +2730,7 @@ document.addEventListener("input", (e) => {
   const sc = Number(body.dataset.sc);
   if (SCRIPT[sc].st === "not_started") { SCRIPT[sc].st = "work"; $(".meta .pill").outerHTML = `<span class="pill in_progress"><i></i>В работе</span>`; }
   markElt(); requestAnimationFrame(layoutNotes);
-  clearTimeout(editTimer); editTimer = setTimeout(() => { nameMarks(); saveScript(); renderPath(); }, 400);
+  clearTimeout(editTimer); editTimer = setTimeout(() => { nameMarks(); saveScript(); renderPath(); refreshScp(); if (!$("#find").hidden) runFind(true); }, 400);
 });
 document.addEventListener("keydown", (e) => {
   const pop = $("#acpop");
@@ -2572,6 +2795,7 @@ const SCENE_DEMO = {
     last.after(n); body.focus(); placeCaret(n, false); keepInView(n); markElt(); setTimeout(suggest, 500);
   },
   menu() { SCENE_DEMO.typing(); setTimeout(() => { $("#acpop").hidden = true; acPara = null; ACTIONS["elt-menu"](); }, 700); },
+  find() { STATE.findScope = "act"; STATE.scMode = "act"; open("scene"); openFind(); $("#findin").value = "вера"; runFind(); const t = $('[data-act="find-rep-toggle"]'); ACTIONS["find-rep-toggle"](t); $("#repin").value = "Вера"; $("#findin").focus(); },
   card() { const h = nameHits.find((x) => x.k === "v"); showCard("v", h.r.getBoundingClientRect()); },
   select() {
     const p = $('#desk .script-body[data-sc="14"] .dl'), r = document.createRange();
@@ -2593,6 +2817,9 @@ const PRESETS = {
   "scene/typing": () => { STATE.demo = "typing"; },
   "scene/card": () => { STATE.demo = "card"; },
   "scene/menu": () => { STATE.demo = "menu"; },
+  "scene/params": () => { STATE.scpOpen = true; },
+  "scene/mine": () => { STATE.mfilter = "mine"; },
+  "scene/find": () => { STATE.demo = "find"; },
   "scene/select": () => { STATE.demo = "select"; },
   "scene/vars": () => { STATE.demo = "vars"; },
   "scene/heading": () => { STATE.sc = 15; STATE.demo = "heading"; },
