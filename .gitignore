@@ -85,3 +85,9 @@ package-lock.json
 
 # Optional: local PyPI creds (uncomment if you ever create it)
 # .pypirc
+
+# =========================
+# Frontend (web/)
+# =========================
+web/node_modules/
+web/dist/

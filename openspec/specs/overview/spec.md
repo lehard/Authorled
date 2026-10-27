@@ -11,7 +11,7 @@
 - Модели: DeepSeek через LiteLLM-прокси (`litellm/config.yaml`) по псевдонимам `deepseek-fast` (агенты по умолчанию) и `deepseek-thinking` (OS Manager, Company Manager, Claude Engineer); эмбеддинги — GigaChat `Embeddings-2` (1024 измерения), псевдоним `gigachat-embeddings` (ADR-003).
 - Шлюз моделей: LiteLLM-прокси `ghcr.io/berriai/litellm:v1.104.2` (сервис `litellm` в compose).
 - Развёртывание: Docker Compose (`compose.yaml` — разработка, `compose.prod.yaml` — production-override).
-- Frontend в репозитории отсутствует; каталог `ui/` не создаётся. Интерфейс управления — внешний AgentOS UI (`os.agno.com`).
+- Frontend: каталог `web/` (монорепозиторий, ADR-001): React + TypeScript на Vite, shadcn/ui на Tailwind CSS; пока содержит дизайн-систему и её витрину, продуктовых экранов нет (`openspec/specs/web/*`). Интерфейс управления платформой — внешний AgentOS UI (`os.agno.com`).
 
 ## Requirements
 

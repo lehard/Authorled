@@ -294,7 +294,7 @@ source .venv/bin/activate
 python -m evals --tag smoke
 ```
 
-`validate.sh` checks Python formatting, lint rules, and types. The smoke tests ask
+`validate.sh` checks Python formatting, lint rules, and types, and builds and checks the frontend. The smoke tests ask
 OS Manager to explain setup, check platform health, and explain agent memory.
 They use your model API keys and save results in the database for review in the UI.
 PostgreSQL must be running, even when you only want to list the tests. The evals import the
@@ -308,6 +308,19 @@ Add your own cases in [evals/cases.py](evals/cases.py), or use
 [/create-evals](.agents/skills/create-evals/SKILL.md). To save a report, add
 `--json-output tmp/evals.json`. To run one case, use `--name CASE_NAME`.
 Evals use your application's database and workspace; agents can call tools during a test.
+
+### Frontend
+
+The writer's interface lives in [web/](web/). Install [Node.js](https://nodejs.org/) 24
+(the version in `web/.nvmrc`), then:
+
+```sh
+npm ci --prefix web
+npm run dev --prefix web
+```
+
+The dev server opens the design-system showcase at http://127.0.0.1:5173.
+`./scripts/validate.sh` checks the frontend too, so install its dependencies first.
 
 Change dependencies in `pyproject.toml`, then run `./scripts/generate_requirements.sh`.
 Commit the updated `requirements.txt` and rebuild the API and any sandbox image you use.

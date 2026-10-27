@@ -55,6 +55,35 @@ if ! "${CURR_DIR}/check_auth_boundary.sh"; then
   failed=1
 fi
 
+# Frontend (web/): checks run only on installed dependencies; a missing install is an error,
+# never a skipped check (openspec/specs/runtime).
+WEB_DIR="${REPO_ROOT}/web"
+echo ""
+if [[ ! -d "${WEB_DIR}/node_modules" ]]; then
+  echo -e "${RED}web/node_modules is missing.${NC} Install frontend dependencies: ${BOLD}npm ci --prefix web${NC}"
+  failed=1
+else
+  echo -e "${DIM}> npm run format:check --prefix web${NC}"
+  if ! npm run --silent format:check --prefix "${WEB_DIR}"; then
+    echo -e "${RED}Fix with:${NC} ${BOLD}./scripts/format.sh${NC}"
+    failed=1
+  fi
+
+  for step in lint typecheck build check:contrast; do
+    echo ""
+    echo -e "${DIM}> npm run ${step} --prefix web${NC}"
+    if ! npm run --silent "${step}" --prefix "${WEB_DIR}"; then
+      failed=1
+    fi
+  done
+fi
+
+echo ""
+echo -e "${DIM}> check_web_tokens${NC}"
+if ! "${CURR_DIR}/check_web_tokens.sh"; then
+  failed=1
+fi
+
 echo ""
 if [[ $failed -eq 0 ]]; then
   echo -e "${BOLD}Done.${NC}"

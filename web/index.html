@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Authorled</title>
+    <script>
+      // Applies the saved or system theme before first paint (openspec/specs/web/design-system).
+      // Keep THEMES and KEY in sync with src/design-system/theme.ts.
+      (function () {
+        var KEY = "authorled.theme";
+        var THEMES = ["light", "sepia", "dark"];
+        var root = document.documentElement;
+        var media = window.matchMedia("(prefers-color-scheme: dark)");
+        var saved = window.localStorage.getItem(KEY);
+        if (saved !== null && THEMES.indexOf(saved) === -1) {
+          throw new Error('Unknown theme saved under "' + KEY + '": ' + saved);
+        }
+        function systemTheme() {
+          return media.matches ? "dark" : "light";
+        }
+        root.dataset.theme = saved !== null ? saved : systemTheme();
+        media.addEventListener("change", function () {
+          if (window.localStorage.getItem(KEY) === null) {
+            root.dataset.theme = systemTheme();
+          }
+        });
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
