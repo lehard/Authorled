@@ -226,7 +226,7 @@ Characters, locations and worlds each have a group view (relations map / locatio
 - The relations map (emotion per direction, line type/colour, group frames) is directly relevant to Authorled's psychological profiles and casting list. Character dialogues view (all lines of one character) is relevant to the "dialogue score" document.
 
 ### Gaps
-- I could not see the extended character profile field list: the help does not list it, and `character_information` is a closed submodule. Same for location and world profile fields.
+- I could not see the extended character profile field list: the help does not list it, and `character_information` is a closed submodule. Same for location and world profile fields. Update 2026-10-27 (clone at commit c5bf39ff): the field lists are in the public `corelib` models (`character_model.h`, `location_model.h`, `world_model.h`); only the screens are closed. Also, Novel Outline is an alias of the Novel Text model (`project_models_facade.cpp`), not a separate model.
 - The Mind map, Images gallery and Presentation screens are not documented in help beyond the pricing mention.
 
 ---

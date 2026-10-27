@@ -87,7 +87,7 @@ A `.starc` file is a single SQLite database with 3 tables. The project is a flat
 - Mapping to Authorled D1–D22 is rich: Characters/Locations/Worlds docs, Synopsis, Treatment (outline), Novel Outline, beats (`beat_heading`, group `beat`), scene-level `description`/`tags`/`story_day`, drafts, and comments with author and date.
 
 ### Gaps
-- Inner XML of Character/Location/World/Project/TitlePage documents was not inspected (several are in closed plugins: `character_information`, `location_information`, `world_information`). The model code may still be in public corelib (`business_layer/model/characters/...`, not fetched).
+- Inner XML of Character/Location/World/Project/TitlePage documents was not inspected (several are in closed plugins: `character_information`, `location_information`, `world_information`). The model code may still be in public corelib (`business_layer/model/characters/...`, not fetched). Update 2026-10-27 (clone at commit c5bf39ff): the models are public in `src/corelib/business_layer/model/{characters,locations,worlds}` (77, 19 and 50 setters); only the profile screens are closed plugins. XML tag names are still not checked.
 - No official format spec or documentation of `.starc` was found.
 - It was not verified how drafts store their text: a separate document UUID per draft is likely, since the draft has its own UUID.
 
