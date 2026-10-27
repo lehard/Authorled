@@ -134,7 +134,8 @@
   [data-theme="dark"] .step .ping { color: var(--desk); }
 
   /* ——— Стол ——— */
-  .desk { position: relative; overflow: auto; scroll-behavior: smooth; }
+  /* текст, уходящий вверх под кнопки, растворяется, а не ложится под них */
+  .desk { position: relative; overflow: auto; scroll-behavior: smooth; mask-image: linear-gradient(to bottom, transparent 8px, #000 72px); }
   .tools { position: fixed; top: 18px; right: 22px; display: flex; gap: 8px; z-index: 20; }
   .tool { height: 36px; min-width: 36px; padding: 0 10px; border-radius: 18px; background: var(--panel); box-shadow: var(--shadow-sm); display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; color: var(--ink-2); transition: transform .15s; }
   .tool:hover { transform: translateY(-1px); color: var(--ink); }
@@ -172,7 +173,7 @@
   .mark.hl { background: var(--accent-soft); box-shadow: 0 0 0 4px var(--accent-soft); }
 
   /* Сценарная страница */
-  .sheet.script { width: min(760px, 100%); padding: 80px 76px 96px 112px; }
+  .sheet.script { width: min(760px, 100%); padding: 80px 76px 96px 112px; min-height: 984px; }
   .script-body { font-family: var(--font-script); font-size: 15.5px; line-height: 1.25; }
   .script-body p { margin: 0 0 1.25em; max-width: 60ch; }
   .script-body .sh { font-weight: 700; letter-spacing: .02em; }
@@ -183,7 +184,7 @@
 
   /* Поля: заметки соавтора рядом с текстом */
   .stage.doc { --sheet-w: var(--sheet-pref, 720px); padding-left: 24px; padding-right: 24px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, var(--sheet-w)) 332px minmax(0, 1fr); align-items: start; gap: 0; }
-  .stage.doc:has(.script) { --sheet-w: 760px; }
+  .stage.doc:has(.script) { --sheet-w: 760px; padding-bottom: 38vh; }
   .stage.doc .sheet { width: 100%; }
   .stage.doc .sheet { grid-column: 2; }
   .stage.doc .margin { grid-column: 3; margin-left: 32px; }
@@ -285,7 +286,7 @@
     .rail { position: fixed; left: 12px; top: 12px; bottom: 12px; width: 52px; margin: 0; z-index: 30; transition: width .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s, opacity .3s, transform .45s; }
     .rail:hover { width: 284px; box-shadow: var(--shadow); }
     .rail .cover { padding: 14px 3px 10px; }
-    .rail:not(:hover) .cover > div:last-child, .rail:not(:hover) h4, .rail:not(:hover) .step .n, .rail:not(:hover) .step .lbl, .rail:not(:hover) .ping { opacity: 0; }
+    .rail:not(:hover) .cover > div:last-child, .rail:not(:hover) h4, .rail:not(:hover) .step .n, .rail:not(:hover) .step .lbl, .rail:not(:hover) .ping, .rail:not(:hover) .rtabs, .rail:not(:hover) .pg, .rail:not(:hover) .more, .rail:not(:hover) .total, .rail:not(:hover) .beats-h { opacity: 0; }
     .rail:not(:hover) .path { padding: 4px 0 20px; overflow: hidden; }
     .rail:not(:hover) .step { padding-left: 16px; padding-right: 0; }
     .rail:not(:hover) .step.cur { background: none; box-shadow: none; }
@@ -739,6 +740,120 @@
     .srow, .aimodes { grid-template-columns: 1fr; }
     .vsec.chg::before { left: -16px; }
   }
+  /* ——— Редактор сцены: типы абзацев, подсказки, соавтор у выделения ——— */
+  .script-body[contenteditable] { outline: 0; caret-color: var(--accent); }
+  .script-body p { position: relative; }
+  .script-body .sh, .script-body .ch, .script-body .tr { text-transform: uppercase; }
+  .script-body .tr { text-align: right; max-width: none; }
+  .script-body p.blank::before { position: absolute; left: 0; top: 0; color: var(--ink-3); opacity: .75; pointer-events: none; text-transform: none; font-weight: 400; }
+  .script-body p.blank.ac::before { content: "Что видим и слышим"; }
+  .script-body p.blank.sh::before { content: "ИНТ. или НАТ. — место — время"; }
+  .script-body p.blank.ch::before { content: "Кто говорит"; }
+  .script-body p.blank.par::before { content: "(как сказано)"; }
+  .script-body p.blank.dl::before { content: "Реплика"; }
+  .script-body p.blank.tr::before { content: "СКЛЕЙКА:"; left: auto; right: 0; }
+  .script-body .sh[data-no]::after { content: attr(data-no); position: absolute; right: -46px; top: 0; font-weight: 400; color: var(--ink-3); }
+  .script-body + .script-body { margin-top: 3.2em; }
+  .script-body.locked { color: var(--ink-2); cursor: default; }
+  .script-body.locked > .sh::before { content: "утверждена"; position: absolute; right: calc(100% + 18px); top: 1px; font: 500 11.5px/1.35 var(--font-ui); letter-spacing: 0; text-transform: none; color: var(--ok); white-space: nowrap; }
+  .script-body p.flash { animation: flash 1.2s; border-radius: 3px; }
+  .script-body del { color: var(--ink-3); text-decoration: line-through 1.5px; text-decoration-color: var(--bad); }
+  .script-body ins { text-decoration: none; color: var(--ai); }
+  .mark.mine { background: linear-gradient(transparent 62%, var(--accent-soft) 62%); }
+  ::highlight(name-hover) { background-color: var(--accent-soft); }
+  .sheet.script .lede-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .sheet.script .seg { margin-left: auto; box-shadow: none; background: oklch(from var(--ink) l c h / .05); }
+  .sheet.script .seg button { height: 26px; padding: 0 11px; border-radius: 13px; font-size: 12.5px; color: var(--ink-2); }
+  .sheet.script .seg button[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: var(--shadow-sm); font-weight: 600; }
+
+  /* тип абзаца и куда ведут Tab и Enter — на левом поле листа */
+  .elt { position: absolute; left: 0; width: 112px; padding-right: 20px; text-align: right; font-family: var(--font-ui); font-size: 11.5px; line-height: 1.3; color: var(--ink-3); transition: top .16s cubic-bezier(.2,.8,.2,1), opacity .2s; z-index: 2; }
+  .elt[hidden] { display: block; opacity: 0; pointer-events: none; }
+  .elt-t { display: inline-flex; align-items: center; gap: 2px; font: 600 12px/1.3 var(--font-ui); color: var(--accent); padding: 1px 2px 1px 6px; border-radius: 6px; margin-right: -2px; }
+  .elt-t:hover { background: var(--accent-soft); }
+  .elt-t .i { width: 12px; height: 12px; }
+  .elt small { display: block; font-size: 11px; margin-top: 3px; white-space: nowrap; }
+  .elt kbd { font-size: 10px; padding: 0 4px; margin-right: 3px; }
+  .elt:has(.elt-menu) small { visibility: hidden; }
+  .elt-menu { position: absolute; top: 24px; left: 8px; width: 196px; z-index: 5; padding: 5px; border-radius: 12px; background: var(--panel-solid); box-shadow: var(--shadow); text-align: left; animation: rise .18s both; }
+  .elt-menu button { display: flex; align-items: center; width: 100%; height: 30px; padding: 0 9px; border-radius: 8px; font-size: 13px; color: var(--ink-2); }
+  .elt-menu button:hover, .elt-menu button.on { background: var(--accent-soft); color: var(--ink); }
+  .elt-menu kbd { margin-left: auto; }
+
+  /* всплывающие слои редактора: автодополнение, карточка персонажа, панель выделения */
+  .pop { position: fixed; z-index: 35; background: var(--panel-solid); border-radius: 14px; box-shadow: var(--shadow); font-family: var(--font-ui); font-size: 13.5px; color: var(--ink-2); animation: rise .16s both; }
+  .pop[hidden] { display: none; }
+  #acpop { width: 300px; padding: 5px; overflow: auto; overscroll-behavior: contain; }
+  #acpop .ac-h { padding: 6px 9px 4px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; color: var(--ink-3); }
+  #acpop button { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 34px; padding: 4px 9px; border-radius: 9px; text-align: left; color: var(--ink); }
+  #acpop button.on { background: var(--accent-soft); }
+  #acpop button b { font-weight: 600; font-family: var(--font-script); font-size: 13.5px; }
+  #acpop button small { margin-left: auto; color: var(--ink-3); font-size: 12px; white-space: nowrap; }
+  #acpop .ac-new .av2 { background: oklch(from var(--ink) l c h / .07); color: var(--ink-2); }
+  #acpop .ac-foot kbd + kbd, #acpop .ac-foot kbd:not(:first-child) { margin-left: 8px; }
+  #acpop .ac-foot { padding: 6px 9px 4px; border-top: 1px solid var(--line); margin-top: 4px; font-size: 11.5px; color: var(--ink-3); }
+
+  #pcard { width: 312px; padding: 14px 16px 12px; }
+  #pcard .pc-h { display: flex; align-items: center; gap: 10px; }
+  #pcard .pc-h .av2 { width: 34px; height: 34px; font-size: 14px; }
+  #pcard .pc-h b { display: block; font-size: 15px; color: var(--ink); }
+  #pcard .pc-h small { display: block; font-size: 12.5px; color: var(--ink-3); }
+  #pcard dl { margin: 12px 0 0; display: grid; grid-template-columns: 74px 1fr; gap: 7px 10px; font-size: 13px; line-height: 1.4; }
+  #pcard dt { color: var(--ink-3); }
+  #pcard dd { margin: 0; color: var(--ink); }
+  #pcard dd.pr { font-family: var(--font-prose); font-size: 14px; line-height: 1.4; }
+  #pcard .pc-a .chipbtn { white-space: nowrap; }
+  #pcard .pc-a { display: flex; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+
+  #selbar { display: flex; align-items: center; gap: 2px; padding: 4px; border-radius: 13px; }
+  #selbar button { height: 30px; min-width: 30px; padding: 0 9px; border-radius: 9px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink); white-space: nowrap; }
+  #selbar button:hover { background: oklch(from var(--ink) l c h / .06); }
+  #selbar button.fmt { font-family: var(--font-prose); font-size: 15px; padding: 0; }
+  #selbar button.ai { color: var(--ai); }
+  #selbar button.ai .i { width: 15px; height: 15px; }
+  #selbar .sep { width: 1px; height: 18px; background: var(--line); margin: 0 4px; }
+
+  .note.k-mine .av { background: var(--accent-soft); color: var(--accent); }
+  .note.k-mine::after { background: var(--accent); }
+  .note.k-mine .mine-in { display: block; width: 100%; min-height: 56px; margin-top: 6px; padding: 8px 10px; border: 0; border-radius: 10px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--line); font: 14px/1.45 var(--font-prose); color: var(--ink); resize: none; outline: 0; }
+  .note.k-mine .mine-in:focus { box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .note.k-mine .mine-t { font-family: var(--font-prose); font-size: 14.5px; color: var(--ink); }
+  .note .thinking { display: inline-flex; gap: 4px; margin: 6px 0 2px; }
+  .note .thinking i { width: 6px; height: 6px; border-radius: 50%; background: var(--ai); animation: blink 1s infinite; }
+  .note .thinking i:nth-child(2) { animation-delay: .15s; } .note .thinking i:nth-child(3) { animation-delay: .3s; }
+  .note.k-ok .av { background: var(--ok-soft); color: var(--ok); }
+
+  /* на узком экране тип абзаца — плашкой над строкой соавтора */
+  #eltbar { display: none; }
+  @media (max-width: 836px) {
+    #eltbar:not([hidden]) { display: flex; align-items: center; gap: 12px; left: calc(var(--rail-w) + (100% - var(--rail-w)) / 2); transform: translateX(-50%); bottom: 86px; padding: 4px 12px 4px 4px; border-radius: 13px; animation: none; white-space: nowrap; }
+    #eltbar .elt-t { margin: 0; padding: 4px 6px 4px 8px; }
+    #eltbar small { font-size: 11.5px; color: var(--ink-3); }
+    #eltbar kbd { font-size: 10px; padding: 0 4px; margin-right: 3px; }
+    #eltbar .elt-menu { top: auto; bottom: calc(100% + 6px); left: 0; }
+  }
+  @media (max-width: 600px) {
+    .tools { right: 12px; gap: 6px; }
+    #cmdBtn, #focusBtn { font-size: 0; gap: 0; }
+    #cmdBtn kbd, .saved > span { display: none; }
+    .saved { padding: 0 8px; }
+    #selbar .fmt, #selbar .sep.f, #selbar .lbl-note { display: none; }
+    #eltbar small:last-child { display: none; }
+    .askbar .ctx { display: none; }
+  }
+
+  /* навигатор сцен в левой колонке */
+  .rtabs { display: flex; gap: 2px; margin: 6px 10px 2px; padding: 3px; border-radius: 12px; background: oklch(from var(--ink) l c h / .05); }
+  .rtabs button { flex: 1; height: 28px; border-radius: 9px; font-size: 12.5px; color: var(--ink-2); }
+  .rtabs button[aria-pressed="true"] { background: var(--paper); color: var(--ink); font-weight: 600; box-shadow: var(--shadow-sm); }
+  .step.scn .pg { margin-left: auto; padding-left: 8px; font-size: 11.5px; font-weight: 400; color: var(--ink-3); }
+  .step.scn .ping + .pg { margin-left: 6px; }
+  .step.beat { font-size: 12.5px; white-space: normal; line-height: 1.3; align-items: flex-start; }
+  .step.beat .dot { margin-top: 3px; transform: scale(.82); }
+  .beats-h { margin: 6px 10px 2px 34px; font-size: 11px; color: var(--ink-3); }
+  .path .more { margin: 2px 10px 0 34px; font-size: 12px; color: var(--ink-3); }
+  .path .total { margin: 18px 10px 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--ink-3); }
+  @container (max-width: 760px) { .elt { display: none; } .script-body .sh[data-no]::after { right: -16px; } .script-body.locked > .sh::before { display: none; } }
 </style>
 </head>
 <body>
@@ -798,6 +913,13 @@
   </div>
 </div>
 <div class="toast" id="toast" role="status"></div>
+<div class="pop" id="acpop" hidden role="listbox" aria-label="Подсказки"></div>
+<div class="pop" id="eltbar" hidden role="toolbar" aria-label="Тип абзаца"></div>
+<div class="pop" id="pcard" hidden role="dialog" aria-label="Персонаж"></div>
+<div class="pop" id="selbar" hidden role="toolbar" aria-label="Выделенный текст">
+  <button class="fmt" data-act="fmt" data-k="bold" title="Жирный"><b>Ж</b></button><button class="fmt" data-act="fmt" data-k="italic" title="Курсив"><i>К</i></button><button class="fmt" data-act="fmt" data-k="underline" title="Подчёркнутый"><u>Ч</u></button><span class="sep f"></span>
+  <button class="ai" data-act="sel-ask"><svg class="i"><use href="#i-ai"/></svg>Спросить</button><button data-act="sel-vars">Варианты</button><button data-act="sel-check" title="Сверить реплику с профилем персонажа">Сверить</button><span class="sep"></span><button data-act="sel-note" title="Заметка себе"><svg class="i"><use href="#i-pencil"/></svg><span class="lbl-note">Заметка</span></button>
+</div>
 <div class="ritual" id="ritual" role="dialog" aria-modal="true"></div>
 <div class="ask" id="ask">
   <div class="convo" id="convo"></div>
@@ -848,11 +970,13 @@ const nextStepN = () => (STATE.revision ? 5 : !STATE.d2Approved ? 2 : STATE.d11.
 function renderPath() {
   const step = ([n, name, s, key]) => `<button class="step ${key && key === current ? "cur" : ""}" ${key ? `data-open="${key}"` : ""}><span class="dot ${s}"><i></i></span><span class="n">${n}</span><span class="lbl">${name}</span></button>`;
   const scenes = `
-    <button class="step sub"><span class="dot approved"><i></i></span><span class="lbl">Сцена 13 · Озеро</span></button>
-    <button class="step sub ${current === "scene" ? "cur" : ""}" data-open="scene"><span class="dot ${STATE.sceneConflict ? "conflict" : "in_progress"}"><i></i></span><span class="lbl">Сцена 14 · Кухня</span>${STATE.sceneOpen ? `<span class="ping">${STATE.sceneOpen}</span>` : ""}</button>
-    <button class="step sub"><span class="dot not_started"><i></i></span><span class="lbl">Сцена 15 · Пристань</span></button>`;
+    <button class="step sub ${current === "scene" && STATE.sc === 13 ? "cur" : ""}" data-act="sc-open" data-k="13"><span class="dot approved"><i></i></span><span class="lbl">Сцена 13 · Озеро</span></button>
+    <button class="step sub ${current === "scene" && STATE.sc === 14 ? "cur" : ""}" data-act="sc-open" data-k="14"><span class="dot ${STATE.sceneConflict ? "conflict" : "in_progress"}"><i></i></span><span class="lbl">Сцена 14 · Кухня</span>${STATE.sceneOpen ? `<span class="ping">${STATE.sceneOpen}</span>` : ""}</button>
+    <button class="step sub ${current === "scene" && STATE.sc === 15 ? "cur" : ""}" data-act="sc-open" data-k="15"><span class="dot ${scStatus(15)}"><i></i></span><span class="lbl">Сцена 15 · Пристань</span></button>`;
   const link = (key, icon, label) => `<button class="step link ${current === key ? "cur" : ""}" data-open="${key}"><span class="dot">${ico(icon)}</span><span class="n"></span><span class="lbl">${label}</span></button>`;
-  document.getElementById("path").innerHTML =
+  const tabs = current === "scene" ? `<div class="rtabs" role="group" aria-label="Что слева"><button aria-pressed="${STATE.rail === "path"}" data-act="rail" data-k="path">Путь</button><button aria-pressed="${STATE.rail === "scenes"}" data-act="rail" data-k="scenes">Сценарий</button></div>` : "";
+  if (tabs && STATE.rail === "scenes") { document.getElementById("path").innerHTML = tabs + sceneNav(); return; }
+  document.getElementById("path").innerHTML = tabs +
     link("shelf", "back", "Все истории") +
     `<h4>Материалы</h4>` + link("bible", "people", "Библия проекта") + link("cards", "cards", "Карточки сцен") + link("export", "download", "Экспорт") +
     `<h4>Основа истории</h4>` + STEPS.slice(0, 12).map(step).join("") +
@@ -904,7 +1028,7 @@ const VIEWS = {
       <p class="logline">Женщина двадцать лет молчит о гибели брата, чтобы сберечь семью, — пока дочь не находит фотографию с озера.</p>
       <div class="cards">
         ${nextCard()}
-        <button class="card" data-open="scene"><div class="lbl" style="color:var(--bad)">${ico("warn")}Противоречие</div><h3>Сцена 14</h3><p>Аня узнаёт правду о брате раньше, чем задумано в структуре.</p></button>
+        <button class="card" data-act="sc-open" data-k="14"><div class="lbl" style="color:var(--bad)">${ico("warn")}Противоречие</div><h3>Сцена 14</h3><p>Аня узнаёт правду о брате раньше, чем задумано в структуре.</p></button>
         <button class="card"><div class="lbl" style="color:var(--warn)">${ico("clock")}Устарело</div><h3>Тональный манифест</h3><p>Тема изменилась — тон стоит перечитать.</p></button>
       </div>
       <div class="journey">
@@ -945,36 +1069,26 @@ const VIEWS = {
           <div class="acts"><button class="chipbtn main" data-act="accept" data-k="s">Принять</button><button class="chipbtn" data-act="edit" data-k="s">Изменить</button><button class="chipbtn quiet" data-act="reject" data-k="s">Убрать</button></div></div>` : ""}
       </aside></div>`,
 
-  scene: () => `<div class="stage doc">
+  scene: () => {
+    const one = STATE.scMode === "scene", n = STATE.sc, s = SCRIPT[n];
+    const ids = one ? [n] : Object.keys(SCRIPT).map(Number);
+    const body = (k) => {
+      const locked = SCRIPT[k].st === "approved" && !SCRIPT[k].unlocked;
+      return `<div class="script-body ${locked ? "locked" : ""}" data-sc="${k}" ${locked ? `data-act="sc-locked" data-k="${k}"` : `contenteditable="true"`} spellcheck="false">${SCRIPT[k].html}</div>`;
+    };
+    const seg = `<div class="seg" role="group" aria-label="Что показывать"><button aria-pressed="${one}" data-act="sc-mode" data-k="scene">Сцена ${n}</button><button aria-pressed="${!one}" data-act="sc-mode" data-k="act">Весь акт II</button></div>`;
+    const pill = { conflict: `<span class="pill conflict"><i></i>Есть противоречие</span>`, in_progress: `<span class="pill in_progress"><i></i>В работе</span>`, approved: `<span class="pill approved"><i></i>Утверждена</span>`, not_started: `<span class="pill not_started"><i></i>Не начата</span>` }[scStatus(n)];
+    const btn = n === 13 ? (s.unlocked ? "" : `<button class="chipbtn" data-act="sc-unlock">Править</button>`) : `<button class="approve" data-act="approve" style="margin-left:0">${ico("check")}Утвердить</button>`;
+    return `<div class="stage doc">
       <article class="sheet script">
-        <span class="pageno">14.</span>
-        <div class="eyebrow">Шаг 20 · Черновик сцены · биты 1–4</div>
-        <h1 style="font-size:36px">Кухня, ночь</h1>
-        <div class="meta">${STATE.sceneConflict ? `<span class="pill conflict"><i></i>Есть противоречие</span>` : `<span class="pill in_progress"><i></i>В работе</span>`}заметки соавтора на полях<button class="approve" data-act="approve">${ico("check")}Утвердить</button></div>
-        <div class="script-body">
-          <p class="sh">ИНТ. КУХНЯ В ДОМЕ ВЕРЫ — НОЧЬ</p>
-          <p>Свет только над раковиной. ВЕРА (52) моет чашку. Чашка давно чистая. Она всё равно трёт её губкой.</p>
-          <p><span class="mark sugg" data-a="door">Хлопает входная дверь. Вера замирает, не выключая воду.</span></p>
-          <p class="ch">АНЯ (З.К.)</p><p class="dl">Мам, ты опять не спишь?</p>
-          <p>Входит АНЯ (24), в куртке, с рюкзаком. Ставит рюкзак на стул.</p>
-          <p class="ch">ВЕРА</p><p class="par">(не оборачиваясь)</p>
-          <p class="dl"><span class="mark stale" data-a="stale">Я же просила звонить, когда едешь так поздно.</span></p>
-          <p class="ch">АНЯ</p>
-          <p class="dl">Я была у дяди Коли. <span class="mark conflict" data-a="conf">Он сказал, что Миша утонул не&nbsp;случайно.</span></p>
-          <p>Вода продолжает течь. Вера закрывает кран.</p>
-        </div>
+        <div class="eyebrow">Шаг 20 · Черновик сцены${one ? ` · биты из шага 19` : " · акт II"}</div>
+        <h1 style="font-size:36px">${one ? s.title : "Трещина"}</h1>
+        <div class="meta">${one ? pill : `<span class="pill in_progress"><i></i>3 из 10 сцен написаны</span>`}${seg}${one ? btn : ""}</div>
+        ${ids.map(body).join("")}
+        <div class="elt" id="elt" hidden></div>
       </article>
-      <aside class="margin" id="margin">
-        <div class="note" data-for="door"><div class="who"><span class="av">${ico("ai")}</span>Предлагаю добавить<small>бит 2</small></div>Чтобы появление Ани было неожиданным.
-          <div class="acts"><button class="chipbtn main" data-act="accept" data-k="door">Принять</button><button class="chipbtn quiet" data-act="reject" data-k="door">Убрать</button></div></div>
-        <div class="note k-stale" data-for="stale"><div class="who"><span class="av">${ico("clock")}</span>Устарело<small>после правки профиля</small></div>
-          <div class="q">«Вера никогда не говорит о тревоге прямо — только через заботу.»<small>Психологический профиль Веры</small></div>
-          <div class="opts" hidden><button class="opt" data-act="line" data-k="stale">Ты поела хоть что-нибудь? Я оставила суп.</button><button class="opt" data-act="line" data-k="stale">Я уже и чайник второй раз поставила.</button></div>
-          <div class="acts"><button class="chipbtn" data-act="show-opts">Варианты реплики</button></div></div>
-        <div class="note k-conflict" data-for="conf"><div class="who"><span class="av">${ico("warn")}</span>Противоречие</div>
-          <div class="q">«Аня узнаёт правду о брате только в кульминации.»<small>Скелетная карта · акт III, сцена 22</small></div>Что меняем — реплику или структуру?
-          <div class="acts"><button class="chipbtn" data-act="conf-line" data-k="conf">Реплику</button><button class="chipbtn" data-act="conf-structure" data-k="conf">Структуру</button></div></div>
-      </aside></div>`,
+      <aside class="margin" id="margin">${ids.includes(14) ? sceneNotes() : ""}${STATE.dyn.filter((d) => ids.includes(d.sc)).map(dynNote).join("")}</aside></div>`;
+  },
 
   // ——— Связка 1: полка, новая история, разбор рукописи ———
   shelf: () => `<div class="stage"><div class="home">
@@ -1493,12 +1607,12 @@ const biblePeople = () => `<div class="people">
     <h2>Что скрывает</h2><p><span class="mark" data-a="secret">В&nbsp;ту ночь она была на&nbsp;мостках. Миша просил её не&nbsp;уходить.</span></p>
     <h2>Связи</h2>${relSvg()}
     <h2 data-a="where">Где появляется</h2>
-    <div class="chips">${[2, 3, 7, 13, 14, 22].map((n) => (n === 14 ? `<button class="chip" data-open="scene">Сцена 14</button>` : `<span class="chip">Сцена ${n}</span>`)).join("")}</div>
+    <div class="chips">${[2, 3, 7, 13, 14, 22].map((n) => (n === 14 ? `<button class="chip" data-act="sc-open" data-k="14">Сцена 14</button>` : `<span class="chip">Сцена ${n}</span>`)).join("")}</div>
   </div>
   <p class="src">Собрано из «Кастинг-листа» (шаг 15) и «Психологических профилей» (шаг 16). Правка здесь меняет эти документы — через проверку последствий.</p>`;
 const bibleNotes = () => (STATE.lineFixed ? "" : `<div class="note k-conflict" data-for="voice"><div class="who"><span class="av">${ico("warn")}</span>Расходится со сценой 14</div>
     <div class="q">«Я же просила звонить, когда едешь так поздно.»<small>Сцена 14 · реплика Веры</small></div>Здесь тревога звучит прямо. Править лучше сцену, а не профиль.
-    <div class="acts"><button class="chipbtn" data-open="scene">Открыть сцену</button></div></div>`)
+    <div class="acts"><button class="chipbtn" data-act="sc-open" data-k="14">Открыть сцену</button></div></div>`)
   + `<div class="note pending" data-for="secret"><div class="who"><span class="av">${ico("ai")}</span>Вопрос к вам</div>Знает ли дядя Коля, что Вера была на мостках? От этого зависит, что он скажет Ане в сцене 9.
     <div class="opts"><button class="opt" data-act="kolya">Знает — и молчит ради неё</button><button class="opt" data-act="kolya">Догадывается</button><button class="opt" data-act="kolya">Не знает</button></div></div>
   <div class="note" data-for="where"><div class="who"><span class="av">${ico("ai")}</span>Из черновиков сцен</div>У Веры 34 реплики, 19 из них — про еду, сон и одежду. Это совпадает с профилем.</div>`;
@@ -1572,11 +1686,14 @@ function layoutNotes() {
   const sheet = margin.previousElementSibling;
   let floor = 0;
   if (getComputedStyle(margin.querySelector(".note") || margin).position === "static") return;
-  margin.querySelectorAll(".note").forEach((n) => {
+  // Заметки встают по порядку мест в тексте, а не по порядку появления
+  const anchorTop = (n) => {
     const key = n.dataset.for;
     const a = key === "by-ai" ? sheet.querySelector(".by-ai") : sheet.querySelector(`[data-a="${key}"]`);
-    const want = a ? a.getBoundingClientRect().top - sheet.getBoundingClientRect().top - 10 : floor;
-    const top = Math.max(want, floor);
+    return a ? a.getBoundingClientRect().top - sheet.getBoundingClientRect().top - 10 : Infinity;
+  };
+  [...margin.querySelectorAll(".note")].map((n) => [n, anchorTop(n)]).sort((x, y) => x[1] - y[1]).forEach(([n, want]) => {
+    const top = Math.max(want === Infinity ? floor : want, floor);
     n.style.top = top + "px";
     floor = top + n.offsetHeight + 12;
   });
@@ -1602,18 +1719,21 @@ function highlight(key) {
 }
 // Redraw the current view after a state change, keeping the scroll position
 function paint() {
+  if (current === "scene") saveScript();
   const desk = $("#desk"), y = desk.scrollTop;
   desk.classList.add("calm");
   desk.innerHTML = VIEWS[current]();
   desk.scrollTop = y;
   renderPath();
   requestAnimationFrame(relayout);
+  if (current === "scene") nameMarks();
 }
 function flashAt(key) {
   const el = $(`[data-a="${key}"]`); el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
 }
 function ritual(html) { const r = $("#ritual"); r.innerHTML = `<div class="rcard">${html}</div>`; r.classList.add("on"); }
 function open(key) {
+  if (current === "scene") { saveScript(); CSS.highlights.delete("name-hover"); ["#acpop", "#pcard", "#selbar", "#eltbar"].forEach((q) => ($(q).hidden = true)); }
   if (key === "settings" && current !== "settings") STATE.back = current;
   current = key;
   $("#desk").classList.remove("calm");
@@ -1629,6 +1749,7 @@ function open(key) {
   document.querySelectorAll(".note").forEach((n, i) => (n.style.animationDelay = 120 + i * 90 + "ms"));
   requestAnimationFrame(relayout);
   document.fonts.ready.then(relayout);
+  if (key === "scene") { $("#askctx").textContent = `Сцена ${STATE.sc} + профили`; nameMarks(); if (STATE.demo) document.fonts.ready.then(() => setTimeout(SCENE_DEMO[STATE.demo], 300)); }
 }
 const $ = (q) => document.querySelector(q);
 let toastTimer;
@@ -1687,6 +1808,8 @@ const ACTIONS = {
   "conf-structure"(b, k, note) { toast("Откроется «Скелетная карта» с предложением перенести узнавание в сцену 14. Утверждённые документы ниже по пути станут «устаревшими»."); },
   approve(b) {
     if (current === "d11") return approveD11();
+    if (current === "scene" && STATE.sc === 15 && !sceneText(15).replace(/^\S+\.\s.*?—\s\S+/, "").trim()) { toast("В сцене пока только заголовок. Биты слева подскажут, с чего начать."); return; }
+    if (current === "scene" && STATE.sc === 15) { toast("Сначала допишите все три бита — потом сверю сцену с профилями и утвердим."); return; }
     if (current === "scene" && STATE.sceneConflict) {
       toast("Пока нельзя утвердить: сцена спорит со «Скелетной картой». Решите противоречие на полях — и можно будет."); highlight("conf"); return;
     }
@@ -2012,9 +2135,467 @@ addEventListener("resize", relayout);
 // The ask bar follows the page while the rail and notes slide in and out of focus mode
 $("#app").addEventListener("transitionend", placeAsk);
 new ResizeObserver(placeAsk).observe($("#desk"));
+// ——— Редактор сцены ———
+// Акт II в макете: сцена 13 утверждена, 14 в работе, 15 ещё пустая
+const SCRIPT = {
+  13: { title: "Озеро, наши дни", st: "approved", beats: ["Аня выходит на мостки", "Трогает воду", "Не берёт трубку матери"], html: `<p class="sh" data-no="13">НАТ. ОЗЕРО, МОСТКИ — ДЕНЬ</p><p class="ac" data-beat="1">Доски потемнели и прогнулись. АНЯ стоит на самом краю, смотрит в воду.</p><p class="ac" data-beat="2">Садится, опускает ладонь в воду. Вода холодная даже в июле.</p><p class="ac" data-beat="3">Звонит телефон. На экране: «Мама». Аня смотрит, пока звонок не обрывается.</p><p class="tr">СКЛЕЙКА:</p>` },
+  14: { title: "Кухня, ночь", st: "work", beats: ["Вера не спит и ждёт", "Аня возвращается от дяди", "Аня приносит его слова", "Вера закрывает кран"], html: `<p class="sh" data-no="14">ИНТ. КУХНЯ В ДОМЕ ВЕРЫ — НОЧЬ</p><p class="ac" data-beat="1">Свет только над раковиной. ВЕРА (52) моет чашку. Чашка давно чистая. Она всё равно трёт её губкой.</p><p class="ac"><span class="mark sugg" data-a="door">Хлопает входная дверь. Вера замирает, не выключая воду.</span></p><p class="ch">АНЯ (З.К.)</p><p class="dl">Мам, ты опять не спишь?</p><p class="ac" data-beat="2">Входит АНЯ (24), в куртке, с рюкзаком. Ставит рюкзак на стул.</p><p class="ch">ВЕРА</p><p class="par">(не оборачиваясь)</p><p class="dl"><span class="mark stale" data-a="stale">Я же просила звонить, когда едешь так поздно.</span></p><p class="ch">АНЯ</p><p class="dl" data-beat="3">Я была у дяди Коли. <span class="mark conflict" data-a="conf">Он сказал, что Миша утонул не&nbsp;случайно.</span></p><p class="ac" data-beat="4">Вода продолжает течь. Вера закрывает кран.</p>` },
+  15: { title: "Пристань", st: "not_started", beats: ["Вера выходит из дома до рассвета", "Пристань: всё как тогда", "Вера ступает на мостки"], html: `<p class="sh" data-no="15">НАТ. ПРИСТАНЬ — РАССВЕТ</p><p class="ac blank"><br></p>` },
+};
+Object.assign(STATE, { sc: 14, scMode: "scene", rail: "scenes", dyn: [], demo: null });
+const SC_TYPES = [["sh", "Заголовок сцены"], ["ac", "Описание"], ["ch", "Персонаж"], ["par", "Ремарка"], ["dl", "Реплика"], ["tr", "Переход"]];
+const TYPE_NAME = { ...Object.fromEntries(SC_TYPES), sh: "Заголовок" };
+const ON_ENTER = { sh: "ac", ac: "ac", ch: "dl", par: "dl", dl: "ac", tr: "sh" };
+const ON_TAB = { sh: "ac", ac: "ch", ch: "par", par: "dl", dl: "par", tr: "sh" };
+const PEOPLE = {
+  v: { l: "В", name: "ВЕРА", full: "Вера Сомова", line: "52 · мать Ани · сестра Миши", want: "Чтобы дочь жила так, будто той ночи на озере не было.", voice: "О тревоге — никогда прямо, только через заботу.", knows: { 14: "Всё: в ту ночь она была на мостках." }, forms: ["Вера", "Веры", "Вере", "Веру", "Верой", "ВЕРА"] },
+  a: { l: "А", name: "АНЯ", full: "Аня", line: "24 · дочь Веры", want: "Понять, почему мама двадцать лет молчит о Мише.", voice: "Коротко и в лоб. Когда страшно — шутит.", knows: { 13: "Только фото с озера.", 14: "Слова дяди Коли — не всю правду." }, forms: ["Аня", "Ани", "Ане", "Аню", "Аней", "АНЯ"] },
+  k: { l: "К", name: "ДЯДЯ КОЛЯ", full: "Дядя Коля", line: "61 · деверь Веры", want: "Чтобы правду наконец сказал кто-то, кроме него.", voice: "Длинно, с отступлениями, «я тебе так скажу».", knows: {}, forms: ["дядя Коля", "дяди Коли", "дяде Коле", "дядю Колю", "ДЯДЯ КОЛЯ"] },
+  m: { l: "М", name: "МИША", full: "Миша", line: "брат Веры · погиб в 1998", want: "—", voice: "Есть только в сценах прошлого.", knows: {}, forms: ["Миша", "Миши", "Мише", "Мишу", "МИША"] },
+};
+const PLACES = [["КУХНЯ В ДОМЕ ВЕРЫ", "сцены 2, 14"], ["ДОМ ВЕРЫ, ПРИХОЖАЯ", "сцена 20"], ["ОЗЕРО, МОСТКИ", "сцены 1, 13, 22"], ["ПРИСТАНЬ", "сцена 15"], ["ДОМ ДЯДИ КОЛИ", "сцена 9"], ["ГОРОДСКОЙ АРХИВ", "сцена 17"]];
+const TIMES = ["НОЧЬ", "УТРО", "ДЕНЬ", "ВЕЧЕР", "РАССВЕТ", "ПОЗЖЕ"];
+const VARIANTS = {
+  v: ["Ты ела что-нибудь? Я суп оставила.", "Куртку повесь, мокрая же.", "Чайник ещё горячий, налить?"],
+  a: ["Мам. Сядь, пожалуйста.", "Я не спать пришла.", "Ты знала, да?"],
+  ac: ["Вода всё течёт. Вера не оборачивается.", "Вера выключает воду. В кухне становится очень тихо.", "Чашка выскальзывает из рук — и не разбивается."],
+  par: ["(тихо)", "(не сразу)", "(всё ещё у раковины)"],
+};
+
+const scStatus = (n) => {
+  if (n === 14) return STATE.sceneConflict ? "conflict" : "in_progress";
+  if (SCRIPT[n]) return { approved: "approved", work: "in_progress", not_started: "not_started" }[SCRIPT[n].st];
+  return ACTS.flatMap((a) => a[3]).find((c) => c[0] === n)[4];
+};
+const sceneText = (n) => SCRIPT[n].html.replace(/<del>.*?<\/del>/g, "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+// Около 1100 знаков сценарного текста — страница; показываем четвертями
+function pagesLabel(n) {
+  if (!SCRIPT[n]) return "";
+  const t = sceneText(n).replace(/^\S+\.\s.*?—\s\S+/, "").trim();
+  if (!t) return "пусто";
+  const q = Math.max(1, Math.round((t.length / 1100) * 4)), whole = Math.floor(q / 4), part = ["", "¼", "½", "¾"][q % 4];
+  return `${whole || ""}${part || (whole ? "" : "0")} стр.`;
+}
+function sceneNotes() {
+  const h = SCRIPT[14].html;
+  return `${/class="mark sugg" data-a="door"/.test(h) ? `<div class="note" data-for="door"><div class="who"><span class="av">${ico("ai")}</span>Предлагаю добавить<small>бит 2</small></div>Чтобы появление Ани было неожиданным.
+          <div class="acts"><button class="chipbtn main" data-act="accept" data-k="door">Принять</button><button class="chipbtn quiet" data-act="reject" data-k="door">Убрать</button></div></div>` : ""}
+        ${/class="mark stale" data-a="stale"/.test(h) ? `<div class="note k-stale" data-for="stale"><div class="who"><span class="av">${ico("clock")}</span>Устарело<small>после правки профиля</small></div>
+          <div class="q">«Вера никогда не говорит о тревоге прямо — только через заботу.»<small>Психологический профиль Веры</small></div>
+          <div class="opts" hidden><button class="opt" data-act="line" data-k="stale">Ты поела хоть что-нибудь? Я оставила суп.</button><button class="opt" data-act="line" data-k="stale">Я уже и чайник второй раз поставила.</button></div>
+          <div class="acts"><button class="chipbtn" data-act="show-opts">Варианты реплики</button></div></div>` : ""}
+        ${STATE.sceneConflict ? `<div class="note k-conflict" data-for="conf"><div class="who"><span class="av">${ico("warn")}</span>Противоречие</div>
+          <div class="q">«Аня узнаёт правду о брате только в кульминации.»<small>Скелетная карта · акт III, сцена 22</small></div>Что меняем — реплику или структуру?
+          <div class="acts"><button class="chipbtn" data-act="conf-line" data-k="conf">Реплику</button><button class="chipbtn" data-act="conf-structure" data-k="conf">Структуру</button></div></div>` : ""}`;
+}
+
+// Левая колонка в сцене: путь проекта или сценарий по актам с битами текущей сцены
+function sceneNav() {
+  const beats = (n) => `<div class="beats-h">Биты · шаг 19</div>` + SCRIPT[n].beats.map((t, i) => {
+    const on = SCRIPT[n].html.includes(`data-beat="${i + 1}"`), st = n === 14 && i === 2 && STATE.sceneConflict ? "conflict" : on ? "approved" : "not_started";
+    return `<button class="step sub beat" data-act="beat" data-k="${i + 1}" title="${on ? "Перейти к биту" : "Бит ещё не написан"}"><span class="dot ${st}"><i></i></span><span class="lbl">${t}</span></button>`;
+  }).join("");
+  return ACTS.map(([r, name, , list, more]) => `<h4>Акт ${r} · ${name}</h4>` + list.filter((c) => c !== "gap").map(([n, title]) =>
+    `<button class="step scn ${n === STATE.sc ? "cur" : ""}" data-act="sc-go" data-k="${n}"><span class="dot ${scStatus(n)}"><i></i></span><span class="n">${n}</span><span class="lbl">${title}</span>${n === 14 && STATE.sceneOpen ? `<span class="ping">${STATE.sceneOpen}</span>` : ""}<span class="pg">${pagesLabel(n)}</span></button>` + (n === STATE.sc && SCRIPT[n] ? beats(n) : "")
+  ).join("") + `<p class="more">${more}</p>`).join("") + `<p class="total">26 сцен · около 104 страниц</p>`;
+}
+
+const bodies = () => [...document.querySelectorAll("#desk .script-body[data-sc]")];
+// Текст сцены живёт в DOM, пока её правят; перед перерисовкой забираем его в SCRIPT
+function saveScript() {
+  bodies().forEach((b) => {
+    const c = b.cloneNode(true);
+    c.querySelectorAll(".hl, .flash").forEach((e) => e.classList.remove("hl", "flash"));
+    c.querySelectorAll('[class=""]').forEach((e) => e.removeAttribute("class"));
+    SCRIPT[b.dataset.sc].html = c.innerHTML;
+  });
+}
+const typeOf = (p) => SC_TYPES.map(([t]) => t).find((t) => p.classList.contains(t));
+function setType(p, t) {
+  p.classList.remove(...SC_TYPES.map(([x]) => x)); p.classList.add(t);
+  markElt(); suggest();
+}
+function curPara() {
+  const sel = getSelection(); if (!sel.rangeCount) return null;
+  const n = sel.focusNode, el = n && (n.nodeType === 1 ? n : n.parentElement);
+  const body = el && el.closest(".script-body[contenteditable=true]"); if (!body) return null;
+  return el === body ? body.children[Math.min(sel.focusOffset, body.children.length - 1)] : el.closest(".script-body > p");
+}
+function caretAtEnd(p) {
+  const sel = getSelection(), r = document.createRange();
+  r.selectNodeContents(p); r.setStart(sel.focusNode, sel.focusOffset);
+  return !r.toString().length;
+}
+function placeCaret(p, atEnd) {
+  const r = document.createRange(); r.selectNodeContents(p); r.collapse(!atEnd);
+  const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+}
+const blankP = (t) => { const p = document.createElement("p"); p.className = `${t} blank`; p.innerHTML = "<br>"; return p; };
+// Строка, в которой пишут, не уходит под строку соавтора внизу
+// Нижняя граница для текста и подсказок: строка соавтора или плашка типа над ней
+const bottomLimit = () => Math.min(...["#ask", "#eltbar"].map((q) => $(q)).filter((e) => !e.hidden && getComputedStyle(e).display !== "none").map((e) => e.getBoundingClientRect().top));
+function keepInView(p) {
+  const r = p.getBoundingClientRect(), floor = bottomLimit() - 150;
+  if (r.bottom > floor) $("#desk").scrollBy({ top: r.bottom - floor, behavior: "instant" });
+}
+function syncBlank(p) { p.classList.toggle("blank", !p.textContent.length); }
+
+// Тип абзаца, Tab и Enter на левом поле листа
+// На широком листе — на левом поле у строки, на узком — плашкой над строкой соавтора
+const eltHost = () => (getComputedStyle($("#eltbar")).display !== "none" ? $("#eltbar") : $("#elt"));
+function markElt() {
+  const elt = $("#elt"), bar = $("#eltbar"); if (!elt) { bar.hidden = true; return; }
+  const p = curPara();
+  if (!p) { elt.hidden = true; bar.hidden = true; return; }
+  const t = typeOf(p), html = `<button class="elt-t" data-act="elt-menu" title="Сменить тип абзаца">${TYPE_NAME[t]}${ico("down")}</button>
+    <small><kbd>Tab</kbd>${TYPE_NAME[ON_TAB[t]]}</small><small><kbd>Enter</kbd>${TYPE_NAME[ON_ENTER[t]]}</small>`;
+  elt.hidden = false; elt.style.top = p.offsetTop - 1 + "px"; elt.innerHTML = html;
+  bar.hidden = false; bar.innerHTML = html;
+}
+function eltMenu() {
+  const p = curPara(), t = p && typeOf(p);
+  eltHost().insertAdjacentHTML("beforeend", `<div class="elt-menu">${SC_TYPES.map(([k, name], i) => `<button class="${k === t ? "on" : ""}" data-act="elt-set" data-k="${k}">${name}<kbd>⌥${i + 1}</kbd></button>`).join("")}</div>`);
+}
+
+// Автодополнение: персонажи и места из библии, время суток
+let acItems = [], acSel = 0, acPara = null;
+function lastSpeakers(p) {
+  const names = []; let x = p.previousElementSibling;
+  while (x && names.length < 2) { if (x.classList.contains("ch")) names.push(x.textContent.replace(/\(.*$/, "").trim().toUpperCase()); x = x.previousElementSibling; }
+  return names;
+}
+function suggest() {
+  const pop = $("#acpop"), p = curPara();
+  if (document.querySelector(".elt-menu")) { pop.hidden = true; acPara = null; return; }
+  acItems = [];
+  if (p && caretAtEnd(p)) {
+    const t = typeOf(p), q = p.textContent.toUpperCase().replace(/\s+/g, " ").trimStart();
+    if (t === "ch" && !q.includes("(")) {
+      const [last, before] = lastSpeakers(p), inScene = new Set(lastSpeakers(p).concat([...p.parentElement.querySelectorAll(".ch")].map((c) => c.textContent.replace(/\(.*$/, "").trim().toUpperCase())));
+      const order = Object.entries(PEOPLE).sort(([, a], [, b]) => (b.name === before && b.name !== last) - (a.name === before && a.name !== last) || inScene.has(b.name) - inScene.has(a.name));
+      acItems = order.filter(([, x]) => x.name.startsWith(q.trim())).map(([k, x]) => ({ text: x.name, lead: `<span class="av2 ${k}">${x.l}</span>`, hint: x.name === before && x.name !== last && !q.trim() ? "отвечает" : inScene.has(x.name) ? "в сцене" : "из библии" }));
+      if (!acItems.length && q.trim().length >= 2) acItems = [{ text: q.trim(), lead: `<span class="av2">${ico("plus")}</span>`, hint: "новый", cls: "ac-new", fresh: true }];
+      acItems.head = "Персонаж";
+    } else if (t === "ch") {
+      const base = q.replace(/\(.*$/, "").trim(), ext = q.slice(q.indexOf("("));
+      acItems = [["(З.К.)", "за кадром"], ["(ПРОД.)", "продолжает"]].filter(([e]) => e.startsWith(ext)).map(([e, hint]) => ({ text: `${base} ${e}`, lead: "", hint }));
+      acItems.head = "Пометка";
+    } else if (t === "sh") {
+      const m = q.match(/^(ИНТ\.\/НАТ\.|ИНТ\.|НАТ\.)\s?(.*)$/);
+      if (!m) { acItems = ["ИНТ. ", "НАТ. ", "ИНТ./НАТ. "].filter((x) => x.startsWith(q)).map((x) => ({ text: x, lead: "", hint: { "ИНТ. ": "в помещении", "НАТ. ": "на улице", "ИНТ./НАТ. ": "и там и там" }[x], next: true })); acItems.head = "Где"; }
+      else if (!/\s[—-]\s?/.test(m[2])) { acItems = PLACES.filter(([pl]) => pl.startsWith(m[2].trim())).map(([pl, hint]) => ({ text: `${m[1]} ${pl} — `, label: pl, lead: "", hint, next: true })); acItems.head = "Место из библии"; }
+      else { const [place, time] = m[2].split(/\s[—-]\s?/); acItems = TIMES.filter((x) => x.startsWith((time || "").trim())).map((x) => ({ text: `${m[1]} ${place.trim()} — ${x}`, label: x, lead: "", hint: "" })); acItems.head = "Время"; }
+    }
+  }
+  if (!acItems.length) { pop.hidden = true; acPara = null; return; }
+  acPara = p; acSel = 0;
+  pop.innerHTML = `<div class="ac-h">${acItems.head}</div>` + acItems.map((x, i) => `<button class="${x.cls || ""} ${i === acSel ? "on" : ""}" data-ac="${i}">${x.lead}<b>${esc(x.label || x.text)}</b><small>${x.hint}</small></button>`).join("") +
+    (acItems[0].fresh ? `<div class="ac-foot">Появится в «Кастинг-листе» черновиком — утвердите там.</div>` : `<div class="ac-foot"><kbd>Enter</kbd> выбрать <kbd>Tab</kbd> дописать <kbd>Esc</kbd> скрыть</div>`);
+  const sel = getSelection(), r = sel.getRangeAt(0).getClientRects()[0] || p.getBoundingClientRect();
+  pop.hidden = false;
+  // Под строкой, если помещается над строкой соавтора; иначе туда, где больше места, с прокруткой
+  pop.style.maxHeight = ""; pop.style.left = Math.max(12, Math.min(r.left, innerWidth - 312)) + "px";
+  const below = bottomLimit() - r.bottom - 6, above = r.top - 70 - 6, h = pop.offsetHeight;
+  const down = h <= below || (h > above && below >= above);
+  if (h > (down ? below : above)) pop.style.maxHeight = (down ? below : above) + "px";
+  pop.style.top = (down ? r.bottom + 6 : r.top - 6 - pop.offsetHeight) + "px";
+}
+// Enter принимает подсказку и ведёт дальше (имя → реплика), Tab только дописывает
+function acceptAc(i, go) {
+  const x = acItems[i], p = acPara;
+  p.textContent = x.text; syncBlank(p); placeCaret(p, true);
+  $("#acpop").hidden = true;
+  if (x.fresh) toast(`«${esc(x.text)}» — новый персонаж. Он появится в «Кастинг-листе» черновиком.`);
+  if (x.next) suggest();
+  else if (go) { const n = blankP(ON_ENTER[typeOf(p)]); p.after(n); placeCaret(n, false); keepInView(n); markElt(); }
+  nameMarks(); touched();
+}
+
+// Имена персонажей находим в тексте без правки DOM; под мышью имя подсвечивается через CSS Custom Highlight
+let nameHits = [];
+const NAME_RE = new RegExp(`(?<!\\p{L})(${Object.values(PEOPLE).flatMap((x) => x.forms).sort((a, b) => b.length - a.length).join("|")})(?!\\p{L})`, "gu");
+const FORM_KEY = Object.fromEntries(Object.entries(PEOPLE).flatMap(([k, x]) => x.forms.map((f) => [f, k])));
+function nameMarks() {
+  nameHits = [];
+  bodies().forEach((b) => {
+    const w = document.createTreeWalker(b, NodeFilter.SHOW_TEXT);
+    for (let n = w.nextNode(); n; n = w.nextNode()) {
+      if (n.parentElement.closest("del")) continue;
+      for (const m of n.data.matchAll(NAME_RE)) {
+        const r = document.createRange(); r.setStart(n, m.index); r.setEnd(n, m.index + m[0].length);
+        nameHits.push({ r, k: FORM_KEY[m[0]] });
+      }
+    }
+  });
+}
+let cardTimer, cardKey = null;
+function showCard(k, rect) {
+  const x = PEOPLE[k], card = $("#pcard"), sc = STATE.sc;
+  const lines = [...document.querySelectorAll(`#desk .script-body[data-sc="${sc}"] .ch`)].filter((c) => c.textContent.toUpperCase().startsWith(x.name)).length;
+  card.innerHTML = `<div class="pc-h"><span class="av2 ${k}">${x.l}</span><div><b>${x.full}</b><small>${x.line}</small></div></div>
+    <dl><dt>Хочет</dt><dd class="pr">${x.want}</dd><dt>Говорит</dt><dd class="pr">${x.voice}</dd>
+    ${x.knows[sc] ? `<dt>Знает</dt><dd>${x.knows[sc]}</dd>` : ""}<dt>В сцене ${sc}</dt><dd>${lines ? `${lines} ${plural(lines, "реплика", "реплики", "реплик")}` : "упоминается, не говорит"}</dd></dl>
+    <div class="pc-a">${k === "v" ? `<button class="chipbtn" data-open="bible">Профиль в библии</button>` : `<button class="chipbtn" data-act="demo" data-k="В макете заполнен профиль Веры.">Профиль в библии</button>`}<button class="chipbtn quiet" data-act="ask-about" data-k="${k}">Спросить соавтора</button></div>`;
+  card.hidden = false; cardKey = k;
+  CSS.highlights.set("name-hover", new Highlight(...nameHits.filter((h) => h.k === k && h.r.getClientRects().length && h.r.getBoundingClientRect().top === rect.top).map((h) => h.r)));
+  const top = rect.bottom + 8 + card.offsetHeight > innerHeight ? rect.top - card.offsetHeight - 8 : rect.bottom + 8;
+  card.style.left = Math.max(12, Math.min(rect.left - 16, innerWidth - 326)) + "px"; card.style.top = top + "px";
+}
+function hideCard() { $("#pcard").hidden = true; cardKey = null; CSS.highlights.delete("name-hover"); }
+
+// Панель у выделения: оформление и соавтор
+let selRange = null;
+const paraOf = (n) => (n.nodeType === 1 ? n : n.parentElement).closest(".script-body > p");
+function selInfo() {
+  const sel = getSelection(); if (!sel.rangeCount || sel.isCollapsed) return null;
+  const r = sel.getRangeAt(0), el = (n) => (n.nodeType === 1 ? n : n.parentElement);
+  const a = el(r.startContainer).closest(".script-body[contenteditable=true] > p"), b = el(r.endContainer).closest(".script-body[contenteditable=true] > p");
+  if (!a || !r.toString().trim()) return null;
+  return { r, p: a === b ? a : null, text: r.toString().trim() };
+}
+function placeSelbar() {
+  const bar = $("#selbar"), info = selInfo();
+  if (!info || !$("#acpop").hidden) { bar.hidden = true; return; }
+  selRange = info.r.cloneRange();
+  const rect = info.r.getBoundingClientRect();
+  if (rect.top > bottomLimit() - 8 || rect.bottom < 64) { bar.hidden = true; return; }
+  bar.hidden = false;
+  bar.style.left = Math.max(12, Math.min(rect.left + rect.width / 2 - bar.offsetWidth / 2, innerWidth - bar.offsetWidth - 12)) + "px";
+  bar.style.top = (rect.top - bar.offsetHeight - 10 < 64 ? rect.bottom + 10 : rect.top - bar.offsetHeight - 10) + "px";
+}
+const speakerOf = (p) => { let x = p; while (x && !x.classList.contains("ch")) x = x.previousElementSibling; return x && FORM_KEY[x.textContent.replace(/\(.*$/, "").trim()]; };
+let dynN = 0;
+// Оборачивает выделение в пометку на тексте и заводит заметку на полях
+function anchorSel(kind) {
+  const info = selRange && { r: selRange, p: paraOf(selRange.startContainer) };
+  const end = paraOf(selRange.endContainer);
+  if (!info.p || info.p !== end) { toast("Выделите текст внутри одного абзаца."); return null; }
+  const k = `u${++dynN}`, span = document.createElement("span");
+  span.className = `mark ${kind}`; span.dataset.a = k;
+  span.appendChild(selRange.extractContents()); selRange.insertNode(span);
+  getSelection().removeAllRanges(); $("#selbar").hidden = true;
+  return { k, span, p: info.p, sc: Number(info.p.parentElement.dataset.sc) };
+}
+function dynNote(d) {
+  const quote = `<div class="q">«${esc(d.old)}»</div>`;
+  if (d.kind === "vars") {
+    if (d.phase === "think") return `<div class="note fresh" data-for="${d.k}"><div class="who"><span class="av">${ico("ai")}</span>Варианты<small>${TYPE_NAME[d.type].toLowerCase()}</small></div>Подбираю под профиль и тон сцены…<div class="thinking"><i></i><i></i><i></i></div></div>`;
+    if (d.phase === "opts") return `<div class="note fresh" data-for="${d.k}"><div class="who"><span class="av">${ico("ai")}</span>Варианты<small>${TYPE_NAME[d.type].toLowerCase()}</small></div>${d.why}
+      <div class="opts">${d.opts.map((o, i) => `<button class="opt" data-act="dv-pick" data-k="${d.k}" data-i="${i}">${esc(o)}</button>`).join("")}</div>
+      <div class="acts"><button class="chipbtn quiet" data-act="dv-drop" data-k="${d.k}">Оставить как есть</button></div></div>`;
+    return `<div class="note fresh" data-for="${d.k}"><div class="who"><span class="av">${ico("ai")}</span>Предложено в тексте<small>правка соавтора</small></div>Старое зачёркнуто, новое — цветом соавтора. Решите прямо здесь.
+      <div class="acts"><button class="chipbtn main" data-act="dv-accept" data-k="${d.k}">Принять</button><button class="chipbtn quiet" data-act="dv-drop" data-k="${d.k}">Вернуть как было</button></div></div>`;
+  }
+  if (d.kind === "check") return `<div class="note fresh ${d.ok ? "k-ok" : "k-stale"}" data-for="${d.k}"><div class="who"><span class="av">${ico(d.ok ? "check" : "clock")}</span>${d.ok ? "Сходится с профилем" : "Расходится с профилем"}<small>${PEOPLE[d.who].full}</small></div>
+      <div class="q">«${d.rule}»<small>Психологический профиль</small></div>${d.text}
+      <div class="acts">${d.ok ? "" : `<button class="chipbtn" data-act="dv-vars" data-k="${d.k}">Варианты реплики</button>`}<button class="chipbtn quiet" data-act="dv-drop" data-k="${d.k}">${d.ok ? "Понятно" : "Оставить"}</button></div></div>`;
+  return d.phase === "edit"
+    ? `<div class="note fresh k-mine" data-for="${d.k}"><div class="who"><span class="av">${ico("pencil")}</span>Заметка себе<small>видна только вам</small></div>${quote}<textarea class="mine-in" data-mine="${d.k}" placeholder="Что вернуть, проверить, переписать…"></textarea>
+      <div class="acts"><button class="chipbtn main" data-act="mine-save" data-k="${d.k}">Сохранить</button><button class="chipbtn quiet" data-act="dv-drop" data-k="${d.k}">Отмена</button></div></div>`
+    : `<div class="note k-mine" data-for="${d.k}"><div class="who"><span class="av">${ico("pencil")}</span>Заметка себе<small>сейчас</small></div><div class="mine-t">${esc(d.text)}</div>
+      <div class="acts"><button class="chipbtn quiet" data-act="dv-drop" data-k="${d.k}">Готово, убрать</button></div></div>`;
+}
+const dynOf = (k) => STATE.dyn.find((d) => d.k === k);
+function redrawNote(d) {
+  const old = $(`.note[data-for="${d.k}"]`);
+  if (old) old.outerHTML = dynNote(d); else $("#margin").insertAdjacentHTML("beforeend", dynNote(d));
+  requestAnimationFrame(layoutNotes);
+}
+function startVars(a, type) {
+  const who = speakerOf(a.p), opts = type === "dl" ? VARIANTS[who] : VARIANTS[type];
+  const d = { kind: "vars", phase: "think", k: a.k, sc: a.sc, type, old: a.span.textContent, opts,
+    why: type === "dl" ? `По профилю: ${PEOPLE[who].voice} Три варианта в этом голосе.` : "Три варианта того же действия — короче и тише." };
+  STATE.dyn.push(d); redrawNote(d); highlight(a.k);
+  setTimeout(() => { d.phase = "opts"; if (dynOf(d.k) && $(`.note[data-for="${d.k}"]`)) redrawNote(d); }, 1100);
+}
+function unwrap(k) {
+  const m = $(`#desk [data-a="${k}"]`); if (m) m.replaceWith(...m.childNodes);
+  STATE.dyn = STATE.dyn.filter((d) => d.k !== k);
+  const n = $(`.note[data-for="${k}"]`); if (n) { n.classList.add("gone"); setTimeout(() => { n.remove(); layoutNotes(); }, 360); }
+  nameMarks();
+}
+
+Object.assign(ACTIONS, {
+  "sc-go"(b, k) {
+    const n = Number(k);
+    if (!SCRIPT[n]) return toast(`Сцена ${n} в макете не написана — открыты сцены 13, 14 и 15.`);
+    if (STATE.scMode === "act") { STATE.sc = n; renderPath(); const sh = $(`#desk .script-body[data-sc="${n}"]`); sh.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+    STATE.sc = n; open("scene");
+  },
+  "sc-open"(b, k) { STATE.sc = Number(k); STATE.scMode = "scene"; open("scene"); },
+  "sc-mode"(b, k) {
+    STATE.scMode = k; open("scene");
+    if (k === "act") requestAnimationFrame(() => $(`#desk .script-body[data-sc="${STATE.sc}"]`).scrollIntoView({ block: "start" }));
+  },
+  rail(b, k) { STATE.rail = k; renderPath(); },
+  beat(b, k) {
+    const body = $(`#desk .script-body[data-sc="${STATE.sc}"]`), p = body.querySelector(`[data-beat="${k}"]`);
+    if (p) { p.scrollIntoView({ behavior: "smooth", block: "center" }); p.classList.remove("flash"); void p.offsetWidth; p.classList.add("flash"); return; }
+    const last = body.lastElementChild; body.focus(); placeCaret(last, true); markElt();
+    toast(`Бит ${k} ещё не написан: «${SCRIPT[STATE.sc].beats[k - 1]}». Курсор в конце сцены.`);
+  },
+  "sc-locked"(b, k) { toast(`Сцена ${k} утверждена. Откройте её и нажмите «Править» — изменение пройдёт через проверку последствий.`); },
+  "sc-unlock"() { SCRIPT[STATE.sc].unlocked = true; paint(); toast("Сцена снова в работе. Перед утверждением сверю её со сценами 14 и 22."); },
+  "elt-menu"() { const m = eltHost().querySelector(".elt-menu"); if (m) m.remove(); else eltMenu(); },
+  "elt-set"(b, k) { const p = curPara(); setType(p, k); touched(); },
+  "ask-about"(b, k) { hideCard(); $("#askctx").textContent = PEOPLE[k].full; $("#askin").placeholder = `Спросите о персонаже: ${PEOPLE[k].full}…`; $("#askin").focus(); },
+  fmt(b, k) { getSelection().removeAllRanges(); getSelection().addRange(selRange); document.execCommand(k); placeSelbar(); touched(); },
+  "sel-ask"() {
+    const t = selRange.toString().trim(); $("#selbar").hidden = true;
+    $("#askctx").textContent = `«${t.length > 28 ? t.slice(0, 28) + "…" : t}»`; $("#askin").placeholder = "Что сделать с выделенным?"; $("#askin").focus();
+  },
+  "sel-vars"() {
+    const p = paraOf(selRange.startContainer), type = typeOf(p);
+    if (!["dl", "ac", "par"].includes(type) || (type === "dl" && !VARIANTS[speakerOf(p)])) { $("#selbar").hidden = true; return toast("Варианты есть для описаний, ремарок и реплик Веры и Ани."); }
+    const a = anchorSel("sugg"); if (a) startVars(a, type);
+  },
+  "sel-check"() {
+    const p = paraOf(selRange.startContainer);
+    if (typeOf(p) !== "dl") { $("#selbar").hidden = true; return toast("С профилем сверяются реплики: выделите, что говорит персонаж."); }
+    const who = speakerOf(p), t = selRange.toString();
+    const a = anchorSel(""); if (!a) return;
+    const bad = who === "v" && /звон|просила|волнов|боюсь/i.test(t);
+    const d = { kind: "check", k: a.k, sc: a.sc, who, ok: !bad, old: a.span.textContent, rule: who === "v" ? "Никогда не говорит о тревоге прямо — только через заботу." : PEOPLE[who].voice,
+      text: bad ? "Здесь тревога звучит прямо. Можно сказать то же через заботу." : "Реплика звучит в голосе персонажа." };
+    STATE.dyn.push(d); redrawNote(d); highlight(a.k);
+  },
+  "sel-note"() {
+    const a = anchorSel("mine"); if (!a) return;
+    const d = { kind: "mine", phase: "edit", k: a.k, sc: a.sc, old: a.span.textContent, text: "" };
+    STATE.dyn.push(d); redrawNote(d); highlight(a.k);
+    requestAnimationFrame(() => $(`[data-mine="${a.k}"]`).focus());
+  },
+  "dv-pick"(b, k) {
+    const d = dynOf(k), m = $(`#desk [data-a="${k}"]`);
+    d.phase = "chosen"; d.pick = d.opts[Number(b.dataset.i)];
+    m.innerHTML = `<del>${esc(d.old)}</del> <ins>${esc(d.pick)}</ins>`; redrawNote(d); highlight(k); nameMarks();
+  },
+  "dv-accept"(b, k, note) {
+    const d = dynOf(k), m = $(`#desk [data-a="${k}"]`);
+    m.textContent = d.pick; m.classList.remove("sugg"); m.closest("p").classList.add("by-ai"); m.classList.add("flash");
+    STATE.dyn = STATE.dyn.filter((x) => x.k !== k);
+    resolveNote(note, "Принято", "Абзац отмечен тонкой чертой: в нём есть текст соавтора."); dropNote(note); nameMarks();
+  },
+  "dv-drop"(b, k) {
+    const d = dynOf(k), m = $(`#desk [data-a="${k}"]`);
+    if (d.kind === "vars" && d.phase === "chosen") m.textContent = d.old;
+    unwrap(k);
+  },
+  "dv-vars"(b, k) {
+    const d = dynOf(k), m = $(`#desk [data-a="${k}"]`);
+    STATE.dyn = STATE.dyn.filter((x) => x.k !== k); $(`.note[data-for="${k}"]`).remove();
+    m.className = "mark sugg"; startVars({ k, span: m, p: m.closest("p"), sc: d.sc }, "dl");
+  },
+  "mine-save"(b, k) {
+    const d = dynOf(k), v = $(`[data-mine="${k}"]`).value.trim();
+    if (!v) { $(`[data-mine="${k}"]`).focus(); return toast("Напишите пару слов — или нажмите «Отмена»."); }
+    d.phase = "saved"; d.text = v; redrawNote(d);
+  },
+});
+["dv-accept", "mine-save", "elt-set", "sc-unlock"].forEach((a) => SAVES.add(a));
+
+// Ввод в редакторе
+let editTimer;
+document.addEventListener("input", (e) => {
+  const body = e.target.closest && e.target.closest(".script-body[contenteditable=true]"); if (!body) return;
+  if (!body.querySelector(":scope > p")) { body.innerHTML = ""; body.append(blankP("ac")); placeCaret(body.firstChild, true); }
+  [...body.children].filter((x) => x.tagName !== "P").forEach((x) => { const p = blankP("ac"); p.classList.remove("blank"); p.textContent = x.textContent; x.replaceWith(p); });
+  const p = curPara(); if (!p) return;
+  syncBlank(p);
+  if (typeOf(p) === "ac" && /^(инт|нат)\.\s/i.test(p.textContent)) setType(p, "sh");
+  else suggest();
+  const sc = Number(body.dataset.sc);
+  if (SCRIPT[sc].st === "not_started") { SCRIPT[sc].st = "work"; $(".meta .pill").outerHTML = `<span class="pill in_progress"><i></i>В работе</span>`; }
+  markElt(); requestAnimationFrame(layoutNotes);
+  clearTimeout(editTimer); editTimer = setTimeout(() => { nameMarks(); saveScript(); renderPath(); }, 400);
+});
+document.addEventListener("keydown", (e) => {
+  const pop = $("#acpop");
+  if (!pop.hidden && acPara) {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); acSel = (acSel + (e.key === "ArrowDown" ? 1 : -1) + acItems.length) % acItems.length; pop.querySelectorAll("[data-ac]").forEach((x, i) => x.classList.toggle("on", i === acSel)); return; }
+    if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); acceptAc(acSel, e.key === "Enter"); return; }
+    if (e.key === "Escape") { e.preventDefault(); pop.hidden = true; acPara = null; return; }
+  }
+  const body = e.target.closest && e.target.closest(".script-body[contenteditable=true]"); if (!body) return;
+  const p = curPara(); if (!p) return;
+  const t = typeOf(p), empty = !p.textContent.length;
+  if (e.altKey && /^Digit[1-6]$/.test(e.code)) { e.preventDefault(); setType(p, SC_TYPES[Number(e.code.slice(5)) - 1][0]); touched(); return; }
+  if (e.key === "Tab") {
+    e.preventDefault();
+    if (e.shiftKey) { const i = SC_TYPES.findIndex(([x]) => x === t); setType(p, SC_TYPES[(i + SC_TYPES.length - 1) % SC_TYPES.length][0]); return; }
+    if (empty || !caretAtEnd(p)) { setType(p, ON_TAB[t]); return; }
+    const n = blankP(ON_TAB[t]); p.after(n); placeCaret(n, false); keepInView(n); markElt(); suggest(); return;
+  }
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    if (empty) { setType(p, ON_ENTER[t]); return; }
+    const sel = getSelection(); if (!sel.isCollapsed) sel.deleteFromDocument();
+    const atEnd = caretAtEnd(p), n = blankP(atEnd ? ON_ENTER[t] : t);
+    if (!atEnd) { const r = document.createRange(); r.setStart(sel.focusNode, sel.focusOffset); r.setEnd(p, p.childNodes.length); n.innerHTML = ""; n.append(r.extractContents()); syncBlank(n); syncBlank(p); if (!p.textContent) p.innerHTML = "<br>"; }
+    p.after(n); placeCaret(n, false); keepInView(n); markElt(); suggest(); touched(); requestAnimationFrame(layoutNotes);
+  }
+});
+document.addEventListener("paste", (e) => {
+  if (!e.target.closest || !e.target.closest(".script-body[contenteditable=true]")) return;
+  e.preventDefault(); document.execCommand("insertText", false, e.clipboardData.getData("text/plain"));
+});
+document.addEventListener("selectionchange", () => {
+  if (current !== "scene") return;
+  markElt(); placeSelbar();
+  const p = curPara(); if (!p || p !== acPara) { $("#acpop").hidden = true; acPara = null; }
+  const sc = p && Number(p.parentElement.dataset.sc);
+  if (sc && sc !== STATE.sc && STATE.scMode === "act") { STATE.sc = sc; renderPath(); }
+});
+document.addEventListener("focusin", (e) => { if (e.target.matches && e.target.matches(".script-body[contenteditable=true]")) requestAnimationFrame(suggest); });
+// Слои редактора не уводят фокус из текста
+["#selbar", "#acpop", "#elt", "#eltbar"].forEach((q) => document.addEventListener("mousedown", (e) => { if (e.target.closest(q) && !e.target.closest("textarea")) e.preventDefault(); }));
+document.addEventListener("click", (e) => { const i = e.target.closest("[data-ac]"); if (i) acceptAc(Number(i.dataset.ac), true); if (!e.target.closest("#elt, #eltbar")) document.querySelectorAll(".elt-menu").forEach((m) => m.remove()); });
+let hoverRaf = 0;
+document.addEventListener("mousemove", (e) => {
+  if (current !== "scene" || hoverRaf) return;
+  hoverRaf = requestAnimationFrame(() => {
+    hoverRaf = 0;
+    if (e.target.closest && e.target.closest("#pcard")) { clearTimeout(cardTimer); return; }
+    const hit = nameHits.find((h) => [...h.r.getClientRects()].some((r) => e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top - 2 && e.clientY <= r.bottom + 2));
+    clearTimeout(cardTimer);
+    if (hit && hit.k !== cardKey) cardTimer = setTimeout(() => showCard(hit.k, hit.r.getBoundingClientRect()), 280);
+    else if (!hit && cardKey) cardTimer = setTimeout(hideCard, 260);
+  });
+});
+$("#desk").addEventListener("scroll", () => { hideCard(); if (acPara) suggest(); if (!$("#selbar").hidden) placeSelbar(); });
 // Ссылка вида #scene/dark открывает нужный экран и тему сразу
 // Третья часть ссылки открывает экран в промежуточном состоянии: #d11/light/checklist
+// Состояния редактора для эталонных снимков: подсказка персонажа, карточка, панель выделения
+const SCENE_DEMO = {
+  typing() {
+    const body = $('#desk .script-body[data-sc="14"]'), last = body.lastElementChild, n = blankP("ch");
+    last.after(n); body.focus(); placeCaret(n, false); keepInView(n); markElt(); setTimeout(suggest, 500);
+  },
+  menu() { SCENE_DEMO.typing(); setTimeout(() => { $("#acpop").hidden = true; acPara = null; ACTIONS["elt-menu"](); }, 700); },
+  card() { const h = nameHits.find((x) => x.k === "v"); showCard("v", h.r.getBoundingClientRect()); },
+  select() {
+    const p = $('#desk .script-body[data-sc="14"] .dl'), r = document.createRange();
+    r.selectNodeContents(p); $('#desk .script-body[data-sc="14"]').focus();
+    getSelection().removeAllRanges(); getSelection().addRange(r);
+  },
+  vars() {
+    SCENE_DEMO.select(); placeSelbar(); ACTIONS["sel-vars"]();
+    setTimeout(() => ACTIONS["dv-pick"]({ dataset: { i: "2" } }, STATE.dyn[0].k), 1300);
+  },
+  heading() {
+    const body = $('#desk .script-body[data-sc="15"]'), p = body.lastElementChild;
+    setType(p, "sh"); p.textContent = "ИНТ. "; syncBlank(p); body.focus(); placeCaret(p, true); suggest();
+  },
+};
 const PRESETS = {
+  "scene/act": () => { STATE.scMode = "act"; },
+  "scene/empty": () => { STATE.sc = 15; },
+  "scene/typing": () => { STATE.demo = "typing"; },
+  "scene/card": () => { STATE.demo = "card"; },
+  "scene/menu": () => { STATE.demo = "menu"; },
+  "scene/select": () => { STATE.demo = "select"; },
+  "scene/vars": () => { STATE.demo = "vars"; },
+  "scene/heading": () => { STATE.sc = 15; STATE.demo = "heading"; },
   "new/blank": () => { STATE.way = "blank"; },
   "import/result": () => { STATE.imp = "result"; },
   "d11/checklist": () => { STATE.d11.answers = D11.map((q) => q.opts[0]); STATE.d11.own = D11.map(() => false); STATE.d11.checks = { want: true }; },
