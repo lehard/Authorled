@@ -1,0 +1,235 @@
+id,значение,источник,комментарий
+ED-01,есть,https://www.literatureandlatte.com/scrivener/overview,"Bold, italics в редакторе"
+ED-02,есть,https://www.literatureandlatte.com/scrivener/overview,
+ED-03,не проверено,,Подтверждения в открытых источниках не найдено
+ED-04,не проверено,,Подтверждения в открытых источниках не найдено
+ED-05,есть,https://scrivenerville.com/scrivener-software/scrivener-3-vs-2-features-comparison/,"Стили H1, H2 и свои стили"
+ED-06,есть,https://www.literatureandlatte.com/scrivener/overview,Списки в редакторе
+ED-07,есть,https://www.literatureandlatte.com/scrivener/overview,Стили для block quote
+ED-08,есть,https://www.literatureandlatte.com/scrivener/overview,Сноски; на iOS только сноски (см. literatureandlatte.com/scrivener/features)
+ED-09,частично,https://en.wikipedia.org/wiki/Scrivener_(software),Подтверждены ссылки между частями текста; внешние URL в источниках не названы
+ED-10,есть,https://www.literatureandlatte.com/scrivener/overview,
+ED-11,есть,https://www.literatureandlatte.com/scrivener/overview,
+ED-12,не проверено,,Подтверждения в открытых источниках не найдено
+ED-13,не проверено,,Подтверждения в открытых источниках не найдено
+ED-14,не проверено,,Подтверждения в открытых источниках не найдено
+ED-15,не проверено,,Подтверждения в открытых источниках не найдено
+ED-16,есть,https://scrivenerville.com/scrivener-software/scrivener-3-vs-2-features-comparison/,"Настоящие стили текста, работают с Compile"
+ED-17,не проверено,,Подтверждения в открытых источниках не найдено
+ED-18,не проверено,,Подтверждения в открытых источниках не найдено
+ED-19,не проверено,,Подтверждения в открытых источниках не найдено
+ED-20,не проверено,,Подтверждения в открытых источниках не найдено
+ED-21,есть,https://www.literatureandlatte.com/scrivener/overview,Поиск внутри документа
+ED-22,есть,https://www.literatureandlatte.com/scrivener/overview,Find and replace по проекту и документу
+ED-23,есть,https://www.literatureandlatte.com/scrivener/overview,"Quick Search и поиск по проекту; поля Title, Text, Notes, Synopsis, Keywords, Label, Status, Section Type (см. scrivenerville.com)"
+ED-24,не проверено,,Подтверждения в открытых источниках не найдено
+ED-25,не проверено,,Подтверждения в открытых источниках не найдено
+ED-26,частично,https://releasebot.io/updates/literature-and-latte/scrivener,Собственного ИИ нет; на macOS доступны системные Writing Tools Apple (ред. 3.4.0)
+ED-27,не проверено,,Подтверждения в открытых источниках не найдено
+ED-28,не проверено,,Подтверждения в открытых источниках не найдено
+ED-29,есть,https://www.literatureandlatte.com/scrivener/overview,Live word and character counts
+ED-30,не проверено,,Подтверждения нет
+ED-31,есть,https://www.literatureandlatte.com/scrivener/overview,Comments
+ED-32,есть,https://www.literatureandlatte.com/scrivener/overview,Annotations (inline)
+ED-33,не проверено,,Подтверждения в открытых источниках не найдено
+ED-34,частично,https://scrivenerville.com/scrivener-software/scrivener-3-vs-2-features-comparison/,"Linguistic Focus затемняет всё, кроме выбранного типа слов (наречия, глаголы...); только macOS, на Windows вместо него Dialogue Focus (см. forum.literatureandlatte.com, список отличий Mac/Windows). Штампов нет"
+ED-35,не проверено,,Подтверждения в открытых источниках не найдено
+ED-36,есть,https://www.literatureandlatte.com/scrivener/overview,Composition mode с темами и фонами
+ED-37,есть,https://app.indieauthormagazine.com/?p=2885,"Typewriter-настройка держит строку по центру; источник взят из существующих заметок проекта, не перепроверен"
+ED-38,не проверено,,Подтверждения в открытых источниках не найдено
+ED-39,частично,https://www.literatureandlatte.com/scrivener/features,Dark mode явно назван для iOS; для desktop в источниках не подтверждено
+ED-40,есть,https://www.literatureandlatte.com/scrivener/overview,Настраиваемые темы и фоны composition mode
+ED-41,не проверено,,Подтверждения в открытых источниках не найдено
+ED-42,не проверено,,Подтверждения в открытых источниках не найдено
+ED-43,есть,https://www.literatureandlatte.com/scrivener/features,Split editor до 4 документов на macOS/Windows; на iPad 2 через Quick Reference
+SC-01,есть,https://www.imore.com/scrivener-101-how-call-shots-screenplay-mode,"Режим сценария: элементы переключаются Tab/Return, подсказка следующего элемента"
+SC-02,есть,https://www.imore.com/scrivener-101-how-call-shots-screenplay-mode,"Режим сценария: элементы переключаются Tab/Return, подсказка следующего элемента"
+SC-03,есть,https://www.imore.com/scrivener-101-how-call-shots-screenplay-mode,"Режим сценария: элементы переключаются Tab/Return, подсказка следующего элемента"
+SC-04,есть,https://www.imore.com/scrivener-101-how-call-shots-screenplay-mode,"Режим сценария: элементы переключаются Tab/Return, подсказка следующего элемента"
+SC-05,не проверено,,Подтверждения в открытых источниках не найдено
+SC-06,есть,https://www.imore.com/scrivener-101-how-call-shots-screenplay-mode,"Режим сценария: элементы переключаются Tab/Return, подсказка следующего элемента"
+SC-07,не проверено,,Подтверждения в открытых источниках не найдено
+SC-08,не проверено,,Подтверждения в открытых источниках не найдено
+SC-09,не проверено,,Подтверждения в открытых источниках не найдено
+SC-10,не проверено,,Подтверждения в открытых источниках не найдено
+SC-11,есть,https://www.imore.com/scrivener-101-how-call-shots-screenplay-mode,Script Settings позволяют править элементы и создавать свои
+SC-12,есть,https://www.imore.com/scrivener-101-how-call-shots-screenplay-mode,Tab/Return между элементами
+SC-13,частично,https://www.imore.com/scrivener-101-how-call-shots-screenplay-mode,"Автодополнение имён/сцен заявлено в описании курса на Udemy (слабый источник), в справке не подтверждено"
+SC-14,частично,https://www.imore.com/scrivener-101-how-call-shots-screenplay-mode,Как SC-13: слабый источник
+SC-15,не проверено,,Подтверждения в открытых источниках не найдено
+SC-16,не проверено,,Подтверждения в открытых источниках не найдено
+SC-17,не проверено,,"Импорт Fountain есть (IO-02), но распознавание при вводе не подтверждено"
+SC-18,есть,https://forum.literatureandlatte.com/t/importing-fountain-syntax-to-scrivener-question/141882,Шаблоны Screenplay; также Stage Play (US) и (UK)
+SC-19,не проверено,,Подтверждения в открытых источниках не найдено
+SC-20,частично,https://forum.literatureandlatte.com/t/importing-fountain-syntax-to-scrivener-question/141882,Есть шаблоны Stage Play (US/UK); аудиодрамы нет в источниках
+SC-21,не проверено,,Подтверждения в открытых источниках не найдено
+SC-22,не проверено,,Подтверждения в открытых источниках не найдено
+SC-23,не проверено,,Подтверждения в открытых источниках не найдено
+SC-24,не проверено,,Подтверждения в открытых источниках не найдено
+SC-25,не проверено,,Подтверждения в открытых источниках не найдено
+SC-26,не проверено,,Подтверждения в открытых источниках не найдено
+SC-27,не проверено,,Подтверждения в открытых источниках не найдено
+SC-28,не проверено,,Подтверждения в открытых источниках не найдено
+SC-29,не проверено,,Подтверждения в открытых источниках не найдено
+SC-30,не проверено,,Подтверждения в открытых источниках не найдено
+SC-31,не проверено,,Подтверждения в открытых источниках не найдено
+SC-32,не проверено,,Подтверждения в открытых источниках не найдено
+ST-01,есть,https://www.literatureandlatte.com/scrivener/overview,"Binder: папки, подпапки, документы"
+ST-02,есть,https://www.literatureandlatte.com/scrivener/overview,
+ST-03,есть,https://www.literatureandlatte.com/scrivener/overview,Папки и подпапки
+ST-04,есть,https://www.literatureandlatte.com/scrivener/overview,"Labels, Status, keywords, custom fields"
+ST-05,есть,https://www.literatureandlatte.com/introducing-scrivener-3,Цвет метки (label) отражается на корк-доске
+ST-06,не проверено,,Подтверждения в открытых источниках не найдено
+ST-07,есть,https://en.wikipedia.org/wiki/Scrivener_(software),"Шаблоны проектов: сценарии, проза, нон-фикшн"
+ST-08,есть,https://www.literatureandlatte.com/scrivener/overview,Research рядом с рукописью
+ST-09,частично,https://www.literatureandlatte.com/scrivener/overview,Binder служит навигатором по документам; отдельного навигатора по сценам нет в источниках
+ST-10,есть,https://www.literatureandlatte.com/scrivener/overview,Outliner с колонками
+ST-11,есть,https://www.literatureandlatte.com/scrivener/overview,"Outliner: синопсис, счётчики слов, настраиваемые колонки метаданных"
+ST-12,есть,https://www.literatureandlatte.com/scrivener/overview,Synopsis у каждого документа
+ST-13,есть,https://scrivenerville.com/scrivener-software/scrivener-3-vs-2-features-comparison/,Метаданные можно использовать для компиляции выбранных секций; также Collections
+ST-14,не проверено,,Подтверждения в открытых источниках не найдено
+ST-15,не проверено,,Подтверждения в открытых источниках не найдено
+ST-16,не проверено,,Подтверждения в открытых источниках не найдено
+ST-17,не проверено,,Подтверждения в открытых источниках не найдено
+ST-18,не проверено,,Подтверждения в открытых источниках не найдено
+BD-01,есть,https://www.literatureandlatte.com/scrivener/overview,Corkboard с виртуальными карточками (на iOS только iPad)
+BD-02,есть,https://www.literatureandlatte.com/scrivener/overview,Freeform-режим корк-доски
+BD-03,не проверено,,Подтверждения в открытых источниках не найдено
+BD-04,не проверено,,Подтверждения в открытых источниках не найдено
+BD-05,не проверено,,Подтверждения в открытых источниках не найдено
+BD-06,есть,https://www.literatureandlatte.com/scrivener/features,Перемещение карточек меняет порядок рукописи
+BD-07,не проверено,,Подтверждения в открытых источниках не найдено
+BD-08,не проверено,,Подтверждения в открытых источниках не найдено
+BD-09,частично,https://www.literatureandlatte.com/introducing-scrivener-3,Карточки на цветных линиях по цвету метки позволяют вести сюжетные линии; не полноценная сетка
+BD-10,частично,https://www.literatureandlatte.com/introducing-scrivener-3,Через цветные линии меток
+BD-11,не проверено,,Подтверждения в открытых источниках не найдено
+BD-12,не проверено,,Подтверждения в открытых источниках не найдено
+BD-13,не проверено,,Подтверждения в открытых источниках не найдено
+BD-14,частично,https://www.literatureandlatte.com/scrivener/overview,"Mind-map делает отдельный продукт Scapple, не Scrivener"
+BD-15,не проверено,,Подтверждения в открытых источниках не найдено
+BI-01,есть,https://www.literatureandlatte.com/scrivener/overview,Шаблоны секций (character sheets)
+BI-02,частично,https://www.literatureandlatte.com/scrivener/overview,Свои шаблоны секций; готовых анкет в источниках не названо
+BI-03,есть,https://www.literatureandlatte.com/scrivener/overview,"Location sheets, папки Characters/Locations в Bookmarks (см. scrivenerville.com)"
+BI-04,не проверено,,Подтверждения в открытых источниках не найдено
+BI-05,не проверено,,Подтверждения в открытых источниках не найдено
+BI-06,частично,https://scrivenerville.com/scrivener-software/scrivener-3-vs-2-features-comparison/,"Custom metadata (дата, список, чекбокс) и свои шаблоны; типизированных сущностей нет"
+BI-07,не проверено,,Подтверждения в открытых источниках не найдено
+BI-08,частично,https://scrivenerville.com/scrivener-software/scrivener-3-vs-2-features-comparison/,Bookmarks и внутренние ссылки; графа связей нет
+BI-09,не проверено,,Подтверждения в открытых источниках не найдено
+BI-10,не проверено,,Подтверждения в открытых источниках не найдено
+BI-11,не проверено,,Подтверждения в открытых источниках не найдено
+BI-12,не проверено,,Подтверждения в открытых источниках не найдено
+BI-13,не проверено,,Подтверждения в открытых источниках не найдено
+BI-14,не проверено,,Подтверждения в открытых источниках не найдено
+BI-15,есть,https://www.literatureandlatte.com/scrivener/overview,"Импорт PDF, web-страниц, изображений, видео, звука; заметки на PDF и web"
+BI-16,не проверено,,Подтверждения в открытых источниках не найдено
+GO-01,есть,https://scrivenerville.com/scrivener-software/scrivener-3-vs-2-features-comparison/,"Дневные цели от дедлайна, цели сессии (см. literatureandlatte.com/scrivener/overview)"
+GO-02,есть,https://www.literatureandlatte.com/scrivener/overview,Цели рукописи/секций/сессии
+GO-03,не проверено,,Подтверждения в открытых источниках не найдено
+GO-04,частично,https://www.literatureandlatte.com/scrivener/overview,Writing History показывает выработку по дням; календаря письма нет
+GO-05,не проверено,,Подтверждения в открытых источниках не найдено
+GO-06,не проверено,,Подтверждения в открытых источниках не найдено
+GO-07,не проверено,,Подтверждения в открытых источниках не найдено
+GO-08,не проверено,,Подтверждения в открытых источниках не найдено
+GO-09,есть,https://scrivenerville.com/scrivener-software/scrivener-3-vs-2-features-comparison/,Оценка времени чтения и число страниц в Project Statistics
+GO-10,частично,https://scrivenerville.com/scrivener-software/scrivener-3-vs-2-features-comparison/,"Writing History, экспорт статистики в CSV; графиков в источниках нет"
+VE-01,есть,https://www.literatureandlatte.com/scrivener/overview,Автосохранение
+VE-02,есть,https://www.literatureandlatte.com/scrivener/overview,Snapshots
+VE-03,есть,https://www.literatureandlatte.com/scrivener/overview,Compare snapshots
+VE-04,не проверено,,Подтверждения в открытых источниках не найдено
+VE-05,есть,https://www.literatureandlatte.com/scrivener/features,Восстановление из snapshot
+VE-06,не проверено,,Подтверждения в открытых источниках не найдено
+VE-07,не проверено,,Подтверждения в открытых источниках не найдено
+VE-08,не проверено,,Подтверждения в открытых источниках не найдено
+VE-09,не проверено,,Подтверждения в открытых источниках не найдено
+VE-10,не проверено,,Подтверждения в открытых источниках не найдено
+VE-11,не проверено,,Подтверждения в открытых источниках не найдено
+CO-01,нет,https://www.literatureandlatte.com/scrivener/features,В списке функций нет совместной работы; прямого отрицания не найдено
+CO-02,нет,https://www.literatureandlatte.com/scrivener/features,В списке функций нет совместной работы; прямого отрицания не найдено
+CO-03,нет,https://www.literatureandlatte.com/scrivener/features,В списке функций нет совместной работы; прямого отрицания не найдено
+CO-04,нет,https://www.literatureandlatte.com/scrivener/features,В списке функций нет совместной работы; прямого отрицания не найдено
+CO-05,нет,https://www.literatureandlatte.com/scrivener/features,В списке функций нет совместной работы; прямого отрицания не найдено
+CO-06,нет,https://www.literatureandlatte.com/scrivener/features,В списке функций нет совместной работы; прямого отрицания не найдено
+CO-07,нет,https://www.literatureandlatte.com/scrivener/features,В списке функций нет совместной работы; прямого отрицания не найдено
+AI-01,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-02,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-03,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-04,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-05,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-06,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-07,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-08,частично,https://releasebot.io/updates/literature-and-latte/scrivener,"Только системные Writing Tools Apple на macOS (3.4.0), не часть Scrivener"
+AI-09,частично,https://releasebot.io/updates/literature-and-latte/scrivener,Через системные Writing Tools Apple на macOS
+AI-10,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-11,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-12,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-13,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-14,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-15,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-16,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-17,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-18,частично,https://releasebot.io/updates/literature-and-latte/scrivener,Через системные Writing Tools Apple на macOS
+AI-19,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-20,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-21,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-22,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-23,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-24,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-25,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-26,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-27,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-28,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-29,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-30,нет,https://releasebot.io/updates/literature-and-latte/scrivener,3.4.0: «Scrivener itself contains no AI»
+AI-31,нет,https://releasebot.io/updates/literature-and-latte/scrivener,Нет ИИ; системные функции ОС не проверялись
+AI-32,нет,https://releasebot.io/updates/literature-and-latte/scrivener,Нет ИИ; системные функции ОС не проверялись
+IO-01,есть,https://www.literatureandlatte.com/scrivener/overview,
+IO-02,есть,https://forum.literatureandlatte.com/t/importing-fountain-syntax-to-scrivener-question/141882,Перетаскиванием в Binder; можно разбить по сценам
+IO-03,есть,https://www.literatureandlatte.com/scrivener/overview,"Import & Split по сценам (см. forum.literatureandlatte.com, Fountain)"
+IO-04,не проверено,,Подтверждения в открытых источниках не найдено
+IO-05,есть,https://www.literatureandlatte.com/scrivener/overview,Собственный формат; импорт старых проектов
+IO-06,есть,https://www.literatureandlatte.com/scrivener/overview,Plain text
+IO-07,есть,https://www.literatureandlatte.com/scrivener/overview,Compile
+IO-08,есть,https://www.literatureandlatte.com/scrivener/overview,
+IO-09,есть,https://en.wikipedia.org/wiki/Scrivener_(software),Экспорт Fountain; в справке L&L не подтверждено
+IO-10,есть,https://www.literatureandlatte.com/scrivener/overview,Final Draft
+IO-11,есть,https://www.literatureandlatte.com/introducing-scrivener-3,ePub 3; Kindle (.mobi) убран из Compile в 3.5.0 (см. releasebot.io)
+IO-12,частично,https://www.literatureandlatte.com/scrivener/overview,Печать и PDF с настраиваемым форматом; вёрстки под trim size как в Atticus нет в источниках
+IO-13,есть,https://www.literatureandlatte.com/introducing-scrivener-3,Через MultiMarkdown/Pandoc
+IO-14,есть,https://writerunboxed.com/2018/04/05/scrivener-3s-new-approach-to-compile/,"Compile: форматы, section layouts, section types"
+IO-15,частично,https://www.literatureandlatte.com/scrivener/overview,Печать «по правилам подачи рукописей»; шаблон Shunn явно не назван
+IO-16,не проверено,,Подтверждения в открытых источниках не найдено
+IO-17,нет,https://www.literatureandlatte.com/scrivener/features,Публикации на площадках нет в списке функций
+IO-18,нет,https://www.literatureandlatte.com/scrivener/features,Публикации на площадках нет в списке функций
+IO-19,нет,https://www.literatureandlatte.com/scrivener/features,Публикации на площадках нет в списке функций
+IO-20,нет,https://www.literatureandlatte.com/scrivener/features,Публикации на площадках нет в списке функций
+IO-21,нет,https://www.literatureandlatte.com/scrivener/features,Публикации на площадках нет в списке функций
+IO-22,частично,https://writerunboxed.com/2018/04/05/scrivener-3s-new-approach-to-compile/,Обложка и оглавление в ebook-компиляции
+PL-01,нет,https://www.literatureandlatte.com/scrivener/faqs,"Платформы: macOS, Windows, iOS"
+PL-02,есть,https://www.literatureandlatte.com/scrivener/faqs,3.1.6 для Windows 10+
+PL-03,есть,https://www.literatureandlatte.com/scrivener/faqs,3.5.2 для macOS 11+
+PL-04,нет,https://en.wikipedia.org/wiki/Scrivener_(software),Официального Linux нет; AppImage неофициальный
+PL-05,есть,https://www.literatureandlatte.com/scrivener/faqs,"iOS 1.2.4, отдельная лицензия"
+PL-06,нет,https://www.literatureandlatte.com/scrivener/faqs,"Платформы: macOS, Windows, iOS"
+PL-07,есть,https://www.literatureandlatte.com/scrivener/features,Локальное приложение
+PL-08,частично,https://forum.literatureandlatte.com/t/syncing-with-dropbox-for-ios-and-also-icloud-for-mac/41844,Dropbox для iOS; iCloud только между Mac; бывают конфликты файлов
+PL-09,частично,https://forum.literatureandlatte.com/t/syncing-with-dropbox-for-ios-and-also-icloud-for-mac/41844,"Проект .scriv — папка, не единый файл; формат документов в источниках не подтверждён"
+PL-10,есть,https://www.literatureandlatte.com/scrivener/overview,Авто-бэкапы при открытии/закрытии
+BZ-01,нет,https://www.literatureandlatte.com/scrivener/faqs,Только триал
+BZ-02,нет,https://www.literatureandlatte.com/scrivener/faqs,Разовая покупка; платный апгрейд следующей мажорной версии
+BZ-03,есть,https://www.literatureandlatte.com/scrivener/faqs,Отдельные лицензии на платформу; iOS 23.99 USD (store)
+BZ-04,есть,https://www.literatureandlatte.com/scrivener/faqs,30 дней использования; на iOS триала нет
+BZ-05,не проверено,,Подтверждения в открытых источниках не найдено
+BZ-06,не проверено,,Подтверждения в открытых источниках не найдено
+BZ-07,есть,https://www.literatureandlatte.com/introducing-scrivener-3,"Обновлённый туториал, руководства, «What's New»"
+BZ-08,не проверено,,Подтверждения в открытых источниках не найдено
+NEW-SCR-1,есть,https://scrivenerville.com/scrivener-software/scrivener-3-vs-2-features-comparison/,"Linguistic Focus (подсветка частей речи, macOS)"
+NEW-SCR-2,есть,https://www.literatureandlatte.com/scrivener/overview,Collections и smart collections
+NEW-SCR-3,есть,https://www.literatureandlatte.com/introducing-scrivener-3,Copyholders: до четырёх документов в главном окне
+NEW-SCR-4,есть,https://writerunboxed.com/2018/04/05/scrivener-3s-new-approach-to-compile/,Compile: section types и section layouts
+NEW-SCR-5,есть,https://scrivenerville.com/scrivener-software/scrivener-3-vs-2-features-comparison/,"Project Statistics: частота слов, средняя длина предложения, страницы"
+NEW-SCR-6,есть,https://scrivenerville.com/scrivener-software/scrivener-3-vs-2-features-comparison/,Quick Search по полям проекта
+NEW-SCR-7,есть,https://www.literatureandlatte.com/introducing-scrivener-3,Bookmarks (заменили Project Notes/References/Favorites)
+NEW-SCR-8,есть,https://www.literatureandlatte.com/introducing-scrivener-3,"Custom metadata: даты, списки, чекбоксы"
+NEW-SCR-9,есть,https://www.literatureandlatte.com/scrivener/overview,Scrivenings: сшитый просмотр нескольких документов
+NEW-SCR-10,есть,https://releasebot.io/updates/literature-and-latte/scrivener,Sync with External Folder

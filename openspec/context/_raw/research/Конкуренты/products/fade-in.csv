@@ -1,0 +1,235 @@
+id,значение,источник,комментарий
+ED-01,есть,https://www.fadeinpro.com/kb/content/1/166/en/how-to-make-scene-headings-bold.html,Жирное начертание в справке (заголовки сцен)
+ED-02,есть,https://www.fadeinpro.com/kb/content/3/23/en/bold-scene-headings-appear-as-bold_italic-in-pdf-linux.html,Курсив подразумевается статьёй про bold-italic в PDF
+ED-03,не проверено,,Подтверждения в открытых источниках не найдено
+ED-04,не проверено,,Подтверждения в открытых источниках не найдено
+ED-05,не проверено,,Подтверждения в открытых источниках не найдено
+ED-06,не проверено,,Подтверждения в открытых источниках не найдено
+ED-07,не проверено,,Подтверждения в открытых источниках не найдено
+ED-08,не проверено,,Подтверждения в открытых источниках не найдено
+ED-09,частично,https://www.fadeinpro.com/page.pl?content=features,Закладки и ссылки внутри документа; внешние гиперссылки не проверены
+ED-10,есть,https://www.fadeinpro.com/kb/content/1/199/en/how-to-insert-an-image.html,"JPEG и PNG, масштаб; также на титульной странице"
+ED-11,не проверено,,Подтверждения в открытых источниках не найдено
+ED-12,есть,https://www.fadeinpro.com/kb/content/3/14/en/what-parameters-are-available-to-customize-an-element-style.html,Выравнивание/выключка в параметрах стиля элемента
+ED-13,есть,https://www.fadeinpro.com/kb/content/3/14/en/what-parameters-are-available-to-customize-an-element-style.html,Отступы слева/справа/первой строки
+ED-14,есть,https://www.fadeinpro.com/kb/content/3/14/en/what-parameters-are-available-to-customize-an-element-style.html,Межстрочный интервал и отступ перед абзацем
+ED-15,есть,https://www.fadeinpro.com/kb/content/3/1/en/how-do-i-change-the-font-for-an-entire-screenplay.html,Шрифт всего документа; «extensive font and Unicode support» (https://www.fadeinpro.com/page.pl?content=features)
+ED-16,есть,https://www.fadeinpro.com/kb/content/3/195/en/creating-a-custom-element-style.html,Пользовательские стили элементов
+ED-17,не проверено,,Подтверждения в открытых источниках не найдено
+ED-18,не проверено,,Подтверждения в открытых источниках не найдено
+ED-19,частично,https://www.fadeinpro.com/kb/content/1/160/en/unwanted-autocorrections.html,Автозамена (Preferences > Editing) есть; неразрывные пробелы не проверены
+ED-20,есть,https://www.fadeinpro.com/kb/content/1/160/en/unwanted-autocorrections.html,Edit > Undo упомянут в справке
+ED-21,есть,https://www.fadeinpro.com/page.pl?content=version_notes,Панель Find (5.0.0: Find panel shortcut populates current selection)
+ED-22,не проверено,,Подтверждения в открытых источниках не найдено
+ED-23,не проверено,,Подтверждения в открытых источниках не найдено
+ED-24,не проверено,,Подтверждения в открытых источниках не найдено
+ED-25,есть,https://www.fadeinpro.com/page.pl?content=features,"Live и on-demand проверка орфографии, пользовательские словари"
+ED-26,нет,https://www.fadeinpro.com/kb/content/1/94/en/does-fade-in-include-a-grammar-checker.html,Грамматики нет намеренно; в 5.0.11 удалена интеграция с Grammarly (https://www.fadeinpro.com/page.pl?content=version_notes)
+ED-27,частично,https://www.fadeinpro.com/kb/content/1/16/en/dictionaries-for-additional-languages.html,Орфография русского через сторонние словари (.dic/.aff); грамматики нет
+ED-28,есть,https://www.fadeinpro.com/page.pl?content=comparison,"Thesaurus: Yes; по умолчанию Merriam-Webster (5.0.8, https://www.fadeinpro.com/page.pl?content=version_notes)"
+ED-29,есть,https://www.fadeinpro.com/kb/content/1/171/en/word-count-of-the-current-document.html,File > This Session и Statistics Report; в 5.0 добавлена цель по словам
+ED-30,не проверено,,Подтверждения в открытых источниках не найдено
+ED-31,частично,https://www.fadeinpro.com/page.pl?content=features,Sticky notes; заметки в Navigator (5.0.0); ответов-тредов не проверено
+ED-32,есть,https://www.fadeinpro.com/page.pl?content=version_notes,Заметки и закладки в Navigator (5.0.0)
+ED-33,частично,https://www.fadeinpro.com/page.pl?content=features,Word-use frequency для поиска часто используемых слов; подсветки в тексте не подтверждено
+ED-34,не проверено,,Подтверждения в открытых источниках не найдено
+ED-35,не проверено,,Подтверждения в открытых источниках не найдено
+ED-36,есть,https://www.fadeinpro.com/kb/content/1/40/en/full-screen-mode.html,View > Full Screen; page-only режим без отвлечений (https://www.fadeinpro.com/page.pl?content=features)
+ED-37,не проверено,,Подтверждения в открытых источниках не найдено
+ED-38,есть,https://www.fadeinpro.com/page.pl?content=features,Focused writing mode: всё кроме текущего растворяется
+ED-39,есть,https://www.fadeinpro.com/kb/content/1/132/en/does-fade-in-have-a-dark-mode.html,Custom Page Colors в т.ч. тёмный режим; улучшенный dark mode в 5.0
+ED-40,есть,https://www.fadeinpro.com/kb/content/1/132/en/does-fade-in-have-a-dark-mode.html,"Пользовательские цвета страницы, цвет курсора (5.0.12)"
+ED-41,не проверено,,Подтверждения в открытых источниках не найдено
+ED-42,не проверено,,Подтверждения в открытых источниках не найдено
+ED-43,частично,https://www.fadeinpro.com/page.pl?content=version_notes,"Разделение и склейка вкладок (tab splitting/joining), 5.0.2"
+SC-01,есть,https://www.fadeinpro.com/page.pl?content=features,Автопереход заголовок сцены - действие - реплика; полный набор стандартных стилей
+SC-02,есть,https://www.fadeinpro.com/page.pl?content=features,см. SC-01
+SC-03,есть,https://www.fadeinpro.com/page.pl?content=features,см. SC-01
+SC-04,есть,https://www.fadeinpro.com/page.pl?content=features,см. SC-01
+SC-05,есть,https://www.fadeinpro.com/page.pl?content=version_notes,Parenthetical как отдельный элемент (упомянут в 5.0.12)
+SC-06,есть,https://www.fadeinpro.com/page.pl?content=features,Переходы входят в набор стандартных стилей экранного сценария
+SC-07,не проверено,,Подтверждения в открытых источниках не найдено
+SC-08,есть,https://www.fadeinpro.com/kb/content/3/55/en/dual-dialogue.html,Format > Dual Dialogue; редактируемый (по таблице: Yes)
+SC-09,не проверено,,Подтверждения в открытых источниках не найдено
+SC-10,не проверено,,Подтверждения в открытых источниках не найдено
+SC-11,есть,https://www.fadeinpro.com/kb/content/3/195/en/creating-a-custom-element-style.html,Пользовательские элементы со своим Tab/Enter поведением
+SC-12,есть,https://www.fadeinpro.com/kb/content/3/156/en/enter-and-tab-key-behavior.html,Настраиваемое поведение Enter и Tab
+SC-13,есть,https://www.fadeinpro.com/page.pl?content=features,"Автодополнение имён персонажей, списки настраиваются"
+SC-14,есть,https://www.fadeinpro.com/page.pl?content=features,Автодополнение локаций
+SC-15,есть,https://www.fadeinpro.com/page.pl?content=features,"Списки INT./EXT. и времени (DAY, NIGHT)"
+SC-16,есть,https://www.fadeinpro.com/kb/content/3/183/en/how-to-remove-more-and-continued-from-the-page.html,(MORE) и (CONT'D) настраиваются; сброс корректировки строк (5.0.11)
+SC-17,частично,https://www.fadeinpro.com/page.pl?content=version_notes,Есть встроенный Fountain-редактор (ускоренное автообновление в 5.0.12); разметка в обычном вводе не проверена
+SC-18,есть,https://www.fadeinpro.com/page.pl?content=download,"Шаблоны Cole and Haag, Warner Bros., Final Draft"
+SC-19,не проверено,,Подтверждения в открытых источниках не найдено
+SC-20,есть,https://www.fadeinpro.com/kb/content/3/61/en/can-fade-in-be-used-for-other-types-of-scripts-such-as-stage-plays-radio-plays-etc.html,"Шаблоны screenplay, teleplay, stage play; радио и мультимедиа — скачиваются"
+SC-21,есть,https://www.fadeinpro.com/page.pl?content=comparison,Television templates: Yes
+SC-22,есть,https://www.fadeinpro.com/page.pl?content=comparison,Scene timing: Yes; пагинация по стандарту
+SC-23,есть,https://www.fadeinpro.com/page.pl?content=version_notes,"Нумерация сцен и элементов, редактирование номеров (5.0.0)"
+SC-24,есть,https://www.fadeinpro.com/page.pl?content=features,Блокировка страниц и сцен
+SC-25,есть,https://www.fadeinpro.com/page.pl?content=features,Цветные ревизионные страницы
+SC-26,есть,https://www.fadeinpro.com/kb/content/1/141/en/does-fade-in-have-a-track-changes-feature.html,Маркер в поле (по умолчанию звёздочка) на изменённых строках
+SC-27,есть,https://www.fadeinpro.com/kb/content/3/86/en/creating-a-title-page.html,Редактор титульной страницы
+SC-28,есть,https://www.fadeinpro.com/page.pl?content=features,"Breakdowns, reports and tagging"
+SC-29,есть,https://www.fadeinpro.com/page.pl?content=features,"Отчёты по сценам, персонажам, локациям; HTML и CSV"
+SC-30,нет,https://www.fadeinpro.com/kb/content/1/85/en/export-to-movie-magic-scheduling-or-movie-magic-budgeting.html,Прямой экспорт в Movie Magic невозможен (закрытый .sex); отчёты можно выгрузить в CSV
+SC-31,частично,https://www.fadeinpro.com/page.pl?content=features,Изображения в сценарии и на титульной; раскадровки нет
+SC-32,есть,https://www.fadeinpro.com/kb/content/1/159/en/additional-table-read-voices.html,Table Read: голоса ОС (на Linux espeak-ng)
+ST-01,частично,https://www.fadeinpro.com/page.pl?content=features,Навигатор: вложенные последовательности; частей/глав прозы нет
+ST-02,есть,https://www.fadeinpro.com/page.pl?content=features,Перестановка сцен в Navigator
+ST-03,частично,https://www.fadeinpro.com/page.pl?content=features,Вложенные sequences; предельная глубина не проверена
+ST-04,частично,https://www.fadeinpro.com/page.pl?content=features,"Цветовая разметка сюжетных точек, тем, персонажей; статусов как таковых нет в источнике"
+ST-05,есть,https://www.fadeinpro.com/page.pl?content=features,Цветовая кодировка сцен и элементов
+ST-06,не проверено,,Подтверждения в открытых источниках не найдено
+ST-07,частично,https://www.fadeinpro.com/page.pl?content=download,"Шаблоны форматов сценария, пьесы, рукописи (манускрипт для прозы); по жанрам нет"
+ST-08,не проверено,,Подтверждения в открытых источниках не найдено
+ST-09,есть,https://www.fadeinpro.com/page.pl?content=features,Navigator; настраиваемый (CMP)
+ST-10,не проверено,,Подтверждения в открытых источниках не найдено
+ST-11,частично,https://www.fadeinpro.com/page.pl?content=comparison,Customizable navigator: Yes; колонки метаданных не описаны
+ST-12,частично,https://www.fadeinpro.com/page.pl?content=features,Index cards: организация по сценам и карточкам; поле синопсиса не проверено
+ST-13,нет,https://www.fadeinpro.com/page.pl?content=features,Компиляции частей в списке функций нет
+ST-14,не проверено,,Подтверждения в открытых источниках не найдено
+ST-15,не проверено,,Подтверждения в открытых источниках не найдено
+ST-16,не проверено,,Подтверждения в открытых источниках не найдено
+ST-17,не проверено,,Подтверждения в открытых источниках не найдено
+ST-18,не проверено,,Подтверждения в открытых источниках не найдено
+BD-01,есть,https://www.fadeinpro.com/page.pl?content=version_notes,"Index cards: перетаскивание, цвет карточек (5.0.12)"
+BD-02,не проверено,,Подтверждения в открытых источниках не найдено
+BD-03,не проверено,,Подтверждения в открытых источниках не найдено
+BD-04,не проверено,,Подтверждения в открытых источниках не найдено
+BD-05,не проверено,,Подтверждения в открытых источниках не найдено
+BD-06,частично,https://www.fadeinpro.com/page.pl?content=version_notes,Index cards связаны со сценами (перетаскивание); детали не проверены
+BD-07,не проверено,,Подтверждения в открытых источниках не найдено
+BD-08,не проверено,,Подтверждения в открытых источниках не найдено
+BD-09,не проверено,,Подтверждения в открытых источниках не найдено
+BD-10,не проверено,,Подтверждения в открытых источниках не найдено
+BD-11,не проверено,,Подтверждения в открытых источниках не найдено
+BD-12,не проверено,,Подтверждения в открытых источниках не найдено
+BD-13,не проверено,,Подтверждения в открытых источниках не найдено
+BD-14,не проверено,,Подтверждения в открытых источниках не найдено
+BD-15,не проверено,,Подтверждения в открытых источниках не найдено
+BI-01,частично,https://www.fadeinpro.com/page.pl?content=features,"Списки персонажей и локаций, умная смена имён; полноценных карточек нет"
+BI-02,не проверено,,Подтверждения в открытых источниках не найдено
+BI-03,не проверено,,Подтверждения в открытых источниках не найдено
+BI-04,не проверено,,Подтверждения в открытых источниках не найдено
+BI-05,не проверено,,Подтверждения в открытых источниках не найдено
+BI-06,не проверено,,Подтверждения в открытых источниках не найдено
+BI-07,не проверено,,Подтверждения в открытых источниках не найдено
+BI-08,не проверено,,Подтверждения в открытых источниках не найдено
+BI-09,не проверено,,Подтверждения в открытых источниках не найдено
+BI-10,не проверено,,Подтверждения в открытых источниках не найдено
+BI-11,не проверено,,Подтверждения в открытых источниках не найдено
+BI-12,частично,https://www.fadeinpro.com/page.pl?content=features,Умная автоматическая смена имён персонажа; псевдонимы не проверены
+BI-13,не проверено,,Подтверждения в открытых источниках не найдено
+BI-14,не проверено,,Подтверждения в открытых источниках не найдено
+BI-15,не проверено,,Подтверждения в открытых источниках не найдено
+BI-16,не проверено,,Подтверждения в открытых источниках не найдено
+GO-01,частично,https://www.fadeinpro.com/page.pl?content=version_notes,Цель по словам в This Session (5.0.0); дневная цель не проверена
+GO-02,не проверено,,Подтверждения в открытых источниках не найдено
+GO-03,не проверено,,Подтверждения в открытых источниках не найдено
+GO-04,не проверено,,Подтверждения в открытых источниках не найдено
+GO-05,частично,https://www.fadeinpro.com/page.pl?content=comparison,Session statistics: Yes
+GO-06,частично,https://www.fadeinpro.com/page.pl?content=features,Dialogue Tuner: все реплики одного персонажа в одном месте; отчёт по персонажам
+GO-07,есть,https://www.fadeinpro.com/page.pl?content=features,"Отчёты по сценам, персонажам и локациям"
+GO-08,не проверено,,Подтверждения в открытых источниках не найдено
+GO-09,есть,https://www.fadeinpro.com/page.pl?content=comparison,Scene timing: Yes
+GO-10,не проверено,,Подтверждения в открытых источниках не найдено
+VE-01,есть,https://www.fadeinpro.com/kb/content/1/57/en/where-are-autosave-files-located.html,Периодические резервные копии (Preferences > General)
+VE-02,частично,https://www.fadeinpro.com/page.pl?content=features,Fade In Access: версионирование; снимков вручную в десктопе не подтверждено
+VE-03,есть,https://www.fadeinpro.com/kb/content/1/141/en/does-fade-in-have-a-track-changes-feature.html,Document > Compare to Previous: добавления и удаления подсвечиваются
+VE-04,частично,https://www.fadeinpro.com/page.pl?content=comparison,Scene versions: Yes; веток целого документа нет
+VE-05,частично,https://www.fadeinpro.com/page.pl?content=features,Access: история версий; Recover Backup в десктопе
+VE-06,частично,https://www.fadeinpro.com/page.pl?content=features,Access: версионирование и бэкап
+VE-07,нет,https://www.fadeinpro.com/kb/content/1/141/en/does-fade-in-have-a-track-changes-feature.html,Track Changes нет; есть индустриальная ревизионная маркировка и Compare
+VE-08,нет,https://www.fadeinpro.com/kb/content/1/141/en/does-fade-in-have-a-track-changes-feature.html,следует из отсутствия track changes
+VE-09,не проверено,,Подтверждения в открытых источниках не найдено
+VE-10,частично,https://www.fadeinpro.com/kb/content/1/154/en/how-to-send-a-document-to-someone-to-read.html,"Access: публикация PDF по ссылке с контролем скачивания, копирования и печати"
+VE-11,частично,https://www.fadeinpro.com/kb/content/1/154/en/how-to-send-a-document-to-someone-to-read.html,Опубликованный PDF только для чтения (Access)
+CO-01,есть,https://www.fadeinpro.com/kb/content/1/123/en/methods-of-collaborating.html,"Fade In Access: совместная работа, в т.ч. одновременно; устаревшая реалтайм-сессия включается в настройках"
+CO-02,не проверено,,Подтверждения в открытых источниках не найдено
+CO-03,не проверено,,Подтверждения в открытых источниках не найдено
+CO-04,не проверено,,Подтверждения в открытых источниках не найдено
+CO-05,не проверено,,Подтверждения в открытых источниках не найдено
+CO-06,не проверено,,Подтверждения в открытых источниках не найдено
+CO-07,не проверено,,Подтверждения в открытых источниках не найдено
+AI-01,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-02,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-03,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-04,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-05,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-06,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-07,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-08,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-09,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-10,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-11,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-12,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-13,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-14,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-15,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-16,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-17,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-18,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-19,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-20,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-21,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-22,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-23,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-24,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-25,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-26,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-27,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-28,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-29,не проверено,,Политика по данным не найдена
+AI-30,нет,https://www.fadeinpro.com/,Главная: «made by humans for human writers»; в списках функций ИИ нет
+AI-31,частично,https://www.fadeinpro.com/kb/content/1/159/en/additional-table-read-voices.html,"Table Read использует системные голоса ОС, не ИИ-голоса"
+AI-32,нет,https://www.fadeinpro.com/page.pl?content=version_notes,Автоперевод вставляемого текста откатили (5.0.11)
+IO-01,есть,https://www.fadeinpro.com/page.pl?content=version_notes,Импорт и экспорт .docx с 5.0.14 (2026-09-20); .doc не поддерживается
+IO-02,есть,https://www.fadeinpro.com/page.pl?content=features,Импорт Fountain
+IO-03,есть,https://www.fadeinpro.com/kb/content/1/44/en/can-fade-in-open-final-draft-screenplays.html,FDX: импорт и экспорт; .fdr только импорт
+IO-04,есть,https://www.fadeinpro.com/kb/content/1/95/en/why-is-my-pdf-file-not-being-imported.html,Импорт PDF (со своими ограничениями)
+IO-05,есть,https://www.fadeinpro.com/page.pl?content=features,Scrivener в списке поддерживаемых форматов
+IO-06,частично,https://www.fadeinpro.com/page.pl?content=features,Текст и HTML есть; Markdown не подтверждён
+IO-07,есть,https://www.fadeinpro.com/page.pl?content=version_notes,.docx и RTF экспорт
+IO-08,есть,https://www.fadeinpro.com/page.pl?content=features,"Прямой вывод в PDF, пакетные водяные знаки"
+IO-09,есть,https://www.fadeinpro.com/page.pl?content=comparison,Fountain support: Yes (импорт и экспорт)
+IO-10,есть,https://www.fadeinpro.com/kb/content/1/44/en/can-fade-in-open-final-draft-screenplays.html,FDX импорт и экспорт
+IO-11,есть,https://www.fadeinpro.com/page.pl?content=comparison,EPUB export: Yes
+IO-12,не проверено,,Подтверждения в открытых источниках не найдено
+IO-13,не проверено,,Подтверждения в открытых источниках не найдено
+IO-14,не проверено,,Подтверждения в открытых источниках не найдено
+IO-15,частично,https://www.fadeinpro.com/page.pl?content=download,Шаблоны рукописи для прозы; Shunn-формат не подтверждён
+IO-16,не проверено,,Подтверждения в открытых источниках не найдено
+IO-17,нет,https://www.fadeinpro.com/page.pl?content=features,"В списке функций нет публикации, монетизации, читательской аудитории и обложек; Access «publishing» — публикация PDF по ссылке"
+IO-18,нет,https://www.fadeinpro.com/page.pl?content=features,"В списке функций нет публикации, монетизации, читательской аудитории и обложек; Access «publishing» — публикация PDF по ссылке"
+IO-19,нет,https://www.fadeinpro.com/page.pl?content=features,"В списке функций нет публикации, монетизации, читательской аудитории и обложек; Access «publishing» — публикация PDF по ссылке"
+IO-20,нет,https://www.fadeinpro.com/page.pl?content=features,"В списке функций нет публикации, монетизации, читательской аудитории и обложек; Access «publishing» — публикация PDF по ссылке"
+IO-21,нет,https://www.fadeinpro.com/page.pl?content=features,"В списке функций нет публикации, монетизации, читательской аудитории и обложек; Access «publishing» — публикация PDF по ссылке"
+IO-22,нет,https://www.fadeinpro.com/page.pl?content=features,"В списке функций нет публикации, монетизации, читательской аудитории и обложек; Access «publishing» — публикация PDF по ссылке"
+PL-01,есть,https://www.fadeinpro.com/kb/content/5/179/en/what-is-fade-in-access.html,Fade In Access работает в браузере (отдельная подписка)
+PL-02,есть,https://www.fadeinpro.com/page.pl?content=download,Windows 7+
+PL-03,есть,https://www.fadeinpro.com/page.pl?content=download,"macOS 10.10+, Intel и Apple Silicon"
+PL-04,есть,https://www.fadeinpro.com/page.pl?content=download,"Linux x64: deb, rpm, tar.gz"
+PL-05,есть,https://www.fadeinpro.com/page.pl?content=features,Fade In Mobile и Access для iPhone/iPad
+PL-06,есть,https://www.fadeinpro.com/page.pl?content=features,Fade In Mobile и Access для Android
+PL-07,есть,https://www.fadeinpro.com/page.pl?content=download,Десктопное приложение работает локально без аккаунта
+PL-08,есть,https://www.fadeinpro.com/kb/content/1/122/en/syncing-using-a-cloud-storage-service.html,"Fade In Access; также Dropbox, Google Drive, OneDrive через папки"
+PL-09,есть,https://www.fadeinpro.com/page.pl?content=features,Open Screenplay Format (XML)
+PL-10,есть,https://www.fadeinpro.com/kb/content/1/57/en/where-are-autosave-files-located.html,Периодические бэкапы и Recover Backup; облачный бэкап в Access
+BZ-01,частично,https://www.fadeinpro.com/page.pl?content=download,Демо без срока с водяным знаком на печати и напоминанием после 10 страниц; без совместной работы онлайн
+BZ-02,частично,https://www.fadeinpro.com/page.pl?content=support,Только Fade In Access — месячная или годовая подписка; цена на открытых страницах не найдена
+BZ-03,есть,https://www.fadeinpro.com/page.pl?content=purchase,"$79.95 (было $99.95), обновления бесплатны"
+BZ-04,есть,https://www.fadeinpro.com/page.pl?content=download,Бессрочное демо; у Access — 7 дней пробного периода (KB: refund-policy)
+BZ-05,не проверено,,Подтверждения в открытых источниках не найдено
+BZ-06,не проверено,,Подтверждения в открытых источниках не найдено
+BZ-07,не проверено,,Подтверждения в открытых источниках не найдено
+BZ-08,не проверено,,Подтверждения в открытых источниках не найдено
+NEW-ED-1,есть,https://www.fadeinpro.com/page.pl?content=features,Dialogue Tuner: правка всех реплик одного персонажа в одном окне
+NEW-SC-1,есть,https://www.fadeinpro.com/page.pl?content=comparison,Alt elements и многоколоночные A/V-сценарии
+NEW-SC-2,есть,https://www.fadeinpro.com/page.pl?content=features,Пакетная генерация копий с водяными знаками
+NEW-ED-2,есть,https://www.fadeinpro.com/page.pl?content=features,Подгонка длины строк (auto line adjustment) для сокращения страниц
+NEW-IO-1,есть,https://www.fadeinpro.com/page.pl?content=download,Открытый формат Open Screenplay Format с SDK
+NEW-IO-2,есть,https://www.fadeinpro.com/page.pl?content=features ; https://www.fadeinpro.com/page.pl?content=version_notes,"Импорт из Celtx, StudioBinder, Highland, Movie Magic через RTF"
+NEW-BZ-1,есть,https://www.fadeinpro.com/page.pl?content=purchase,Бесплатные обновления навсегда при разовой покупке; офлайн без аккаунта
+NEW-VE-1,есть,https://www.fadeinpro.com/page.pl?content=version_notes,Scene Versions и Omitted Scenes
+NEW-ED-3,есть,https://www.fadeinpro.com/page.pl?content=comparison,Полностью настраиваемые меню и горячие клавиши
+NEW-PL-1,есть,https://www.fadeinpro.com/page.pl?content=download,Linux-сборка и Apple Silicon

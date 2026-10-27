@@ -1,0 +1,235 @@
+id,значение,источник,комментарий
+ED-01,не проверено,,Подтверждения в открытых источниках не найдено
+ED-02,не проверено,,Подтверждения в открытых источниках не найдено
+ED-03,не проверено,,Подтверждения в открытых источниках не найдено
+ED-04,не проверено,,Подтверждения в открытых источниках не найдено
+ED-05,есть,"https://feedback.sudowrite.com/changelog (запись о заголовках, найдена поиском; текст записи не открывался)",Редактор богатого текста; заголовки масштабируются с размером текста
+ED-06,не проверено,,Подтверждения в открытых источниках не найдено
+ED-07,не проверено,,Подтверждения в открытых источниках не найдено
+ED-08,не проверено,,Подтверждения в открытых источниках не найдено
+ED-09,не проверено,,Подтверждения в открытых источниках не найдено
+ED-10,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/visualize/4MxYzYduLVPbGceg6zMMCb,Сгенерированное изображение вставляется в курсор; загрузка своих картинок отдельно не подтверждена
+ED-11,не проверено,,Подтверждения в открытых источниках не найдено
+ED-12,не проверено,,Подтверждения в открытых источниках не найдено
+ED-13,не проверено,,Подтверждения в открытых источниках не найдено
+ED-14,частично,https://feedback.sudowrite.com/changelog,Окт 2026: появилась настройка интервала между абзацами (не межстрочный)
+ED-15,есть,https://feedback.sudowrite.com/changelog,Выбор шрифта и размера текста подтверждён записью changelog (заголовки следуют шрифту)
+ED-16,не проверено,,Подтверждения в открытых источниках не найдено
+ED-17,не проверено,,Подтверждения в открытых источниках не найдено
+ED-18,не проверено,,Подтверждения в открытых источниках не найдено
+ED-19,не проверено,,Подтверждения в открытых источниках не найдено
+ED-20,есть,https://feedback.sudowrite.com/changelog/undo-document-version-history-and-more,Кнопки Undo/Redo слева на панели редактора
+ED-21,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/find-and-replace/7AWj7FsdXYahzxSqSNvXq5,Область «Current Document»
+ED-22,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/find-and-replace/7AWj7FsdXYahzxSqSNvXq5,Find & Replace
+ED-23,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/find-and-replace/7AWj7FsdXYahzxSqSNvXq5,Область «Project-Wide» (документы и Story Bible)
+ED-24,не проверено,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/find-and-replace/7AWj7FsdXYahzxSqSNvXq5,Документация о regex и регистре не говорит
+ED-25,не проверено,,Подтверждения в открытых источниках не найдено
+ED-26,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/feedback/7Ew1KgpEwabQSgvijq8QNr,"ИИ-проверка Copy (грамматика, пассив, пунктуация) и Line через Feedback; не фоновая проверка при наборе"
+ED-27,не проверено,,Подтверждения в открытых источниках не найдено
+ED-28,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/selection-menu/of43eZdiHYoyCtrofDerCZ,«Related Words» — умный тезаурус по выделенному слову
+ED-29,не проверено,,Подтверждения в открытых источниках не найдено
+ED-30,не проверено,,Подтверждения в открытых источниках не найдено
+ED-31,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/selection-menu/of43eZdiHYoyCtrofDerCZ,Comment в меню выделения; комментарии ИИ и читателей на полях
+ED-32,не проверено,,Подтверждения в открытых источниках не найдено
+ED-33,не проверено,,Подтверждения в открытых источниках не найдено
+ED-34,не проверено,,Подтверждения в открытых источниках не найдено
+ED-35,не проверено,,Не подтверждено
+ED-36,не проверено,,Подтверждения в открытых источниках не найдено
+ED-37,не проверено,,Подтверждения в открытых источниках не найдено
+ED-38,не проверено,,Подтверждения в открытых источниках не найдено
+ED-39,есть,https://feedback.sudowrite.com/changelog/22405,Пять тёмных тем в настройках (по тексту записи changelog из поиска)
+ED-40,частично,https://feedback.sudowrite.com/changelog/22405,Выбор из нескольких тем; свободной настройки фона не подтверждено
+ED-41,не проверено,,Подтверждения в открытых источниках не найдено
+ED-42,не проверено,,Подтверждения в открытых источниках не найдено
+ED-43,не проверено,,Подтверждения в открытых источниках не найдено
+SC-01,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-02,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-03,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-04,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-05,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-06,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-07,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-08,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-09,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-10,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-11,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-12,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-13,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-14,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-15,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-16,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-17,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-18,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-19,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-20,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-21,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-22,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-23,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-24,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-25,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-26,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-27,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-28,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-29,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-30,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-31,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+SC-32,нет,https://docs.sudowrite.com/,"В оглавлении документации нет сценарного формата; страница цен упоминает «screenplays» в описании тарифа Professional, но элементов сценария нет"
+ST-01,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/outline/3owKyHXUm1bCdp41b2Npjk,Outline: Acts (необязательно) → главы; к главам привязываются документы
+ST-02,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/outline/3owKyHXUm1bCdp41b2Npjk,"Главы и акты можно добавлять, менять порядок и удалять"
+ST-03,есть,https://docs.sudowrite.com/getting-started/dQph1snuwbfMWG9wRjsNug/interface/ubBg2ZEoAwasV98E3ZBwjn,Папки в левой колонке и вложенные папки проектов
+ST-04,не проверено,,Подтверждения в открытых источниках не найдено
+ST-05,не проверено,,Подтверждения в открытых источниках не найдено
+ST-06,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/organizing-your-projects/3vfbZPCB1AT8Cm5spEdGkz,Корзина проектов (Deleted projects); корзина документов — в веб-версии (см. mobile page)
+ST-07,не проверено,,Подтверждения в открытых источниках не найдено
+ST-08,есть,https://docs.sudowrite.com/getting-started/dQph1snuwbfMWG9wRjsNug/interface/ubBg2ZEoAwasV98E3ZBwjn,"Несколько документов в проекте, плюс Story Bible"
+ST-09,нет,https://docs.sudowrite.com/,Сценарного навигатора нет (продукт для прозы)
+ST-10,не проверено,,Подтверждения в открытых источниках не найдено
+ST-11,не проверено,,Подтверждения в открытых источниках не найдено
+ST-12,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/outline/3owKyHXUm1bCdp41b2Npjk,Резюме главы в Outline; «Update» синхронизирует резюме с написанным
+ST-13,частично,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/exporting-files/3NtVWXcnwYaRCmPW2iwcCB,Экспорт всех документов проекта одним .docx; выбора подмножества не описано
+ST-14,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/canvas/pQGLNzeYo1kLhGo14rdBy6,"Canvas Outline: Hero's Journey, Hollywood Beats, Story Circle, Romance"
+ST-15,частично,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/what-is-story-bible/jmWepHcQdJetNrE991fjJC,"Последовательность Braindump → Synopsis → Characters → Outline → Scenes → Draft, но не мастер"
+ST-16,есть,https://docs.sudowrite.com/getting-started/dQph1snuwbfMWG9wRjsNug/features/dq7YUMNy5ZMvKUJiRAisyT,Scenes (заменили Beats) — пронумерованные сцены главы
+ST-17,частично,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/what-is-story-bible/jmWepHcQdJetNrE991fjJC,Synopsis есть и генерируется; отдельного логлайна в Story Bible не описано
+ST-18,нет,https://docs.sudowrite.com/,Нет
+BD-01,частично,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/canvas/pQGLNzeYo1kLhGo14rdBy6,"Карточки на Canvas, но не карточки сцен проекта; синхронизации с текстом не описано"
+BD-02,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/canvas/pQGLNzeYo1kLhGo14rdBy6,"Canvas — «цифровая доска»: карточки, текст, аутлайны, Pan/Zoom"
+BD-03,не проверено,,Подтверждения в открытых источниках не найдено
+BD-04,не проверено,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/canvas/pQGLNzeYo1kLhGo14rdBy6,Ручные связи между карточками в документации не описаны; аутлайны выводятся как связанные карточки
+BD-05,частично,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/canvas/pQGLNzeYo1kLhGo14rdBy6,Зум и панорама есть; миникарта не описана
+BD-06,не проверено,,Подтверждения в открытых источниках не найдено
+BD-07,частично,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/series-support/3vfbZPCB1ANLm75FXmJf28,"Только таймлайн порядка книг в серии, не событий истории"
+BD-08,не проверено,,Подтверждения в открытых источниках не найдено
+BD-09,нет,https://docs.sudowrite.com/,Сетки сюжетных линий в оглавлении нет
+BD-10,не проверено,,Подтверждения в открытых источниках не найдено
+BD-11,нет,https://docs.sudowrite.com/,Графика темпа нет в оглавлении (темп анализирует Feedback текстом)
+BD-12,не проверено,,Подтверждения в открытых источниках не найдено
+BD-13,нет,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/characters/a7tdE1ZB8KvAwMD3Mopwpd,Документация прямо: отдельной функции отношений нет
+BD-14,частично,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/canvas/pQGLNzeYo1kLhGo14rdBy6,Свободная доска Canvas может служить майнд-картой; специального вида нет
+BD-15,не проверено,,Подтверждения в открытых источниках не найдено
+BI-01,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/characters/a7tdE1ZB8KvAwMD3Mopwpd,"Карточки: местоимения, группы, другие имена, характер, прошлое, внешность, стиль диалога"
+BI-02,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/characters/a7tdE1ZB8KvAwMD3Mopwpd,Редактируемые шаблоны черт и новые типы персонажей
+BI-03,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/what-is-story-bible/jmWepHcQdJetNrE991fjJC,Worldbuilding-элементы (локации в их числе)
+BI-04,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/what-is-story-bible/jmWepHcQdJetNrE991fjJC,Worldbuilding-элементы
+BI-05,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/characters/a7tdE1ZB8KvAwMD3Mopwpd,Поле Groups и Worldbuilding
+BI-06,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/characters/a7tdE1ZB8KvAwMD3Mopwpd,Свои черты и типы персонажей; для Worldbuilding — свои черты
+BI-07,есть,https://feedback.sudowrite.com/changelog,Портреты персонажей (25 сен 2026) и изображения у Worldbuilding (7 окт 2026)
+BI-08,частично,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/characters/a7tdE1ZB8KvAwMD3Mopwpd,Только Groups; полноценных связей/отношений нет
+BI-09,частично,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/scenes--draft/49p5MTVxTKkVFEC5rVUzpY,"Story Bible Detection подчёркивает персонажей и элементы в списке сцен Draft, не во всей прозе"
+BI-10,не проверено,,Подтверждения в открытых источниках не найдено
+BI-11,не проверено,,Подтверждения в открытых источниках не найдено
+BI-12,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/characters/a7tdE1ZB8KvAwMD3Mopwpd,Поле Other Names: ИИ связывает прозвища с персонажем
+BI-13,не проверено,,Подтверждения в открытых источниках не найдено
+BI-14,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/what-is-story-bible/jmWepHcQdJetNrE991fjJC,Worldbuilding
+BI-15,не проверено,,Подтверждения в открытых источниках не найдено
+BI-16,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/series-support/3vfbZPCB1ANLm75FXmJf28,Папка Series: общие Characters и Worldbuilding на все книги
+GO-01,нет,https://docs.sudowrite.com/,В оглавлении документации нет; поиск по changelog тоже не нашёл цели по словам (счётчик слов есть на карточках проектов)
+GO-02,нет,https://docs.sudowrite.com/,В оглавлении документации нет; поиск по changelog тоже не нашёл цели по словам (счётчик слов есть на карточках проектов)
+GO-03,нет,https://docs.sudowrite.com/,В оглавлении документации нет; поиск по changelog тоже не нашёл цели по словам (счётчик слов есть на карточках проектов)
+GO-04,нет,https://docs.sudowrite.com/,В оглавлении документации нет; поиск по changelog тоже не нашёл цели по словам (счётчик слов есть на карточках проектов)
+GO-05,нет,https://docs.sudowrite.com/,В оглавлении документации нет; поиск по changelog тоже не нашёл цели по словам (счётчик слов есть на карточках проектов)
+GO-06,нет,https://docs.sudowrite.com/,В оглавлении документации нет; поиск по changelog тоже не нашёл цели по словам (счётчик слов есть на карточках проектов)
+GO-07,нет,https://docs.sudowrite.com/,В оглавлении документации нет; поиск по changelog тоже не нашёл цели по словам (счётчик слов есть на карточках проектов)
+GO-08,нет,https://docs.sudowrite.com/,В оглавлении документации нет; поиск по changelog тоже не нашёл цели по словам (счётчик слов есть на карточках проектов)
+GO-09,не проверено,,Подтверждения в открытых источниках не найдено
+GO-10,нет,https://docs.sudowrite.com/,В оглавлении документации нет; поиск по changelog тоже не нашёл цели по словам (счётчик слов есть на карточках проектов)
+VE-01,не проверено,,Подтверждения в открытых источниках не найдено
+VE-02,не проверено,,Подтверждения в открытых источниках не найдено
+VE-03,не проверено,,Подтверждения в открытых источниках не найдено
+VE-04,частично,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/collaboration-options/4dqKfy8aTHoaefw151arNW,Копии документов («duplicate»); веток нет
+VE-05,есть,https://feedback.sudowrite.com/changelog/undo-document-version-history-and-more,Просмотр старых версий документа и восстановление
+VE-06,есть,https://feedback.sudowrite.com/changelog/undo-document-version-history-and-more,История версий документа справа на панели
+VE-07,частично,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/quick-edit/2asL35fds36oHAFJN7bYzz,Quick Edit оставляет зачёркнутый оригинал для принять/отклонить; общего режима правок нет
+VE-08,частично,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/feedback/7Ew1KgpEwabQSgvijq8QNr,Принять/игнорировать комментарии Feedback и правки Quick Edit
+VE-09,частично,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/collaboration-options/4dqKfy8aTHoaefw151arNW,Автор отвечает на комментарии читателей; читатели не видят комментарии друг друга
+VE-10,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/collaboration-options/4dqKfy8aTHoaefw151arNW,Ссылка «anyone with link can view»; комментировать можно анонимно или с именем
+VE-11,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/collaboration-options/4dqKfy8aTHoaefw151arNW,Опубликованный документ — только просмотр
+CO-01,нет,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/collaboration-options/4dqKfy8aTHoaefw151arNW,Раздел Collaboration — шаринг ссылкой и комментарии; совместного редактирования нет
+CO-02,нет,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/collaboration-options/4dqKfy8aTHoaefw151arNW,Нет
+CO-03,нет,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/collaboration-options/4dqKfy8aTHoaefw151arNW,Нет ролей соавторов
+CO-04,нет,https://docs.sudowrite.com/,Нет
+CO-05,нет,https://docs.sudowrite.com/,Нет
+CO-06,нет,https://docs.sudowrite.com/,Нет
+CO-07,не проверено,,Подтверждения в открытых источниках не найдено
+AI-01,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/write/pvxUvbQqYybfEosqx1sXjY,Кнопка Write: Auto/Guided/Tone Shift; читает до 20 000 слов перед курсором
+AI-02,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/scenes--draft/49p5MTVxTKkVFEC5rVUzpY,Scenes → Draft генерирует главу 3000–5000+ слов; First Draft — сцену 800–1000+ слов
+AI-03,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/write/pvxUvbQqYybfEosqx1sXjY,Number of Cards 1–6; карточки в колонке History справа
+AI-04,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/brainstorm/5xJUutV75BLU6u9LZndcDs,"Brainstorm: диалоги, имена, места, сюжетные точки; Keepers List"
+AI-05,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/characters/a7tdE1ZB8KvAwMD3Mopwpd,"Генерация всех персонажей из Synopsis, Generate Character, Surprise Me; Worldbuilding из Synopsis"
+AI-06,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/outline/3owKyHXUm1bCdp41b2Npjk,Outline из Synopsis/Characters/Worldbuilding; Canvas Outline из идеи
+AI-07,частично,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/what-is-story-bible/jmWepHcQdJetNrE991fjJC,Synopsis генерируется из Braindump и Genre; логлайн отдельно не описан
+AI-08,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/rewrite/9hkeezeUsCiUCG4dRdEqjS,"Rewrite: Rephrase, More descriptive, Show not Tell, More Inner Conflict, More Intense, Customize; до 6000 слов"
+AI-09,есть,https://docs.sudowrite.com/getting-started/dQph1snuwbfMWG9wRjsNug/features/dq7YUMNy5ZMvKUJiRAisyT,Expand и Rewrite → Shorter
+AI-10,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/describe/aTHZdZBjRmH8AspqrPdPcP,"Describe: 5 чувств и метафоры; Rewrite → Show, Not Tell"
+AI-11,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/feedback/7Ew1KgpEwabQSgvijq8QNr,"Feedback-тип Dialogue: атрибуция, теги, натянутые реплики"
+AI-12,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/feedback/7Ew1KgpEwabQSgvijq8QNr,"Комментарий с предложенной правкой, принять/игнорировать; Quick Edit оставляет зачёркнутый оригинал"
+AI-13,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/feedback/7Ew1KgpEwabQSgvijq8QNr,"Beta Read: три читателя Maya, Anton, Joan; только Professional/Max"
+AI-14,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/feedback/7Ew1KgpEwabQSgvijq8QNr,"Developmental: темп, структура, арки, дыры сюжета; сцена/глава/вся книга"
+AI-15,частично,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/feedback/7Ew1KgpEwabQSgvijq8QNr,Developmental находит дыры сюжета; отдельной проверки фактов по Story Bible не описано
+AI-16,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/feedback/7Ew1KgpEwabQSgvijq8QNr,Developmental охватывает арки персонажей; Custom-тип на черту персонажа
+AI-17,нет,https://docs.sudowrite.com/,Покрытие сценария не заявлено (продукт для прозы)
+AI-18,частично,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/outline/3owKyHXUm1bCdp41b2Npjk,Резюме главы в Outline обновляется кнопкой Update; отдельной кнопки «резюме» не описано
+AI-19,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/what-is-story-bible/jmWepHcQdJetNrE991fjJC,"Story Bible подаётся в Write, Quick Edit, Chat, Draft; Saliency Engine выбирает релевантное"
+AI-20,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/how-do-i-build-plugins/a3iVxJb4UZLKfSxf8BG3mY,"Плагины: system/user промпты, переменные, многостадийные; каталог сообщества; Magic Plugin Builder"
+AI-21,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/prose-modes--models/2X5FuivhsbwUiMNym5eUqm,"Prose Modes (Muse, Excellent, Basic) и десятки моделей OpenAI/Anthropic/Google/DeepSeek/xAI"
+AI-22,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/sudowrite-muse/4k9bFDMSyic6mFPkYFHrkZ,"Match My Style в Story Bible; Style Examples до 1000 слов в Draft (Muse/Excellent). My Voice (beta, июль 2025) — текущая доступность не подтверждена"
+AI-23,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/chat/5vbuELXf6LZQnGfVzsEXCV,"Chat в правой колонке: Story Bible, текст документа, серия; @-упоминания через #"
+AI-24,не проверено,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/chat/5vbuELXf6LZQnGfVzsEXCV,"Режим Chat only отвечает и даёт отзыв, но режима «вопросы вместо текста» не описано"
+AI-25,есть,https://docs.sudowrite.com/getting-started/dQph1snuwbfMWG9wRjsNug/interface/ubBg2ZEoAwasV98E3ZBwjn,"Карточки показывают промпт, «chiclets» контекста и «Looked at»; Write показывает сколько слов из каких документов"
+AI-26,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/feedback/7Ew1KgpEwabQSgvijq8QNr,Feedback ставит комментарии на полях по всему документу
+AI-27,есть,https://docs.sudowrite.com/plans--account/wBnmhtSyMcWtk2BLzifGkz/what-are-credits/qzSpgs9UDPEtwYcdczkLd3,Кредиты по тарифу: $10/$22/$44; стоимость зависит от слов на входе/выходе и модели; Chat-only и Quick Edit бесплатны
+AI-28,нет,https://sudowrite.com/pricing,На странице тарифов и в документации BYOK не упоминается; в плагинах — только модели Sudowrite
+AI-29,есть,https://sudowrite.com/faq,FAQ: «We do not use your writing to train AI models». Политика сторонних провайдеров моделей не раскрыта
+AI-30,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/visualize/4MxYzYduLVPbGceg6zMMCb,Visualize: 2500 кредитов за картинку 1024x1024; портреты и изображения Worldbuilding
+AI-31,нет,https://docs.sudowrite.com/,"Озвучки ИИ-голосами в оглавлении нет (есть диктовка в мобильном приложении — это ввод, не озвучка)"
+AI-32,не проверено,https://docs.sudowrite.com/resources/ktuxRrzphwp3uTNneRtaos/can-i-use-sudowrite-in-other-languages/aR5Me5vw2J3wmLD9acqrvw,"Пишет на многих языках, но функции перевода в оглавлении нет"
+IO-01,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/importing-files/rbGUgrZM6tNuXFG1hjDFyS,"Import Novel: .txt .doc .docx .rtf .odt, оптимально до 120 000 слов"
+IO-02,нет,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/importing-files/rbGUgrZM6tNuXFG1hjDFyS,Нет в списке форматов
+IO-03,нет,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/importing-files/rbGUgrZM6tNuXFG1hjDFyS,Нет в списке форматов
+IO-04,нет,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/importing-files/rbGUgrZM6tNuXFG1hjDFyS,Нет в списке форматов
+IO-05,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/importing-files/rbGUgrZM6tNuXFG1hjDFyS,Scrivener .zip через Import Novel
+IO-06,частично,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/importing-files/rbGUgrZM6tNuXFG1hjDFyS,TXT есть; Markdown в списке форматов нет
+IO-07,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/exporting-files/3NtVWXcnwYaRCmPW2iwcCB,Один документ или весь проект одним .docx
+IO-08,нет,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/exporting-files/3NtVWXcnwYaRCmPW2iwcCB,"Форматы экспорта: .zip, .docx, .csv; из редактора есть печать (changelog, 22 сен 2026)"
+IO-09,нет,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/exporting-files/3NtVWXcnwYaRCmPW2iwcCB,Нет
+IO-10,нет,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/exporting-files/3NtVWXcnwYaRCmPW2iwcCB,Нет
+IO-11,нет,https://www.inkfluenceai.com/blog/sudowrite-vs-novelcrafter-2026,Нет EPUB (обзор Inkfluence 17 окт 2026; в доке экспорта EPUB нет)
+IO-12,нет,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/exporting-files/3NtVWXcnwYaRCmPW2iwcCB,Нет
+IO-13,нет,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/exporting-files/3NtVWXcnwYaRCmPW2iwcCB,Нет
+IO-14,нет,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/exporting-files/3NtVWXcnwYaRCmPW2iwcCB,Нет
+IO-15,нет,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/exporting-files/3NtVWXcnwYaRCmPW2iwcCB,Нет
+IO-16,нет,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/exporting-files/3NtVWXcnwYaRCmPW2iwcCB,Нет
+IO-17,нет,https://docs.sudowrite.com/,Нет
+IO-18,нет,https://docs.sudowrite.com/,Нет
+IO-19,нет,https://docs.sudowrite.com/,Нет
+IO-20,частично,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/collaboration-options/4dqKfy8aTHoaefw151arNW,"Только комментарии рецензентов к расшаренному документу, не читателей публикации"
+IO-21,нет,https://docs.sudowrite.com/,Нет
+IO-22,частично,https://feedback.sudowrite.com/changelog,Обложки проектов (23 окт 2026); метаданных книги нет
+PL-01,есть,https://sudowrite.com/faq,Редактор — веб-приложение
+PL-02,нет,https://docs.sudowrite.com/resources/ktuxRrzphwp3uTNneRtaos/is-there-a-mobile-app/sFZPG2o8QqXR7bqrb9Swae,"Нативных десктоп-приложений в документации нет; платформы — веб, iOS, Android"
+PL-03,нет,https://docs.sudowrite.com/resources/ktuxRrzphwp3uTNneRtaos/is-there-a-mobile-app/sFZPG2o8QqXR7bqrb9Swae,См. PL-02
+PL-04,нет,https://docs.sudowrite.com/resources/ktuxRrzphwp3uTNneRtaos/is-there-a-mobile-app/sFZPG2o8QqXR7bqrb9Swae,См. PL-02
+PL-05,есть,https://docs.sudowrite.com/resources/ktuxRrzphwp3uTNneRtaos/is-there-a-mobile-app/sFZPG2o8QqXR7bqrb9Swae,"App Store; компаньон-приложение: Write, Rewrite, Chat, Smart Dictation"
+PL-06,есть,https://docs.sudowrite.com/resources/ktuxRrzphwp3uTNneRtaos/is-there-a-mobile-app/sFZPG2o8QqXR7bqrb9Swae,Google Play
+PL-07,не проверено,,Подтверждения в открытых источниках не найдено
+PL-08,не проверено,,Подтверждения в открытых источниках не найдено
+PL-09,не проверено,,Подтверждения в открытых источниках не найдено
+PL-10,частично,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/exporting-files/3NtVWXcnwYaRCmPW2iwcCB,Экспорт проекта .zip; автоматических резервных копий не описано
+BZ-01,нет,https://sudowrite.com/pricing,Бесплатного тарифа нет; есть пробный период
+BZ-02,есть,https://sudowrite.com/pricing,"Hobby & Student $10, Professional $22, Max $44 (в месяц при оплате за год)"
+BZ-03,нет,https://sudowrite.com/pricing,Только подписка
+BZ-04,есть,https://sudowrite.com/pricing,Бесплатный пробный период без карты; возврат в течение 7 дней после оплаты
+BZ-05,не проверено,,Подтверждения в открытых источниках не найдено
+BZ-06,не проверено,,Подтверждения в открытых источниках не найдено
+BZ-07,частично,https://docs.sudowrite.com/,"Раздел Resources: Curriculum Details (курс), туториалы Quick Start"
+BZ-08,частично,https://docs.sudowrite.com/,"Discord, каталог плагинов сообщества, программа амбассадоров"
+NEW-AI-1,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/saliency-engine/4KL8gFeLZNvk8CEeXpfwB2,"Saliency Engine: сам выбирает, какие персонажи/элементы мира отдать ИИ; глаз-переключатель видимости на карточке и на черте скрывает её от всего ИИ"
+NEW-AI-2,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/quick-edit/2asL35fds36oHAFJN7bYzz,"Quick Edit (Ctrl/Cmd+K): правка выделенного прямо в тексте, бесплатна по умолчанию, читает Story Bible, показывает зачёркнутый оригинал"
+NEW-AI-3,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/chat/5vbuELXf6LZQnGfVzsEXCV,"Chat с режимом Allow edits: правит документы, Story Bible, ставит комментарии и подсветку; для сложного — план по шагам на утверждение"
+NEW-AI-4,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/sudowrite-muse/4k9bFDMSyic6mFPkYFHrkZ,Собственные модели прозы Muse (по умолчанию в Write/Draft) и Ballad (Rewrite с 22 сен 2026)
+NEW-AI-5,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/chapter-continuity/4KL8gFeLZQ6GSBjDWtSbV6,Chapter Continuity: ручная связь документов в цепочку; Write читает до 20 000 слов из 25 предыдущих документов
+NEW-AI-6,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/scenes--draft/49p5MTVxTKkVFEC5rVUzpY,"Draft: проверка сцен (слишком короткие/длинные), оценка кредитов до запуска, пауза генерации"
+NEW-AI-7,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/write/pvxUvbQqYybfEosqx1sXjY,"Write Tone Shift: продолжение в выбранном тоне (Ominous, Romantic, Sensual и др.) и ползунок Creativity"
+NEW-AI-8,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/web-app-vs-mobile-app-differences/6JmxspPSKC83DkQZ7rFYcJ,Smart Dictation и Agentic Chat в мобильном приложении
+NEW-AI-9,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/importing-files/rbGUgrZM6tNuXFG1hjDFyS,"Smart Character/Worldbuilding Import: ИИ разбирает вставленный текст в карточки (до 30 за раз), без кредитов"
+NEW-AI-10,есть,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/series-support/3vfbZPCB1ANLm75FXmJf28,Series: общий Story Bible и порядок книг в таймлайне серии; Chat знает серию

@@ -1,0 +1,232 @@
+id,значение,источник,комментарий
+ED-01,есть,Разбор STARC для интеграции/Отчёт.md ; Разбор STARC для интеграции/notes/starc_writing_modules.md,Форматирование хранится как <fms> в XML; быстрая панель форматов в редакторе
+ED-02,есть,Разбор STARC для интеграции/Отчёт.md ; Разбор STARC для интеграции/notes/starc_writing_modules.md,Как ED-01
+ED-03,есть,Разбор STARC для интеграции/Отчёт.md ; Разбор STARC для интеграции/notes/starc_writing_modules.md,Как ED-01
+ED-04,не проверено,,Не подтверждено
+ED-05,есть,Разбор STARC для интеграции/notes/starc_writing_modules.md,В романе заголовки глав уровней 1-6 (ChapterHeading1-6)
+ED-06,не проверено,,Не подтверждено
+ED-07,не проверено,,Не подтверждено
+ED-08,не проверено,,Не подтверждено
+ED-09,не проверено,https://starc.app/pricing/,Документ «веб-ссылки» только в планах 2026; ссылки в тексте не подтверждены
+ED-10,частично,https://starc.app/pricing/ ; Разбор STARC для интеграции/Отчёт.md,Галерея изображений и фото персонажа (PRO); вставки картинок в сам текст не подтверждено
+ED-11,не проверено,,Не подтверждено
+ED-12,не проверено,,Выравнивание задаётся шаблоном элемента; ручное не подтверждено
+ED-13,частично,https://starc.app/help/custom-templates/,Отступы задаются в шаблоне для каждого элемента
+ED-14,частично,https://starc.app/help/custom-templates/,Интервалы задаются в шаблоне для каждого элемента
+ED-15,есть,https://starc.app/help/custom-templates/,Шрифт и кегль для каждого элемента в шаблоне; у романа 4 шрифта
+ED-16,есть,https://starc.app/help/custom-templates/,Свои шаблоны оформления на основе текущего; переопределение для отдельного сценария
+ED-17,не проверено,,Не подтверждено
+ED-18,не проверено,,Не подтверждено
+ED-19,не проверено,,Не подтверждено
+ED-20,есть,Разбор STARC для интеграции/notes/starc_writing_modules.md,Undo/Redo на панели
+ED-21,есть,Разбор STARC для интеграции/notes/starc_writing_modules.md,"Поиск с областью: весь текст, заголовки, действие, персонаж, реплика; поиск сцены по номеру через #"
+ED-22,не проверено,,Не подтверждено
+ED-23,не проверено,,Не подтверждено
+ED-24,не проверено,,Не подтверждено
+ED-25,не проверено,,"Ни справка, ни сравнение с Word не упоминают"
+ED-26,нет,Разбор STARC для интеграции/notes/starc_ai_assistant.md,ИИ-ассистент не имеет проверки грамматики; перефразирование не является проверкой
+ED-27,не проверено,,Не подтверждено
+ED-28,не проверено,,Не подтверждено
+ED-29,есть,https://starc.app/help/text-statistics/ ; https://starc.app/help/writing-statistics/,"Сводка: страницы, слова, знаки; слова за сегодня"
+ED-30,не проверено,,Не подтверждено
+ED-31,есть,https://starc.app/help/review-mode/,Режим «Рецензия»: комментарии с ответами и отметкой «выполнено»
+ED-32,есть,Разбор STARC для интеграции/notes/starc_writing_modules.md,Абзац «Заметка по тексту» (InlineNote)
+ED-33,не проверено,,Не подтверждено
+ED-34,не проверено,,Не подтверждено
+ED-35,частично,Разбор STARC для интеграции/notes/starc_writing_modules.md,Контекстное меню: разделить и объединить абзац; сцены перетаскиванием в навигаторе
+ED-36,есть,Разбор STARC для интеграции/notes/starc_shell_cloud_business.md,Полноэкранный режим
+ED-37,есть,Разбор STARC для интеграции/notes/starc_shell_cloud_business.md,Typewriter scrolling
+ED-38,частично,https://starc.app/help/scene-isolation-mode/,Режим изоляции показывает только текущую сцену
+ED-39,есть,Разбор STARC для интеграции/notes/starc_shell_cloud_business.md,"Светлая, тёмная и свои темы, галерея тем"
+ED-40,есть,Разбор STARC для интеграции/notes/starc_shell_cloud_business.md ; https://starc.app/help/,"Создание своих тем, галерея тем"
+ED-41,есть,Разбор STARC для интеграции/notes/starc_shell_cloud_business.md,Звуки печатной машинки
+ED-42,не проверено,,Не подтверждено
+ED-43,не проверено,,Не подтверждено
+SC-01,есть,https://starc.app/ru/help/screenplay-format/,"Заголовок сцены, Ctrl+1"
+SC-02,есть,https://starc.app/ru/help/screenplay-format/,"Описание действия, Ctrl+3"
+SC-03,есть,https://starc.app/ru/help/screenplay-format/,"Персонаж, Ctrl+4"
+SC-04,есть,https://starc.app/ru/help/screenplay-format/,"Реплика, Ctrl+6"
+SC-05,есть,https://starc.app/ru/help/screenplay-format/,"Ремарка, Ctrl+5"
+SC-06,есть,https://starc.app/ru/help/screenplay-format/,"Переход, Ctrl+9"
+SC-07,не проверено,,Отдельного типа для титров среди 13 типов абзацев нет; есть «Заметка» и «Кадр»
+SC-08,есть,https://starc.app/help/double-dialogue/,Ctrl/Cmd+D делит абзац
+SC-09,есть,Разбор STARC для интеграции/notes/starc_writing_modules.md,"Тип «Кадр», Ctrl+8"
+SC-10,есть,Разбор STARC для интеграции/notes/starc_writing_modules.md,"Лирика, Ctrl+7"
+SC-11,не проверено,,"Свои типы не подтверждены, шаблон правит существующие"
+SC-12,есть,Разбор STARC для интеграции/Отчёт.md ; Разбор STARC для интеграции/notes/starc_writing_modules.md,Таблица Tab/Enter редактируется пользователем
+SC-13,есть,Разбор STARC для интеграции/notes/starc_writing_modules.md,Подсказки имён; персонажи из текста добавляются в проект
+SC-14,есть,Разбор STARC для интеграции/notes/starc_writing_modules.md,"Подсказки для всех элементов, локации из текста сохраняются"
+SC-15,есть,Разбор STARC для интеграции/notes/starc_writing_modules.md,"Словари: ИНТ./НАТ., ДЕНЬ/НОЧЬ, расширения персонажа, переходы"
+SC-16,есть,Разбор STARC для интеграции/notes/starc_writing_modules.md,Опция «продолжение реплики» (по умолчанию выключена) и коррекция текста на разрыве страницы
+SC-17,не проверено,,Не подтверждено; Fountain импортируется и экспортируется файлом
+SC-18,есть,https://starc.app/help/document-templates/,"Американский Letter, страница примерно минута"
+SC-19,есть,https://starc.app/help/document-templates/ ; Разбор STARC для интеграции/Отчёт.md,"Русский шаблон есть; чем отличается от американского, справка не говорит"
+SC-20,есть,Разбор STARC для интеграции/notes/starc_writing_modules.md,"Пьеса (американский), аудиопьеса (BBC A4), комикс"
+SC-21,частично,Разбор STARC для интеграции/Отчёт.md,"Сериал (папка эпизодов, сквозная нумерация); разделения на много- и однокамерный нет"
+SC-22,есть,https://starc.app/help/document-templates/ ; https://starc.app/help/text-statistics/,"Постраничный редактор, хронометраж по шаблону, в 0.8.3 добавили «страницы как длительность»"
+SC-23,есть,https://starc.app/pricing/ ; Разбор STARC для интеграции/notes/starc_writing_modules.md,"Нумерация сцен, блокировка номеров сцен (FREE)"
+SC-24,частично,https://starc.app/pricing/,Блокировка номеров сцен есть; блокировка страниц только в планах 2026 для CREATOR
+SC-25,нет,Разбор STARC для интеграции/Отчёт.md,Цветных наборов производственных ревизий не найдено
+SC-26,есть,https://starc.app/help/review-mode/,Режим «Ревизия»: звёздочки на полях
+SC-27,есть,Разбор STARC для интеграции/Отчёт.md,Редактор титульного листа; открыт баг импорта и экспорта титульного листа в Fountain (issue 200)
+SC-28,есть,https://starc.app/pricing/ ; Разбор STARC для интеграции/Отчёт.md,"Разбор сценария (breakdown), CREATOR"
+SC-29,есть,https://starc.app/help/text-statistics/,"Отчёты по сценам, локациям, ролям, репликам; экспорт в PDF и Excel"
+SC-30,не проверено,,Не подтверждено
+SC-31,частично,https://starc.app/pricing/,Галерея и презентации (PRO); раскадровка только в планах 2026 (CREATOR)
+SC-32,нет,https://starc.app/help/,В справке и тарифах нет
+ST-01,есть,Разбор STARC для интеграции/Отчёт.md,"Акт, последовательность, сцена, бит; у романа часть и глава"
+ST-02,есть,https://starc.app/help/navigation/,Перетаскивание сцены переставляет текст
+ST-03,есть,Разбор STARC для интеграции/Отчёт.md ; Разбор STARC для интеграции/notes/starc_writing_modules.md,Папки как текстовые документы; вложенность в навигаторе
+ST-04,частично,Разбор STARC для интеграции/Отчёт.md,"Теги, цвет, день истории в параметрах сцены; статусов нет"
+ST-05,есть,Разбор STARC для интеграции/Отчёт.md,Цвет сцены и документа
+ST-06,есть,https://starc.app/help/navigation/,Корзина в навигаторе
+ST-07,частично,Разбор STARC для интеграции/Отчёт.md,При создании выбираются типы историй (5); жанровых шаблонов нет
+ST-08,есть,Разбор STARC для интеграции/Отчёт.md,"Дерево документов, тексты, папки, ментальные карты"
+ST-09,есть,https://starc.app/help/navigation/,Третий уровень навигатора: список сцен
+ST-10,есть,Разбор STARC для интеграции/Отчёт.md ; https://starc.app/help/beat-sheet/,Поэпизодник: сцены с битами; проекция того же текста
+ST-11,частично,Разбор STARC для интеграции/Отчёт.md,Карточки (PRO) с цветом и тегами; колонок метаданных нет
+ST-12,есть,https://starc.app/help/beat-sheet/,Биты под заголовками сцен; перемещение бита двигает текст
+ST-13,есть,https://starc.app/help/screenplay-exporting/,Экспорт выбранных частей и диапазона сцен
+ST-14,нет,Разбор STARC для интеграции/Отчёт.md,Методологии в продукте нет; редакторы битов обещаны в 2026
+ST-15,нет,Разбор STARC для интеграции/Отчёт.md,Мастера нет; есть генератор логлайна
+ST-16,есть,https://starc.app/help/beat-sheet/,Справка «How to make a story beat sheet»
+ST-17,есть,https://starc.app/help/logline-generator/ ; Разбор STARC для интеграции/Отчёт.md,"Логлайн, синопсис отдельным документом; генератор логлайна по формуле"
+ST-18,есть,https://starc.app/help/beat-sheet/,"Поэпизодник и сценарий, один текст"
+BD-01,есть,https://starc.app/pricing/ ; https://starc.app/help/navigation/,Карточки сцен (PRO); с 0.8.4 таймлайн встроен в карточки
+BD-02,частично,https://starc.app/pricing/,"Ментальные карты (PRO): карточки, группы, связи; бесконечного холста не подтверждено"
+BD-03,есть,Разбор STARC для интеграции/Отчёт.md,Рамки групп на карте отношений; группы в ментальных картах
+BD-04,есть,https://starc.app/help/characters-relations/,Связи с эмоциями и взглядами сторон; в ментальной карте тоже
+BD-05,не проверено,,Не подтверждено
+BD-06,есть,https://starc.app/help/navigation/,Все виды синхронны
+BD-07,есть,https://starc.app/pricing/,Таймлайн (PRO)
+BD-08,частично,Разбор STARC для интеграции/Отчёт.md,Поле «день истории» у сцены
+BD-09,не проверено,,Не найдено; тип Plots есть в коде без интерфейса
+BD-10,не проверено,,Не найдено
+BD-11,частично,https://starc.app/help/text-statistics/,График структуры истории в статистике
+BD-12,частично,https://starc.app/help/text-statistics/ ; Разбор STARC для интеграции/Отчёт.md,Активность персонажей в статистике; у персонажа убеждения в начале и конце
+BD-13,есть,https://starc.app/help/characters-relations/,Карта отношений (PRO)
+BD-14,есть,https://starc.app/pricing/,Ментальная карта (PRO)
+BD-15,есть,https://starc.app/pricing/,Карты локаций и миров (PRO)
+BI-01,есть,Разбор STARC для интеграции/Отчёт.md,Профиль персонажа: 77 полей в модели
+BI-02,частично,Разбор STARC для интеграции/Отчёт.md,Фиксированная структура профиля; своих шаблонов анкет не найдено
+BI-03,есть,Разбор STARC для интеграции/Отчёт.md,"Локация: 19 полей, пять чувств"
+BI-04,нет,Разбор STARC для интеграции/notes/starc_writing_modules.md,"Типы документов: персонаж, локация, мир; предметов нет"
+BI-05,частично,Разбор STARC для интеграции/Отчёт.md,"В модели мира есть власть, религии, расы"
+BI-06,нет,Разбор STARC для интеграции/notes/starc_writing_modules.md,Типы документов фиксированы; свободны только текст и папка
+BI-07,есть,https://starc.app/help/ ; https://starc.app/pricing/,"Фото персонажа, галерея изображений (PRO)"
+BI-08,есть,https://starc.app/help/characters-relations/,Карта отношений персонажей; соседние места у локации
+BI-09,не проверено,,Не подтверждено
+BI-10,есть,Разбор STARC для интеграции/Отчёт.md,Вид «Сцены» у локации и «Реплики» у персонажа (PRO)
+BI-11,не проверено,,Не подтверждено
+BI-12,не проверено,,Не подтверждено
+BI-13,нет,Разбор STARC для интеграции/Отчёт.md,Проверок целостности нет
+BI-14,есть,Разбор STARC для интеграции/Отчёт.md,"Мир: 50 полей, география, магия, технологии"
+BI-15,частично,https://starc.app/pricing/,"Текст, галерея, презентации; веб-ссылки обещаны в 2026"
+BI-16,есть,https://starc.app/ ; Разбор STARC для интеграции/notes/starc_shell_cloud_business.md,"Общая библия персонажей, локаций и миров для нескольких историй проекта"
+GO-01,не проверено,,Не упомянуто в справке по спринтам и статистике
+GO-02,не проверено,,Не подтверждено
+GO-03,не проверено,,Не упомянуто
+GO-04,частично,https://starc.app/help/writing-statistics/,График активности за месяцы; календаря нет
+GO-05,есть,https://starc.app/help/writing-sprints/,"Таймер спринта, прогресс-бар, итоговая карточка; помодоро нет"
+GO-06,есть,https://starc.app/help/text-statistics/,"Отчёты по ролям, репликам, активность персонажей"
+GO-07,есть,https://starc.app/help/text-statistics/,Отчёты по сценам и локациям
+GO-08,есть,https://starc.app/help/text-statistics/,Доля действия и диалога
+GO-09,есть,https://starc.app/help/text-statistics/ ; https://starc.app/help/document-templates/,Хронометраж проекта по шаблону; время чтения не упомянуто
+GO-10,есть,https://starc.app/help/text-statistics/ ; https://starc.app/help/writing-statistics/,"Графики структуры, активности, слов за сессии"
+VE-01,не проверено,,В справке не упомянуто; в .starc хранятся патчи правок
+VE-02,есть,Разбор STARC для интеграции/Отчёт.md ; https://github.com/story-apps/starc/releases,Именованные драфты (0.8.1)
+VE-03,есть,Разбор STARC для интеграции/Отчёт.md ; https://github.com/story-apps/starc/releases,"Сравнить драфты, сравнить документы"
+VE-04,есть,Разбор STARC для интеграции/Отчёт.md,"Драфты документов, первый драфт и остальные"
+VE-05,не проверено,,Откат к драфту отдельно не описан
+VE-06,нет,Разбор STARC для интеграции/notes/starc_shell_cloud_business.md,История изменений документа запланирована на 0.9.X
+VE-07,есть,https://starc.app/help/review-mode/,Режим «Отслеживание изменений»
+VE-08,есть,https://starc.app/help/review-mode/,Применить или отменить из правой панели
+VE-09,есть,https://starc.app/help/review-mode/,Комментарии с ответами
+VE-10,не проверено,,Роли Читатель и Комментатор требуют приглашения; ссылки без аккаунта не найдено
+VE-11,есть,https://starc.app/help/cloud-projects/,Роль «Читатель» (CREATOR)
+CO-01,есть,https://starc.app/pricing/ ; https://starc.app/help/cloud-projects/,CREATOR
+CO-02,не проверено,,Не подтверждено
+CO-03,есть,https://starc.app/help/cloud-projects/,"Редактор, Комментатор, Читатель; доступ по документам"
+CO-04,нет,Разбор STARC для интеграции/notes/starc_shell_cloud_business.md,Чат запланирован на 0.9.X
+CO-05,нет,Разбор STARC для интеграции/notes/starc_shell_cloud_business.md,Созвона нет; в планах 0.9.X только чат и чат поддержки
+CO-06,частично,https://starc.app/pricing/,"Инструменты шоураннера, план сериала (CREATOR)"
+CO-07,не проверено,,Не подтверждено
+AI-01,частично,Разбор STARC для интеграции/notes/starc_ai_assistant.md,«Сгенерировать» по запросу с вставкой в указанное место и «Вставить» между абзацами; явного «продолжить» нет
+AI-02,частично,Разбор STARC для интеграции/notes/starc_ai_assistant.md,«Сгенерировать» по тексту запроса; специальной генерации сцены по биту нет
+AI-03,не проверено,,Не описано
+AI-04,частично,Разбор STARC для интеграции/notes/starc_ai_assistant.md,Идеи в ментальных картах (PRO) и генератор имён
+AI-05,частично,Разбор STARC для интеграции/notes/starc_ai_assistant.md,Досье персонажа и фото; локации и миры не генерируются
+AI-06,нет,Разбор STARC для интеграции/Отчёт.md,Нет генерации структуры и плана
+AI-07,есть,https://starc.app/ru/help/ai-assistant/,Синопсис всего проекта в трёх длинах; логлайн формулой без ИИ
+AI-08,есть,https://starc.app/ru/help/ai-assistant/,Перефразировать
+AI-09,есть,https://starc.app/ru/help/ai-assistant/,Расширить и Сократить
+AI-10,нет,Разбор STARC для интеграции/notes/starc_ai_assistant.md,Не найдено
+AI-11,нет,Разбор STARC для интеграции/notes/starc_ai_assistant.md,Не найдено
+AI-12,не проверено,,Предпросмотр и применение в справке не описаны
+AI-13,нет,Разбор STARC для интеграции/notes/starc_ai_assistant.md,Не найдено
+AI-14,нет,Разбор STARC для интеграции/notes/starc_ai_assistant.md,Не найдено
+AI-15,нет,Разбор STARC для интеграции/Отчёт.md,Согласованности досье с текстом нет
+AI-16,нет,Разбор STARC для интеграции/Отчёт.md,Не найдено
+AI-17,нет,Разбор STARC для интеграции/notes/starc_ai_assistant.md,Coverage не найдено
+AI-18,есть,https://starc.app/ru/help/ai-assistant/,Подытожить
+AI-19,нет,Разбор STARC для интеграции/Отчёт.md,Не опирается на документы проекта
+AI-20,нет,Разбор STARC для интеграции/notes/starc_ai_assistant.md,Не найдено
+AI-21,не проверено,,Провайдер не назван; на главной «ChatGPT technology»
+AI-22,нет,Разбор STARC для интеграции/notes/starc_ai_assistant.md,Не найдено
+AI-23,нет,Разбор STARC для интеграции/notes/starc_ai_assistant.md,Не найдено
+AI-24,нет,Разбор STARC для интеграции/Отчёт.md,Только трансформации текста
+AI-25,нет,Разбор STARC для интеграции/Отчёт.md,Источники не показываются
+AI-26,нет,Разбор STARC для интеграции/notes/starc_ai_assistant.md,Не найдено
+AI-27,есть,https://starc.app/help/ai-tokens-purchasing ; https://starc.app/pricing/,"1 кредит = 1000 слов или 10 изображений; PRO 5 в месяц, CREATOR 10; пакеты от 10 USD за 50"
+AI-28,не проверено,,Не найдено
+AI-29,не проверено,,Политика ИИ не упоминает; заявлено «только необходимые данные»
+AI-30,частично,Разбор STARC для интеграции/notes/starc_ai_assistant.md,Только фото персонажа
+AI-31,нет,Разбор STARC для интеграции/notes/starc_ai_assistant.md,Не найдено
+AI-32,есть,https://starc.app/ru/help/ai-assistant/ ; https://github.com/story-apps/starc/releases,Перевод фрагмента и документа целиком (0.7.8)
+IO-01,есть,https://github.com/story-apps/starc/blob/master/src/core/management_layer/content/import/import_manager.cpp,DOCX
+IO-02,есть,https://github.com/story-apps/starc/blob/master/src/core/management_layer/content/import/import_manager.cpp,Fountain
+IO-03,есть,https://github.com/story-apps/starc/blob/master/src/core/management_layer/content/import/import_manager.cpp,FDX и FDXT
+IO-04,есть,https://github.com/story-apps/starc/blob/master/src/core/management_layer/content/import/import_manager.cpp,PDF
+IO-05,нет,https://github.com/story-apps/starc/blob/master/src/core/management_layer/content/import/import_manager.cpp,В списке импорта нет
+IO-06,есть,https://github.com/story-apps/starc/blob/master/src/core/management_layer/content/import/import_manager.cpp,Markdown и TXT
+IO-07,есть,https://starc.app/help/screenplay-exporting/,DOCX
+IO-08,есть,https://starc.app/help/screenplay-exporting/,"PDF, водяной знак опционально"
+IO-09,есть,https://starc.app/help/screenplay-exporting/,Fountain
+IO-10,есть,https://starc.app/help/screenplay-exporting/,FDX
+IO-11,нет,Разбор STARC для интеграции/Отчёт.md,"Роман: PDF, DOCX, Markdown"
+IO-12,частично,https://starc.app/help/document-templates/,Шаблоны романа: 2 формата страницы на 4 шрифта; PDF
+IO-13,есть,Разбор STARC для интеграции/Отчёт.md,Роман и простой текст
+IO-14,частично,https://starc.app/help/screenplay-exporting/,"Выбор частей, диапазон сцен, метки рецензии, подсветка персонажа"
+IO-15,не проверено,,Шаблон Shunn не найден
+IO-16,частично,https://starc.app/help/custom-templates/,"Формат страницы, поля, колонтитулы в шаблоне; trim size не проверялся"
+IO-17,нет,https://starc.app/help/,Нет
+IO-18,нет,https://starc.app/help/,Нет
+IO-19,нет,https://starc.app/help/,Нет
+IO-20,нет,https://starc.app/help/,Нет
+IO-21,нет,https://starc.app/help/,Нет
+IO-22,частично,https://starc.app/help/,Генератор обложки и постера; метаданных книги нет
+PL-01,нет,https://starc.app/download/,Веб-версии нет
+PL-02,есть,https://starc.app/download/,Windows
+PL-03,есть,https://starc.app/download/,macOS
+PL-04,есть,https://starc.app/download/,"AppImage, Flathub, AUR"
+PL-05,есть,https://apps.apple.com/us/app/story-architect-mobile/id6743486540,Мобильная версия 0.2.x
+PL-06,есть,https://starc.app/download/,Мобильная версия 0.2.x
+PL-07,есть,Разбор STARC для интеграции/Отчёт.md,Десктоп работает с локальным файлом
+PL-08,частично,https://starc.app/pricing/ ; https://apps.apple.com/us/app/story-architect-mobile/id6743486540,"Синхронизация в CREATOR; для мобильной версии «в разработке», перенос через PDF или .starc"
+PL-09,частично,Разбор STARC для интеграции/Отчёт.md ; Разбор STARC для интеграции/notes/starc_data_license_integration.md,".starc это SQLite+XML, читается, но формат не специфицирован; ядро GPL-3.0"
+PL-10,не проверено,,"Резервных копий пользователю в справке нет; июнь 2026 сбой, восстановили из бэкапа"
+BZ-01,есть,https://starc.app/pricing/,FREE без ограничений проектов
+BZ-02,есть,https://starc.app/pricing/,"PRO 375 руб/мес при годовой оплате, CREATOR 750 руб/мес"
+BZ-03,есть,https://starc.app/pricing/,PRO навсегда 13 500 руб или 150 USD
+BZ-04,есть,https://starc.app/pricing/,30 дней
+BZ-05,есть,Разбор STARC для интеграции/notes/starc_shell_cloud_business.md,Сайт и интерфейс на русском
+BZ-06,есть,Разбор STARC для интеграции/Отчёт.md,"Цены в рублях, русский шаблон, наследник KIT Scenarist"
+BZ-07,частично,https://starc.app/help/,"Справка, сравнения, гайд по формату; курсов нет"
+BZ-08,не проверено,,"Telegram и Discord вне продукта, встроенного нет"
+NEW-STARC-1,есть,Разбор STARC для интеграции/Отчёт.md,Поэпизодник как проекция сценария: биты двигают текст
+NEW-STARC-2,есть,Разбор STARC для интеграции/Отчёт.md,Тест Бекдел и гендерный анализ в статистике
+NEW-STARC-3,есть,https://starc.app/ru/help/ai-assistant/,ИИ: сценарий в роман и роман в сценарий
+NEW-STARC-4,есть,Разбор STARC для интеграции/Отчёт.md,"Открытое ядро GPL-3.0, файл .starc читается"
+NEW-STARC-5,есть,https://starc.app/help/campus-license/,Кампусные и студийные лицензии с управлением студентами
+NEW-STARC-6,есть,Разбор STARC для интеграции/Отчёт.md,Режим изоляции сцены
+NEW-STARC-7,есть,https://starc.app/pricing/,"Генератор логлайна, постера и имён"

@@ -1,0 +1,233 @@
+id,значение,источник,комментарий
+ED-01,не проверено,,В справке по форматированию абзацев жирный в тексте не описан (подтверждён только жирный для заголовка сцены и титула)
+ED-02,не проверено,,Курсив в тексте сценария в справке не описан
+ED-03,частично,https://help.arcstudiopro.com/all-how-tos/how-do-i-edit-my-title-page,Подтверждено подчёркивание только на титульной странице; в тексте не описано
+ED-04,не проверено,,Не описано
+ED-05,частично,https://help.arcstudiopro.com/guides/notes-1,Заголовки H1-H4 есть в заметках (Turn into Note/Beat); в самом сценарии это не заголовки
+ED-06,не проверено,,Не описано
+ED-07,не проверено,,Не описано
+ED-08,не проверено,,Не описано
+ED-09,есть,https://help.arcstudiopro.com/all-how-tos/how-do-i-add-an-external-link-in-my-script,Справка: «How Do I Add an External Link in My Script?»
+ED-10,частично,https://help.arcstudiopro.com/guides/the-plot-board ; https://help.arcstudiopro.com/guides/character-images ; https://help.arcstudiopro.com/how-tos/document-script-management/how-do-i-import-different-file-formats,"Картинки у битов, заметок и карточек элементов; вставка в сам текст сценария не подтверждена; картинки из FDX не импортируются"
+ED-11,не проверено,,Не описано
+ED-12,есть,https://help.arcstudiopro.com/guides/advanced-formatting,"Выравнивание, поля и верхний отступ настраиваются для отдельного абзаца"
+ED-13,частично,https://help.arcstudiopro.com/guides/advanced-formatting,Поля настраиваются для абзаца и элемента; отдельного «красного абзаца» в справке нет
+ED-14,частично,https://help.arcstudiopro.com/guides/advanced-formatting ; https://help.arcstudiopro.com/how-tos/editing-format-and-layout,Верхние отступы элементов и макет страницы настраиваются; межстрочный интервал отдельно не описан
+ED-15,есть,https://help.arcstudiopro.com/how-tos/editing-format-and-layout,Справка: «How Do I Change the Font in the Editor?»; шрифт по умолчанию Courier Prime (по отзыву)
+ED-16,есть,https://help.arcstudiopro.com/guides/advanced-formatting,"Пользовательские элементы (+ Add Element) и шаблоны формата; это стили сценарных элементов, не прозы"
+ED-17,не проверено,,Для сценария не применимо; не описано
+ED-18,не проверено,,Не описано
+ED-19,не проверено,,Не описано
+ED-20,не проверено,,Не описано в просмотренных страницах (есть откат через историю и Revert mode)
+ED-21,есть,https://help.arcstudiopro.com/guides/quick-formatting-shortcuts-keystrokes-guide,"Cmd+F ищет по всему проекту: сценарий, заметки, Stash, альтернативы, Plot Board"
+ED-22,есть,https://help.arcstudiopro.com/how-tos/editing-format-and-layout,Справка: Find and Replace (заменить одно / все)
+ED-23,есть,https://help.arcstudiopro.com/guides/quick-formatting-shortcuts-keystrokes-guide,"Поиск идёт по сценарию, заметкам, Stash, альтернативам и доске (в пределах одного сценария-проекта)"
+ED-24,не проверено,,"Есть «advanced settings for searching and replacing», но регулярные выражения не подтверждены"
+ED-25,есть,https://help.arcstudiopro.com/how-tos/editing-format-and-layout/how-do-i-turn-on-spell-check,Только в десктопе; в веб-версии встроенная проверка браузера; языки из системы
+ED-26,частично,https://help.arcstudiopro.com/guides/ai-faq,Опциональный ИИ-корректор (AI proofreader) по AI FAQ; на странице цен не упомянут
+ED-27,не проверено,,Языки спеллчека берутся из системы; поддержка русского не подтверждена
+ED-28,не проверено,,Не описано
+ED-29,есть,https://help.arcstudiopro.com/how-tos/viewing-settings,Справка: «How Do I Show My Script's Word Count?»
+ED-30,не проверено,,Не описано
+ED-31,есть,https://help.arcstudiopro.com/guides/collaboration-feedback,"Комментарии к выделению и глобальные, теги, ссылки, resolve"
+ED-32,не проверено,,Не описано; есть подсветка текста (highlight)
+ED-33,не проверено,,Не описано
+ED-34,не проверено,,Не описано
+ED-35,не проверено,,Не описано
+ED-36,есть,https://help.arcstudiopro.com/how-tos/viewing-settings ; https://help.arcstudiopro.com/guides/productive-screenwriting,Focus mode (Cmd+D) и distraction-free editor
+ED-37,не проверено,,Не описано
+ED-38,не проверено,,"Что именно скрывает Focus mode, в справке не сказано"
+ED-39,есть,https://help.arcstudiopro.com/how-tos/viewing-settings,Night Mode
+ED-40,не проверено,,Статьи про темы в разделе Viewing Settings нет
+ED-41,нет,https://help.arcstudiopro.com/how-tos/viewing-settings,Раздел Viewing Settings и список функций звуков не содержат
+ED-42,не проверено,,Не описано
+ED-43,частично,https://arcstudiopro.com/features/story-development,Заметки и аутлайн рядом со сценарием; два произвольных документа рядом не подтверждены
+SC-01,есть,https://help.arcstudiopro.com/guides/quick-formatting-shortcuts-keystrokes-guide,Cmd+1; набор int./ext./i/e. превращает действие в заголовок сцены
+SC-02,есть,https://help.arcstudiopro.com/guides/quick-formatting-shortcuts-keystrokes-guide,Cmd+2
+SC-03,есть,https://help.arcstudiopro.com/guides/quick-formatting-shortcuts-keystrokes-guide,Cmd+3
+SC-04,есть,https://help.arcstudiopro.com/guides/quick-formatting-shortcuts-keystrokes-guide,Cmd+5
+SC-05,есть,https://help.arcstudiopro.com/guides/quick-formatting-shortcuts-keystrokes-guide,Cmd+4
+SC-06,есть,https://help.arcstudiopro.com/guides/quick-formatting-shortcuts-keystrokes-guide,Cmd+7
+SC-07,частично,https://help.arcstudiopro.com/guides/advanced-formatting,Встроенного элемента для титра нет в просмотренных страницах; можно создать пользовательский элемент
+SC-08,есть,https://help.arcstudiopro.com/guides/advanced-formatting,Make Dual / Break Dual
+SC-09,есть,https://help.arcstudiopro.com/guides/quick-formatting-shortcuts-keystrokes-guide,Cmd+6
+SC-10,частично,https://help.arcstudiopro.com/guides/advanced-formatting,Встроенного элемента нет в просмотренных страницах; пользовательский элемент можно создать
+SC-11,есть,https://help.arcstudiopro.com/guides/advanced-formatting,+ Add Element: имя и атрибуты; настраиваются шорткаты и поведение строки
+SC-12,есть,https://help.arcstudiopro.com/guides/quick-formatting-shortcuts-keystrokes-guide ; https://help.arcstudiopro.com/guides/advanced-formatting,"Return/Tab переключают элементы; порядок настраивается (Script flow, Element settings)"
+SC-13,есть,https://help.arcstudiopro.com/guides/switching-to-arc-studio-for-experienced-screenwriters ; https://help.arcstudiopro.com/guides/the-plot-board,Запоминает имена; персонажи из доски битов тоже попадают в автодополнение
+SC-14,есть,https://help.arcstudiopro.com/guides/switching-to-arc-studio-for-experienced-screenwriters ; https://help.arcstudiopro.com/guides/the-plot-board,Запоминает заголовки сцен; локации из доски тоже
+SC-15,есть,https://help.arcstudiopro.com/guides/quick-formatting-shortcuts-keystrokes-guide ; https://help.arcstudiopro.com/how-tos/editing-format-and-layout,Tab переключает место и время суток; свои времена суток добавляются
+SC-16,есть,https://help.arcstudiopro.com/guides/advanced-formatting ; https://help.arcstudiopro.com/how-tos/editing-format-and-layout,CONT'D автоматически (по умолчанию выключено); есть «continued» на разрыве страницы внутри сцены
+SC-17,не проверено,,Fountain при вводе не описан; импорт Fountain есть
+SC-18,есть,https://help.arcstudiopro.com/guides/switching-to-arc-studio-for-experienced-screenwriters,Шаблон Film по умолчанию
+SC-19,не проверено,,Русский шаблон не найден; пользовательские форматы доступны в Pro
+SC-20,не проверено,,Шаблоны пьесы и аудиодрамы не найдены; подтверждены только Film и Television screenplay
+SC-21,частично,https://help.arcstudiopro.com/guides/switching-to-arc-studio-for-experienced-screenwriters ; https://help.arcstudiopro.com/guides/season-outlines-bibles,Шаблон Television screenplay с актами; сезонный план; разделения на много- и однокамерный нет в справке
+SC-22,частично,https://help.arcstudiopro.com/how-tos/editing-format-and-layout,Есть пагинация и подстройка числа страниц; хронометраж не описан
+SC-23,есть,https://help.arcstudiopro.com/guides/advanced-formatting,"Настройки Production: стиль, Assign missing / Reassign all / Clear; также номера реплик"
+SC-24,не проверено,,Блокировка страниц и сцен в просмотренных страницах не описана
+SC-25,есть,https://help.arcstudiopro.com/guides/draft-revision-management,"Снимок с цветом становится ревизией: белая, синяя, розовая и т.д. (Pro)"
+SC-26,есть,https://help.arcstudiopro.com/guides/draft-revision-management,Режим Changes со звёздочками
+SC-27,есть,https://help.arcstudiopro.com/all-how-tos/how-do-i-edit-my-title-page,"Название, подзаголовок, автор, «Based on», контакты, картинка"
+SC-28,не проверено,,Не описано
+SC-29,есть,https://help.arcstudiopro.com/guides/script-reports,"Отчёты Scenes, Locations, Cast; экспорт каждого в CSV"
+SC-30,не проверено,,Не описано
+SC-31,частично,https://help.arcstudiopro.com/guides/the-plot-board ; https://help.arcstudiopro.com/guides/character-images,Картинки к битам и элементам; раскадровки нет
+SC-32,есть,https://help.arcstudiopro.com/guides/table-read,"Table Read: голоса ElevenLabs или Murf, скачивание аудио; платные кредиты отдельно от подписки"
+ST-01,частично,https://help.arcstudiopro.com/guides/the-plot-board,"Акты, последовательности, биты; уровней «часть-глава» нет"
+ST-02,есть,https://help.arcstudiopro.com/guides/the-plot-board,"Перетаскивание битов, последовательностей"
+ST-03,частично,https://help.arcstudiopro.com/how-tos/projects-and-folders,Проекты и папки есть в справочном разделе; глубина вложенности не проверена
+ST-04,частично,https://arcstudiopro.com/features/collaboration,Статус-теги для назначенных разделов; тегов статуса на битах нет
+ST-05,есть,https://help.arcstudiopro.com/guides/the-plot-board,Цвета сюжетных линий и персонажей на карточках
+ST-06,частично,https://help.arcstudiopro.com/how-tos/document-script-management ; https://help.arcstudiopro.com/guides/the-stash,Архив/удаление сценария и Stash для вырезанного текста; корзины как таковой нет в справке
+ST-07,частично,https://help.arcstudiopro.com/guides/season-outlines-bibles ; https://help.arcstudiopro.com/guides/the-plot-board,Тип проекта «TV Series with outline»; шаблоны структуры; свои шаблоны заметок и формата
+ST-08,есть,https://help.arcstudiopro.com/guides/season-outlines-bibles,Проект: сезонный план и библия + эпизоды-сценарии + заметки
+ST-09,есть,https://help.arcstudiopro.com/guides/the-sidebar,Боковая панель Navigation/Contents
+ST-10,есть,https://help.arcstudiopro.com/guides/the-plot-board,"Outline view: акты, биты, последовательности сверху вниз, правки синхронны с доской"
+ST-11,не проверено,,Колонки метаданных не описаны
+ST-12,есть,https://help.arcstudiopro.com/guides/the-plot-board,"Биты имеют заголовок и раскрывающееся описание, привязаны к сценам"
+ST-13,не проверено,,Не описано; экспорт аутлайна в PDF/Fountain есть
+ST-14,есть,https://help.arcstudiopro.com/guides/the-plot-board,"5-act TV, Парадигма Сида Филда, свои шаблоны"
+ST-15,не проверено,,Мастера нет в просмотренных страницах; есть воркшиты персонажа и истории
+ST-16,есть,https://help.arcstudiopro.com/guides/the-plot-board,"Plot Board: Beat Inbox, ключевые биты, стрелка"
+ST-17,не проверено,,Не описано; логлайн на титуле не подтверждён
+ST-18,частично,https://help.arcstudiopro.com/guides/the-plot-board,Экспорт Outline в PDF/Fountain из доски; автогенерации плана из текста нет
+BD-01,есть,https://help.arcstudiopro.com/guides/the-plot-board,"Plot Board: акты-колонки, биты-карточки (Pro)"
+BD-02,частично,https://arcstudiopro.com/features/story-development ; https://help.arcstudiopro.com/guides/the-plot-board,"В маркетинге «digital whiteboard», по справке доска состоит из колонок-актов"
+BD-03,частично,https://help.arcstudiopro.com/guides/the-plot-board,Последовательности группируют биты
+BD-04,частично,https://help.arcstudiopro.com/guides/the-plot-board,Arc view соединяет биты одной сюжетной линии
+BD-05,не проверено,,Не описано
+BD-06,есть,https://help.arcstudiopro.com/guides/the-plot-board,"Биты как подсказки в сценарии, правки в обе стороны"
+BD-07,не проверено,,Отдельного таймлайна нет в просмотренных страницах
+BD-08,не проверено,,Не описано
+BD-09,частично,https://help.arcstudiopro.com/guides/the-plot-board,Фильтр по сюжетным линиям и персонажам на бит-доске; полноценной сетки нет
+BD-10,есть,https://help.arcstudiopro.com/guides/the-plot-board,Сюжетные линии как цветные полосы на битах
+BD-11,есть,https://help.arcstudiopro.com/guides/the-plot-board,Arc view: график значения (настроение и т.п.) по битам
+BD-12,частично,https://help.arcstudiopro.com/guides/the-plot-board,Arc view показывает значение по битам; арки персонажей как отдельный вид не описаны
+BD-13,не проверено,,Не описано
+BD-14,не проверено,,Не описано
+BD-15,не проверено,,Не описано
+BI-01,есть,https://help.arcstudiopro.com/guides/the-plot-board ; https://help.arcstudiopro.com/guides/season-outlines-bibles,"Story Elements: персонаж с заметками, цветом, картинкой, именем в сценарии"
+BI-02,есть,https://help.arcstudiopro.com/guides/notes-1 ; https://arcstudiopro.com/features/story-development,Свои шаблоны заметок и воркшиты персонажей и истории с импортом
+BI-03,есть,https://help.arcstudiopro.com/guides/season-outlines-bibles,Локации с INT/EXT
+BI-04,не проверено,,"Типы элементов: сюжетные линии, персонажи, локации; предметов нет"
+BI-05,не проверено,,Не описано
+BI-06,не проверено,,Подтверждены три типа; произвольные типы не описаны
+BI-07,есть,https://help.arcstudiopro.com/guides/season-outlines-bibles ; https://help.arcstudiopro.com/guides/character-images,Картинки вдохновения и ИИ-картинки
+BI-08,не проверено,,Не описано
+BI-09,не проверено,,Не описано
+BI-10,частично,https://help.arcstudiopro.com/guides/the-plot-board ; https://help.arcstudiopro.com/guides/script-reports,Метки на битах и отчёт Locations (первое появление); общего списка сцен сущности нет
+BI-11,не проверено,,Не описано
+BI-12,не проверено,,Есть только «script name» персонажа
+BI-13,нет,https://help.arcstudiopro.com/guides/ai-faq,Среди ИИ-функций проверки противоречий нет
+BI-14,частично,https://help.arcstudiopro.com/guides/notes-1,Только свободные заметки
+BI-15,частично,https://help.arcstudiopro.com/guides/notes-1 ; https://help.arcstudiopro.com/how-tos/notes-research/how-do-i-use-the-ai-research-assistant,Заметки с картинками и ИИ-исследованием; хранение веб-страниц и PDF не подтверждено
+BI-16,есть,https://help.arcstudiopro.com/guides/season-outlines-bibles,Season outline & bible общая для эпизодов
+GO-01,не проверено,,Цели по словам не описаны; есть напоминание по расписанию
+GO-02,не проверено,,Не описано
+GO-03,есть,https://help.arcstudiopro.com/guides/productive-screenwriting,Отчёт на следующий день и серия дней подряд; пропуск одного дня серию не обрывает
+GO-04,частично,https://help.arcstudiopro.com/guides/productive-screenwriting,Расписание письма с напоминанием по почте в 17:00; календаря нет
+GO-05,есть,https://help.arcstudiopro.com/guides/productive-screenwriting,"Sprint timer, nag-уведомления"
+GO-06,есть,https://help.arcstudiopro.com/guides/script-reports,"Cast report: реплики, слова, сцены; гендерный разбор"
+GO-07,есть,https://help.arcstudiopro.com/guides/script-reports,Отчёты Scenes и Locations
+GO-08,не проверено,,Не описано
+GO-09,не проверено,,Не описано
+GO-10,не проверено,,Графики прогресса не описаны; есть отчёты Characters и пирог гендера
+VE-01,есть,https://help.arcstudiopro.com/guides/draft-revision-management,Автосохранение онлайн и локально; автоснимки через 10 минут без правки
+VE-02,есть,https://help.arcstudiopro.com/guides/draft-revision-management,Snapshot (Shift+Cmd+S)
+VE-03,есть,https://help.arcstudiopro.com/guides/draft-revision-management ; https://arcstudiopro.com/features/writing,"Сравнение со снимками, зелёное/красное, по типу или автору"
+VE-04,есть,https://help.arcstudiopro.com/guides/branch-merge,"Branch Copy, слияние в Main Draft; также альтернативные драфты"
+VE-05,есть,https://help.arcstudiopro.com/guides/draft-revision-management,Revert mode: вернуть выбранный кусок из старой версии
+VE-06,есть,https://help.arcstudiopro.com/guides/draft-revision-management,Full history с автоснимками
+VE-07,есть,https://help.arcstudiopro.com/guides/draft-revision-management ; https://help.arcstudiopro.com/guides/branch-merge,"Changes со звёздочками, «Start marking changes» в ветке"
+VE-08,есть,https://help.arcstudiopro.com/guides/branch-merge,Принять или отклонить каждый флаг при слиянии
+VE-09,есть,https://help.arcstudiopro.com/guides/collaboration-feedback,"Ответы на комментарии, resolve"
+VE-10,частично,https://help.arcstudiopro.com/guides/collaboration-feedback ; https://www.arcstudiopro.com/pricing,Ссылки-приглашения с уровнем доступа и гостевой доступ без входа для email-приглашений; Feedback links только в Pro
+VE-11,есть,https://help.arcstudiopro.com/guides/collaboration-feedback,Роль Read only
+CO-01,есть,https://arcstudiopro.com/features/collaboration,Real-time co-writing
+CO-02,есть,https://help.arcstudiopro.com/guides/collaboration-feedback,"Цветные курсоры, аватары, зелёный индикатор live"
+CO-03,есть,https://help.arcstudiopro.com/guides/collaboration-feedback,"Owner, Admin, Can edit, Read only"
+CO-04,есть,https://arcstudiopro.com/features/collaboration,Script chat рядом со сценарием
+CO-05,частично,https://help.arcstudiopro.com/guides/collaboration-feedback,Звонок Zoom запускается из сценария; встроенного видео нет
+CO-06,частично,https://arcstudiopro.com/features/collaboration ; https://help.arcstudiopro.com/guides/season-outlines-bibles,"Сезонный план, назначение секций, Branch Copy; отдельной страницы showrunners не открывали"
+CO-07,частично,https://help.arcstudiopro.com/guides/collaboration-feedback,Email и Desk-уведомления об приглашениях и @упоминаниях; об изменениях не описано
+AI-01,нет,https://help.arcstudiopro.com/guides/ai-faq,В списке ИИ-функций нет
+AI-02,нет,https://help.arcstudiopro.com/guides/ai-faq,В списке ИИ-функций нет
+AI-03,нет,https://help.arcstudiopro.com/guides/ai-faq,В списке ИИ-функций нет
+AI-04,нет,https://help.arcstudiopro.com/guides/ai-faq,Нет в списке; есть только исследование (Research)
+AI-05,частично,https://help.arcstudiopro.com/guides/character-images,Только картинки элементов по описанию; текст персонажа не генерируется
+AI-06,нет,https://help.arcstudiopro.com/guides/ai-faq,В списке ИИ-функций нет
+AI-07,нет,https://help.arcstudiopro.com/guides/ai-faq,В списке ИИ-функций нет
+AI-08,частично,https://help.arcstudiopro.com/guides/ai-faq,"«AI tone adjustments» (по абзацу, opt-in); на странице цен не упомянуто"
+AI-09,нет,https://help.arcstudiopro.com/guides/ai-faq,В списке ИИ-функций нет
+AI-10,нет,https://help.arcstudiopro.com/guides/ai-faq,В списке ИИ-функций нет
+AI-11,не проверено,,Не описано
+AI-12,не проверено,,"ИИ-корректор описан, но подача правок не раскрыта"
+AI-13,частично,https://help.arcstudiopro.com/guides/ai-faq,«AI comments» по выделенному фрагменту; суть не раскрыта
+AI-14,нет,https://help.arcstudiopro.com/guides/ai-faq,В списке ИИ-функций нет
+AI-15,нет,https://help.arcstudiopro.com/guides/ai-faq,В списке ИИ-функций нет
+AI-16,нет,https://help.arcstudiopro.com/guides/ai-faq,В списке ИИ-функций нет
+AI-17,нет,https://help.arcstudiopro.com/guides/ai-faq,В списке ИИ-функций нет
+AI-18,нет,https://help.arcstudiopro.com/guides/ai-faq,В списке ИИ-функций нет
+AI-19,нет,https://help.arcstudiopro.com/guides/ai-faq,"ИИ получает только выбранный фрагмент или описание элемента, не сценарий"
+AI-20,нет,https://help.arcstudiopro.com/guides/ai-faq,Не описано в списке ИИ-функций
+AI-21,нет,https://help.arcstudiopro.com/guides/ai-faq,Заданы ChatGPT 4.0 и 3.5; выбора пользователем нет
+AI-22,нет,https://help.arcstudiopro.com/guides/ai-faq,В списке ИИ-функций нет
+AI-23,нет,https://help.arcstudiopro.com/guides/ai-faq,В списке ИИ-функций нет; в Research есть только вопросы внутри заметки
+AI-24,нет,https://help.arcstudiopro.com/guides/ai-faq,В списке ИИ-функций нет
+AI-25,частично,https://help.arcstudiopro.com/guides/ai-faq,"Для каждой функции указано, какая часть текста уходит модели"
+AI-26,не проверено,,«AI comments» могут быть заметками на полях; не подтверждено
+AI-27,есть,https://www.arcstudiopro.com/pricing ; https://help.arcstudiopro.com/guides/table-read,"Table Read, Character Images и Research Assistant покупаются кредитами отдельно от подписки; цены не опубликованы"
+AI-28,не проверено,,Не описано
+AI-29,частично,https://help.arcstudiopro.com/guides/ai-faq,"Документ не уходит третьим лицам по умолчанию, ИИ опционален; про обучение на текстах справка отсылает к OpenAI"
+AI-30,есть,https://help.arcstudiopro.com/guides/character-images,"Картинки персонажей, сюжетных линий и локаций по описанию; кредиты"
+AI-31,есть,https://help.arcstudiopro.com/guides/table-read,Table Read; ElevenLabs или Murf; кредиты
+AI-32,нет,https://help.arcstudiopro.com/guides/ai-faq,В списке ИИ-функций нет
+IO-01,есть,https://help.arcstudiopro.com/how-tos/document-script-management/how-do-i-import-different-file-formats,DOCX
+IO-02,есть,https://help.arcstudiopro.com/how-tos/document-script-management/how-do-i-import-different-file-formats,Fountain/TXT
+IO-03,есть,https://help.arcstudiopro.com/how-tos/document-script-management/how-do-i-import-different-file-formats,FDX; картинки из FDX не импортируются
+IO-04,есть,https://help.arcstudiopro.com/how-tos/document-script-management/how-do-i-import-different-file-formats,PDF
+IO-05,не проверено,,Не описано
+IO-06,частично,https://help.arcstudiopro.com/how-tos/document-script-management/how-do-i-import-different-file-formats,TXT есть; Markdown не подтверждён
+IO-07,нет,https://help.arcstudiopro.com/how-tos/document-script-management,"Экспорт: PDF, FDX, текстовый документ; DOCX нет в списке"
+IO-08,есть,https://help.arcstudiopro.com/how-tos/document-script-management,"PDF целиком, диапазон страниц, выделение; без водяного знака с платных тарифов"
+IO-09,есть,https://arcstudiopro.com/features/writing ; https://help.arcstudiopro.com/how-tos/document-script-management,Fountain/Text
+IO-10,есть,https://help.arcstudiopro.com/how-tos/document-script-management,FDX; бесплатный тариф тоже
+IO-11,нет,https://help.arcstudiopro.com/how-tos/document-script-management,Нет в списке экспорта
+IO-12,нет,https://help.arcstudiopro.com/how-tos/document-script-management,Нет в списке экспорта
+IO-13,не проверено,,Не описано
+IO-14,нет,https://help.arcstudiopro.com/how-tos/document-script-management,Есть только выбор элементов при экспорте аутлайна
+IO-15,нет,https://help.arcstudiopro.com/how-tos/document-script-management,Нет в списке экспорта
+IO-16,нет,https://help.arcstudiopro.com/how-tos/document-script-management,Продукт для сценариев
+IO-17,нет,https://arcstudiopro.com/features/writing,Нет в списке функций
+IO-18,нет,https://arcstudiopro.com/features/writing,Нет в списке функций
+IO-19,нет,https://arcstudiopro.com/features/writing,Нет в списке функций
+IO-20,нет,https://arcstudiopro.com/features/writing,Нет в списке функций
+IO-21,нет,https://arcstudiopro.com/features/writing,Нет в списке функций
+IO-22,нет,https://help.arcstudiopro.com/all-how-tos/how-do-i-edit-my-title-page,Только титульная страница сценария
+PL-01,есть,https://www.arcstudiopro.com/pricing,"Любой браузер, включая Chrome на Android"
+PL-02,есть,https://www.arcstudiopro.com/pricing,Десктоп-приложение на Essentials и Pro
+PL-03,есть,https://www.arcstudiopro.com/pricing,Десктоп-приложение на Essentials и Pro
+PL-04,нет,https://www.arcstudiopro.com/pricing,Linux в списке платформ нет; можно работать в браузере
+PL-05,есть,https://www.arcstudiopro.com/pricing,iPhone и iPad на Essentials и Pro
+PL-06,нет,https://www.arcstudiopro.com/pricing,"Приложения нет («Not at this point»); работа в браузере, долгий офлайн в Chrome Android не поддерживается"
+PL-07,есть,https://help.arcstudiopro.com/how-tos/document-script-management/how-do-i-edit-offline ; https://www.arcstudiopro.com/pricing,Десктоп-приложение; веб только при перебоях связи; продвинутые функции оффлайн недоступны
+PL-08,есть,https://arcstudiopro.com/features/writing,Облачная синхронизация между устройствами
+PL-09,частично,https://help.arcstudiopro.com/how-tos/document-script-management ; https://arcstudiopro.com/features/writing,Экспорт в Fountain/FDX; собственный формат не раскрыт
+PL-10,есть,https://help.arcstudiopro.com/how-tos/document-script-management ; https://arcstudiopro.com/features/writing,"Автоматические облачные копии, копия на Google Drive или локально"
+BZ-01,есть,https://www.arcstudiopro.com/pricing,"2 сценария, PDF с водяным знаком, нет десктопа и приложений"
+BZ-02,есть,https://www.arcstudiopro.com/pricing,"Essentials 69 USD/год, Pro 99 USD/год"
+BZ-03,нет,https://www.arcstudiopro.com/pricing,Только подписка
+BZ-04,есть,https://www.arcstudiopro.com/pricing,7 дней Pro для каждого аккаунта
+BZ-05,не проверено,,Нет данных о языках интерфейса
+BZ-06,нет,https://arcstudiopro.com/,"Сайт и справка на английском, цены в USD"
+BZ-07,есть,https://help.arcstudiopro.com,"Справка, гайды, подкаст How I Write, блог, Classroom"
+BZ-08,не проверено,,"Есть форум идей (feedback.arcstudiopro.com), встроенного сообщества не подтверждено"
+NEW-ARC-1,есть,https://help.arcstudiopro.com/guides/the-stash,The Stash: вырезанные куски текста хранятся и возвращаются перетаскиванием (Pro)
+NEW-ARC-2,есть,https://help.arcstudiopro.com/guides/branch-merge,Branch & Merge с правкой на один бит
+NEW-ARC-3,есть,https://help.arcstudiopro.com/guides/the-plot-board,Beat Inbox и пометка ключевых битов
+NEW-ARC-4,есть,https://help.arcstudiopro.com/guides/notes-1,"Двусторонние ссылки [[ ]] и backlinks в заметках, превращение заметки в бит"
+NEW-ARC-5,есть,https://help.arcstudiopro.com/how-tos/notes-research/how-do-i-use-the-ai-research-assistant,"ИИ-помощник по исследованию: ответ как заметка, вопросы по ней (Cmd+R)"
+NEW-ARC-6,есть,https://help.arcstudiopro.com/guides/quick-formatting-shortcuts-keystrokes-guide,Палитра команд Cmd+K с поиском по командам
+NEW-ARC-7,есть,https://help.arcstudiopro.com/guides/collaboration-feedback,"Гостевой доступ без аккаунта для приглашений по email, выбор имени для правок"
+NEW-ARC-8,есть,https://help.arcstudiopro.com/guides/arc-studio-classroom,Arc Studio Classroom для школ

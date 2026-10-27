@@ -1,0 +1,225 @@
+id,статус,где,важность,комментарий
+ED-01,в макете,"openspec/context/_raw/design/kabinet/index.html (панель выделения, data-k=bold); openspec/context/_raw/design/kabinet/README.md (Редактор сцены)",must-have,Жирный в панели выделения текста сцены.
+ED-02,в макете,openspec/context/_raw/design/kabinet/index.html (панель выделения); openspec/context/_raw/design/kabinet/README.md (Редактор сцены),must-have,Курсив в панели выделения.
+ED-03,в макете,"openspec/context/_raw/design/kabinet/index.html (data-k=""underline""); openspec/context/_raw/design/kabinet/README.md (Редактор сцены)",nice-to-have,Подчёркнутый есть в панели выделения; в сценарии почти не нужен.
+ED-04,нет,,не нужно,Нигде не описано; для сценария и методологических документов не нужно.
+ED-05,нет,,must-have,"Заголовки в документах шаблонные, а выбор уровней заголовка пользователем нигде не описан; для прозы (главы) понадобится."
+ED-06,нет,,nice-to-have,"Списки в тексте не описаны; чек-листы шага есть, но это не форматирование."
+ED-07,нет,,nice-to-have,Не описано; для прозы удобно.
+ED-08,нет,,nice-to-have,Не описано; нужно только прозе.
+ED-09,нет,,nice-to-have,Не описано.
+ED-10,нет,,не нужно,"Картинки к документам — отдельная галерея Д10 в отчёте STARC, в тексте не нужны."
+ED-11,нет,,не нужно,"Не нужно ни сценарию, ни прозе."
+ED-12,нет,,не нужно,"Выравнивание задаёт тип абзаца/шаблон, а не автор."
+ED-13,нет,,nice-to-have,Для прозы задаётся шаблоном вёрстки при экспорте (Д22).
+ED-14,нет,,не нужно,Задаётся форматом/шаблоном; в макете только размер текста и ширина листа.
+ED-15,в макете,"openspec/context/_raw/design/kabinet/index.html (Настройки: «Шрифт текста», «Размер текста», «Ширина листа»); openspec/context/_raw/design/kabinet/README.md (Настройки)",nice-to-have,Шрифт текста serif/sans и размер 16–22 px; сценарий всегда моноширинный (ADR-004).
+ED-16,нет,,не нужно,Типы абзацев сценария фиксированы шаблоном; пользовательские стили не планируются.
+ED-17,нет,,nice-to-have,Разрыв сцены в прозе появится при сборке Д22; в редакторе не описан.
+ED-18,нет,,must-have,Нигде не описаны «ёлочки» и тире; для русского текста обязательны (проверить в @plotwell/editor).
+ED-19,нет,,nice-to-have,Неразрывные пробелы после предлогов и т. п. нигде не описаны.
+ED-20,нет,,must-have,"Явно не описано; обычно даёт редактор ProseMirror (ADR-004), но в доках и макете отдельной функции нет."
+ED-21,в макете,openspec/context/_raw/design/kabinet/index.html (⌘F); openspec/context/_raw/design/kabinet/README.md (Найти и заменить),must-have,Поиск по сцене или по всему акту.
+ED-22,в макете,openspec/context/_raw/design/kabinet/README.md (Найти и заменить),must-have,Замена по одному и всех сразу; в утверждённой сцене замена идёт через проверку последствий.
+ED-23,в макете,"openspec/context/_raw/design/kabinet/index.html (⌘K: документы, сцены, персонажи, цитаты); openspec/context/_raw/design/kabinet/README.md (Поиск и команды)",must-have,"Общий поиск и команды; «спросить соавтора», если ничего не нашлось."
+ED-24,нет,,не нужно,Не описано; для писателей не нужно.
+ED-25,нет,,must-have,"Орфография нигде не описана (в макете spellcheck=""false"" на поле цели сцены); нужна проверка русского."
+ED-26,в макете,"openspec/context/_raw/design/kabinet/index.html (Настройки: режим соавтора «Внимательно» — «повторы, ритм, стиль»)",nice-to-have,Только как заметки ИИ на полях при режиме «Внимательно»; отдельной грамматической проверки нет.
+ED-27,нет,,must-have,"Проверка русского языка (орфография, пунктуация) нигде не описана; для рынка обязательна. Источник — внешний сервис или словарь, решение не принято."
+ED-28,нет,,не нужно,Замену слов решает «Варианты» от соавтора.
+ED-29,в макете,"openspec/context/_raw/design/kabinet/index.html (параметры сцены: слова, страницы · минуты)",nice-to-have,Слова и объём считаются по тексту на лету в параметрах сцены.
+ED-30,нет,,nice-to-have,Не описано.
+ED-31,в макете,openspec/context/_raw/design/kabinet/index.html (заметки на полях); openspec/context/ADR/ADR-006-workspace-kabinet.md,must-have,Ядро продукта: ИИ и автор пишут на полях напротив своей строки.
+ED-32,в макете,openspec/context/_raw/design/kabinet/index.html («Заметка» в панели выделения); openspec/context/_raw/design/kabinet/README.md (Свои заметки),must-have,"Заметки автора себе другого цвета, фильтр «Все · Соавтор · Мои»."
+ED-33,в макете,openspec/context/_raw/design/kabinet/index.html (Настройки: «Внимательно» замечает повторы),nice-to-have,Подсветки повторов в тексте нет; только заметки ИИ на полях.
+ED-34,нет,,nice-to-have,Наречия и штампы нигде не описаны.
+ED-35,нет,,nice-to-have,Явных «разделить/склеить сцену» в макете нет (grep по index.html); сцены — отдельные узлы дерева.
+ED-36,в макете,openspec/context/_raw/design/kabinet/index.html (клавиша F); openspec/context/_raw/design/kabinet/README.md,nice-to-have,Режим фокуса: остаётся только лист по центру.
+ED-37,нет,,nice-to-have,Не описано.
+ED-38,нет,,nice-to-have,Не описано.
+ED-39,в макете,"openspec/context/_raw/design/kabinet/index.html (тема «Вечер у лампы»); web/src/design-system/theme.ts, web/src/showcase/Showcase.tsx; openspec/context/ADR/ADR-004-frontend-stack.md",nice-to-have,Токены и переключатель тем есть в web/ только в showcase; для пользователя рабочего места не доступно.
+ED-40,в макете,"openspec/context/_raw/design/kabinet/index.html (Настройки: Освещение, Шрифт, Ширина); openspec/context/ADR/ADR-006-workspace-kabinet.md",nice-to-have,"Три темы: Утро, Бумага, Вечер; свои темы не предусмотрены."
+ED-41,нет,,не нужно,Не описано.
+ED-42,нет,,не нужно,Не описано; противоречит правке и ИИ на полях.
+ED-43,нет,,nice-to-have,"Два документа рядом нигде не описаны; в макете лист и поля, режим «Весь акт»."
+SC-01,в макете,openspec/context/_raw/design/kabinet/index.html (типы абзацев); openspec/context/_raw/design/kabinet/README.md (Редактор сцены); openspec/context/ADR/ADR-004-frontend-stack.md,must-have,"Заголовок сцены, «инт. » в начале превращает абзац в заголовок."
+SC-02,в макете,"openspec/context/_raw/design/kabinet/README.md (Редактор сцены, типы абзацев)",must-have,Тип «описание».
+SC-03,в макете,openspec/context/_raw/design/kabinet/README.md (Редактор сцены),must-have,
+SC-04,в макете,openspec/context/_raw/design/kabinet/README.md (Редактор сцены),must-have,
+SC-05,в макете,openspec/context/_raw/design/kabinet/README.md (Редактор сцены),must-have,
+SC-06,в макете,openspec/context/_raw/design/kabinet/README.md (Редактор сцены),must-have,
+SC-07,нет,,nice-to-have,Титры на экране не входят в шесть типов макета.
+SC-08,в спеке,openspec/context/ADR/ADR-004-frontend-stack.md («все элементы американки» из @plotwell/editor),nice-to-have,"Явно не описано; зависит от возможностей @plotwell/editor, в макете не нарисовано."
+SC-09,нет,,не нужно,План/shot — производственный элемент.
+SC-10,нет,,не нужно,Не нужно в MVP.
+SC-11,нет,,не нужно,Типы абзацев фиксированы.
+SC-12,в макете,"openspec/context/_raw/design/kabinet/README.md (Enter и Tab, ⌥1–⌥6, Shift+Tab); openspec/context/ADR/ADR-005-starc-reference-flows.md",must-have,Как в Final Draft и STARC; план Д20.
+SC-13,в макете,openspec/context/_raw/design/kabinet/README.md (Автодополнение),must-have,"Сначала тот, кто обычно отвечает, затем в сцене, затем библия; новое имя попадает в Кастинг-лист."
+SC-14,в макете,openspec/context/_raw/design/kabinet/README.md (Автодополнение),must-have,"Место из библии со сценами, где оно уже есть."
+SC-15,в макете,openspec/context/_raw/design/kabinet/README.md (Автодополнение); openspec/context/_raw/design/kabinet/index.html,must-have,ИНТ./НАТ. и время суток.
+SC-16,нет,"openspec/context/_raw/design/kabinet/index.html (подсказка расширений «(ПРОД.)», «(З.К.)» в имени персонажа)",nice-to-have,"Расширения имени подсказываются, но автоматической вставки (ПРОД.)/(ДАЛЕЕ) на смене страницы нет."
+SC-17,в макете,openspec/context/_raw/design/kabinet/README.md («инт. » → заголовок сцены),nice-to-have,"Прямого ввода Fountain-разметки нет, есть аналогичное распознавание «инт. » по ходу набора."
+SC-18,в макете,openspec/context/_raw/design/kabinet/index.html (лист-«американка»); openspec/context/ADR/ADR-004-frontend-stack.md; openspec/context/ADR/ADR-006-workspace-kabinet.md,must-have,Основной формат листа сценария.
+SC-19,нет,,nice-to-have,Макет — американка с русскими ИНТ./НАТ.; отдельный русский формат (в STARC «русский сценарный») нигде не описан; в настройках: «другие шаблоны добавим позже».
+SC-20,в спеке,"openspec/context/02-domain-glossary.md (Д12: сценарий, пьеса, проза); openspec/context/01-product-context.md (Known limitations)",nice-to-have,"Пьеса — формат Д12, но ветка полностью описана только для полного метра; аудиодрамы нет."
+SC-21,не делаем,openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md (раздел «Конкурентный угол»: сериалы не строим); openspec/context/01-product-context.md,не нужно,Ветка формата для сериалов вне MVP.
+SC-22,в макете,openspec/context/_raw/design/kabinet/index.html (страницы · минуты в параметрах сцены); openspec/context/ADR/ADR-004-frontend-stack.md (пагинация),must-have,"Страница ≈ минута; объём сцен оценивается, точная пагинация редактора — по ADR-004, не проверена на кириллице."
+SC-23,в макете,openspec/context/_raw/design/kabinet/index.html (Экспорт и Настройки: «Номера сцен»),must-have,Тумблер номеров сцен.
+SC-24,в спеке,openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md (Сопоставление: «Запертый именованный драфт = утверждённая версия»); openspec/context/_raw/design/kabinet/README.md (утверждённая сцена заперта),nice-to-have,"Production lock в смысле съёмок не планируется, но запирание утверждённых сцен/драфтов есть."
+SC-25,не делаем,openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md (производство не строим),не нужно,Цветные страницы ревизий — производственный процесс.
+SC-26,в спеке,"openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md (Д21: берём три режима рецензирования, включая «Ревизия (звёзды на полях)»)",nice-to-have,Звёздочки ревизий нигде не нарисованы.
+SC-27,в макете,"openspec/context/_raw/design/kabinet/index.html (Экспорт: «Титульный лист — название, автор, дата»); openspec/context/_raw/design/kabinet/README.md",must-have,Имя автора для титульного листа в настройках.
+SC-28,не делаем,openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md (breakdown и производство не строим),не нужно,
+SC-29,в макете,"openspec/context/_raw/design/kabinet/index.html (экран «Линии», параметры сцены, голоса); openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md (статистика как сырьё Д18)",must-have,"Сколько сцен и доля реплик по персонажам, места со сценами; отдельного «отчёта» как в STARC нет."
+SC-30,не делаем,openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md (производство не строим),не нужно,
+SC-31,нет,,не нужно,
+SC-32,нет,,не нужно,"В макете нет; нужна для проверки диалогов, но не приоритет."
+ST-01,в макете,"openspec/context/_raw/design/kabinet/index.html (навигатор «Сценарий»: акты, сцены); openspec/context/ADR/ADR-005-starc-reference-flows.md; openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md",must-have,Акт → последовательность → сцена → бит; «части/главы» для прозы не нарисованы.
+ST-02,в макете,openspec/context/_raw/design/kabinet/README.md (Карточки сцен: перетаскиваются; Доска),must-have,Перестановка карточки меняет «Скелетную карту» и требует проверки последствий.
+ST-03,нет,,не нужно,Структура фиксирована методологией; произвольные папки не нужны.
+ST-04,в макете,openspec/context/_raw/design/kabinet/index.html (22 шага со статусами; сцены со статусом); openspec/context/ADR/ADR-006-workspace-kabinet.md,must-have,Статусы документов и сцен с формой и подписью (web/src/design-system/statuses.ts).
+ST-05,в макете,openspec/context/_raw/design/kabinet/README.md (параметры сцены: цвет карточки и метки),nice-to-have,
+ST-06,в макете,openspec/context/_raw/design/kabinet/index.html (диалог удаления: корзина на 30 дней); openspec/context/_raw/design/kabinet/README.md (Состояния),nice-to-have,"Корзина показана для истории целиком, для отдельных сцен не нарисована."
+ST-07,в спеке,openspec/context/02-domain-glossary.md (Д12 включает вид и шаблон формата); openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md (Д12),must-have,"Шаблоны формата включаются в Д12, не при создании истории."
+ST-08,в макете,"openspec/context/_raw/design/kabinet/index.html (путь из 22 документов, библия)",must-have,Документы Д1–Д22 и библия внутри одного проекта; свободных заметок/исследований нет.
+ST-09,в макете,openspec/context/_raw/design/kabinet/README.md (Слева — «Сценарий»),must-have,"Навигатор: акты, сцены, биты."
+ST-10,в макете,openspec/context/_raw/design/kabinet/index.html (вкладка «Поэпизодник»/навигатор с актами),nice-to-have,Свёрнутый вид по актам; отдельного режима outline в тексте нет.
+ST-11,нет,,nice-to-have,"Таблицы с колонками метаданных нет; близкие виды: карточки, Линии, список импульсов."
+ST-12,в макете,openspec/context/_raw/design/kabinet/README.md (параметры сцены: цель сцены из Поэпизодника),must-have,Цель сцены редактируется через проверку последствий.
+ST-13,в макете,"openspec/context/_raw/design/kabinet/index.html (Экспорт: сценарий, выбранные сцены, поэпизодник, библия); openspec/context/01-product-context.md (Д22)",must-have,Финальный текст собирается только из утверждённого.
+ST-14,в макете,openspec/context/_raw/design/kabinet/README.md (Ритм: опорные точки «Скелетной карты»); openspec/context/02-domain-glossary.md (Д13),must-have,Структурные ориентиры для полного метра; готовых шаблонов «Путь героя»/Save the Cat нет.
+ST-15,в макете,"openspec/context/_raw/design/kabinet/index.html (путь 22 шагов, d2/d11, чек-лист); openspec/context/01-product-context.md (Ключевые сценарии)",must-have,Ядро продукта.
+ST-16,в макете,openspec/context/_raw/design/kabinet/README.md (биты текущей сцены из шага 19; Д19),must-have,
+ST-17,в макете,openspec/context/_raw/design/kabinet/README.md (обложка проекта с логлайном); openspec/context/02-domain-glossary.md (Д9),must-have,Логлайн в обложке; синопсис как отдельный документ в макете не нарисован.
+ST-18,в спеке,openspec/context/ADR/ADR-005-starc-reference-flows.md («поэпизодник как проекция сценария»); openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md,must-have,"Решение принято, единое дерево против отдельных документов — открытый вопрос ADR-005."
+BD-01,в макете,openspec/context/_raw/design/kabinet/README.md (Карточки сцен),must-have,"Три акта, перетаскивание, ИИ отмечает провисание линии."
+BD-02,в макете,"openspec/context/_raw/design/kabinet/README.md (Карта импульсов, d1)",must-have,Бесконечная доска только для шага 1; для остальных шагов не нужна.
+BD-03,в макете,openspec/context/_raw/design/kabinet/README.md (Карта импульсов: группы-рамки),nice-to-have,
+BD-04,в макете,openspec/context/_raw/design/kabinet/README.md (Карта импульсов: связи),nice-to-have,Связи автора и пунктирные предложения соавтора.
+BD-05,в макете,openspec/context/_raw/design/kabinet/README.md (Масштаб; «Вписать всё»),nice-to-have,Миникарты нет.
+BD-06,в макете,openspec/context/_raw/design/kabinet/README.md (допущения: карточки и текст — одна модель),must-have,"Допущение, требует подтверждения (ADR-005, открытый вопрос)."
+BD-07,в макете,"openspec/context/_raw/design/kabinet/README.md (Таймлайн, экран timeline)",must-have,"Фабула и сюжет, слой «Кто знает правду»."
+BD-08,в макете,"openspec/context/_raw/design/kabinet/README.md (Таймлайн: время истории, август 1998; параметры сцены: день истории)",nice-to-have,
+BD-09,в макете,"openspec/context/_raw/design/kabinet/README.md (Линии, экран grid)",nice-to-have,
+BD-10,в макете,"openspec/context/_raw/design/kabinet/README.md (Линии: «Тайна Миши», «Мать и дочь»)",nice-to-have,
+BD-11,в макете,"openspec/context/_raw/design/kabinet/README.md (Ритм, экран rhythm)",nice-to-have,"Кривую предлагает соавтор, автор правит мышью."
+BD-12,в макете,openspec/context/_raw/design/kabinet/README.md (Отношения: Дуги; Ритм: настроение героинь),nice-to-have,
+BD-13,в макете,"openspec/context/_raw/design/kabinet/README.md (Библия → Отношения: Дуги, Орбиты, Таблица, Паутина)",nice-to-have,
+BD-14,нет,,не нужно,Д1-доска покрывает потребность.
+BD-15,не делаем,openspec/context/_raw/design/kabinet/README.md (План: «Не делаем сейчас: карты мест и миров»),не нужно,
+BI-01,в макете,openspec/context/_raw/design/kabinet/README.md (Библия: профиль Веры); openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md (Д16),must-have,
+BI-02,в спеке,openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md (Д16 «Профиль как набор проверяемых утверждений»),must-have,
+BI-03,в макете,openspec/context/_raw/design/kabinet/README.md (Библия: места); openspec/context/02-domain-glossary.md (Д6),must-have,
+BI-04,нет,,nice-to-have,Предметов нет в библии макета.
+BI-05,нет,,nice-to-have,Фракций нет.
+BI-06,нет,,не нужно,
+BI-07,нет,,не нужно,
+BI-08,в макете,openspec/context/_raw/design/kabinet/README.md (Библия: связи; Отношения),must-have,
+BI-09,в макете,openspec/context/_raw/design/kabinet/README.md (Имена в тексте живые),must-have,
+BI-10,в макете,openspec/context/_raw/design/kabinet/README.md (Библия: где появляется; места со сценами),must-have,
+BI-11,в макете,openspec/context/_raw/design/kabinet/README.md (наведение показывает карточку персонажа),nice-to-have,
+BI-12,нет,openspec/context/_raw/design/kabinet/index.html (разбор рукописи: «один ли это человек»),must-have,Псевдонимов и вариантов имени нет; для русского нужен учёт склонения имён (Вера/Веры/Вере) при подсветке.
+BI-13,в макете,openspec/context/_raw/design/kabinet/README.md (заметки ИИ о расхождении со сценой; «устарело»/«противоречие»); openspec/context/01-product-context.md,must-have,"Ядро продукта (Д18, Д21), всегда с цитатами."
+BI-14,в макете,openspec/context/_raw/design/kabinet/README.md (Библия: правила мира); openspec/context/02-domain-glossary.md (Д7),must-have,
+BI-15,в спеке,openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md (Д10 Референсное поле: галерея и ссылки),nice-to-have,
+BI-16,нет,,не нужно,Серий в MVP нет.
+GO-01,нет,,nice-to-have,
+GO-02,нет,,nice-to-have,Дедлайна нет; есть прогресс по шагам пути.
+GO-03,нет,,не нужно,
+GO-04,нет,,не нужно,
+GO-05,нет,,не нужно,
+GO-06,в макете,"openspec/context/_raw/design/kabinet/README.md (Линии: доля реплик; голоса сцены); openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md (Д17, Д18)",must-have,
+GO-07,в макете,"openspec/context/_raw/design/kabinet/README.md (параметры сцены, Линии)",nice-to-have,
+GO-08,нет,openspec/context/_raw/design/kabinet/README.md (голоса: кто сколько говорит),nice-to-have,Доли диалога и действия не считаются.
+GO-09,в макете,openspec/context/_raw/design/kabinet/index.html (страницы · минуты в параметрах сцены),nice-to-have,
+GO-10,нет,openspec/context/_raw/design/kabinet/index.html (путь из 22 шагов со статусами),nice-to-have,"Графиков прогресса нет, только точки статусов пути."
+VE-01,в макете,"openspec/context/_raw/design/kabinet/README.md (Сохранение: «Сохранено», кнопки нет)",must-have,
+VE-02,в макете,openspec/context/_raw/design/kabinet/README.md (История версий: «Назвать»),must-have,
+VE-03,в макете,openspec/context/_raw/design/kabinet/README.md (История версий: правки подсвечены),must-have,
+VE-04,в спеке,openspec/context/ADR/ADR-005-starc-reference-flows.md (именованные драфты); openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md,nice-to-have,В макете нет.
+VE-05,в макете,"openspec/context/_raw/design/kabinet/README.md (Вернуть эту версию, «До возврата»)",must-have,
+VE-06,в макете,openspec/context/_raw/design/kabinet/README.md (версии по дням),must-have,
+VE-07,в макете,openspec/context/_raw/design/kabinet/README.md (Варианты → правка «было → стало»); openspec/context/ADR/ADR-004-frontend-stack.md,must-have,Правки ИИ как предложения в тексте.
+VE-08,в макете,openspec/context/_raw/design/kabinet/README.md («Принять» и «Вернуть как было»); openspec/context/ADR/ADR-004-frontend-stack.md,must-have,
+VE-09,в спеке,openspec/context/ADR/ADR-004-frontend-stack.md (комментарии к фрагменту); openspec/context/ADR/ADR-005-starc-reference-flows.md,nice-to-have,Треды автора с коллегами не нужны без соавторов; диалог с ИИ на полях есть в макете.
+VE-10,нет,,nice-to-have,После MVP.
+VE-11,в макете,"openspec/context/_raw/design/kabinet/README.md (утверждённая сцена заперта, «Править»; история версий)",nice-to-have,Режима чтения для чужих ссылок нет.
+CO-01,не делаем,openspec/context/01-product-context.md («MVP: один автор… Совместную работу в MVP не проектировать»),nice-to-have,Одновременное редактирование: вне MVP.
+CO-02,не делаем,openspec/context/01-product-context.md («MVP: один автор… Совместную работу в MVP не проектировать»),не нужно,Присутствие: вне MVP.
+CO-03,не делаем,openspec/context/01-product-context.md («MVP: один автор… Совместную работу в MVP не проектировать»),nice-to-have,"Роли и права; после MVP возможны соавторы, редактор, продюсер."
+CO-04,не делаем,openspec/context/01-product-context.md («MVP: один автор… Совместную работу в MVP не проектировать»),не нужно,Чат проекта: вне MVP.
+CO-05,не делаем,openspec/context/01-product-context.md («MVP: один автор… Совместную работу в MVP не проектировать»),не нужно,Созвон: вне MVP.
+CO-06,не делаем,openspec/context/01-product-context.md («MVP: один автор… Совместную работу в MVP не проектировать»),не нужно,Комнаты писателей: вне MVP.
+CO-07,не делаем,openspec/context/01-product-context.md («MVP: один автор… Совместную работу в MVP не проектировать»),не нужно,Уведомления: вне MVP.
+AI-01,нет,,nice-to-have,Продолжение «за автора» противоречит позиции продукта; допустимо только как предложение.
+AI-02,в макете,openspec/context/_raw/design/kabinet/README.md (Карточки: «набросать сцену-связку черновиком»),nice-to-have,"Только черновик-предложение; по умолчанию без «напиши за меня» (S, Д20)."
+AI-03,в макете,openspec/context/_raw/design/kabinet/README.md («Варианты» — три варианта в голосе персонажа; вопросы шага 11 с вариантами),must-have,3–5 вариантов — инвариант цикла этапа.
+AI-04,в макете,"openspec/context/_raw/design/kabinet/README.md (Карта импульсов: вопросы, предложение групп и связей)",must-have,
+AI-05,в спеке,"openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md (Д15, Д16: вопросы вместо генерации досье)",must-have,Ответ на сгенерированное досье у STARC; у нас — вопросы и варианты.
+AI-06,в спеке,openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md (Д13: варианты структуры по Д8/Д11),must-have,
+AI-07,в спеке,openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md (Д9: варианты логлайна из Д1–Д8),must-have,
+AI-08,в макете,openspec/context/_raw/design/kabinet/README.md («Варианты» в голосе персонажа),must-have,
+AI-09,нет,,nice-to-have,
+AI-10,нет,,nice-to-have,
+AI-11,в макете,openspec/context/_raw/design/kabinet/README.md («Сверить» — реплика против профиля),must-have,
+AI-12,в макете,openspec/context/ADR/ADR-004-frontend-stack.md; openspec/context/_raw/design/kabinet/README.md (правка «было → стало»),must-have,
+AI-13,в макете,openspec/context/_raw/design/kabinet/index.html (заметки на полях; чат «Почему сцена 12 такая низкая?»),must-have,Критика всегда с цитатой.
+AI-14,в макете,openspec/context/_raw/design/kabinet/README.md (Ритм; Таймлайн),must-have,
+AI-15,в макете,"openspec/context/_raw/design/kabinet/README.md (противоречие сцены 14); openspec/context/01-product-context.md (Д18, Д21)",must-have,Центральная ценность продукта.
+AI-16,в макете,"openspec/context/_raw/design/kabinet/README.md (Отношения, настроение героинь)",must-have,
+AI-17,нет,,не нужно,Оценка «годно/не годно» противоречит роли соавтора.
+AI-18,в спеке,openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md (Д14: синопсис по сценам),nice-to-have,
+AI-19,в макете,openspec/context/ADR/ADR-006-workspace-kabinet.md («на что ИИ опирается»); openspec/context/01-product-context.md (документы-входы),must-have,
+AI-20,нет,,не нужно,"Пользовательские промпты не нужны; MCP-эндпоинт AgentOS (app/interfaces.py) — служебный, не пользовательская функция."
+AI-21,нет,,не нужно,Модели закреплены ADR-003.
+AI-22,нет,,nice-to-have,
+AI-23,в макете,"openspec/context/_raw/design/kabinet/README.md (строка соавтора, «Спросить»); openspec/context/ADR/ADR-004-frontend-stack.md (CopilotKit)",must-have,
+AI-24,в макете,"openspec/context/_raw/design/kabinet/README.md (шаг 11: вопросы по одному, режимы «Тихо/Обычно/Внимательно»); openspec/context/ADR/ADR-006-workspace-kabinet.md",must-have,Отличие продукта.
+AI-25,в макете,openspec/context/ADR/ADR-006-workspace-kabinet.md (строка разговора с указанием источника); openspec/context/01-product-context.md,must-have,Оценки с цитатами.
+AI-26,в макете,openspec/context/ADR/ADR-006-workspace-kabinet.md; openspec/context/_raw/design/kabinet/index.html,must-have,
+AI-27,нет,,nice-to-have,Модель оплаты нигде не описана; решение владельца.
+AI-28,нет,,не нужно,
+AI-29,в макете,openspec/context/_raw/design/kabinet/index.html (Настройки: «не используются для обучения моделей»); openspec/context/_raw/design/kabinet/README.md (допущения),must-have,"Обещание, надо сверить с условиями провайдеров."
+AI-30,нет,,не нужно,
+AI-31,нет,,не нужно,
+AI-32,нет,,не нужно,"Только русский (PC, Known limitations)."
+IO-01,в макете,"openspec/context/_raw/design/kabinet/index.html (Из рукописи: DOCX, PDF, Fountain, Final Draft, .starc); openspec/context/01-product-context.md",must-have,"Разбор в сцены, персонажей, места с вопросами на полях."
+IO-02,в спеке,openspec/context/ADR/ADR-005-starc-reference-flows.md; openspec/context/01-product-context.md,must-have,Решение lehard 2026-10-28: импорт и экспорт Fountain и FDX нужны.
+IO-03,в спеке,openspec/context/ADR/ADR-005-starc-reference-flows.md; openspec/context/01-product-context.md,must-have,Решение lehard 2026-10-28: импорт и экспорт Fountain и FDX нужны.
+IO-04,в макете,openspec/context/_raw/design/kabinet/index.html (импорт из рукописи); openspec/context/01-product-context.md,must-have,
+IO-05,нет,,не нужно,"Импорт .starc предусмотрен (ADR-005), Scrivener нет."
+IO-06,нет,,nice-to-have,
+IO-07,в макете,openspec/context/_raw/design/kabinet/index.html (Экспорт),must-have,
+IO-08,в макете,openspec/context/_raw/design/kabinet/index.html (Экспорт),must-have,
+IO-09,в макете,"openspec/context/_raw/design/kabinet/index.html (Экспорт, #export/dark/fountain)",must-have,Решение lehard 2026-10-28: импорт и экспорт Fountain и FDX нужны.
+IO-10,в макете,openspec/context/_raw/design/kabinet/index.html (Экспорт «Final Draft»),must-have,Решение lehard 2026-10-28: импорт и экспорт Fountain и FDX нужны.
+IO-11,нет,,nice-to-have,Для прозы.
+IO-12,нет,,не нужно,
+IO-13,в спеке,openspec/context/ADR/ADR-005-starc-reference-flows.md,must-have,Решение lehard 2026-10-28: экспорт Markdown нужен.
+IO-14,в макете,"openspec/context/_raw/design/kabinet/index.html (Экспорт: что выгрузить, титульный лист, номера сцен, заметки соавтора)",nice-to-have,
+IO-15,нет,,не нужно,Формат для англоязычных агентов.
+IO-16,нет,,не нужно,
+IO-17,нет,,не нужно,
+IO-18,нет,,не нужно,
+IO-19,нет,,не нужно,
+IO-20,нет,,не нужно,
+IO-21,нет,,не нужно,
+IO-22,нет,,не нужно,"Название и автор для титульного листа есть, обложки нет."
+PL-01,в макете,openspec/context/_raw/design/kabinet/index.html; openspec/context/ADR/ADR-001-three-services.md; openspec/specs/web/app/spec.md; web/src/App.tsx,must-have,В web/ пока каркас и showcase дизайн-системы; рабочего места нет.
+PL-02,не делаем,openspec/context/ADR/ADR-001-three-services.md (веб-клиент); openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md,не нужно,Windows: десктоп-приложений не строим.
+PL-03,не делаем,openspec/context/ADR/ADR-001-three-services.md (веб-клиент); openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md,не нужно,macOS: десктоп-приложений не строим.
+PL-04,не делаем,openspec/context/ADR/ADR-001-three-services.md (веб-клиент); openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md,не нужно,Linux: десктоп-приложений не строим.
+PL-05,не делаем,openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md (мобильная версия не строится),nice-to-have,Адаптив до телефона в макете (830 px) есть; нативное приложение — нет.
+PL-06,не делаем,openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md (мобильная версия не строится),nice-to-have,"То же, что iOS."
+PL-07,в макете,openspec/context/_raw/design/kabinet/index.html (состояние «Нет связи · N правок на этом устройстве»); openspec/context/_raw/design/kabinet/README.md (Состояния),nice-to-have,"Работа без сети буферизуется, полного офлайна нет."
+PL-08,в спеке,openspec/context/ADR/ADR-001-three-services.md (бэкенд хранит проект; фронт без своей БД),must-have,
+PL-09,нет,,nice-to-have,Хранение в PostgreSQL; открытый формат — через экспорт.
+PL-10,в макете,"openspec/context/_raw/design/kabinet/index.html (Настройки: «Выгрузить всё», архив по почте); openspec/context/ADR/ADR-001-three-services.md (общий бэкап БД)",must-have,
+BZ-01,нет,,nice-to-have,Модель монетизации не описана.
+BZ-02,нет,,nice-to-have,
+BZ-03,нет,,не нужно,
+BZ-04,нет,,nice-to-have,
+BZ-05,в макете,"openspec/context/_raw/design/kabinet/index.html; openspec/specs/web/app/spec.md (Язык интерфейса: lang=""ru"")",must-have,Каркас в web/ уже русский.
+BZ-06,в спеке,openspec/context/01-product-context.md (язык только русский); openspec/context/ADR/ADR-003-deepseek-litellm-gigachat.md,must-have,
+BZ-07,в макете,openspec/context/_raw/design/kabinet/README.md (панель «Как работать с доской»); путь из 22 шагов как встроенное обучение,nice-to-have,
+BZ-08,нет,,не нужно,

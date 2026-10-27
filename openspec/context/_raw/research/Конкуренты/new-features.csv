@@ -1,0 +1,203 @@
+продукт,id,значение,комментарий,источник
+final-draft,NEW-SC-1,есть,"Отчёт о разнообразии персонажей (inclusivity report): кастомные свойства персонажей, графики, CSV",https://kb.finaldraft.com/hc/en-us/articles/15575055785620-Does-Final-Draft-offer-a-character-diversity-report
+final-draft,NEW-SC-2,есть,Reader Mode: читательский доступ к Cloud (регистрация),https://www.finaldraft.com/products/final-draft-cloud/
+final-draft,NEW-ST-1,есть,"Structure Lines: цветовая разметка outline, актов, sequences и сцен прямо в сценарии",https://www.finaldraft.com/learn/final-draft-quick-start/
+final-draft,NEW-ED-1,есть,"Emoji в сценарии, битах, титульной и ScriptNotes",https://www.finaldraft.com/learn/final-draft-quick-start/
+final-draft,NEW-SC-3,есть,Custom Color PDFs: PDF в тёмных и своих темах,https://www.finaldraft.com/learn/final-draft-quick-start/
+final-draft,NEW-SC-4,есть,"Final Draft Go: отдельное мобильное приложение по подписке, Character Highlight для читок",https://www.finaldraft.com/products/final-draft-iphone-ipad/
+final-draft,NEW-CO-1,есть,"ScriptNotes: цветные маркеры заметок, не меняющие черновик",https://www.finaldraft.com/learn/final-draft-quick-start/
+final-draft,NEW-BZ-1,есть,Big Break: собственный конкурс сценариев,https://www.finaldraft.com/products/final-draft-13/
+final-draft,NEW-AI-1,есть,Позиционирование «защита от AI-скрейпинга» как продающее свойство Cloud,https://www.finaldraft.com/products/final-draft-cloud/
+final-draft,NEW-PL-1,есть,Лицензия активируется на двух компьютерах одновременно; 30-дневный возврат,https://www.finaldraft.com/products/final-draft-13/
+final-draft,NEW-SC-5,есть,"Alt Dialogue: несколько вариантов реплики на одном месте, переключение стрелками, в PDF попадает показанный",https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=170 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=171
+final-draft,NEW-SC-6,есть,"Format Assistant: проверка формата (персонаж без реплики, две реплики подряд, пустые элементы), запуск перед печатью",https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=227 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=228 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=229 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=230
+final-draft,NEW-SC-7,есть,Names Database: более 90 000 имён с поиском по префиксу и добавлением в SmartType,https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=224
+final-draft,NEW-SC-8,есть,Combine Files: склейка нескольких FDX в один новый сценарий в выбранном порядке,https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=220 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=221
+final-draft,NEW-SC-9,есть,Rename Character: переименование героя во всех элементах и инструментах (без отмены),https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=84 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=85
+final-draft,NEW-SC-10,есть,"Macros: горячие клавиши и алиасы (автозамена с Smart Replace), перенос между сценариями",https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=195 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=196 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=197 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=198 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=199 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=200
+final-draft,NEW-SC-11,есть,Highlight Characters для читок и Character Sides: печать только страниц с репликами персонажа,https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=136 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=137 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=62
+final-draft,NEW-SC-12,есть,"Omit Scene / Unomit: сцена скрывается, номер сохраняется, возможен возврат",https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=253 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=254
+final-draft,NEW-SC-13,есть,Watermark: текст на каждой странице печати и PDF (из PDF не удалить),https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=191 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=192
+final-draft,NEW-SC-14,есть,"Non-Speaking Character и Cast List: список персонажей сцены, порядок настраивается",https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=169 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=134 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=321
+final-draft,NEW-SC-15,есть,"Управление числом страниц: Line Spacing, Leading, Break at Sentences (Page Count)",https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=186 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=187 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=304
+final-draft,NEW-ED-2,есть,"Bookmarks (Ctrl+M): закладки на абзацах, переход из Go To",https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=162 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=201 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=202
+final-draft,NEW-ED-3,есть,"Labels: текст в колонтитулы с нужной страницы (акт, сцена)",https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=163 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=164
+final-draft,NEW-ST-2,есть,"Outline Goal / Target Script Length: бит привязан к диапазону страниц, шкала в страницах или процентах",https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=336 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=203 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=364
+final-draft,NEW-ST-3,есть,"Navigator: свои вкладки Script / Characters / ScriptNote, колонки, сортировка, фильтр, экспорт в CSV",https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=376 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=377 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=378 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=380 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=381 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=384 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=385
+final-draft,NEW-ST-4,есть,"Заголовок сцены (Scene Title) и цвет сцены, видимые в Navigator, карточках и Scene View",https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=389 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=391 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=419 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=427
+final-draft,NEW-ST-5,есть,"Печать Index Cards на карточки 3x5, 4x6 или на заготовку, выбранные карточки, рамки",https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=414 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=415
+final-draft,NEW-BD-1,есть,Export > Beat Board: сохранение доски в PDF,https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=53
+final-draft,NEW-BD-2,есть,Перетаскивание Beat на страницу сценария и выделенного текста в Beat; trim bin для вырезанного,https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=343 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=345 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=20
+final-draft,NEW-CO-2,есть,"Collaboration без аккаунта: Session ID, подтверждение хоста, таймаут около 20 мин, общий Beat Board",https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=215 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=216 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=217 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=219
+final-draft,NEW-IO-1,есть,"Экспорт Avid Script-Based Editing, EP Scheduling (.sex), Tab-delimited Dialogue, CSV из Navigator",https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=52 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=53 ; https://www.finaldraft.com/downloads/manuals/fd13-user-guide-win-exported.pdf#page=381
+writerduet,NEW-SC-1,есть,"Rename Character: переименование персонажа везде, включая действие",https://writerduet.helpscoutdocs.com/article/66-change-character-name
+writerduet,NEW-SC-2,есть,Гендерный анализ и тест Бекдел в Document Statistics,https://writerduet.helpscoutdocs.com/article/214-document-statistics
+writerduet,NEW-ED-1,есть,Line Alternates: несколько вариантов строки в тексте,https://writerduet.helpscoutdocs.com/article/102-line-alternates
+writerduet,NEW-ED-2,есть,Graveyard: архив вырезанных сцен и строк,https://writerduet.helpscoutdocs.com/article/199-graveyard
+writerduet,NEW-CO-1,есть,ReadThrough: публичная ссылка для чтения с комментариями,https://writerduet.helpscoutdocs.com/article/253-readthrough
+writerduet,NEW-ED-3,есть,Shorten Document: автоподгонка страниц за счёт полей и строк,https://writerduet.helpscoutdocs.com/article/216-shorten-document-length
+writerduet,NEW-AI-1,есть,ScreenplayProof: платная ИИ-вычитка сценария ($20 / $30 за прогон),https://writerduet.helpscoutdocs.com/article/386-screenplayproof-paid-feature
+writerduet,NEW-ED-4,есть,Check Formatting: поиск типовых ошибок оформления,https://writerduet.helpscoutdocs.com/article/85-check-formatting-feature
+writerduet,NEW-SC-3,есть,Date & Writers Revisions: ретроспективный сбор правок по дню и автору,https://writerduet.helpscoutdocs.com/article/110-date-writers
+writerduet,NEW-BZ-1,есть,Образовательные тарифы и классные лицензии,https://writerduet.helpscoutdocs.com/article/231-choose-the-best-subscription-for-you
+fade-in,NEW-ED-1,есть,Dialogue Tuner: правка всех реплик одного персонажа в одном окне,https://www.fadeinpro.com/page.pl?content=features
+fade-in,NEW-SC-1,есть,Alt elements и многоколоночные A/V-сценарии,https://www.fadeinpro.com/page.pl?content=comparison
+fade-in,NEW-SC-2,есть,Пакетная генерация копий с водяными знаками,https://www.fadeinpro.com/page.pl?content=features
+fade-in,NEW-ED-2,есть,Подгонка длины строк (auto line adjustment) для сокращения страниц,https://www.fadeinpro.com/page.pl?content=features
+fade-in,NEW-IO-1,есть,Открытый формат Open Screenplay Format с SDK,https://www.fadeinpro.com/page.pl?content=download
+fade-in,NEW-IO-2,есть,"Импорт из Celtx, StudioBinder, Highland, Movie Magic через RTF",https://www.fadeinpro.com/page.pl?content=features ; https://www.fadeinpro.com/page.pl?content=version_notes
+fade-in,NEW-BZ-1,есть,Бесплатные обновления навсегда при разовой покупке; офлайн без аккаунта,https://www.fadeinpro.com/page.pl?content=purchase
+fade-in,NEW-VE-1,есть,Scene Versions и Omitted Scenes,https://www.fadeinpro.com/page.pl?content=version_notes
+fade-in,NEW-ED-3,есть,Полностью настраиваемые меню и горячие клавиши,https://www.fadeinpro.com/page.pl?content=comparison
+fade-in,NEW-PL-1,есть,Linux-сборка и Apple Silicon,https://www.fadeinpro.com/page.pl?content=download
+arc-studio,NEW-ARC-1,есть,The Stash: вырезанные куски текста хранятся и возвращаются перетаскиванием (Pro),https://help.arcstudiopro.com/guides/the-stash
+arc-studio,NEW-ARC-2,есть,Branch & Merge с правкой на один бит,https://help.arcstudiopro.com/guides/branch-merge
+arc-studio,NEW-ARC-3,есть,Beat Inbox и пометка ключевых битов,https://help.arcstudiopro.com/guides/the-plot-board
+arc-studio,NEW-ARC-4,есть,"Двусторонние ссылки [[ ]] и backlinks в заметках, превращение заметки в бит",https://help.arcstudiopro.com/guides/notes-1
+arc-studio,NEW-ARC-5,есть,"ИИ-помощник по исследованию: ответ как заметка, вопросы по ней (Cmd+R)",https://help.arcstudiopro.com/how-tos/notes-research/how-do-i-use-the-ai-research-assistant
+arc-studio,NEW-ARC-6,есть,Палитра команд Cmd+K с поиском по командам,https://help.arcstudiopro.com/guides/quick-formatting-shortcuts-keystrokes-guide
+arc-studio,NEW-ARC-7,есть,"Гостевой доступ без аккаунта для приглашений по email, выбор имени для правок",https://help.arcstudiopro.com/guides/collaboration-feedback
+arc-studio,NEW-ARC-8,есть,Arc Studio Classroom для школ,https://help.arcstudiopro.com/guides/arc-studio-classroom
+highland,NEW-HL-1,есть,Highland Fling: гостевая веб-версия для читателей с комментариями (март 2026),https://johnaugust.com/apps/highland
+highland,NEW-HL-2,есть,"Shelf: хранение вырезанных реплик, сниппетов и заметок",https://quoteunquoteapps.com/highland-pro/
+highland,NEW-HL-3,есть,PDF melting: превращение PDF сценария в редактируемый,https://www.screenweaver.ai/blog/highland-2-vs-highland-pro
+highland,NEW-HL-4,есть,"/Lookup: определения, рифмы и факты слэш-командой",https://quoteunquoteapps.com/highland-pro/
+highland,NEW-HL-5,есть,Открытый формат .highland на основе TextBundle (Zip с plain text),https://quoteunquoteapps.com/highland-pro/highland-format
+highland,NEW-HL-6,есть,Pro вместе с Freewrite: черновик в Fountain с устройства Freewrite открывается в Highland Pro,https://getfreewrite.com/blogs/writing-success/the-power-of-plain-text-screenwriting-with-freewrite-highland-pro
+highland,NEW-HL-7,есть,Доступность на Apple Vision,https://apps.apple.com/us/app/highland-pro/id6612007609
+highland,NEW-HL-8,есть,Header/Footer Builder с drag-and-drop,https://quoteunquoteapps.com/highland-pro/
+highland,NEW-HL-9,есть,"Markers, {{INCLUDE}}, {{SERIES}}, {{TIMESTAMP}} (справка Highland 2, в Pro не подтверждены)",https://highland-kb.quoteunquoteapps.com/
+starc,NEW-STARC-1,есть,Поэпизодник как проекция сценария: биты двигают текст,Разбор STARC для интеграции/Отчёт.md
+starc,NEW-STARC-2,есть,Тест Бекдел и гендерный анализ в статистике,Разбор STARC для интеграции/Отчёт.md
+starc,NEW-STARC-3,есть,ИИ: сценарий в роман и роман в сценарий,https://starc.app/ru/help/ai-assistant/
+starc,NEW-STARC-4,есть,"Открытое ядро GPL-3.0, файл .starc читается",Разбор STARC для интеграции/Отчёт.md
+starc,NEW-STARC-5,есть,Кампусные и студийные лицензии с управлением студентами,https://starc.app/help/campus-license/
+starc,NEW-STARC-6,есть,Режим изоляции сцены,Разбор STARC для интеграции/Отчёт.md
+starc,NEW-STARC-7,есть,"Генератор логлайна, постера и имён",https://starc.app/pricing/
+scrivener,NEW-SCR-1,есть,"Linguistic Focus (подсветка частей речи, macOS)",https://scrivenerville.com/scrivener-software/scrivener-3-vs-2-features-comparison/
+scrivener,NEW-SCR-2,есть,Collections и smart collections,https://www.literatureandlatte.com/scrivener/overview
+scrivener,NEW-SCR-3,есть,Copyholders: до четырёх документов в главном окне,https://www.literatureandlatte.com/introducing-scrivener-3
+scrivener,NEW-SCR-4,есть,Compile: section types и section layouts,https://writerunboxed.com/2018/04/05/scrivener-3s-new-approach-to-compile/
+scrivener,NEW-SCR-5,есть,"Project Statistics: частота слов, средняя длина предложения, страницы",https://scrivenerville.com/scrivener-software/scrivener-3-vs-2-features-comparison/
+scrivener,NEW-SCR-6,есть,Quick Search по полям проекта,https://scrivenerville.com/scrivener-software/scrivener-3-vs-2-features-comparison/
+scrivener,NEW-SCR-7,есть,Bookmarks (заменили Project Notes/References/Favorites),https://www.literatureandlatte.com/introducing-scrivener-3
+scrivener,NEW-SCR-8,есть,"Custom metadata: даты, списки, чекбоксы",https://www.literatureandlatte.com/introducing-scrivener-3
+scrivener,NEW-SCR-9,есть,Scrivenings: сшитый просмотр нескольких документов,https://www.literatureandlatte.com/scrivener/overview
+scrivener,NEW-SCR-10,есть,Sync with External Folder,https://releasebot.io/updates/literature-and-latte/scrivener
+atticus,NEW-ATT-1,есть,"Устройство-превью: Kindle, iPad, iPhone, Kobo и др.",https://www.atticus.io/
+atticus,NEW-ATT-2,есть,Конструктор тем с повторным использованием в серии,https://www.atticus.io/
+atticus,NEW-ATT-3,есть,Large print: одним кликом,https://www.atticus.io/
+atticus,NEW-ATT-4,есть,Callout boxes для нон-фикшн,https://www.atticus.io/
+atticus,NEW-ATT-5,есть,"Pre-export проверка: разрешение изображений, заголовки, trim",https://www.builtwritten.com/blog/what-is-atticus-2026
+atticus,NEW-ATT-6,есть,Пузыри текстовых сообщений (2026),https://meredithbond.com/update-atticus-reviewed/
+atticus,NEW-ATT-7,есть,Booklinker: универсальные ссылки на книгу (2026),https://meredithbond.com/update-atticus-reviewed/
+atticus,NEW-ATT-8,есть,Орнаментальные разделители (36 шт. в 2022) и свои картинки,https://indieauthormagazine.com/atticus/
+atticus,NEW-ATT-9,есть,Публичный roadmap на Notion,https://kindlepreneur.com/atticus/
+plottr,NEW-PLT-1,есть,Idea Board для идей (2025-10),https://plottr.com/changelog/
+plottr,NEW-PLT-2,есть,Bookmarks: быстрые ссылки на заметки и элементы outline (2025-10),https://plottr.com/changelog/
+plottr,NEW-PLT-3,есть,Plottr into Plottr: слияние проектов,https://plottr.com/changelog/
+plottr,NEW-PLT-4,есть,Серия: Series View и несколько книг в проекте,https://plottr.com/features/
+plottr,NEW-PLT-5,есть,Интеграция с Idea Threads (2025-12),https://plottr.com/changelog/
+plottr,NEW-PLT-6,есть,Enneagram Visualizer,https://plottr.com/
+plottr,NEW-PLT-7,есть,Флип таймлайна горизонтально/вертикально,https://docs.plottr.com/article/54-timeline-overview
+dabble,NEW-DAB-1,есть,"Review Copies: изолированная копия части проекта для друга, бета-ридера или редактора, с типом, областью доступа и слиянием обратно",https://www.dabblewriter.com/docs/collaboration-sharing/review-copies
+dabble,NEW-DAB-2,есть,"Time Machine: слайдер по истории проекта, Restore и Bring Forward одного документа",https://www.dabblewriter.com/docs/managing-projects/version-history
+dabble,NEW-DAB-3,есть,Писательские челленджи (60-Day Novel Challenge) прямо в форме цели; Days Off,https://www.dabblewriter.com/docs/reference/release-notes
+dabble,NEW-DAB-4,есть,"Ideas: отдельный проект на дашборде для идей, превращаются в проект",https://www.dabblewriter.com/docs/planning-story-notes
+dabble,NEW-DAB-5,есть,"Co-Author Colors: цвета авторов для текста, курсора и комментариев",https://www.dabblewriter.com/docs/collaboration-sharing
+dabble,NEW-DAB-6,есть,Command palette Quick Open (Cmd/Ctrl+K): поиск по названиям и полному тексту,https://www.dabblewriter.com/docs/writing-editing
+dabble,NEW-DAB-7,есть,Позиционирование «AI-free»: обещание никогда не писать текст за автора,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free
+dabble,NEW-DAB-8,есть,Экспорт сюжетной линии на индексных карточках 4x5 и 3x5,https://www.dabblewriter.com/docs/import-export-printing/export-your-manuscript
+dabble,NEW-DAB-9,есть,"Слияние, дублирование проектов, перенос глав/сцен/персонажей между проектами",https://www.dabblewriter.com/docs/managing-projects
+dabble,NEW-DAB-10,есть,"Read to Me: чтение вслух голосами системы, в т.ч. на мобильных",https://www.dabblewriter.com/docs/writing-editing
+campfire,NEW-CF-1,есть,"Конструктор вымышленных календарей: эры, месяцы, недели, луны, сезоны (Calendar Module)",https://www.campfirewriting.com/
+campfire,NEW-CF-2,есть,"Модуль Languages: конлангинг, образцы текста, переводы (Update 38)",https://www.campfirewriting.com/learn/update38
+campfire,NEW-CF-3,есть,"Магазин электронных книг, приложение для чтения и публикация с роялти до 80%",https://www.campfirewriting.com/self-publishing
+campfire,NEW-CF-4,есть,Модульная оплата: можно купить отдельные модули подпиской или навсегда,https://www.campfirewriting.com/pricing
+campfire,NEW-CF-5,есть,"Интерактивные карты: вложенные карты, пины, зоны, измерение расстояний; Maps 2.0",https://reedsy.com/blog/guide/book-writing-software/campfire-write-review/
+campfire,NEW-CF-6,есть,"Более 100 атрибутов персонажа, включая игровые статы (ability scores, HP, инвентарь), Enneagram и MBTI",https://campfirewriting.com/character-builder
+campfire,NEW-CF-7,есть,"Модули для магических систем, видов, культур, религий, философий",https://selfpublishing.com/campfire-writing-review/
+campfire,NEW-CF-8,есть,Gantt-вид таймлайна для больших периодов,https://www.campfirewriting.com/timeline-maker
+campfire,NEW-CF-9,есть,Связывание проектов одной серии или мира,https://campfirewriting.com/learn/project-linking-tutorial
+campfire,NEW-CF-10,есть,"Переработанный Encyclopedia Module (Update 41, 26 мая 2026)",https://campfirewriting.com/learn/update41
+livingwriter,NEW-LW-1,есть,"AI Convert to Screenplay: превращает главу или всю рукопись в сценарий (сцены, действие, диалоги)",https://guides.livingwriter.com/desktop-app-+-web-version/ai-features/ai-convert-to-screenplay
+livingwriter,NEW-LW-2,есть,AI-обложки и правка в Canva,https://guides.livingwriter.com/desktop-app-+-web-version/ai-features/ai-generate-cover-image
+livingwriter,NEW-LW-3,есть,"Stash: хранилище отложенных фрагментов, AI-ответов и оригиналов после Rewrite",https://guides.livingwriter.com/desktop-app-+-web-version/stash
+livingwriter,NEW-LW-4,есть,To-Do List с приоритетом и дедлайном; задачи создаются из AI Analysis,https://guides.livingwriter.com/desktop-app-+-web-version/to-do-list
+livingwriter,NEW-LW-5,есть,Research Board с цитированием,https://guides.livingwriter.com/desktop-app-+-web-version/boards/research-board
+livingwriter,NEW-LW-6,есть,Партнёрская программа Ambassador с рекуррентными комиссиями,https://guides.livingwriter.com/whats-new/changelog/june-17-2025
+livingwriter,NEW-LW-7,есть,Подарочные подписки (Gift),https://guides.livingwriter.com/whats-new/changelog/december-30-2023
+livingwriter,NEW-LW-8,есть,"Импорт глав, элементов и досок из других рукописей аккаунта",https://guides.livingwriter.com/desktop-app-+-web-version/importing-chapters-and-elements
+livingwriter,NEW-LW-9,есть,"Интеграции: Dropbox, Google Drive, Grammarly, ProWritingAid, Canva, Amazon KDP",https://www.livingwriter.com/
+livingwriter,NEW-LW-10,есть,"Сценарные главы в одной рукописи рядом с прозаическими, элементы из Story Elements",https://livingwriter.com/en/screenwriting
+sudowrite,NEW-AI-1,есть,"Saliency Engine: сам выбирает, какие персонажи/элементы мира отдать ИИ; глаз-переключатель видимости на карточке и на черте скрывает её от всего ИИ",https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/saliency-engine/4KL8gFeLZNvk8CEeXpfwB2
+sudowrite,NEW-AI-2,есть,"Quick Edit (Ctrl/Cmd+K): правка выделенного прямо в тексте, бесплатна по умолчанию, читает Story Bible, показывает зачёркнутый оригинал",https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/quick-edit/2asL35fds36oHAFJN7bYzz
+sudowrite,NEW-AI-3,есть,"Chat с режимом Allow edits: правит документы, Story Bible, ставит комментарии и подсветку; для сложного — план по шагам на утверждение",https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/chat/5vbuELXf6LZQnGfVzsEXCV
+sudowrite,NEW-AI-4,есть,Собственные модели прозы Muse (по умолчанию в Write/Draft) и Ballad (Rewrite с 22 сен 2026),https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/sudowrite-muse/4k9bFDMSyic6mFPkYFHrkZ
+sudowrite,NEW-AI-5,есть,Chapter Continuity: ручная связь документов в цепочку; Write читает до 20 000 слов из 25 предыдущих документов,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/chapter-continuity/4KL8gFeLZQ6GSBjDWtSbV6
+sudowrite,NEW-AI-6,есть,"Draft: проверка сцен (слишком короткие/длинные), оценка кредитов до запуска, пауза генерации",https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/scenes--draft/49p5MTVxTKkVFEC5rVUzpY
+sudowrite,NEW-AI-7,есть,"Write Tone Shift: продолжение в выбранном тоне (Ominous, Romantic, Sensual и др.) и ползунок Creativity",https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/write/pvxUvbQqYybfEosqx1sXjY
+sudowrite,NEW-AI-8,есть,Smart Dictation и Agentic Chat в мобильном приложении,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/web-app-vs-mobile-app-differences/6JmxspPSKC83DkQZ7rFYcJ
+sudowrite,NEW-AI-9,есть,"Smart Character/Worldbuilding Import: ИИ разбирает вставленный текст в карточки (до 30 за раз), без кредитов",https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/importing-files/rbGUgrZM6tNuXFG1hjDFyS
+sudowrite,NEW-AI-10,есть,Series: общий Story Bible и порядок книг в таймлайне серии; Chat знает серию,https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/series-support/3vfbZPCB1ANLm75FXmJf28
+novelcrafter,NEW-AI-1,есть,"Система промптов: библиотека, компоненты, входы (inputs), пресеты, персоны, функции в шаблонах; промпты делятся копированием",https://www.novelcrafter.com/help/docs/prompts/prompt-creation
+novelcrafter,NEW-AI-2,есть,Prompt Preview — просмотр точного промпта перед отправкой,https://www.novelcrafter.com/help/docs/prompts/prompt-preview
+novelcrafter,NEW-AI-3,есть,Четыре режима участия записи Codex в ИИ-контексте: Always/Include when detected/Don't include/Never; исключение сцены и секции из контекста,https://www.novelcrafter.com/help/docs/codex/codex-tracking
+novelcrafter,NEW-AI-4,есть,Codex Progressions: изменения записи привязаны к сцене и видны ИИ только после неё,https://www.novelcrafter.com/help/docs/codex/progressions-additions
+novelcrafter,NEW-AI-5,есть,"Настройка Thinking/Reasoning (prefer/avoid, уровень усилия) в промптах и коллекциях моделей (бета)",https://www.novelcrafter.com/help/docs/models/thinking-settings
+novelcrafter,NEW-AI-6,есть,"Extract: перенос структурных результатов чата в Codex, план, биты и сниппеты",https://www.novelcrafter.com/help/docs/organization/the-extract-feature
+novelcrafter,NEW-AI-7,есть,"Секции: заметки/альтернативы внутри сцены с переключателем «ИИ читает/не читает», kitbashing",https://www.novelcrafter.com/help/docs/write/sections
+novelcrafter,NEW-AI-8,есть,Инструкции в квадратных скобках внутри текста для точечных правок; Tweak and Generate,https://www.novelcrafter.com/help/docs/write/text-replacement-prompts
+novelcrafter,NEW-BD-1,есть,Appearance Heatmap и Characters per Scene — карта появлений записей по сценам,https://novelcrafter.com/features
+novelcrafter,NEW-CO-1,есть,Teams для писательских групп и редакторов (тариф Specialist),https://novelcrafter.com/features
+novelcrafter,NEW-AI-9,есть,Модельные коллекции системы (curated per price point) и модельный селектор с поиском; BYOK + OpenRouter 300+ моделей,https://www.novelcrafter.com/changelog
+novelai,NEW-AI-1,есть,"AI: Hypebot. ИИ-компаньон комментирует историю, частота настраивается",https://docs.novelai.net/en/text/editor
+novelai,NEW-AI-2,есть,"AI: Text Adventure режим. действия игрока с префиксом >, отдельный интерфейс",https://docs.novelai.net/en/text/textadventure
+novelai,NEW-AI-3,частично,"AI: Instruct-блоки { }. инструкция внутри текста; только Kayra/Clio, Editor V2",https://docs.novelai.net/en/text/specialmodules
+novelai,NEW-AI-4,есть,"AI: вероятности токенов. показ уверенности модели по каждому токену, Editor V2",https://docs.novelai.net/en/text/editor
+novelai,NEW-AI-5,есть,"AI: настройки сэмплинга и phrase bias. ползунки, Sampling Guide, фразовое смещение в лорбуке",https://docs.novelai.net/en/text/editor/slidersettings
+novelai,NEW-AI-6,есть,"AI: Lorebook-условия активации. случайность, режим истории, AND/OR/NOT, связанные записи (Xialong/GLM-4.6)",https://docs.novelai.net/en/text/lorebook
+novelai,NEW-AI-7,есть,AI: скриптовый API пользователя. пользовательские скрипты с хуками и доступом к контексту,https://docs.novelai.net/en/scripting/introduction
+novelai,NEW-IO-8,есть,IO: сценарии (.scenario) с плейсхолдерами. экспорт стартового набора истории с тегами и плейсхолдерами,https://docs.novelai.net/en/text/editor/storysettings
+novelai,NEW-AI-9,есть,"AI: модели Xialong, GLM-4.6. Xialong (355B, дообучен на прозе), контекст 28 672 + 8192 токенов",https://docs.novelai.net/en/text/models
+squibler,NEW-AI-1,есть,AI: Генерация книги или сценария целиком. Plus: книги 200-300 страниц из концепции; Pro безлимит книг,https://www.squibler.io/pricing
+squibler,NEW-AI-2,есть,AI: AI Visualize. изображения и короткие видео по выделенному фрагменту,https://www.squibler.io/
+squibler,NEW-IO-3,есть,IO: бесплатный печатный экземпляр. Plus и Pro получают печатную копию первой книги,https://www.squibler.io/pricing
+squibler,NEW-AI-4,есть,AI: Smart prompts и guided intro. умные подсказки и мастер вступления,https://www.squibler.io/
+author-today,NEW-IO-1,есть,"Подписка на черновик: платный доступ к незаконченной книге; обновлять 2–3 раза в месяц, завершить за 6 месяцев",https://help.author.today/knowledge_base/item/268659
+author-today,NEW-IO-2,есть,"Награды читателей к произведению (автор получает 90%), в т.ч. для бесплатных книг и фанфиков",https://help.author.today/knowledge_base/item/268665
+author-today,NEW-IO-3,есть,Эксклюзив: доля автора до 85% (комиссия 15%); обычно 70%: https://help.author.today/knowledge_base/item/268660,https://help.author.today/knowledge_base/item/268663
+author-today,NEW-IO-4,есть,"Скидки 10–80%, 1–3 дня, до 2 раз в месяц, автоповтор",https://help.author.today/knowledge_base/item/268664
+author-today,NEW-IO-5,есть,Промокоды (до 5 на книгу),https://help.author.today/knowledge_base/item/331179
+author-today,NEW-IO-6,есть,Циклы произведений,https://help.author.today/knowledge_base/item/268621
+author-today,NEW-IO-7,есть,Обязательная отметка ИИ-текстов в настройках; админ может поставить маркировку сам (детекторы),https://author.today/pages/rules
+author-today,NEW-IO-8,есть,Яндекс.Метрика для коммерческих авторов,https://help.author.today/knowledge_base/item/334091
+author-today,NEW-IO-9,есть,Рекламные кампании на площадке,https://help.author.today/knowledge_base/item/387772
+author-today,NEW-IO-10,есть,Защита от копирования текста в читалке; ограничение скачивания,https://help.author.today/knowledge_base/item/268601
+author-today,NEW-IO-11,есть,Публикация переводов (статус переводчика),https://help.author.today/knowledge_base/item/364761
+author-today,NEW-IO-12,есть,"Аудиокниги (MP3 до 150 МБ), для коммерческих авторов",https://help.author.today/knowledge_base/item/268599
+author-today,NEW-IO-13,есть,"Соавторство: доход делится поровну, изменить нельзя",https://help.author.today/knowledge_base/item/268623
+author-today,NEW-IO-14,есть,"Статусы произведения: черновик, для друзей, в процессе, весь текст, ознакомительный фрагмент",https://help.author.today/knowledge_base/item/268620
+litnet,NEW-IO-1,есть,"Платная подписка: роман 30–160 дней, 139–1000 ₽; мини 7–90 дней, 39–170 ₽; бесплатно до 200 000 знаков",https://litnet.com/info/spravka-avtoram
+litnet,NEW-IO-2,есть,Коммерческий статус: бесплатная завершённая книга >250 000 знаков и >150 регулярных читателей (или продажи на других площадках),https://litnet.com/info/spravka-avtoram
+litnet,NEW-IO-3,есть,"Литнет Rocket: комиссия до 50 ₽ за привлечённую продажу, только за реальные продажи; от 3 книг",https://litnet.com/info/spravka-avtoram
+litnet,NEW-IO-4,есть,Скидки на подписки и завершённые книги для неэксклюзивных авторов с Rocket,https://litnet.com/info/spravka-avtoram
+litnet,NEW-IO-5,есть,Рекламные переходы по лимитам в зависимости от числа подписчиков/продаж,https://litnet.com/info/spravka-avtoram
+litnet,NEW-IO-6,есть,Автоматический статус «Заморожена»: за 60 дней менее 5000 знаков обновлений,https://litnet.com/info/spravka-avtoram
+litnet,NEW-IO-7,есть,Уведомления подписчиков при обновлении от 20 000 знаков,https://litnet.com/info/spravka-avtoram
+litnet,NEW-IO-8,есть,"Выплаты раз в месяц до 20 числа; комиссия платёжных систем 2,5%; документы через анкету и заявление",https://litnet.com/info/spravka-avtoram
+litnet,NEW-IO-9,есть,Импорт FB2 создаёт главы автоматически; повторная загрузка удаляет все опубликованные главы,https://litnet.com/info/spravka-avtoram
+litnet,NEW-IO-10,есть,Награды читателей (тексты: https://litnet.com/ru/info/oplata),https://litnet.com/info/spravka-avtoram
+litnet,NEW-IO-11,есть,Правила ИИ только для литмобов: без существенного использования генеративного ИИ; допустимы ИИ-редактура и нейрообложки,https://litnet.com/info/spravka-avtoram
+litres-selfpub,NEW-IO-1,есть,"Книги в процессе (бывш. Черновики): 1–6 месяцев на завершение, ознакомительный фрагмент 10%, роялти 70%, чтение только онлайн",https://selfpub.ru/faq/chernoviki/
+litres-selfpub,NEW-IO-2,есть,"Лицензии и пакеты: Бесплатный, Базовый (неисключительный, 25%), Безлимитный (исключительный, 35%), «Продвинутый статус»",https://selfpub.ru/faq/license/
+litres-selfpub,NEW-IO-3,есть,"Цена 49,99–990 ₽; формула роялти с НДС 22% и налогом платёжной системы 3,5%",https://selfpub.ru/faq/pricing/
+litres-selfpub,NEW-IO-4,есть,Скидки и промоблок,https://selfpub.ru/faq/discounts/
+litres-selfpub,NEW-IO-5,есть,Платная корректура от 1250 ₽ за авторский лист,https://selfpub.ru/faq/proofreading/
+litres-selfpub,NEW-IO-6,есть,"Серии (книги, аудио, черновики)",https://selfpub.ru/faq/series/
+litres-selfpub,NEW-IO-7,есть,Донаты читателей,https://selfpub.ru/faq/donations/
+litres-selfpub,NEW-IO-8,есть,Реферальная программа,https://selfpub.ru/faq/author-referral/
+litres-selfpub,NEW-IO-9,есть,Бесплатные черновики (тест),https://selfpub.ru/faq/freechernovik/
+litres-selfpub,NEW-IO-10,есть,Выплаты по кварталам при заработке свыше 1000 ₽; роялти за чтение в Mybook-подписке,https://selfpub.ru/faq/statistics/
+litres-selfpub,NEW-IO-11,есть,"Заказ тиража, аудиокнига, продвижение",https://selfpub.ru/faq/circulation/
+litres-selfpub,NEW-IO-12,есть,Раздел для фанфиков с правилами,https://selfpub.ru/faq/fanfic/

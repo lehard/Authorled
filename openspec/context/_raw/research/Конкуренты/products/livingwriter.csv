@@ -1,0 +1,235 @@
+id,значение,источник,комментарий
+ED-01,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-02,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-03,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-04,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-05,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-06,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-07,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-08,есть,https://www.livingwriter.com/,"Сноски в любом месте текста, сводка в боковой панели"
+ED-09,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-10,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-11,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-12,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-13,есть,https://guides.livingwriter.com/desktop-app-+-web-version/first-line-auto-indent,First Line Auto-Indent в меню Format
+ED-14,есть,https://guides.livingwriter.com/desktop-app-+-web-version/global-defaults,"Global Defaults: размер и тип шрифта, межстрочный, межбуквенный и межабзацный интервалы; можно добавлять свои шрифты"
+ED-15,есть,https://guides.livingwriter.com/desktop-app-+-web-version/global-defaults,"Global Defaults: размер и тип шрифта, межстрочный, межбуквенный и межабзацный интервалы; можно добавлять свои шрифты"
+ED-16,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-17,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-18,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-19,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-20,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-21,есть,https://guides.livingwriter.com/product-documentation/mobile-app-guide/find-and-replace,Find and Replace по главе и по всей рукописи (описан в мобильной справке); поиск по всем заметкам на сайте
+ED-22,есть,https://guides.livingwriter.com/product-documentation/mobile-app-guide/find-and-replace,Find and Replace по главе и по всей рукописи (описан в мобильной справке); поиск по всем заметкам на сайте
+ED-23,есть,https://guides.livingwriter.com/product-documentation/mobile-app-guide/find-and-replace,Find and Replace по главе и по всей рукописи (описан в мобильной справке); поиск по всем заметкам на сайте
+ED-24,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-25,частично,https://guides.livingwriter.com/desktop-app-+-web-version/installing-grammarly,"Внешний Grammarly (расширения Chrome, Firefox, Edge) и интеграция ProWritingAid; встроенной проверки в справке нет"
+ED-26,частично,https://guides.livingwriter.com/desktop-app-+-web-version/installing-grammarly,"Внешний Grammarly (расширения Chrome, Firefox, Edge) и интеграция ProWritingAid; встроенной проверки в справке нет"
+ED-27,не проверено,https://www.livingwriter.com/,AI Writing Assistant работает на 100+ языках; проверка русского языка не заявлена
+ED-28,есть,https://guides.livingwriter.com/desktop-app-+-web-version/ai-features/ai-thesaurus,"AI Thesaurus: определения, синонимы, антонимы, этимология"
+ED-29,есть,https://guides.livingwriter.com/product-documentation/mobile-app-guide/editor/stats,"Счёт слов главы, оценка страниц; цели и сессии"
+ED-30,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-31,есть,https://guides.livingwriter.com/product-documentation/mobile-app-guide/editor/comments,"Комментарии к выделенному фрагменту, resolve; треды на сайте"
+ED-32,частично,https://guides.livingwriter.com/product-documentation/mobile-app-guide/editor/comments,Комментарии к фрагментам; заметки к главе в боковой панели; отдельных inline-аннотаций нет
+ED-33,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-34,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-35,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-36,частично,https://www.tckpublishing.com/livingwriter-review/,"Минималистичный редактор, боковые панели можно скрыть; полноэкранный режим в справке не описан"
+ED-37,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-38,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-39,есть,https://guides.livingwriter.com/whats-new/changelog/june-17-2025,Переключатель Dark Mode в правом верхнем углу
+ED-40,есть,https://www.livingwriter.com/,Светлая и тёмная темы и подобранные цветовые темы
+ED-41,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-42,не проверено,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Не найдено в справке guides.livingwriter.com и на сайте; справка лишь говорит о «широком наборе инструментов оформления»
+ED-43,есть,https://guides.livingwriter.com/desktop-app-+-web-version/tabbed-viewing,Открытие глав во вкладках; сайт заявляет «side by side»
+SC-01,есть,https://livingwriter.com/en/screenwriting,"Scene heading: Tab выбирает INT., EXT., I/E, затем место и время; места из Story Elements"
+SC-02,есть,https://livingwriter.com/en/screenwriting,Блок Action
+SC-03,есть,https://livingwriter.com/en/screenwriting,"Блок Character, имена из Story Elements типа «персонаж»"
+SC-04,есть,https://livingwriter.com/en/screenwriting,"Блок Dialogue, автоотступ после Character"
+SC-05,есть,https://livingwriter.com/en/screenwriting,Parentheticals между Character и Dialogue
+SC-06,есть,https://livingwriter.com/en/screenwriting,"Transitions с выравниванием вправо, из набора или вручную"
+SC-07,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-08,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-09,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-10,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-11,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-12,есть,https://livingwriter.com/en/screenwriting,Enter и Tab ведут по потоку сцены
+SC-13,есть,https://livingwriter.com/en/screenwriting,Имена и локации подтягиваются из Story Elements
+SC-14,есть,https://livingwriter.com/en/screenwriting,Имена и локации подтягиваются из Story Elements
+SC-15,есть,https://livingwriter.com/en/screenwriting,INT./EXT./I/E по Tab; время суток в поле заголовка
+SC-16,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-17,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-18,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-19,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-20,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-21,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-22,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-23,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-24,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-25,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-26,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-27,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-28,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-29,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-30,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-31,не проверено,https://livingwriter.com/en/screenwriting,"Страница Screenwriting перечисляет шесть типов блоков; остальное, а также экспорт Fountain/FDX и пагинация, не упомянуты"
+SC-32,не проверено,https://guides.livingwriter.com/whats-new/changelog/june-17-2025,AI Text-to-Speech анонсирован как «в подготовке» (июнь 2025); текущий статус не найден
+ST-01,есть,https://guides.livingwriter.com/desktop-app-+-web-version/chapters-and-elements/manuscript-section,"Папки, главы, подглавы, планы (outline); сценарные главы рядом с прозаическими"
+ST-02,есть,https://guides.livingwriter.com/desktop-app-+-web-version/chapters-and-elements/manuscript-section,"Перетаскивание, Move into..."
+ST-03,частично,https://guides.livingwriter.com/desktop-app-+-web-version/chapters-and-elements/manuscript-section,Папки и подглавы; глубина вложенности не уточнена
+ST-04,есть,https://guides.livingwriter.com/desktop-app-+-web-version/select-status,"Пользовательские статусы (основной и вторичные), несколько на главу"
+ST-05,есть,https://guides.livingwriter.com/desktop-app-+-web-version/boards/manuscript-board,Цвет главы по значку ведра с краской
+ST-06,есть,https://guides.livingwriter.com/desktop-app-+-web-version/recover-deleted-content,Recover Deleted Content в меню Revision
+ST-07,есть,https://guides.livingwriter.com/desktop-app-+-web-version/quickstart,"Шаблоны: путь героя, Romancing the Beat, сценарии, диссертации, мемуары, биографии, self-help"
+ST-08,есть,https://guides.livingwriter.com/desktop-app-+-web-version/notes,"Заметки (глобальные, рукописи, главы, задачи), Research Board, элементы"
+ST-09,частично,https://guides.livingwriter.com/product-documentation/mobile-app-guide/editor/manuscript,Сценарные главы лежат в общем навигаторе рукописи; отдельного навигатора сцен внутри сценария не описано
+ST-10,частично,https://guides.livingwriter.com/desktop-app-+-web-version/boards/manuscript-board,Планы (outlines) как элементы рукописи; свёрнутого вида текста нет в описании
+ST-11,частично,https://guides.livingwriter.com/desktop-app-+-web-version/boards/manuscript-board,"Manuscript Board: простой и детальный вид, фильтр по статусу; настраиваемых колонок нет"
+ST-12,есть,https://guides.livingwriter.com/desktop-app-+-web-version/boards/manuscript-board,Описание и заметки каждой главы на Manuscript Board
+ST-13,есть,https://guides.livingwriter.com/desktop-app-+-web-version/exporting-a-manuscript,"Экспорт всей рукописи или выбранных глав, заметок и элементов"
+ST-14,есть,https://www.livingwriter.com/,"Девять структур: Story Circle, Hero's Journey, 27 Chapter Method, Romancing the Beat, Screenplay Circle, 3 Act Film и др."
+ST-15,частично,https://guides.livingwriter.com/desktop-app-+-web-version/quickstart,При создании по шаблону задаются данные истории и рукопись создаётся с готовым планом; пошагового мастера нет
+ST-16,есть,https://kindlepreneur.com/living-writer-review,"Шаблоны Save the Cat, Romancing the Beat, Plot Dot"
+ST-17,не проверено,https://www.livingwriter.com/,Не найдено в справке guides.livingwriter.com и на сайте
+ST-18,не проверено,https://www.livingwriter.com/,Не найдено в справке guides.livingwriter.com и на сайте
+BD-01,есть,https://guides.livingwriter.com/desktop-app-+-web-version/boards/manuscript-board,Manuscript Board: карточки глав
+BD-02,есть,https://guides.livingwriter.com/desktop-app-+-web-version/boards/planning-board/freeform-grid,Freeform Grid: свободная доска без ограничений
+BD-03,есть,https://guides.livingwriter.com/desktop-app-+-web-version/boards/planning-board/freeform-grid,Group node для объединения пунктов
+BD-04,есть,https://guides.livingwriter.com/desktop-app-+-web-version/boards/planning-board/freeform-grid,Соединение пунктов связями
+BD-05,частично,https://guides.livingwriter.com/desktop-app-+-web-version/boards/planning-board/freeform-grid,Управление масштабом и сброс; мини-карта не упомянута
+BD-06,частично,https://guides.livingwriter.com/desktop-app-+-web-version/boards/planning-board/standard-grid,Пункты сюжета добавляются в рукопись; обратной синхронизации с текстом не описано
+BD-07,частично,https://guides.livingwriter.com/desktop-app-+-web-version/boards/planning-board/freeform-grid,Freeform Grid позволяет строить таймлайны и ветвления; специального таймлайна нет
+BD-08,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/boards/planning-board,Не найдено в справке guides.livingwriter.com и на сайте
+BD-09,есть,https://guides.livingwriter.com/desktop-app-+-web-version/boards/planning-board/standard-grid,"Standard Grid: неограниченные колонки, пункты типа outline/scene/custom/element"
+BD-10,есть,https://guides.livingwriter.com/desktop-app-+-web-version/boards/planning-board/standard-grid,Любое число колонок и досок на рукопись
+BD-11,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/boards/planning-board,Не найдено в справке guides.livingwriter.com и на сайте
+BD-12,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/boards/planning-board,Не найдено в справке guides.livingwriter.com и на сайте
+BD-13,есть,https://guides.livingwriter.com/desktop-app-+-web-version/boards/elements-board/element-board,Element Board: связи между элементами; freeform-доска родословных и ветвящихся таймлайнов
+BD-14,частично,https://guides.livingwriter.com/desktop-app-+-web-version/boards/planning-board/freeform-grid,Свободные узлы и текстовые узлы; отдельного майнд-карта режима нет
+BD-15,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/boards/planning-board,Не найдено в справке guides.livingwriter.com и на сайте
+BI-01,есть,https://guides.livingwriter.com/desktop-app-+-web-version/chapters-and-elements/elements-section,"Элементы: персонаж, место (setting), предмет"
+BI-02,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/chapters-and-elements/elements-section,"Шаблонов анкет персонажей не найдено; при создании: имя обязательно, остальные поля необязательны"
+BI-03,есть,https://guides.livingwriter.com/desktop-app-+-web-version/chapters-and-elements/elements-section,"Элементы: персонаж, место (setting), предмет"
+BI-04,есть,https://guides.livingwriter.com/desktop-app-+-web-version/chapters-and-elements/elements-section,"Элементы: персонаж, место (setting), предмет"
+BI-05,есть,https://www.livingwriter.com/,"Element Board: люди, места, предметы, организации"
+BI-06,есть,https://guides.livingwriter.com/desktop-app-+-web-version/boards/elements-board/tags-and-types,"Свои типы элементов с иконками, теги"
+BI-07,есть,https://guides.livingwriter.com/desktop-app-+-web-version/ai-features/ai-element-generation,"Изображения элементов, в т.ч. генерация ИИ"
+BI-08,есть,https://guides.livingwriter.com/desktop-app-+-web-version/relationships,"Relationships: именованные связи между элементами, Relations List"
+BI-09,есть,https://guides.livingwriter.com/whats-new/changelog/december-30th-2024,"Retroactive Mentions: упоминания помечаются автоматически, «Tag All Mentions»"
+BI-10,есть,https://www.livingwriter.com/,Раздел «Appears In» у элемента
+BI-11,не проверено,https://guides.livingwriter.com/whats-new/changelog/december-30th-2024,Hover показывает статусы глав; всплывающая карточка сущности не подтверждена
+BI-12,есть,https://guides.livingwriter.com/desktop-app-+-web-version/alternative-names,"Alternative Names: прозвища, сокращения"
+BI-13,частично,https://guides.livingwriter.com/desktop-app-+-web-version/ai-features/ai-analysis,AI Analysis ищет логические и сюжетные провалы с учётом элементов; формальной проверки фактов нет
+BI-14,не проверено,https://www.livingwriter.com/,"Есть страница для Worldbuilders, но отдельных систем магии/языков в справке нет"
+BI-15,есть,https://guides.livingwriter.com/desktop-app-+-web-version/boards/research-board,"Research Board: статьи, изображения, документы, заметки; цитирование"
+BI-16,частично,https://guides.livingwriter.com/desktop-app-+-web-version/importing-chapters-and-elements,Импорт элементов и досок из других рукописей; общей живой библии серии нет
+GO-01,есть,https://guides.livingwriter.com/desktop-app-+-web-version/goals,"Цели по словам с дедлайном для главы, рукописи и сессии"
+GO-02,есть,https://guides.livingwriter.com/desktop-app-+-web-version/goals,"Цели по словам с дедлайном для главы, рукописи и сессии"
+GO-03,нет,https://kindlepreneur.com/living-writer-review,Обзор Kindlepreneur (апрель 2026): ежедневной привычки и серий нет
+GO-04,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/stats,Не найдено в справке guides.livingwriter.com и на сайте
+GO-05,есть,https://guides.livingwriter.com/desktop-app-+-web-version/timer-and-sprints,"Основной таймер, Pomodoro, Writing Sprints"
+GO-06,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/stats,Не найдено в справке guides.livingwriter.com и на сайте
+GO-07,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/stats,Не найдено в справке guides.livingwriter.com и на сайте
+GO-08,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/stats,Не найдено в справке guides.livingwriter.com и на сайте
+GO-09,частично,https://guides.livingwriter.com/product-documentation/mobile-app-guide/editor/stats,Оценка числа страниц; времени чтения не найдено
+GO-10,есть,https://guides.livingwriter.com/desktop-app-+-web-version/stats,"Статистика по сессиям, дням, неделям, месяцам; Global Stats и Writing Lifestyle"
+VE-01,есть,https://www.livingwriter.com/,Автосохранение и резервирование
+VE-02,не проверено,https://guides.livingwriter.com/whats-new/changelog/june-17-2025,Shared snapshots анонсированы на будущее; ручные снимки не подтверждены
+VE-03,частично,https://www.livingwriter.com/,"Сайт заявляет «view, compare, restore»; справка описывает просмотр, копирование, удаление, откат"
+VE-04,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/version-history,Не найдено в справке guides.livingwriter.com и на сайте
+VE-05,есть,https://guides.livingwriter.com/desktop-app-+-web-version/version-history-1,Откат к версии главы или рукописи; хранение до шести месяцев
+VE-06,есть,https://guides.livingwriter.com/desktop-app-+-web-version/version-history-1,Версии по дням с под-версиями
+VE-07,не проверено,https://guides.livingwriter.com/whats-new/changelog/june-17-2025,"Tracked changes анонсированы в июне 2025 как «ближайшие недели»; текущий статус не подтверждён (сайт-агрегатор Techjockey заявляет, как каталог, без проверки)"
+VE-08,не проверено,https://guides.livingwriter.com/whats-new/changelog/june-17-2025,"Tracked changes анонсированы в июне 2025 как «ближайшие недели»; текущий статус не подтверждён (сайт-агрегатор Techjockey заявляет, как каталог, без проверки)"
+VE-09,есть,https://www.livingwriter.com/,"Треды у фрагмента, resolve"
+VE-10,частично,https://guides.livingwriter.com/desktop-app-+-web-version/share-manuscript-and-chapters,Ссылка на рукопись или главу с правами view/comment/edit; нужен ли аккаунт получателю — не сказано
+VE-11,есть,https://guides.livingwriter.com/desktop-app-+-web-version/share-manuscript-and-chapters,Права view-only
+CO-01,не проверено,https://guides.livingwriter.com/whats-new/changelog/june-17-2025,"Живые курсоры, чат в документе и tracked changes анонсированы на будущее (июнь 2025); завершение не подтверждено"
+CO-02,не проверено,https://guides.livingwriter.com/whats-new/changelog/june-17-2025,"Живые курсоры, чат в документе и tracked changes анонсированы на будущее (июнь 2025); завершение не подтверждено"
+CO-03,есть,https://guides.livingwriter.com/desktop-app-+-web-version/share-manuscript-and-chapters,"Права просмотра, комментариев, редактирования"
+CO-04,не проверено,https://guides.livingwriter.com/whats-new/changelog/june-17-2025,"Живые курсоры, чат в документе и tracked changes анонсированы на будущее (июнь 2025); завершение не подтверждено"
+CO-05,не проверено,https://guides.livingwriter.com/whats-new/changelog/june-17-2025,Не найдено в справке guides.livingwriter.com и на сайте
+CO-06,не проверено,https://guides.livingwriter.com/whats-new/changelog/june-17-2025,Не найдено в справке guides.livingwriter.com и на сайте
+CO-07,есть,https://guides.livingwriter.com/whats-new/changelog/june-17-2025,"In-app уведомления о дедлайнах, целях, задачах, изменениях общей рукописи"
+AI-01,частично,https://guides.livingwriter.com/whats-new/changelog/february-4th-2024,"Writing Assistant в чате (создание сцен, грамматика) вне рукописи; прямого «продолжить» в редакторе не найдено"
+AI-02,частично,https://guides.livingwriter.com/whats-new/changelog/february-4th-2024,"Writing Assistant в чате (создание сцен, грамматика) вне рукописи; прямого «продолжить» в редакторе не найдено"
+AI-03,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/ai-features/ai-rewrite,Не найдено в справке guides.livingwriter.com и на сайте
+AI-04,частично,https://guides.livingwriter.com/whats-new/changelog/february-4th-2024,Writing Assistant для общих вопросов о письме; отдельного режима брейншторма нет
+AI-05,есть,https://guides.livingwriter.com/desktop-app-+-web-version/ai-features/ai-element-generation,"AI Element Generation: персонажи, места, предметы с описанием и изображением"
+AI-06,есть,https://livingwriter.com/en/ai-features,"AI Outlines по премисе, героям, темам и структурам (путь героя, романтические биты)"
+AI-07,не проверено,https://livingwriter.com/en/ai-features,Не найдено в справке guides.livingwriter.com и на сайте
+AI-08,есть,https://guides.livingwriter.com/desktop-app-+-web-version/ai-features/ai-rewrite,AI Rewrite выделенного текста в заданном стиле и тоне; сохранённые промпты
+AI-09,частично,https://livingwriter.com/en/ai-features,Rewrite в сторону «лаконичнее/ярче/официальнее»; отдельных «расширить/сократить» не найдено
+AI-10,не проверено,https://livingwriter.com/en/ai-features,Не найдено в справке guides.livingwriter.com и на сайте
+AI-11,не проверено,https://livingwriter.com/en/ai-features,Не найдено в справке guides.livingwriter.com и на сайте
+AI-12,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/ai-features/ai-rewrite,Rewrite показывает новый вариант для вставки или сохранения оригинала в Stash; правки в тексте не как track changes
+AI-13,есть,https://guides.livingwriter.com/desktop-app-+-web-version/ai-features/ai-analysis,"AI Analysis: тон, структура, темп, замечания по сюжету и героям; заметки можно отправить в To-Do или Stash"
+AI-14,есть,https://guides.livingwriter.com/desktop-app-+-web-version/ai-features/ai-analysis,"AI Analysis: тон, структура, темп, замечания по сюжету и героям; заметки можно отправить в To-Do или Stash"
+AI-15,частично,https://www.livingwriter.com/,AI Analysis ищет логические и сюжетные провалы; специальной проверки непрерывности нет
+AI-16,частично,https://guides.livingwriter.com/desktop-app-+-web-version/ai-features/ai-analysis,Замечания по героям в AI Analysis; отдельного анализа арок нет
+AI-17,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/ai-features/ai-analysis,Покрытия сценария (coverage) не найдено
+AI-18,есть,https://guides.livingwriter.com/desktop-app-+-web-version/ai-features/ai-summarize,AI Summarize выделенного текста
+AI-19,есть,https://guides.livingwriter.com/whats-new/changelog/june-17-2025,AI Chat знает все элементы и доски; рукописи до 100 000 слов
+AI-20,частично,https://guides.livingwriter.com/desktop-app-+-web-version/ai-features/ai-rewrite,Сохранение своих промптов в Rewrite; плагины анонсированы на будущее
+AI-21,не проверено,https://livingwriter.com/en/ai-features,Не найдено в справке guides.livingwriter.com и на сайте
+AI-22,не проверено,https://livingwriter.com/en/ai-features,Не найдено в справке guides.livingwriter.com и на сайте
+AI-23,есть,https://guides.livingwriter.com/desktop-app-+-web-version/ai-features/ai-manuscript-chat,AI Manuscript Chat: вся рукопись или активная глава
+AI-24,не проверено,https://livingwriter.com/en/ai-features,Не найдено в справке guides.livingwriter.com и на сайте
+AI-25,не проверено,https://livingwriter.com/en/ai-features,Не найдено в справке guides.livingwriter.com и на сайте
+AI-26,не проверено,https://livingwriter.com/en/ai-features,Не найдено в справке guides.livingwriter.com и на сайте
+AI-27,частично,https://guides.livingwriter.com/whats-new/changelog/june-17-2025,Тарифы «Premium» и «Premium + AI»; Lifetime включает безлимитный ИИ; лимиты и кредиты не опубликованы
+AI-28,не проверено,https://livingwriter.com/en/ai-features,Своего ключа не найдено; модели не названы
+AI-29,есть,https://guides.livingwriter.com/whats-new/changelog/december-30-2023,Данные не используются для обучения ИИ; ИИ включается по желанию. Политика конфиденциальности про ИИ молчит
+AI-30,есть,https://guides.livingwriter.com/desktop-app-+-web-version/ai-features/ai-element-generation,Генерация изображений элементов и AI-обложек
+AI-31,не проверено,https://guides.livingwriter.com/whats-new/changelog/june-17-2025,AI Text-to-Speech анонсирован на будущее
+AI-32,не проверено,https://www.livingwriter.com/,Writing Assistant на 100+ языках и языковые настройки ИИ по функциям; отдельного перевода не найдено
+IO-01,есть,https://guides.livingwriter.com/desktop-app-+-web-version/importing-a-manuscript,"Импорт .docx, главы по заголовкам (H1; H2 как подглавы)"
+IO-02,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/exporting-a-manuscript,"Названы только PDF, DOCX, Google Drive, Amazon (экспорт) и .docx (импорт); остальные форматы не упомянуты"
+IO-03,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/exporting-a-manuscript,"Названы только PDF, DOCX, Google Drive, Amazon (экспорт) и .docx (импорт); остальные форматы не упомянуты"
+IO-04,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/exporting-a-manuscript,"Названы только PDF, DOCX, Google Drive, Amazon (экспорт) и .docx (импорт); остальные форматы не упомянуты"
+IO-05,не проверено,https://www.toolworthy.ai/en/tool/livingwriter,Сторонние каталоги пишут про миграцию из Scrivener/Word; в справке этого нет
+IO-06,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/exporting-a-manuscript,"Названы только PDF, DOCX, Google Drive, Amazon (экспорт) и .docx (импорт); остальные форматы не упомянуты"
+IO-07,есть,https://guides.livingwriter.com/desktop-app-+-web-version/exporting-a-manuscript,"Экспорт в DOCX и PDF всей рукописи или глав, с заметками и элементами"
+IO-08,есть,https://guides.livingwriter.com/desktop-app-+-web-version/exporting-a-manuscript,"Экспорт в DOCX и PDF всей рукописи или глав, с заметками и элементами"
+IO-09,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/exporting-a-manuscript,"Названы только PDF, DOCX, Google Drive, Amazon (экспорт) и .docx (импорт); остальные форматы не упомянуты"
+IO-10,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/exporting-a-manuscript,"Названы только PDF, DOCX, Google Drive, Amazon (экспорт) и .docx (импорт); остальные форматы не упомянуты"
+IO-11,есть,https://www.toolworthy.ai/en/tool/livingwriter,"Сайт и обзоры: экспорт DOCX, PDF, EPUB и Amazon KDP; в справке по экспорту EPUB не назван"
+IO-12,частично,https://kindlepreneur.com/living-writer-review,Экспорт для KDP; обзор: книгу к публикации LivingWriter не форматирует
+IO-13,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/exporting-a-manuscript,"Названы только PDF, DOCX, Google Drive, Amazon (экспорт) и .docx (импорт); остальные форматы не упомянуты"
+IO-14,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/exporting-a-manuscript,"Названы только PDF, DOCX, Google Drive, Amazon (экспорт) и .docx (импорт); остальные форматы не упомянуты"
+IO-15,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/exporting-a-manuscript,"Названы только PDF, DOCX, Google Drive, Amazon (экспорт) и .docx (импорт); остальные форматы не упомянуты"
+IO-16,нет,https://kindlepreneur.com/living-writer-review,"Обзор: форматирования книг для публикации нет, нужен отдельный инструмент"
+IO-17,частично,https://guides.livingwriter.com/desktop-app-+-web-version/exporting-a-manuscript,Экспорт в Amazon Manuscript и Google Drive; публикации на площадке нет
+IO-18,не проверено,https://guides.livingwriter.com/whats-new/changelog/june-17-2025,Wattpad-подобное делилка и система отзывов анонсированы на будущее (июнь 2025)
+IO-19,не проверено,https://guides.livingwriter.com/whats-new/changelog/june-17-2025,Wattpad-подобное делилка и система отзывов анонсированы на будущее (июнь 2025)
+IO-20,не проверено,https://guides.livingwriter.com/whats-new/changelog/june-17-2025,Wattpad-подобное делилка и система отзывов анонсированы на будущее (июнь 2025)
+IO-21,не проверено,https://guides.livingwriter.com/whats-new/changelog/june-17-2025,Wattpad-подобное делилка и система отзывов анонсированы на будущее (июнь 2025)
+IO-22,есть,https://guides.livingwriter.com/desktop-app-+-web-version/ai-features/ai-generate-cover-image,"Загрузка обложки, Canva, AI-обложка; название, описание, авторы при создании"
+PL-01,есть,https://livingwriter.com/en/downloads,Веб и десктоп-приложения для Windows 10+ и Mac
+PL-02,есть,https://livingwriter.com/en/downloads,Веб и десктоп-приложения для Windows 10+ и Mac
+PL-03,есть,https://livingwriter.com/en/downloads,Веб и десктоп-приложения для Windows 10+ и Mac
+PL-04,не проверено,https://livingwriter.com/en/downloads,Linux не упомянут
+PL-05,есть,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Мобильные приложения iOS и Android
+PL-06,есть,https://guides.livingwriter.com/product-documentation/mobile-app-guide,Мобильные приложения iOS и Android
+PL-07,частично,https://kindlepreneur.com/living-writer-review,"Десктоп «автономное» приложение; обзор: писать офлайн периодами можно, но постоянного офлайна нет; офлайн-режим анонсирован (июнь 2025)"
+PL-08,есть,https://www.livingwriter.com/,"Синхронизация между веб, десктопом, iOS и Android"
+PL-09,не проверено,https://guides.livingwriter.com/desktop-app-+-web-version/exporting-a-manuscript,Не найдено в справке guides.livingwriter.com и на сайте
+PL-10,есть,https://www.livingwriter.com/,"Автосохранение и резервирование, экспорт"
+BZ-01,частично,https://livingwriter.com/en/ai-features,Заявлено «free to start» и триал 7 дней без карты; постоянного бесплатного тарифа не подтверждено
+BZ-02,есть,https://www.toolworthy.ai/en/tool/livingwriter,"$12/мес при оплате за год ($144), $14.99 помесячно"
+BZ-03,есть,https://www.toolworthy.ai/en/tool/livingwriter,Lifetime $699
+BZ-04,есть,https://www.toolworthy.ai/en/tool/livingwriter,Триал 7 дней без карты (в старых обзорах 14 дней)
+BZ-05,нет,https://www.livingwriter.com/,Интерфейс только на английском и испанском
+BZ-06,нет,https://www.livingwriter.com/,Интерфейс только на английском и испанском
+BZ-07,частично,https://www.livingwriter.com/,"Руководства guides.livingwriter.com, блог; обучающих курсов внутри продукта нет"
+BZ-08,не проверено,https://guides.livingwriter.com/whats-new/changelog/june-17-2025,Не найдено в справке guides.livingwriter.com и на сайте; есть партнёрская программа Ambassador
+NEW-LW-1,есть,https://guides.livingwriter.com/desktop-app-+-web-version/ai-features/ai-convert-to-screenplay,"AI Convert to Screenplay: превращает главу или всю рукопись в сценарий (сцены, действие, диалоги)"
+NEW-LW-2,есть,https://guides.livingwriter.com/desktop-app-+-web-version/ai-features/ai-generate-cover-image,AI-обложки и правка в Canva
+NEW-LW-3,есть,https://guides.livingwriter.com/desktop-app-+-web-version/stash,"Stash: хранилище отложенных фрагментов, AI-ответов и оригиналов после Rewrite"
+NEW-LW-4,есть,https://guides.livingwriter.com/desktop-app-+-web-version/to-do-list,To-Do List с приоритетом и дедлайном; задачи создаются из AI Analysis
+NEW-LW-5,есть,https://guides.livingwriter.com/desktop-app-+-web-version/boards/research-board,Research Board с цитированием
+NEW-LW-6,есть,https://guides.livingwriter.com/whats-new/changelog/june-17-2025,Партнёрская программа Ambassador с рекуррентными комиссиями
+NEW-LW-7,есть,https://guides.livingwriter.com/whats-new/changelog/december-30-2023,Подарочные подписки (Gift)
+NEW-LW-8,есть,https://guides.livingwriter.com/desktop-app-+-web-version/importing-chapters-and-elements,"Импорт глав, элементов и досок из других рукописей аккаунта"
+NEW-LW-9,есть,https://www.livingwriter.com/,"Интеграции: Dropbox, Google Drive, Grammarly, ProWritingAid, Canva, Amazon KDP"
+NEW-LW-10,есть,https://livingwriter.com/en/screenwriting,"Сценарные главы в одной рукописи рядом с прозаическими, элементы из Story Elements"
