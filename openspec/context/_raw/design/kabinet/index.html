@@ -467,7 +467,7 @@
   .board-h { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
   .board-h h1 { font-size: 48px; margin: 0; }
   .seg { margin-left: auto; display: inline-flex; gap: 2px; padding: 3px; border-radius: 18px; background: var(--panel); box-shadow: var(--shadow-sm); }
-  .seg button { height: 30px; padding: 0 14px; border-radius: 15px; font-size: 13px; color: var(--ink-2); }
+  .seg button { white-space: nowrap; height: 30px; padding: 0 14px; border-radius: 15px; font-size: 13px; color: var(--ink-2); }
   .seg button[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: var(--shadow-sm); font-weight: 600; }
   .board-note { color: var(--ink-3); font-size: 14px; margin: 14px 0 0; max-width: 72ch; }
   .board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: start; margin-top: 22px; }
@@ -512,6 +512,72 @@
   .rel { width: 100%; height: auto; display: block; margin: 4px 0 8px; }
   .rel text { font-family: var(--font-ui); font-size: 12px; fill: var(--ink-2); }
   .rel text.nm { font-size: 14px; font-weight: 600; fill: var(--ink); }
+  .tl-tools { display: flex; align-items: center; gap: 6px; margin-top: 18px; font-size: 12.5px; color: var(--ink-3); }
+  .tl-tools span { margin-right: 4px; }
+  .tl-tools .chipbtn[aria-pressed="true"] { background: var(--ink); color: var(--paper); box-shadow: none; }
+  .tl-wrap { margin-top: 12px; background: var(--paper); border-radius: 20px; box-shadow: var(--shadow-sm); padding: 18px 20px 14px; overflow-x: auto; }
+  .tl { display: block; width: 100%; min-width: 860px; height: auto; }
+  .tl text { font-family: var(--font-ui); font-size: 12px; fill: var(--ink-2); }
+  .tl .h { font-size: 13px; font-weight: 600; fill: var(--ink); }
+  .tl .sub, .tl tspan.sub { font-size: 11.5px; font-weight: 400; fill: var(--ink-3); }
+  .tl .nm { font-size: 12.5px; font-weight: 600; fill: var(--ink); }
+  .tl .axis { fill: none; stroke: var(--line); stroke-width: 1.5; }
+  .tl .tick { fill: var(--ink-3); opacity: .45; }
+  .tl .sc { cursor: pointer; }
+  .tl .thread { fill: none; stroke: var(--ink-3); stroke-opacity: .45; stroke-width: 1.2; transition: stroke .2s, stroke-width .2s, stroke-opacity .2s; }
+  .tl .back .thread { stroke: var(--accent); stroke-opacity: .75; stroke-dasharray: 5 3; }
+  .tl .sc:hover .thread, .tl .sc.on .thread { stroke: var(--accent); stroke-opacity: 1; stroke-width: 2.2; }
+  .tl .fdot { fill: var(--paper); stroke: var(--ink-2); stroke-width: 1.5; }
+  .tl .sc.on .fdot { fill: var(--accent); stroke: var(--accent); }
+  .tl .fn { font-size: 11px; fill: var(--ink-3); text-anchor: middle; }
+  .tl .sc.on .fn { fill: var(--accent); font-weight: 600; }
+  .tl .node circle { fill: var(--paper); stroke: var(--ink-3); stroke-width: 1.5; transition: stroke-width .2s; }
+  .tl .node text { font-size: 10.5px; font-weight: 600; fill: var(--ink); text-anchor: middle; }
+  .tl .st-approved circle { stroke: var(--ok); fill: var(--ok-soft); }
+  .tl .st-in_progress circle { stroke: var(--wip); }
+  .tl .st-conflict circle { stroke: var(--bad); fill: var(--bad-soft); }
+  .tl .st-draft circle { stroke: var(--wip); stroke-dasharray: 3 2; }
+  .tl .st-not_started circle { stroke-dasharray: 2 2; }
+  .tl .sc:hover .node circle { stroke-width: 2.5; }
+  .tl .sc.on .node circle { stroke: var(--accent); stroke-width: 2.5; }
+  .tl .zone { fill: var(--accent-soft); opacity: .7; }
+  .tl .zone.lost { fill: var(--bad-soft); opacity: .55; }
+  .tl .zl { font-size: 11.5px; fill: var(--accent); }
+  .tl .selline { stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 2 3; }
+  .tl .k0 { stroke: var(--ink-3); stroke-opacity: .45; stroke-width: 1.5; }
+  .tl .k1 { fill: var(--c); fill-opacity: .2; stroke: var(--c); stroke-dasharray: 3 2; }
+  .tl .k2 { fill: var(--c); }
+  .tl .kdot { fill: var(--paper); stroke: var(--c); stroke-width: 1.5; }
+  .tl .kl { font-size: 11.5px; fill: var(--ink-2); }
+  .tl .over { fill: var(--bad-soft); stroke: var(--bad); stroke-dasharray: 4 3; }
+  .tl .bad { fill: var(--bad); }
+  .tl .bad-t, .bad-t { fill: var(--bad); color: var(--bad); }
+  .tl-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 8px 0 0 132px; font-size: 12px; color: var(--ink-3); }
+  .tl-legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .kd { --c: var(--ink-2); flex: none; width: 22px; height: 8px; border-radius: 4px; display: inline-block; }
+  .kd.k0 { height: 0; border-top: 1.5px solid var(--ink-3); opacity: .6; border-radius: 0; }
+  .kd.k1 { background: oklch(from var(--c) l c h / .2); box-shadow: inset 0 0 0 1px var(--c); }
+  .kd.k2 { background: var(--c); }
+  .lg { width: 22px; border-top: 1.5px solid var(--ink-3); display: inline-block; }
+  .lg.fb { border-top: 1.5px dashed var(--accent); }
+  .tl-sel { margin-top: 16px; background: var(--panel); border-radius: 16px; box-shadow: var(--shadow-sm); padding: 14px 16px; }
+  .tl-sel-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .tl-sel-h b { font-family: var(--font-prose); font-size: 18px; font-weight: 600; }
+  .tl-sel-h .cast { display: flex; gap: 3px; }
+  .tl-sel-h .chipbtn { margin-left: auto; }
+  .tl-sel p { margin: 6px 0 8px; font-family: var(--font-prose); font-size: 15.5px; color: var(--ink); }
+  .tl-facts, .tl-know { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 13px; color: var(--ink-2); }
+  .tl-know { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); align-items: center; }
+  .tl-know small { width: 100%; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+  .tl-know span { display: inline-flex; align-items: center; gap: 7px; }
+  .tl-alert { display: flex; gap: 12px; margin-top: 14px; background: var(--paper); border-radius: 16px; box-shadow: var(--shadow-sm), inset 3px 0 0 var(--bad); padding: 14px 16px; font-size: 14px; color: var(--ink-2); }
+  .tl-alert.ok { box-shadow: var(--shadow-sm), inset 3px 0 0 var(--ok); }
+  .tl-alert .av svg { width: 14px; height: 14px; }
+  .tl-alert .av { flex: none; width: 26px; height: 26px; border-radius: 13px; display: grid; place-items: center; background: var(--bad-soft); color: var(--bad); }
+  .tl-alert.ok .av { background: var(--ok-soft); color: var(--ok); }
+  .tl-alert b { color: var(--ink); }
+  .tl-alert p { margin: 3px 0 0; max-width: 78ch; }
+  .tl-alert .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .src { font-family: var(--font-ui); font-size: 13px; color: var(--ink-3); margin: 28px 0 0; padding-top: 14px; border-top: 1px solid var(--line); }
   .places { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-family: var(--font-ui); }
   .place { padding: 16px; border-radius: 14px; background: var(--panel); }
@@ -534,7 +600,7 @@
     .seg { margin-left: 0; }
     .board-h h1 { font-size: 36px; }
   }
-  @media (max-width: 600px) { .rcard { padding: 32px 22px 24px; } }
+  @media (max-width: 600px) { .rcard { padding: 32px 22px 24px; } .seg .wide { display: none; } }
 
   /* ——— Стандартное: поиск, сохранение, версии, экспорт, настройки, состояния ——— */
   .saved { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; border-radius: 18px; font-size: 12.5px; color: var(--ink-3); white-space: nowrap; transition: background .2s, color .2s; }
@@ -1029,6 +1095,7 @@ const STATE = {
   d11: { answers: [], own: [], checks: {}, approved: false },
   chg: "edit", chgOld: D2Q, chgNew: "Имеет ли человек право решать за близких, какую правду они смогут вынести?", plan: new Set([5, 9, 13]), revision: false,
   bibleTab: "people", gap: null,
+  tlSel: 14, tlThreads: true, tlKnow: true,
 };
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const approvedCount = () => STEPS.filter((s) => s[2] === "approved").length;
@@ -1040,7 +1107,7 @@ function renderPath() {
     <button class="step sub ${current === "scene" && STATE.sc === 13 ? "cur" : ""}" data-act="sc-open" data-k="13"><span class="dot approved"><i></i></span><span class="lbl">Сцена 13 · Озеро</span></button>
     <button class="step sub ${current === "scene" && STATE.sc === 14 ? "cur" : ""}" data-act="sc-open" data-k="14"><span class="dot ${STATE.sceneConflict ? "conflict" : "in_progress"}"><i></i></span><span class="lbl">Сцена 14 · Кухня</span>${STATE.sceneOpen ? `<span class="ping">${STATE.sceneOpen}</span>` : ""}</button>
     <button class="step sub ${current === "scene" && STATE.sc === 15 ? "cur" : ""}" data-act="sc-open" data-k="15"><span class="dot ${scStatus(15)}"><i></i></span><span class="lbl">Сцена 15 · Пристань</span></button>`;
-  const link = (key, icon, label) => `<button class="step link ${current === key ? "cur" : ""}" data-open="${key}"><span class="dot">${ico(icon)}</span><span class="n"></span><span class="lbl">${label}</span></button>`;
+  const link = (key, icon, label) => `<button class="step link ${current === key || (key === "cards" && current === "timeline") ? "cur" : ""}" data-open="${key}"><span class="dot">${ico(icon)}</span><span class="n"></span><span class="lbl">${label}</span></button>`;
   const tabs = current === "scene" ? `<div class="rtabs" role="group" aria-label="Что слева"><button aria-pressed="${STATE.rail === "path"}" data-act="rail" data-k="path">Путь</button><button aria-pressed="${STATE.rail === "scenes"}" data-act="rail" data-k="scenes">Сценарий</button></div>` : "";
   if (tabs && STATE.rail === "scenes") { document.getElementById("path").innerHTML = tabs + sceneNav(); return; }
   document.getElementById("path").innerHTML = tabs +
@@ -1285,9 +1352,19 @@ const VIEWS = {
 
   cards: () => `<div class="stage"><div class="home">
       <div class="board-h"><div><div class="hello">Тихая вода · полный метр</div><h1>Карточки сцен</h1></div>
-        <div class="seg"><button aria-pressed="true">Карточки</button><button aria-pressed="false" data-open="scene">Текст сценария</button><button aria-pressed="false" data-act="demo" data-k="Таймлайн в макете пока не нарисован.">Таймлайн</button></div></div>
+        <div class="seg"><button aria-pressed="true">Карточки</button><button aria-pressed="false" data-open="scene">Текст<span class="wide"> сценария</span></button><button aria-pressed="false" data-open="timeline">Таймлайн</button></div></div>
       <p class="board-note">Карточки и сценарий — одна история в двух видах: переставили карточку — сцены в тексте встали так же. Карточки можно перетаскивать.</p>
       <div class="board">${ACTS.map(actCol).join("")}</div>
+    </div></div>`,
+
+  timeline: () => `<div class="stage"><div class="home">
+      <div class="board-h"><div><div class="hello">Тихая вода · полный метр</div><h1>Таймлайн</h1></div>
+        <div class="seg"><button aria-pressed="false" data-open="cards">Карточки</button><button aria-pressed="false" data-open="scene">Текст<span class="wide"> сценария</span></button><button aria-pressed="true">Таймлайн</button></div></div>
+      <p class="board-note">Сверху — когда события случились, снизу — в каком порядке их видит зритель. Нить связывает сцену с её моментом: где нити перекрещиваются, там флешбэк. День берётся из параметров сцены.</p>
+      <div class="tl-tools"><span>Слои</span><button class="chipbtn" aria-pressed="${STATE.tlThreads}" data-act="tl-layer" data-k="tlThreads">Нити</button><button class="chipbtn" aria-pressed="${STATE.tlKnow}" data-act="tl-layer" data-k="tlKnow">Кто что знает</button></div>
+      <div class="tl-wrap">${tlSvg()}${tlLegend()}</div>
+      ${tlSel()}
+      ${STATE.tlKnow ? tlAlert() : ""}
     </div></div>`,
 
   // ——— Стандартное: версии, экспорт, настройки, состояния ———
@@ -1552,6 +1629,7 @@ function paletteSource() {
     .map(([q, hint, key]) => ({ g: "Цитаты", label: `«${q}»`, hint, quote: true, lead: ico("page"), run: () => (key ? open(key) : toast("«Тональный манифест» в макете не нарисован.")) }));
   const actions = [
     ["Найти и заменить в сцене", "⌘F", () => setTimeout(openFind, 0), "search"],
+    ["Таймлайн истории", "время, порядок сцен, кто что знает", () => open("timeline"), "clock"],
     ["Экспорт", "сценарий, поэпизодник, библия", () => open("export"), "download"],
     ["Настройки", "внешний вид, соавтор, данные", () => open("settings"), "gear"],
     ["История версий «Манифеста темы»", "сравнить и вернуть", () => open("versions"), "clock"],
@@ -1723,6 +1801,97 @@ const GHOST = `<div class="scard ghost" data-ghost><div class="top">${ico("ai")}
   <div class="acts"><button class="chipbtn main" data-act="gap-yes">Набросать</button><button class="chipbtn quiet" data-act="gap-no">Не нужно</button></div></div>`;
 const actCol = ([num, name, range, list, fold]) => `<section class="act"><div class="act-h"><b>Акт ${num} · ${name}</b><span>${range}</span></div>
   <div class="act-list" data-actn="${num}">${list.map((c) => (c === "gap" ? (STATE.gap === null ? GHOST : STATE.gap ? scard(SKETCH) : "") : scard(c))).join("")}</div><div class="fold">${fold}</div></section>`;
+// ——— Таймлайн: как было (фабула), как показано (сюжет) и кто что знает ———
+// [сцена, название, день истории (0 — август 1998), доля суток, когда, состав, статус, о чём]
+const TL = [
+  [1, "Озеро, 1998", 0, 0.3, "август 1998, вечер", "МВ", "approved", "Миша на мостках просит сестру не уходить."],
+  [2, "Дом Веры, утро", 1, 0.3, "1-й день, утро", "ВА", "approved", "Всё на своих местах. Вера собирает дочь на поезд."],
+  [3, "Вокзал", 1, 0.6, "1-й день", "ВА", "approved", "Аня уезжает в город. Вера не машет."],
+  [5, "Квартира Ани", 2, 0.45, "2-й день", "А", "approved", "В коробке от бабушки — фото с озера."],
+  [7, "Звонок", 2, 0.8, "2-й день, вечер", "ВА", "approved", "«Кто этот мальчик?» — «Соседский»."],
+  [9, "Дядя Коля", 3, 0.15, "3-й день, утро", "АК", "approved", "Аня едет к дяде за ответами."],
+  [13, "Озеро, наши дни", 3, 0.55, "", "А", "", "Аня стоит на тех самых мостках."],
+  [14, "Кухня, ночь", 3, 0.9, "", "ВА", "", "Аня приносит слова дяди домой."],
+  [15, "Пристань", 4, 0.1, "", "В", "", "Вера идёт туда, где не была двадцать лет."],
+  [16, "Та ночь", 0, 0.7, "август 1998, ночь", "МВ", "not_started", "Флешбэк: что на самом деле было на мостках."],
+  [17, "Архив", 5, 0.5, "5-й день", "А", "not_started", "Заметка в газете за август 1998-го."],
+  [20, "Ссора", 6, 0.9, "6-й день, ночь", "ВА", "not_started", "Аня уходит из дома среди ночи."],
+  [22, "Мостки", 7, 0.5, "7-й день", "ВА", "not_started", "Вера решает рассказать."],
+  [24, "Утро", 8, 0.3, "8-й день, утро", "ВА", "not_started", "Две чашки на столе."],
+];
+// Правда, вокруг которой строится тайна: [кто, имя, цвет, [[с какой сцены, 0 не знает · 1 догадывается · 2 знает, подпись]]]
+const KNOW = [
+  ["v", "Вера", "accent", [[1, 2, ""]]],
+  ["k", "Дядя Коля", "warn", [[1, 1, ""]]],
+  ["a", "Аня", "ai", [[1, 0, ""], [5, 1, "фото с озера"], [22, 2, "Вера рассказывает"]]],
+  ["z", "Зритель", "ink-2", [[1, 1, "видит мостки"], [16, 2, "флешбэк"]]],
+];
+const KSTATE = ["не знает", "догадывается", "знает"];
+const TL_L = 132, TL_R = 1020, TL_STEP = (TL_R - TL_L) / 26;
+const tlX = (n) => TL_L + (n - 0.5) * TL_STEP;
+const tlF = (d, f) => (d ? 300 + (d - 1 + f) * 90 : TL_L + 10 + f * 110);
+const tlScenes = () => [...TL, ...(STATE.gap ? [[11, SKETCH[1], 3, 0.35, "3-й день", SKETCH[3], "draft", SKETCH[2]]] : [])]
+  .map(([n, title, d, f, when, cast, st, line]) => ({ n, title, d, f, cast, line, when: SCRIPT[n] ? SCRIPT[n].params.day : when, st: SCRIPT[n] ? scStatus(n) : st, back: !d && n > 1 }))
+  .sort((a, b) => a.n - b.n);
+const knowAt = (steps, n) => steps.filter(([m]) => m <= n).at(-1)[1];
+const anyaEarly = (n) => STATE.sceneConflict && n >= 14 && n < 22;
+
+function tlKnowSvg(y0) {
+  const lane = (i) => y0 + 30 + i * 34, ya = lane(2), yz = lane(3), lost = STATE.sceneConflict;
+  const zone = `<rect class="zone ${lost ? "lost" : ""}" x="${tlX(16)}" y="${ya - 22}" width="${tlX(22) - tlX(16)}" height="${yz - ya + 36}" rx="8"/>
+    <text class="zl ${lost ? "bad-t" : ""}" x="${tlX(22)}" y="${yz + 32}" text-anchor="end">${lost ? "Разрыв пропал: по тексту сцены 14 Аня уже знает" : "Зритель знает больше Ани — на этом держатся сцены 16–22"}</text>`;
+  const rows = KNOW.map(([, name, c, steps], i) => {
+    const y = lane(i);
+    const segs = steps.map(([n, s, label], j) => {
+      const x1 = n === 1 ? TL_L : tlX(n), x2 = j + 1 < steps.length ? tlX(steps[j + 1][0]) : TL_R;
+      const bar = s ? `<rect class="k${s}" x="${x1}" y="${y - 5}" width="${x2 - x1}" height="10" rx="5"/>` : `<line class="k0" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"/>`;
+      return bar + (label ? `<circle class="kdot" cx="${tlX(n)}" cy="${y}" r="4"/><text class="kl" x="${tlX(n) + 7}" y="${y - 10}">${label}</text>` : "");
+    }).join("");
+    return `<g style="--c:var(--${c})"><text class="nm" x="0" y="${y + 4}">${name}</text>${segs}</g>`;
+  }).join("");
+  const over = lost ? `<rect class="over" x="${tlX(14)}" y="${ya - 5}" width="${tlX(22) - tlX(14)}" height="10" rx="5"/><circle class="bad" cx="${tlX(14)}" cy="${ya}" r="5"/><text class="kl bad-t" x="${tlX(14) + 8}" y="${ya - 10}">по тексту сцены 14 — уже знает</text>` : "";
+  const sel = `<line class="selline" x1="${tlX(STATE.tlSel)}" y1="${y0 + 10}" x2="${tlX(STATE.tlSel)}" y2="${yz + 14}"/>`;
+  return `<text class="h" x="0" y="${y0}">Кто знает правду: <tspan class="sub">в ту ночь Вера ушла с мостков, хотя Миша просил остаться</tspan></text>${zone}${sel}${rows}${over}`;
+}
+function tlSvg() {
+  const scs = tlScenes(), known = new Set(scs.map((s) => s.n)), yF = 56, yP = 226, H = STATE.tlKnow ? 500 : 290;
+  const days = Array.from({ length: 8 }, (_, i) => `<line class="axis" x1="${300 + i * 90}" y1="${yF - 4}" x2="${300 + i * 90}" y2="${yF + 4}"/><text class="sub" x="${345 + i * 90}" y="22" text-anchor="middle">День ${i + 1}</text>`).join("");
+  const fab = `<text class="h" x="0" y="${yF + 4}">Как было</text><text class="sub" x="0" y="${yF + 20}">время истории</text>
+    <text class="sub" x="${TL_L + 65}" y="22" text-anchor="middle">Август 1998</text><text class="sub" x="276" y="22" text-anchor="middle">20 лет</text>
+    <path class="axis" d="M${TL_L} ${yF}H262l5 -6l6 12l6 -12l6 12l5 -6H${TL_R}"/>${days}`;
+  const ticks = Array.from({ length: 26 }, (_, i) => i + 1).filter((n) => !known.has(n)).map((n) => `<circle class="tick" cx="${tlX(n)}" cy="${yP}" r="2.5"><title>Сцена ${n}</title></circle>`).join("");
+  const acts = ACTS.map(([num, name, range]) => {
+    const [a, b] = range.match(/\d+/g).map(Number), x1 = tlX(a) - TL_STEP / 2 + 4, x2 = tlX(b) + TL_STEP / 2 - 4;
+    return `<path class="axis" d="M${x1} ${yP + 24}v6H${x2}v-6"/><text class="sub" x="${(x1 + x2) / 2}" y="${yP + 48}" text-anchor="middle">Акт ${num} · ${name}</text>`;
+  }).join("");
+  const plot = `<text class="h" x="0" y="${yP + 4}">Как показано</text><text class="sub" x="0" y="${yP + 20}">порядок сцен</text><line class="axis" x1="${TL_L}" y1="${yP}" x2="${TL_R}" y2="${yP}"/>${ticks}${acts}`;
+  const sc = scs.sort((a, b) => (a.n === STATE.tlSel) - (b.n === STATE.tlSel)).map((s) => {
+    const fx = tlF(s.d, s.f), x = tlX(s.n), mid = (yF + yP) / 2;
+    return `<g class="sc ${s.back ? "back" : ""} ${s.n === STATE.tlSel ? "on" : ""}" data-act="tl-sel" data-k="${s.n}"><title>Сцена ${s.n} · ${s.title} — ${s.when}</title>
+      ${STATE.tlThreads ? `<path class="thread" d="M${fx} ${yF + 5}C${fx} ${mid} ${x} ${mid} ${x} ${yP - 12}"/>` : ""}
+      <circle class="fdot" cx="${fx}" cy="${yF}" r="4.5"/><text class="fn" x="${fx}" y="${yF - 10}">${s.n}</text>
+      <g class="node st-${s.st}"><circle cx="${x}" cy="${yP}" r="11"/><text x="${x}" y="${yP + 4}">${s.n}</text></g></g>`;
+  }).join("");
+  return `<svg class="tl" viewBox="0 0 1040 ${H}" role="img" aria-label="Таймлайн: время истории, порядок сцен и кто что знает">${fab}${plot}${sc}${STATE.tlKnow ? tlKnowSvg(yP + 92) : ""}</svg>`;
+}
+function tlSel() {
+  const s = tlScenes().find((x) => x.n === STATE.tlSel);
+  const know = KNOW.map(([k, name, c, steps]) => {
+    const st = knowAt(steps, s.n);
+    return `<span><i class="kd k${st}" style="--c:var(--${c})"></i>${name} — ${KSTATE[st]}${k === "a" && anyaEarly(s.n) ? `, <b class="bad-t">по тексту уже знает</b>` : ""}</span>`;
+  }).join("");
+  return `<div class="tl-sel"><div class="tl-sel-h"><span class="dot ${s.st}"><i></i></span><b>Сцена ${s.n} · ${s.title}</b>
+      <span class="cast">${[...s.cast].map((c) => `<span class="av2 ${CAST[c]}">${c}</span>`).join("")}</span>
+      ${SCRIPT[s.n] ? `<button class="chipbtn" data-act="sc-open" data-k="${s.n}">Открыть сцену</button>` : ""}</div>
+    <p>${s.line}</p>
+    <div class="tl-facts"><span>${s.n}-я из 26 по порядку</span><span>по времени: ${s.when}${s.back ? " · флешбэк" : ""}</span></div>
+    ${STATE.tlKnow ? `<div class="tl-know"><small>К этой сцене</small>${know}</div>` : ""}</div>`;
+}
+const tlAlert = () => (STATE.sceneConflict
+  ? `<div class="tl-alert"><span class="av">${ico("warn")}</span><div><b>Сцена 14 съедает тайну</b><p>По «Скелетной карте» Аня узнаёт правду в сцене 22, а зритель — раньше неё, во флешбэке 16. Сцены 16–22 держатся на этом разрыве. В тексте сцены 14 Аня уже говорит «Миша утонул не случайно» — и разрыв пропадает.</p>
+      <div class="acts"><button class="chipbtn main" data-act="sc-open" data-k="14">Открыть сцену 14</button><button class="chipbtn" data-act="conf-structure">Перенести узнавание в структуре</button></div></div></div>`
+  : `<div class="tl-alert ok"><span class="av">${ico("check")}</span><div><b>Тайна держится</b><p>Аня только догадывается до сцены 22, а зритель знает правду с флешбэка 16 — шесть сцен напряжения.</p></div></div>`);
+const tlLegend = () => `<div class="tl-legend">${STATE.tlKnow ? `<span><i class="kd k0"></i>не знает</span><span><i class="kd k1"></i>догадывается</span><span><i class="kd k2"></i>знает</span>` : ""}${STATE.tlThreads ? `<span><i class="lg"></i>нить сцены</span><span><i class="lg fb"></i>флешбэк</span>` : ""}</div>`;
 function nextCard() {
   const card = (key, label, title, text, go) => `<button class="card next" data-open="${key}"><div class="lbl">${ico("ai")}${label}</div><h3>${title}</h3><p>${text}</p><span class="go">${go} ${ico("arrow")}</span></button>`;
   if (STATE.revision) return card("impact", "План пересмотра", `0 из ${STATE.plan.size} документов`, "Тема изменилась. Начнём с «Тонального манифеста» — я отметил, что в нём устарело.", "Открыть план");
@@ -1744,6 +1913,7 @@ const ASK = {
   impact: ["Спросите, почему документ задет…", "Манифест темы → 7 документов", []],
   bible: ["Спросите о персонаже: как бы Вера ответила…", "Библия · Вера", [["me", "Как Вера говорит, когда злится?"], ["ai", "Тише, чем обычно, и о бытовом: «Куртку повесь». Так в профиле — гнев у неё тоже уходит в заботу."]]],
   cards: ["Спросите о структуре: где провисает ритм…", "Карточки · 3 акта", []],
+  timeline: ["Спросите о порядке: что зритель знает к этой сцене…", "Таймлайн · время и порядок сцен", [["me", "Не рано ли зритель узнаёт правду?"], ["ai", "Флешбэк 16 стоит в середине второго акта: дальше зритель знает больше Ани, и сцены 16–22 держатся на этом. Раньше — тайна кончится до середины истории."]]],
   versions: ["Спросите, что поменялось между версиями…", "Манифест темы · версии", []],
   export: ["Спросите, что войдёт в файл…", "экспорт", []],
   settings: ["Спросите, как настроить соавтора под себя…", "настройки", []],
@@ -1783,7 +1953,11 @@ function toggleFocus() {
   if (on) toast("Только текст. F или Esc — вернуть всё.");
   requestAnimationFrame(relayout);
 }
-function relayout() { layoutNotes(); placeAsk(); }
+function tlCenter() {
+  const w = $(".tl-wrap");
+  if (w && w.scrollWidth > w.clientWidth) w.scrollLeft = (tlX(STATE.tlSel) / 1040) * w.querySelector("svg").clientWidth - w.clientWidth / 2;
+}
+function relayout() { layoutNotes(); placeAsk(); if (current === "timeline") tlCenter(); }
 function highlight(key) {
   document.querySelectorAll(".hl").forEach((e) => e.classList.remove("hl"));
   document.querySelectorAll(`[data-a="${key}"], .note[data-for="${key}"]`).forEach((e) => e.classList.add("hl"));
@@ -2500,6 +2674,8 @@ Object.assign(ACTIONS, {
     if (STATE.scMode === "act") { STATE.sc = n; renderPath(); const sh = $(`#desk .script-body[data-sc="${n}"]`); sh.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
     STATE.sc = n; open("scene");
   },
+  "tl-sel"(b, k) { STATE.tlSel = Number(k); paint(); },
+  "tl-layer"(b, k) { STATE[k] = !STATE[k]; paint(); },
   "sc-open"(b, k) { STATE.sc = Number(k); STATE.scMode = "scene"; open("scene"); },
   "sc-mode"(b, k) {
     STATE.scMode = k; open("scene");
