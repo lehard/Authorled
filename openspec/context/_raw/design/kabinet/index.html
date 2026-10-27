@@ -159,7 +159,7 @@
   .pill.conflict { background: var(--bad-soft); color: var(--bad); }
   .approve { margin-left: auto; height: 32px; padding: 0 14px; border-radius: 16px; background: var(--accent); color: var(--accent-ink); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 6px 16px -6px oklch(from var(--accent) l c h / .6); transition: transform .15s; }
   .approve:hover { transform: translateY(-1px); }
-  .prose { font-family: var(--font-prose); font-size: 19px; line-height: 1.7; hyphens: auto; }
+  .prose { font-family: var(--prose-font, var(--font-prose)); font-size: var(--prose-size, 19px); line-height: 1.7; hyphens: auto; }
   .prose h2 { font-family: var(--font-ui); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; margin: 34px 0 10px; }
   .prose h2:first-child { margin-top: 0; }
   .prose p { margin: 0 0 16px; }
@@ -182,7 +182,7 @@
   .pageno { position: absolute; top: 36px; right: 56px; font-family: var(--font-script); color: var(--ink-3); }
 
   /* Поля: заметки соавтора рядом с текстом */
-  .stage.doc { --sheet-w: 720px; padding-left: 24px; padding-right: 24px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, var(--sheet-w)) 332px minmax(0, 1fr); align-items: start; gap: 0; }
+  .stage.doc { --sheet-w: var(--sheet-pref, 720px); padding-left: 24px; padding-right: 24px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, var(--sheet-w)) 332px minmax(0, 1fr); align-items: start; gap: 0; }
   .stage.doc:has(.script) { --sheet-w: 760px; }
   .stage.doc .sheet { width: 100%; }
   .stage.doc .sheet { grid-column: 2; }
@@ -534,6 +534,211 @@
     .board-h h1 { font-size: 36px; }
   }
   @media (max-width: 600px) { .rcard { padding: 32px 22px 24px; } }
+
+  /* ——— Стандартное: поиск, сохранение, версии, экспорт, настройки, состояния ——— */
+  .saved { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; border-radius: 18px; font-size: 12.5px; color: var(--ink-3); white-space: nowrap; transition: background .2s, color .2s; }
+  .saved i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+  .saved.busy i { background: var(--ink-3); animation: blink 1s infinite; }
+  .saved.off { background: var(--warn-soft); color: var(--warn); font-weight: 500; }
+  .saved.off i { background: var(--warn); }
+  kbd { font-family: var(--font-ui); font-size: 11px; padding: 1px 6px; border-radius: 6px; background: oklch(from var(--ink) l c h / .07); color: var(--ink-3); }
+  .palette { position: fixed; inset: 0; z-index: 45; display: none; justify-content: center; align-items: flex-start; padding: 14vh 16px 16px; background: oklch(from var(--desk) l c h / .55); }
+  .palette.on { display: flex; animation: fade .2s; }
+  .pal { width: min(640px, 100%); max-height: 70vh; display: flex; flex-direction: column; background: var(--panel-solid); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); overflow: hidden; animation: rise .25s; }
+  .pal-in { display: flex; align-items: center; gap: 10px; padding: 0 16px; height: 56px; border-bottom: 1px solid var(--line); color: var(--ink-3); }
+  .pal-in input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font: inherit; font-size: 16px; color: var(--ink); }
+  .pal-in input::placeholder { color: var(--ink-3); }
+  .pal-list { flex: 1; min-height: 0; overflow: auto; padding: 4px 8px 8px; }
+  .pal-g { font-size: 11px; letter-spacing: .09em; text-transform: uppercase; font-weight: 600; color: var(--ink-3); padding: 12px 10px 4px; }
+  .pal-item { width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 10px; text-align: left; font-size: 14px; color: var(--ink); }
+  .pal-item.on { background: var(--accent-soft); }
+  .pal-item .lead { width: 20px; height: 20px; flex: none; display: grid; place-items: center; color: var(--ink-3); }
+  .pal-item .pl { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pal-item .pl.quote { font-family: var(--font-prose); font-size: 15px; }
+  .pal-item .ph2 { margin-left: auto; padding-left: 12px; flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; color: var(--ink-3); }
+  .pal-item mark { background: none; color: var(--accent); font-weight: 600; }
+  .pal-item.ask .lead, .pal-item.ask .pl { color: var(--ai); }
+
+  /* История версий: на листе только документ, всё управление в панели справа */
+  .stage.doc .vtl { grid-column: 3; margin-left: 32px; position: sticky; top: 64px; }
+  .vtl { background: var(--panel); border-radius: 20px; box-shadow: var(--shadow-sm); padding: 14px 10px 10px; max-height: calc(100vh - 128px); overflow: auto; }
+  .vtl-h { display: flex; align-items: center; padding: 0 4px 4px 10px; }
+  .vtl-h b { font-family: var(--font-prose); font-size: 19px; font-weight: 500; }
+  .vtl-h .x { margin-left: auto; width: 30px; height: 30px; border-radius: 15px; display: grid; place-items: center; color: var(--ink-3); }
+  .vtl-h .x:hover { background: oklch(from var(--ink) l c h / .06); color: var(--ink); }
+  .vday { position: relative; font-size: 11px; letter-spacing: .09em; text-transform: uppercase; font-weight: 600; color: var(--ink-3); padding: 14px 10px 4px 40px; }
+  .vday::before { content: ""; position: absolute; left: 19.25px; top: 0; bottom: 0; width: 1.5px; background: var(--line); }
+  .vtl-h + .vday::before { display: none; }
+  .vt { position: relative; display: flex; gap: 8px; padding: 1px 0 1px 10px; }
+  .vt::before { content: ""; position: absolute; left: 19.25px; top: 0; bottom: 0; width: 1.5px; background: var(--line); }
+  .vt-dot { position: relative; z-index: 1; width: 20px; height: 20px; flex: none; display: grid; place-items: center; margin-top: 7px; }
+  .vt-dot i { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--ink-3); background: var(--panel-solid); box-shadow: 0 0 0 3px var(--panel); }
+  .vt.named .vt-dot i { border-color: var(--accent); background: var(--accent); }
+  .vt.approved .vt-dot i { border-color: var(--ok); background: var(--ok); }
+  .vt.cur .vt-dot i { border-color: var(--accent); }
+  .vt.auto .vt-dot i { width: 6px; height: 6px; }
+  .vt-c { flex: 1; min-width: 0; border-radius: 10px; transition: background .2s; }
+  .vt:not(.on) .vt-c:hover { background: oklch(from var(--ink) l c h / .045); }
+  .vt.on .vt-c { background: var(--accent-soft); }
+  .vt-pick { display: flex; align-items: baseline; gap: 8px; width: 100%; text-align: left; padding: 7px 10px; }
+  .vt-pick b { min-width: 0; font-size: 14px; font-weight: 500; color: var(--ink); display: inline-flex; gap: 5px; align-items: center; }
+  .vt.auto .vt-pick b { color: var(--ink-2); font-weight: 400; }
+  .vt.on .vt-pick b { font-weight: 600; color: var(--ink); }
+  .vt-pick b svg { width: 12px; height: 12px; color: var(--ok); }
+  .vt-pick small { margin-left: auto; font-size: 12px; color: var(--ink-3); white-space: nowrap; }
+  .vt-more { padding: 0 10px 10px; }
+  .vt-s { margin: 0 0 10px; font-size: 13px; line-height: 1.45; color: var(--ink-2); }
+  .vt-acts { display: flex; align-items: center; gap: 6px; }
+  .vt-acts .chipbtn { height: 26px; font-size: 12.5px; }
+  .iconbtn { width: 26px; height: 26px; border-radius: 13px; display: grid; place-items: center; color: var(--ink-2); }
+  .iconbtn:hover { background: var(--paper); color: var(--ink); }
+  .iconbtn svg { width: 14px; height: 14px; }
+  .vt-more .namebox { display: flex; gap: 6px; margin-bottom: 4px; }
+  .vt-more .namebox .field { height: 30px; font-size: 13px; }
+  ins.ai { background: var(--ai-soft); }
+  .vtl-hint { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ink-3); }
+  .linkbtn { font-size: 12.5px; color: var(--accent); }
+  .linkbtn:hover { text-decoration: underline; }
+  .linkbtn.quiet-link { font-size: 13px; color: var(--ink-3); }
+  .linkbtn.quiet-link:hover { color: var(--ink); }
+  .vtl-foot { margin-top: 10px; padding: 12px 10px 4px; border-top: 1px solid var(--line); display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+  .vtl-foot .trow { width: 100%; border: 0; padding: 0; font-size: 13.5px; color: var(--ink); }
+  .vtl .namebox { display: flex; gap: 6px; width: 100%; }
+  .vtl .namebox .field { height: 32px; font-size: 13.5px; }
+  .vmeta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding-bottom: 26px; margin-bottom: 30px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--ink-3); }
+  .vmeta b { color: var(--ink-2); font-weight: 600; }
+  .vsec { position: relative; margin-top: 34px; }
+  .vsec:first-child { margin-top: 0; }
+  .vsec h2 { margin-top: 0 !important; }
+  .vsec.chg::before { content: ""; position: absolute; left: -30px; top: 3px; bottom: 6px; width: 3px; border-radius: 2px; background: var(--accent); }
+  .vsec .sec-restore { position: absolute; top: -2px; right: 0; opacity: 0; transition: opacity .2s; }
+  .vsec:hover .sec-restore, .vsec:focus-within .sec-restore { opacity: 1; }
+  del { text-decoration: line-through; text-decoration-thickness: 1px; color: var(--bad); background: none; }
+  ins { text-decoration: none; background: var(--ok-soft); color: var(--ink); border-radius: 3px; }
+  .empty-p { color: var(--ink-3); font-style: italic; }
+
+  .exp-grid { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 28px; align-items: start; margin-top: 26px; }
+  .exp-panel { background: var(--panel); border-radius: 20px; box-shadow: var(--shadow-sm); padding: 20px 22px 22px; }
+  .exp-panel .label { margin-top: 20px; }
+  .exp-panel .label:first-child { margin-top: 0; }
+  .pick { display: flex; flex-direction: column; gap: 4px; }
+  .pick button { display: flex; gap: 10px; align-items: flex-start; text-align: left; padding: 8px 10px; border-radius: 10px; font-size: 14.5px; color: var(--ink); }
+  .pick button:hover { background: oklch(from var(--ink) l c h / .05); }
+  .pick button.on { background: var(--paper); box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .pick .rad { width: 16px; height: 16px; flex: none; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ink-3); margin-top: 3px; }
+  .pick .on .rad { box-shadow: inset 0 0 0 5px var(--accent); }
+  .pick small { display: block; color: var(--ink-3); font-size: 12.5px; }
+  .fmts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fmts button { height: 32px; padding: 0 12px; border-radius: 16px; font-size: 13px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink-2); }
+  .fmts button.on { background: var(--ink); color: var(--paper); box-shadow: none; }
+  .fmts button:disabled { opacity: .4; cursor: not-allowed; }
+  .trow { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 14.5px; }
+  .label + .trow { border-top: 0; }
+  .trow small { display: block; color: var(--ink-3); font-size: 12.5px; }
+  .trow .toggle { margin-left: auto; }
+  .toggle:disabled { opacity: .55; cursor: not-allowed; }
+  .warnbox { display: flex; gap: 10px; margin: 18px 0; padding: 12px 14px; border-radius: 12px; background: var(--warn-soft); color: var(--ink); font-size: 13.5px; line-height: 1.45; }
+  .warnbox svg { color: var(--warn); margin-top: 2px; }
+  .exp-preview { display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; align-content: flex-start; }
+  .page { position: relative; width: 270px; aspect-ratio: 8.5 / 11; background: var(--paper); border-radius: 3px; box-shadow: var(--shadow); padding: 32px 24px 24px 38px; overflow: hidden; font-family: var(--font-script); font-size: 8.5px; line-height: 1.25; color: var(--ink); }
+  .page p { margin: 0 0 1em; }
+  .page .sh { font-weight: 700; }
+  .page .ch { margin: 0 0 0 34%; }
+  .page .pa { margin: 0 0 0 26%; }
+  .page .dl { margin-left: 18%; margin-right: 16%; }
+  .page .pn { position: absolute; top: 14px; right: 18px; color: var(--ink-3); }
+  .page .num { position: absolute; left: 14px; color: var(--ink-3); }
+  .page .pnote { font-family: var(--font-ui); font-size: 7.5px; color: var(--ai); border-left: 1.5px solid var(--ai-line); padding-left: 5px; }
+  .page.title { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 6px; padding: 30px; }
+  .page.title b { font-size: 13px; letter-spacing: .08em; }
+  .page.title .by { margin-top: 14px; }
+  .page.title .by.missing { color: var(--warn); }
+  .page.title .foot { position: absolute; left: 24px; bottom: 22px; text-align: left; color: var(--ink-3); }
+  .page.prose-p { font-family: var(--font-prose); font-size: 9.5px; line-height: 1.5; padding: 30px; }
+  .page.prose-p h4 { font-size: 15px; font-weight: 600; margin: 0 0 8px; }
+  .page.prose-p h5 { font-family: var(--font-ui); font-size: 6.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin: 10px 0 3px; }
+  .page.prose-p p { margin: 0 0 4px; }
+  .wm { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; font-family: var(--font-ui); font-size: 34px; font-weight: 700; letter-spacing: .2em; color: oklch(from var(--bad) l c h / .13); transform: rotate(-30deg); }
+  .plain { width: min(520px, 100%); background: var(--paper); border-radius: 10px; box-shadow: var(--shadow-sm); padding: 18px 20px; font-family: var(--font-script); font-size: 12.5px; line-height: 1.5; white-space: pre-wrap; color: var(--ink); margin: 0; }
+  .plain-note { width: 100%; text-align: center; font-size: 13px; color: var(--ink-3); margin: 0; }
+
+  .back { display: inline-flex; align-items: center; gap: 4px; font-size: 13.5px; color: var(--ink-3); margin-bottom: 18px; }
+  .back:hover { color: var(--ink); }
+  .set-grid { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 36px; align-items: start; margin-top: 8px; }
+  .set-nav { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 2px; }
+  .set-nav button { text-align: left; padding: 7px 10px; border-radius: 10px; font-size: 14px; color: var(--ink-2); }
+  .set-nav button:hover { background: oklch(from var(--ink) l c h / .05); color: var(--ink); }
+  .set-h { font-family: var(--font-prose); font-size: 24px; font-weight: 500; margin: 0 0 6px; }
+  .set-body section { padding-bottom: 26px; margin-bottom: 26px; border-bottom: 1px solid var(--line); scroll-margin-top: 24px; }
+  .set-body section:last-child { border: 0; }
+  .srow { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 18px; padding: 14px 0; align-items: start; }
+  .srow > div:first-child b { display: block; font-size: 14.5px; font-weight: 600; }
+  .srow > div:first-child small { display: block; color: var(--ink-3); font-size: 12.5px; margin-top: 2px; }
+  .swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+  .swatch { width: 116px; text-align: left; font-size: 13px; color: var(--ink-2); }
+  .swatch .sw { display: block; height: 66px; border-radius: 12px; position: relative; margin-bottom: 6px; box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; }
+  .swatch .sw i { position: absolute; left: 22px; right: 22px; top: 12px; bottom: 0; border-radius: 4px 4px 0 0; box-shadow: 0 4px 12px oklch(0 0 0 / .15); }
+  .swatch[aria-pressed="true"] .sw { box-shadow: 0 0 0 2px var(--accent); }
+  .swatch[aria-pressed="true"] { color: var(--ink); font-weight: 600; }
+  .size-row { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--ink-3); }
+  .size-row input { flex: 1; max-width: 260px; accent-color: var(--accent); }
+  .sample { margin: 12px 0 0; font-family: var(--prose-font, var(--font-prose)); font-size: var(--prose-size, 19px); line-height: 1.6; color: var(--ink); }
+  .aimodes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .aimode { text-align: left; padding: 12px; border-radius: 12px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); font-size: 13px; line-height: 1.4; color: var(--ink-2); }
+  .aimode b { display: block; font-size: 14.5px; color: var(--ink); margin-bottom: 3px; }
+  .aimode.on { box-shadow: inset 0 0 0 2px var(--accent); background: var(--paper); }
+  .fixed-note { display: flex; gap: 8px; margin-top: 10px; font-size: 13px; color: var(--ink-2); }
+  .fixed-note svg { color: var(--ai); margin-top: 2px; }
+  .seg.inline { margin-left: 0; }
+  .field { width: 100%; max-width: 340px; height: 38px; border: 0; border-radius: 10px; padding: 0 12px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--line); font: inherit; font-size: 14.5px; color: var(--ink); outline: 0; }
+  .field:focus { box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .field[readonly] { color: var(--ink-3); }
+  .chipbtn.danger { color: var(--bad); box-shadow: inset 0 0 0 1px oklch(from var(--bad) l c h / .5); }
+  .chipbtn.main.bad { background: var(--bad); color: var(--paper); }
+  .chipbtn:disabled { opacity: .45; cursor: not-allowed; }
+  .okline { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; color: var(--ink); }
+  .okline svg { color: var(--ok); margin-top: 3px; }
+  .muted { font-size: 13px; color: var(--ink-3); margin: 6px 0 0; }
+  .badge { font-size: 11.5px; padding: 2px 8px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); margin-left: 6px; font-weight: 500; }
+
+  .st-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 8px 0 12px; }
+  .st-row .saved { background: var(--panel); box-shadow: var(--shadow-sm); }
+  .st-row .saved.off { background: var(--warn-soft); }
+  .st-note { font-size: 14px; color: var(--ink-2); margin: 0 0 12px; max-width: 64ch; }
+  .note.static { position: static; animation: none; }
+  .note.static::before, .note.static::after { display: none; }
+  .st-notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 8px 0 12px; align-items: start; }
+  .dots { display: inline-flex; gap: 3px; margin-right: 6px; vertical-align: middle; }
+  .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--ai); animation: blink 1s infinite; }
+  .dots i:nth-child(2) { animation-delay: .15s; }
+  .dots i:nth-child(3) { animation-delay: .3s; }
+  .empties { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 8px; }
+  .empty { padding: 24px 18px; border-radius: 16px; border: 1.5px dashed var(--line); text-align: center; color: var(--ink-2); font-size: 14px; line-height: 1.45; }
+  .empty svg { width: 26px; height: 26px; color: var(--ink-3); margin-bottom: 8px; stroke-width: 1.5; }
+  .empty b { display: block; font-family: var(--font-prose); font-size: 18px; color: var(--ink); margin-bottom: 4px; }
+  .empty .chipbtn { margin-top: 12px; }
+  .trash { margin-top: 14px; border-radius: 14px; background: var(--panel); padding: 12px 16px; display: flex; align-items: center; gap: 12px; font-size: 14px; animation: rise .3s; }
+  .trash small { display: block; color: var(--ink-3); font-size: 12.5px; }
+  .trash .chipbtn { margin-left: auto; }
+  .bubble.err { background: var(--bad-soft); color: var(--ink); border-bottom-left-radius: 4px; }
+  .bubble.err button { margin-left: 6px; font-weight: 600; color: var(--bad); text-decoration: underline; }
+  .rcard .dlg { text-align: left; }
+  .dlg h2 { margin-top: 0; }
+  .dlg p { color: var(--ink-2); font-size: 14.5px; margin: 0 0 14px; }
+  .dlg .field { max-width: none; margin-bottom: 18px; }
+  .dlg .acts { justify-content: flex-end; }
+
+  @container (max-width: 1139px) {
+    .exp-grid, .set-grid { grid-template-columns: 1fr; }
+    .set-nav { position: static; }
+    .stage.doc .vtl { grid-column: 1; margin-left: 0; position: static; order: -1; max-height: none; }
+    .set-nav { flex-direction: row; flex-wrap: wrap; }
+    .st-notes, .empties { grid-template-columns: 1fr; }
+  }
+  @container (max-width: 760px) {
+    .srow, .aimodes { grid-template-columns: 1fr; }
+    .vsec.chg::before { left: -16px; }
+  }
 </style>
 </head>
 <body>
@@ -548,6 +753,14 @@
   <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 8v5M12 16.5h.01"/><circle cx="12" cy="12" r="9"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M15.5 5.5l3 3L8 19H5v-3z"/><path d="M13.5 7.5l3 3"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
   <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.6M18 14.2a5 5 0 0 1 2.6 4.8"/></symbol>
   <symbol id="i-cards" viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="6" rx="1.5"/><rect x="14" y="14" width="7" height="6" rx="1.5"/></symbol>
@@ -567,11 +780,21 @@
   <main class="desk" id="desk"></main>
 </div>
 <div class="tools">
+  <span class="saved" id="saved" role="status"><i></i><span>Сохранено</span></span>
+  <button class="tool" id="cmdBtn" title="Поиск и команды"><svg class="i"><use href="#i-search"/></svg>Поиск<kbd>⌘K</kbd></button>
   <button class="tool" id="focusBtn" title="Режим фокуса (F)"><svg class="i"><use href="#i-focus"/></svg>Фокус</button>
   <div class="themes" role="group" aria-label="Освещение">
     <button data-theme-btn="light" aria-pressed="true" title="Утро"><svg class="i"><use href="#i-sun"/></svg></button>
     <button data-theme-btn="sepia" aria-pressed="false" title="Бумага"><svg class="i"><use href="#i-page"/></svg></button>
     <button data-theme-btn="dark" aria-pressed="false" title="Вечер у лампы"><svg class="i"><use href="#i-moon"/></svg></button>
+  </div>
+  <button class="tool" data-open="settings" title="Настройки" aria-label="Настройки"><svg class="i"><use href="#i-gear"/></svg></button>
+</div>
+<div class="palette" id="palette" role="dialog" aria-modal="true" aria-label="Поиск и команды">
+  <div class="pal">
+    <div class="pal-in"><svg class="i"><use href="#i-search"/></svg><input id="palin" autocomplete="off" placeholder="Документ, сцена, персонаж, цитата или действие…" /><kbd>Esc</kbd></div>
+    <div class="pal-list" id="pallist"></div>
+    <div class="pal-foot">↑ ↓ выбрать · Enter открыть · Esc закрыть</div>
   </div>
 </div>
 <div class="toast" id="toast" role="status"></div>
@@ -600,7 +823,18 @@ const STEPS = [
 let current = "home";
 const D2Q = "Можно ли защитить любимых правдой, которая их ранит, — или любая защищающая ложь в итоге разрушает то, что должна была сохранить?";
 const STATE = {
-  d2Approved: false, sceneConflict: true, sceneOpen: 3, lineFixed: false, d2q: D2Q,
+  d2Approved: false, sceneConflict: true, sceneOpen: 3, lineFixed: false,
+  d2: {
+    about: "Это история о том, как молчание, выбранное ради защиты близких, постепенно превращается в стену, за которой человек перестаёт узнавать самого себя.",
+    about2: "Вера двадцать лет хранит тайну гибели брата и уверена, что этим бережёт семью. Но каждый год тишины делает её всё более чужой собственной дочери.",
+    q: D2Q,
+    contr: "Молчание Веры — не только страх, но и форма любви. История не осуждает её выбор, а показывает его цену.",
+    contrSugg: true,
+    not: "Простого разоблачения злодея. Сцены, где правда звучит как приговор. Финала, в котором все прощают друг друга за одну ночь.",
+  },
+  offline: false, pending: 0, trash: false, back: "home", naming: false, verSel: "v2", verShow: true, renaming: null, showAuto: false,
+  exp: { what: "script", fmt: "pdf", title: true, numbers: true, notes: false },
+  set: { font: "serif", size: 19, width: "normal", numbers: true, spell: true, ai: "normal", address: "vy", author: "" },
   way: null, draftName: "", fresh: null,
   imp: "drop", impOpen: 2,
   d11: { answers: [], own: [], checks: {}, approved: false },
@@ -620,7 +854,7 @@ function renderPath() {
   const link = (key, icon, label) => `<button class="step link ${current === key ? "cur" : ""}" data-open="${key}"><span class="dot">${ico(icon)}</span><span class="n"></span><span class="lbl">${label}</span></button>`;
   document.getElementById("path").innerHTML =
     link("shelf", "back", "Все истории") +
-    `<h4>Материалы</h4>` + link("bible", "people", "Библия проекта") + link("cards", "cards", "Карточки сцен") +
+    `<h4>Материалы</h4>` + link("bible", "people", "Библия проекта") + link("cards", "cards", "Карточки сцен") + link("export", "download", "Экспорт") +
     `<h4>Основа истории</h4>` + STEPS.slice(0, 12).map(step).join("") +
     `<h4>Полный метр</h4>` + STEPS.slice(12, 20).map(step).join("") + scenes + STEPS.slice(20).map(step).join("");
 }
@@ -693,23 +927,22 @@ const VIEWS = {
         ${d2Meta()}
         <div class="prose">
           <h2>О чём эта история</h2>
-          <p class="lead">Это история о&nbsp;том, как молчание, выбранное ради защиты близких, постепенно превращается в&nbsp;стену, за&nbsp;которой человек перестаёт узнавать самого себя.</p>
-          <p class="by-ai">Вера двадцать лет хранит тайну гибели брата и&nbsp;уверена, что этим бережёт семью. Но&nbsp;каждый год тишины делает её всё более чужой собственной дочери.</p>
+          <p class="lead">${esc(STATE.d2.about)}</p>
+          ${STATE.d2.about2 ? `<p class="by-ai">${esc(STATE.d2.about2)}</p>` : ""}
           <h2>Тематический вопрос</h2>
-          <p><span class="mark" data-a="q">${esc(STATE.d2q)}</span></p>
-          <h2>Контртезис</h2>
-          <p><span class="mark sugg" data-a="s">Молчание Веры — не&nbsp;только страх, но&nbsp;и&nbsp;форма любви. История не&nbsp;осуждает её выбор, а&nbsp;показывает его цену.</span></p>
+          <p><span class="mark" data-a="q">${esc(STATE.d2.q)}</span></p>
+          ${STATE.d2.contr ? `<h2>Контртезис</h2><p><span class="mark ${STATE.d2.contrSugg ? "sugg" : ""}" data-a="s">${esc(STATE.d2.contr)}</span></p>` : ""}
           <h2>Чего в этой истории не будет</h2>
-          <p>Простого разоблачения злодея. Сцены, где правда звучит как приговор. Финала, в&nbsp;котором все прощают друг друга за&nbsp;одну ночь.</p>
+          <p>${esc(STATE.d2.not)}</p>
         </div>
       </article>
       <aside class="margin" id="margin">
-        <div class="note" data-for="by-ai"><div class="who"><span class="av">${ico("ai")}</span>Соавтор<small>принято вами · 24 окт</small></div>Этот абзац я предложил из «Карты импульсов», вы его приняли.</div>
+        ${STATE.d2.about2 ? `<div class="note" data-for="by-ai"><div class="who"><span class="av">${ico("ai")}</span>Соавтор<small>принято вами · 24 окт</small></div>Этот абзац я предложил из «Карты импульсов», вы его приняли.</div>` : ""}
         <div class="note" data-for="q"><div class="who"><span class="av">${ico("ai")}</span>Вопрос к вам<small>сейчас</small></div>Сейчас выбор звучит как «правда или ложь». А&nbsp;если для Веры это выбор между двумя видами любви? Варианты для размышления:
           <div class="opts"><button class="opt" data-act="variant" data-k="q">Что сильнее защищает — правда, которая ранит, или тишина, которая отдаляет?</button><button class="opt" data-act="variant" data-k="q">Сколько лет можно любить человека, не&nbsp;говоря ему главного?</button></div>
           <div class="acts"><button class="chipbtn quiet" data-act="keep" data-k="q">Оставить мой вариант</button></div></div>
-        <div class="note" data-for="s"><div class="who"><span class="av">${ico("ai")}</span>Предлагаю добавить<small>импульс №3</small></div>Вы писали, что не хотите делать Веру виноватой. Контртезис держит это в&nbsp;теме.
-          <div class="acts"><button class="chipbtn main" data-act="accept" data-k="s">Принять</button><button class="chipbtn" data-act="edit" data-k="s">Изменить</button><button class="chipbtn quiet" data-act="reject" data-k="s">Убрать</button></div></div>
+        ${STATE.d2.contr && STATE.d2.contrSugg ? `<div class="note" data-for="s"><div class="who"><span class="av">${ico("ai")}</span>Предлагаю добавить<small>импульс №3</small></div>Вы писали, что не хотите делать Веру виноватой. Контртезис держит это в&nbsp;теме.
+          <div class="acts"><button class="chipbtn main" data-act="accept" data-k="s">Принять</button><button class="chipbtn" data-act="edit" data-k="s">Изменить</button><button class="chipbtn quiet" data-act="reject" data-k="s">Убрать</button></div></div>` : ""}
       </aside></div>`,
 
   scene: () => `<div class="stage doc">
@@ -875,7 +1108,307 @@ const VIEWS = {
       <p class="board-note">Карточки и сценарий — одна история в двух видах: переставили карточку — сцены в тексте встали так же. Карточки можно перетаскивать.</p>
       <div class="board">${ACTS.map(actCol).join("")}</div>
     </div></div>`,
+
+  // ——— Стандартное: версии, экспорт, настройки, состояния ———
+  versions: () => {
+    const { list, sel, base, changes } = verContext(), cur = list.at(-1), isCur = sel.id === "cur";
+    const what = isCur ? "Текущая версия" : `${sel.name ? `Версия ${sel.name}` : "Автосохранение"} · ${sel.day}, ${sel.time}`;
+    const vs = !STATE.verShow ? "" : !base ? "первая версия" : !changes.length ? "без изменений" : "правки подсвечены";
+    const secs = D2_SECTIONS.map((h, i) => {
+      const changed = STATE.verShow && changes.includes(i), text = sel.text[i];
+      const body = changed ? renderDiff(wdiff(base.text[i], text), "both", sel.by) : text ? esc(text) : '<span class="empty-p">раздела в этой версии нет</span>';
+      const restore = !isCur && text !== cur.text[i] ? `<button class="linkbtn sec-restore" data-act="ver-sec" data-k="${i}">Вернуть только этот раздел</button>` : "";
+      return `<section class="vsec ${changed ? "chg" : ""}"><h2>${h}</h2><p>${body}</p>${restore}</section>`;
+    }).join("");
+    return `<div class="stage doc"><article class="sheet">
+        <div class="eyebrow">Шаг 2 · История версий</div>
+        <h1>Манифест темы</h1>
+        <div class="vmeta"><b>${sel.kind === "approved" ? "Утверждена · " : ""}${what}</b>${vs ? `<span>${vs}</span>` : ""}</div>
+        <div class="prose">${secs}</div>
+      </article>${versionTimeline(list)}</div>`;
+  },
+
+  export: () => {
+    const x = STATE.exp, prose = x.what === "bible" || x.what === "outline";
+    const what = EXP_WHAT.map(([k, t, s]) => `<button class="${x.what === k ? "on" : ""}" data-act="exp-what" data-k="${k}"><span class="rad"></span><span>${t}<small>${s}</small></span></button>`).join("");
+    const fmts = EXP_FMT.map(([k, t]) => `<button class="${x.fmt === k ? "on" : ""}" data-act="exp-fmt" data-k="${k}" ${prose && SCRIPT_ONLY.includes(k) ? 'disabled title="Только для сценария"' : ""}>${t}</button>`).join("");
+    const trow = (k, t, s, extra = "") => `<div class="trow"><span>${t}<small>${s}</small></span><button class="toggle ${x[k] ? "on" : ""}" data-act="exp-t" data-k="${k}" ${extra}><i></i></button></div>`;
+    const fmtName = EXP_FMT.find(([k]) => k === x.fmt)[1];
+    return `<div class="stage"><div class="home">
+      <div class="hello">Тихая вода · полный метр</div><h1>Экспорт</h1>
+      <div class="exp-grid">
+        <div class="exp-panel">
+          <div class="label">Что выгрузить</div><div class="pick">${what}</div>
+          <div class="label">Формат</div><div class="fmts">${fmts}</div>
+          <div class="label">Оформление</div>
+          ${trow("title", "Титульный лист", "название, автор, дата")}
+          ${prose ? "" : trow("numbers", "Номера сцен", "слева и справа от заголовка")}
+          <div class="trow"><span>Пометка «Черновик»<small>пока финальный текст не собран, снять нельзя</small></span><button class="toggle on" disabled><i></i></button></div>
+          ${trow("notes", "Заметки соавтора", "по умолчанию остаются в Authorled")}
+          <div class="warnbox">${ico("warn")}<span>Финальный текст (шаг 22) ещё не собран. Выгрузим текущие черновики с пометкой «Черновик» — так никто не примет их за готовый сценарий.</span></div>
+          <div class="row-acts"><button class="approve" data-act="exp-download">${ico("download")}Скачать ${fmtName}</button></div>
+        </div>
+        <div class="exp-preview">${exportPreview()}</div>
+      </div></div></div>`;
+  },
+
+  settings: () => {
+    const s = STATE.set, seg = (key, opts) => `<div class="seg inline">${opts.map(([v, t]) => `<button aria-pressed="${s[key] === v}" data-act="set" data-k="${key}:${v}">${t}</button>`).join("")}</div>`;
+    const tog = (key) => `<button class="toggle ${s[key] ? "on" : ""}" data-act="set-t" data-k="${key}"><i></i></button>`;
+    const theme = document.documentElement.dataset.theme;
+    const sw = (k, t, desk, paper) => `<button class="swatch" data-theme-btn="${k}" aria-pressed="${theme === k}"><span class="sw" style="background:${desk}"><i style="background:${paper}"></i></span>${t}</button>`;
+    const nav = [["s-look", "Внешний вид"], ["s-editor", "Редактор"], ["s-ai", "Соавтор"], ["s-data", "Данные"], ["s-acc", "Аккаунт"]].map(([id, t]) => `<button data-act="set-go" data-k="${id}">${t}</button>`).join("");
+    const mode = (v, t, d) => `<button class="aimode ${s.ai === v ? "on" : ""}" data-act="set" data-k="ai:${v}"><b>${t}</b>${d}</button>`;
+    return `<div class="stage"><article class="sheet wide">
+      <button class="back" data-act="back">${ico("back")}Назад</button>
+      <h1>Настройки</h1>
+      <div class="set-grid"><nav class="set-nav">${nav}</nav><div class="set-body">
+        <section id="s-look"><h2 class="set-h">Внешний вид</h2>
+          <div class="srow"><div><b>Освещение</b><small>можно менять и сверху справа</small></div><div class="swatches">
+            ${sw("light", "Утро", "oklch(0.935 0.017 78)", "oklch(0.993 0.005 90)")}${sw("sepia", "Бумага", "oklch(0.83 0.042 70)", "oklch(0.955 0.033 84)")}${sw("dark", "Вечер у лампы", "oklch(0.175 0.012 60)", "oklch(0.235 0.013 68)")}</div></div>
+          <div class="srow"><div><b>Шрифт текста</b><small>сценарий всегда моноширинный</small></div><div>${seg("font", [["serif", "С засечками"], ["sans", "Без засечек"]])}</div></div>
+          <div class="srow"><div><b>Размер текста</b></div><div><div class="size-row">А<input type="range" min="16" max="22" step="1" value="${s.size}" id="sizein" aria-label="Размер текста" /><span id="sizeval">${s.size} px</span></div>
+            <p class="sample">Вера двадцать лет хранит тайну гибели брата и уверена, что этим бережёт семью.</p></div></div>
+          <div class="srow"><div><b>Ширина листа</b></div><div>${seg("width", [["narrow", "Узкий"], ["normal", "Обычный"], ["wide", "Широкий"]])}</div></div>
+        </section>
+        <section id="s-editor"><h2 class="set-h">Редактор</h2>
+          <div class="srow"><div><b>Сценарный шаблон</b></div><div><span class="chip">«Американка»<span class="badge">по умолчанию</span></span><p class="muted">Другие шаблоны добавим позже.</p></div></div>
+          <div class="srow"><div><b>Номера сцен</b><small>на полях сценария</small></div><div>${tog("numbers")}</div></div>
+          <div class="srow"><div><b>Проверка орфографии</b></div><div>${tog("spell")}</div></div>
+          <div class="srow"><div><b>Сохранение</b></div><div class="okline">${ico("check")}Автоматически, после каждой правки. Без связи — на этом устройстве, потом отправится само.</div></div>
+        </section>
+        <section id="s-ai"><h2 class="set-h">Соавтор</h2>
+          <div class="srow"><div><b>Сколько замечать</b><small>заметки на полях</small></div><div>
+            <div class="aimodes">${mode("quiet", "Тихо", "Пишу на полях, только когда вы спросите.")}${mode("normal", "Обычно", "Вопросы и предложения, не больше трёх на лист.")}${mode("active", "Внимательно", "Замечаю и ритм, и повторы, и стиль.")}</div>
+            <div class="fixed-note">${ico("ai")}Противоречия с утверждёнными документами и устаревшее показываю всегда — это не выключается.</div></div></div>
+          <div class="srow"><div><b>Обращение</b></div><div>${seg("address", [["vy", "На «вы»"], ["ty", "На «ты»"]])}</div></div>
+          <div class="srow"><div><b>Язык</b></div><div><span class="chip">Русский</span><p class="muted">Другие языки — после первой версии.</p></div></div>
+        </section>
+        <section id="s-data"><h2 class="set-h">Данные и приватность</h2>
+          <div class="srow"><div><b>Ваши тексты</b></div><div class="okline">${ico("check")}Принадлежат вам и не используются для обучения моделей.</div></div>
+          <div class="srow"><div><b>Выгрузить всё</b><small>все истории, версии и заметки</small></div><div><button class="chipbtn" data-act="archive">Собрать архив</button></div></div>
+          <div class="srow"><div><b>Удалить аккаунт</b><small>вместе со всеми историями</small></div><div><button class="chipbtn danger" data-act="del-account">Удалить аккаунт…</button></div></div>
+        </section>
+        <section id="s-acc"><h2 class="set-h">Аккаунт</h2>
+          <div class="srow"><div><b>Имя автора</b><small>для титульного листа</small></div><div><input class="field" id="authorin" autocomplete="off" placeholder="Как подписывать сценарий" value="${esc(s.author)}" /></div></div>
+          <div class="srow"><div><b>Почта</b></div><div><input class="field" value="author@example.com" readonly aria-label="Почта" /></div></div>
+          <div class="srow"><div></div><div><button class="chipbtn" data-act="demo" data-k="В макете вход не настроен.">Выйти</button></div></div>
+        </section>
+      </div></div></article></div>`;
+  },
+
+  states: () => `<div class="stage"><article class="sheet wide">
+      <div class="eyebrow">Для ревью дизайна</div><h1>Состояния интерфейса</h1>
+      <p class="lede">Как продукт ведёт себя вне главного пути. Кнопки включают состояние вживую.</p>
+      <h2 class="set-h">Сохранение</h2>
+      <div class="st-row"><span class="saved"><i></i>Сохранено</span><span class="saved busy"><i></i>Сохраняю…</span><span class="saved off"><i></i>Нет связи · 3 правки на этом устройстве</span></div>
+      <p class="st-note">Сохраняется каждая правка, кнопки «Сохранить» нет. Без связи правки копятся на этом устройстве и уходят сами, когда связь вернётся.</p>
+      <div class="row-acts"><button class="chipbtn" data-act="offline">${STATE.offline ? "Вернуть связь" : "Включить «нет связи»"}</button></div>
+      <h2 class="set-h" style="margin-top:34px">Соавтор</h2>
+      <div class="st-notes">
+        <div class="note static"><div class="who"><span class="av">${ico("ai")}</span>Думаю<small>12 с</small></div><span class="dots"><i></i><i></i><i></i></span>Читаю «Скелетную карту» и сцены 13–15…<div class="acts"><button class="chipbtn quiet" data-act="demo" data-k="Запрос отменён. Ваш текст не изменился.">Отменить</button></div></div>
+        <div class="note static k-conflict"><div class="who"><span class="av">${ico("warn")}</span>Не получилось</div>Соавтор не ответил за 30 секунд. Ваш текст не изменился.<div class="acts"><button class="chipbtn" data-act="demo" data-k="Повторяю запрос…">Повторить</button></div></div>
+        <div class="note static k-stale"><div class="who"><span class="av">${ico("clock")}</span>Нет связи</div>Писать можно. Заметки на полях появятся, когда связь вернётся.</div>
+      </div>
+      <div class="row-acts"><button class="chipbtn" data-act="ai-fail">Показать сбой в разговоре</button></div>
+      <h2 class="set-h" style="margin-top:34px">Пустые места</h2>
+      <div class="empties">
+        <div class="empty">${ico("plus")}<b>Здесь будут ваши истории</b>Начните с чистого листа или загрузите рукопись.<br><button class="chipbtn main" data-act="new-story">Новая история</button></div>
+        <div class="empty">${ico("people")}<b>Персонажей пока нет</b>Они появятся из «Кастинг-листа» (шаг 15). Добавить можно и раньше.<br><button class="chipbtn" data-act="demo" data-k="Новый персонаж попадёт в «Кастинг-лист» черновиком.">Добавить персонажа</button></div>
+        <div class="empty">${ico("cards")}<b>Сцен пока нет</b>Карточки появятся вместе с «Поэпизодником» (шаг 14).<br><button class="chipbtn" data-act="demo" data-k="Шаг 14 откроется после «Скелетной карты».">К шагу 14</button></div>
+      </div>
+      <h2 class="set-h" style="margin-top:34px">Удаление</h2>
+      <p class="st-note">Удалённая история 30 дней лежит в корзине. Насовсем — только из корзины или вместе с аккаунтом, с явным подтверждением.</p>
+      <div class="row-acts"><button class="chipbtn danger" data-act="del-project">Удалить «Северный ветер»…</button></div>
+      ${STATE.trash ? `<div class="trash">${ico("page")}<div>Северный ветер<small>в корзине · удалится навсегда через 30 дней</small></div><button class="chipbtn" data-act="restore-project">Вернуть</button></div>` : ""}
+    </article></div>`,
 };
+
+const D2_SECTIONS = ["О чём эта история", "Тематический вопрос", "Контртезис", "Чего в этой истории не будет"];
+const d2Text = (d = STATE.d2) => [[d.about, d.about2].filter(Boolean).join(" "), d.q, d.contr, d.not];
+// От старых к новым; текущая добавляется в versionList()
+const VERSIONS = [
+  { id: "v1", day: "12 октября", time: "14:20", name: "«Первый черновик»", kind: "named", sum: "Первый набросок: тема — молчание, которое разрушает семью.", text: [
+    "Это история о том, как молчание разрушает семью.", "Можно ли всю жизнь молчать о главном?", "", "Простого разоблачения злодея."] },
+  { id: "a18", day: "18 октября", time: "23:40", kind: "auto", sum: "Тема сместилась: молчание теперь выбирают ради защиты близких. Вопрос переписан.", text: [
+    "Это история о том, как молчание, выбранное ради защиты близких, превращается в стену.",
+    "Можно ли защитить любимых правдой, которая их ранит?", "", "Простого разоблачения злодея. Финала, в котором все прощают друг друга за одну ночь."] },
+  { id: "a22", day: "22 октября", time: "17:40", kind: "auto", sum: "Вопрос стал выбором: правда, которая ранит, или ложь, которая разрушает.", text: [
+    "Это история о том, как молчание, выбранное ради защиты близких, постепенно превращается в стену, за которой человек перестаёт узнавать самого себя.",
+    D2Q, "", "Простого разоблачения злодея. Сцены, где правда звучит как приговор. Финала, в котором все прощают друг друга за одну ночь."] },
+  { id: "v2", day: "22 октября", time: "19:05", name: "«Перед проверкой»", kind: "named", by: "ai", sum: "Добавлен абзац о Вере и дочери. Его предложил соавтор — в тексте он отмечен цветом соавтора.", text: [
+    "Это история о том, как молчание, выбранное ради защиты близких, постепенно превращается в стену, за которой человек перестаёт узнавать самого себя. Вера двадцать лет хранит тайну гибели брата и уверена, что этим бережёт семью. Но каждый год тишины делает её всё более чужой собственной дочери.",
+    D2Q, "", "Простого разоблачения злодея. Сцены, где правда звучит как приговор. Финала, в котором все прощают друг друга за одну ночь."] },
+];
+function versionList() {
+  const list = [...VERSIONS];
+  if (STATE.chg === "planned") list.push({ id: "appr", day: "Сегодня", time: "до смены темы", name: "Утверждённая", kind: "approved", text: d2Text({ ...STATE.d2, q: STATE.chgOld }) });
+  list.push({ id: "cur", day: "Сегодня", time: "сейчас", name: STATE.d2Approved ? "Текущая · утверждена" : "Текущая", kind: STATE.d2Approved ? "approved" : "cur", text: d2Text() });
+  return list;
+}
+function verContext() {
+  const list = versionList(), idx = list.findIndex((v) => v.id === STATE.verSel), sel = list[idx];
+  const base = list[idx - 1];
+  const changes = base ? D2_SECTIONS.map((_, i) => i).filter((i) => base.text[i] !== sel.text[i]) : [];
+  return { list, sel, base, changes };
+}
+// Короткое описание правки, когда соавтор не написал своё
+function autoSummary(a, b) {
+  const parts = D2_SECTIONS.map((h, i) => (a.text[i] === b.text[i] ? "" : !a.text[i] ? `добавлен раздел «${h}»` : !b.text[i] ? `убран раздел «${h}»` : `переписан раздел «${h}»`)).filter(Boolean);
+  return parts.length ? `${parts.join("; ")}.`.replace(/^./, (c) => c.toUpperCase()) : "Без изменений.";
+}
+function versionTimeline(list) {
+  const shown = (v) => v.kind !== "auto" || STATE.showAuto || v.id === STATE.verSel;
+  const hidden = list.filter((v) => !shown(v)).length;
+  const days = [];
+  list.map((v, i) => [v, list[i - 1]]).reverse().forEach(([v, prev]) => {
+    if (!shown(v)) return;
+    const on = v.id === STATE.verSel, isCur = v.id === "cur";
+    const sum = v.sum || (prev ? autoSummary(prev, v) : "");
+    const canName = !isCur && v.kind !== "approved";
+    const acts = STATE.renaming === v.id
+      ? `<div class="namebox"><input class="field" id="rename" autocomplete="off" value="${esc((v.name || "").replace(/^«|»$/g, ""))}" placeholder="Название версии" /><button class="chipbtn main" data-act="ver-rename-save">Сохранить</button></div>`
+      : isCur ? "" : `<div class="vt-acts"><button class="chipbtn" data-act="ver-restore">Вернуть эту версию</button>${canName ? `<button class="iconbtn" data-act="ver-rename" title="${v.name ? "Переименовать" : "Назвать версию"}" aria-label="${v.name ? "Переименовать" : "Назвать версию"}">${ico("pencil")}</button>` : ""}</div>`;
+    const more = on ? `<div class="vt-more"><p class="vt-s">${sum}</p>${acts}</div>` : "";
+    const item = `<div class="vt ${v.kind} ${on ? "on" : ""}"><span class="vt-dot"><i></i></span><div class="vt-c"><button class="vt-pick" data-act="ver" data-k="${v.id}"><b>${v.kind === "approved" ? ico("lock") : ""}${v.name || "Автосохранение"}</b><small>${v.time}</small></button>${more}</div></div>`;
+    if (days.at(-1)?.[0] === v.day) days.at(-1)[1].push(item); else days.push([v.day, [item]]);
+  });
+  return `<aside class="vtl"><div class="vtl-h"><b>История версий</b><button class="x" data-open="d2" aria-label="Закрыть историю" title="Закрыть историю">${ico("close")}</button></div>
+    ${days.map(([d, items]) => `<div class="vday">${d}</div>${items.join("")}`).join("")}
+    <div class="vtl-foot">
+      <div class="trow"><span>Показывать изменения</span><button class="toggle ${STATE.verShow ? "on" : ""}" data-act="ver-show" aria-label="Показывать изменения"><i></i></button></div>
+      ${hidden ? `<button class="linkbtn" data-act="ver-auto">Показать автосохранения · ${hidden}</button>` : STATE.showAuto ? `<button class="linkbtn" data-act="ver-auto">Скрыть автосохранения</button>` : ""}
+      ${STATE.naming ? `<div class="namebox"><input class="field" id="vername" autocomplete="off" placeholder="Название версии" /><button class="chipbtn main" data-act="ver-name-save">Сохранить</button></div>` : `<button class="linkbtn" data-act="ver-name">Назвать текущую версию</button>`}
+      <span class="vtl-hint"><kbd>↑</kbd><kbd>↓</kbd> листать версии</span>
+    </div></aside>`;
+}
+const nowTime = () => new Date().toTimeString().slice(0, 5);
+// Пословное сравнение двух текстов: = общее, - убрано, + добавлено
+function wdiff(a, b) {
+  // слова вместе с пробелом после них, чтобы общие пробелы не дробили правку
+  const A = a.match(/\S+\s*/g) || [], B = b.match(/\S+\s*/g) || [];
+  const same = (x, y) => x.trimEnd() === y.trimEnd();
+  const L = Array.from({ length: A.length + 1 }, () => new Array(B.length + 1).fill(0));
+  for (let i = A.length - 1; i >= 0; i--) for (let j = B.length - 1; j >= 0; j--) L[i][j] = same(A[i], B[j]) ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  const out = [], push = (t, s) => { const last = out.at(-1); if (last && last.t === t) last.s += s; else out.push({ t, s }); };
+  let i = 0, j = 0;
+  while (i < A.length && j < B.length) {
+    if (same(A[i], B[j])) { push("=", B[j].trimEnd() === B[j] && A[i] !== B[j] ? `${B[j]} ` : B[j]); i++; j++; } else if (L[i + 1][j] >= L[i][j + 1]) push("-", A[i++]); else push("+", B[j++]);
+  }
+  while (i < A.length) push("-", A[i++]);
+  while (j < B.length) push("+", B[j++]);
+  return out;
+}
+const renderDiff = (parts, mode, by) => parts.map(({ t, s }) => (t === "=" ? esc(s) : t === "-" ? (mode === "new" ? "" : `<del>${esc(s.trimEnd())}</del>${mode === "both" ? " " : ""}`) : mode === "old" ? "" : `<ins${by === "ai" ? ' class="ai"' : ""}>${esc(s)}</ins>`)).join("");
+
+const EXP_WHAT = [["script", "Сценарий целиком", "26 сцен · около 104 страниц"], ["scenes", "Выбранные сцены", "13–15 · Озеро, Кухня, Пристань"], ["outline", "Поэпизодник", "шаг 14 · каждая сцена одной строкой"], ["bible", "Библия проекта", "персонажи, места, правила мира"]];
+const EXP_FMT = [["pdf", "PDF"], ["docx", "DOCX"], ["fdx", "Final Draft"], ["fountain", "Fountain"]];
+const SCRIPT_ONLY = ["fdx", "fountain"];
+const FOUNTAIN = `Title: Тихая вода
+Draft date: 27.10.2026
+
+.ИНТ. КУХНЯ В ДОМЕ ВЕРЫ — НОЧЬ #14#
+
+Свет только над раковиной. ВЕРА (52) моет чашку. Чашка давно чистая.
+
+АНЯ (З.К.)
+Мам, ты опять не спишь?
+
+ВЕРА
+(не оборачиваясь)
+Я же просила звонить, когда едешь так поздно.`;
+function exportPreview() {
+  const x = STATE.exp, label = { script: "Сценарий", scenes: "Сцены 13–15", outline: "Поэпизодник", bible: "Библия проекта" }[x.what];
+  if (x.fmt === "fountain") return `<pre class="plain">${esc(FOUNTAIN)}</pre><p class="plain-note">Fountain — простой текст с разметкой. Его открывают Highland, Fade In, STARC и другие редакторы.</p>`;
+  const wm = `<div class="wm">ЧЕРНОВИК</div>`;
+  const author = STATE.set.author.trim();
+  const title = x.title ? `<div class="page title"><b>ТИХАЯ ВОДА</b><span>${label}</span><span class="by ${author ? "" : "missing"}">${author ? esc(author) : "Имя автора не указано — заполните в настройках"}</span><span class="foot">Черновик · 27 октября 2026</span>${wm}</div>` : "";
+  const num = (n) => (x.numbers ? `<span class="num">${n}</span>` : "");
+  const note = (t) => (x.notes ? `<p class="pnote">Соавтор: ${t}</p>` : "");
+  let page;
+  if (x.what === "outline") page = `<div class="page prose-p"><h4>Поэпизодник</h4>${ACTS.map(([n, name, , list]) => `<h5>Акт ${n} · ${name}</h5>${list.filter((c) => c !== "gap").map(([sn, t, line]) => `<p><b>${sn}. ${t}.</b> ${line}</p>`).join("")}`).join("")}${note("между сценами 9 и 13 провисает линия Ани.")}${wm}</div>`;
+  else if (x.what === "bible") page = `<div class="page prose-p"><h4>Вера Сомова</h4><h5>Чего хочет</h5><p>Чтобы дочь жила так, будто той ночи на озере не было.</p><h5>Чего боится</h5><p>Что правда сделает её в глазах Ани виноватой — и Аня уйдёт.</p><h5>Как говорит</h5><p>Никогда не говорит о тревоге прямо — только через заботу.</p><h5>Что скрывает</h5><p>В ту ночь она была на мостках.</p>${note("реплика в сцене 14 расходится с профилем.")}${wm}</div>`;
+  else page = `<div class="page"><span class="pn">14.</span><p class="sh">${num(14)}ИНТ. КУХНЯ В ДОМЕ ВЕРЫ — НОЧЬ</p><p>Свет только над раковиной. ВЕРА (52) моет чашку. Чашка давно чистая. Она всё равно трёт её губкой.</p><p class="ch">АНЯ (З.К.)</p><p class="dl">Мам, ты опять не спишь?</p><p>Входит АНЯ (24), в куртке, с рюкзаком.</p><p class="ch">ВЕРА</p><p class="pa">(не оборачиваясь)</p><p class="dl">Я же просила звонить, когда едешь так поздно.</p>${note("эта реплика расходится с профилем Веры.")}<p class="ch">АНЯ</p><p class="dl">Я была у дяди Коли.</p>${wm}</div>`;
+  return title + page + (x.fmt === "fdx" ? `<p class="plain-note">Final Draft применит свою вёрстку; страницы показаны как в PDF.</p>` : "");
+}
+function applySettings() {
+  const s = STATE.set, r = document.documentElement.style;
+  r.setProperty("--prose-size", `${s.size}px`);
+  r.setProperty("--prose-font", s.font === "serif" ? "var(--font-prose)" : "var(--font-ui)");
+  r.setProperty("--sheet-pref", { narrow: "640px", normal: "720px", wide: "800px" }[s.width]);
+}
+
+// ——— Сохранение и связь ———
+let saveTimer;
+const plural = (n, one, few, many) => (n % 10 === 1 && n % 100 !== 11 ? one : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? few : many);
+function savedState(kind) {
+  const el = $("#saved");
+  el.className = `saved ${kind}`;
+  el.lastChild.textContent = kind === "busy" ? "Сохраняю…" : kind === "off"
+    ? `Нет связи · ${STATE.pending ? `${STATE.pending} ${plural(STATE.pending, "правка", "правки", "правок")} на этом устройстве` : "правки сохранятся здесь"}` : "Сохранено";
+}
+function touched() {
+  if (STATE.offline) { STATE.pending += 1; savedState("off"); return; }
+  savedState("busy"); clearTimeout(saveTimer); saveTimer = setTimeout(() => savedState(""), 900);
+}
+function setOffline(on) {
+  STATE.offline = on;
+  if (on) { savedState("off"); toast("Связь пропала. Пишите дальше — правки сохраняются на этом устройстве."); }
+  else if (STATE.pending) {
+    savedState("busy"); toast(`Связь вернулась. Отправляю ${STATE.pending} ${plural(STATE.pending, "правку", "правки", "правок")}.`);
+    setTimeout(() => { STATE.pending = 0; savedState(""); }, 1200);
+  } else savedState("");
+  if (current === "states") paint();
+}
+
+// ——— Поиск и команды (⌘K) ———
+let palItems = [], palSel = 0;
+function paletteSource() {
+  const docs = STEPS.map(([n, name, s, key]) => ({ g: "Документы", label: name, hint: `шаг ${n}`, lead: `<span class="dot ${s}"><i></i></span>`, run: () => (key ? open(key) : toast(`«${name}» в макете не нарисован.`)) }));
+  const scenes = ACTS.flatMap(([, , , list]) => list.filter((c) => c !== "gap")).map(([n, title, line, , st]) => ({ g: "Сцены", label: `Сцена ${n} · ${title}`, hint: line, lead: `<span class="dot ${st}"><i></i></span>`, run: () => open(n === 14 ? "scene" : "cards") }));
+  const people = [["В", "Вера Сомова", "мать Ани"], ["А", "Аня", "дочь Веры"], ["К", "Дядя Коля", "деверь Веры"], ["М", "Миша", "брат Веры, 1998"]].map(([l, name, hint]) => ({ g: "Персонажи", label: name, hint, lead: `<span class="av2 ${CAST[l]}">${l}</span>`, run: () => open("bible") }));
+  const quotes = [["Я же просила звонить, когда едешь так поздно.", "Сцена 14 · Вера", "scene"], ["Он сказал, что Миша утонул не случайно.", "Сцена 14 · Аня", "scene"], [STATE.d2.q, "Манифест темы", "d2"], ["Тон истории — тихая вина, которую некому предъявить.", "Тональный манифест", null]]
+    .map(([q, hint, key]) => ({ g: "Цитаты", label: `«${q}»`, hint, quote: true, lead: ico("page"), run: () => (key ? open(key) : toast("«Тональный манифест» в макете не нарисован.")) }));
+  const actions = [
+    ["Экспорт", "сценарий, поэпизодник, библия", () => open("export"), "download"],
+    ["Настройки", "внешний вид, соавтор, данные", () => open("settings"), "gear"],
+    ["История версий «Манифеста темы»", "сравнить и вернуть", () => open("versions"), "clock"],
+    ["Режим фокуса", "F", toggleFocus, "focus"],
+    ["Освещение: утро", "", () => setTheme("light"), "sun"],
+    ["Освещение: бумага", "", () => setTheme("sepia"), "page"],
+    ["Освещение: вечер у лампы", "", () => setTheme("dark"), "moon"],
+    ["Все истории", "", () => open("shelf"), "back"],
+    ["Галерея состояний", "для ревью дизайна", () => open("states"), "warn"],
+    [STATE.offline ? "Вернуть связь" : "Имитировать: нет связи", "для проверки", () => setOffline(!STATE.offline), "warn"],
+  ].map(([label, hint, run, icon]) => ({ g: "Действия", label, hint, run, lead: ico(icon) }));
+  return [...docs, ...scenes, ...people, ...quotes, ...actions];
+}
+function hl(text, q) {
+  const i = q ? text.toLowerCase().indexOf(q) : -1;
+  return i < 0 ? esc(text) : esc(text.slice(0, i)) + `<mark>${esc(text.slice(i, i + q.length))}</mark>` + esc(text.slice(i + q.length));
+}
+function renderPalette() {
+  const raw = $("#palin").value.trim(), q = raw.toLowerCase(), all = paletteSource();
+  let groups;
+  if (!q) {
+    const recent = ["Манифест темы", "Сцена 14 · Кухня, ночь", "Главный вопрос"].map((l) => all.find((x) => x.label === l));
+    groups = [["Недавние", recent], ["Действия", all.filter((x) => x.g === "Действия").slice(0, 4)]];
+  } else {
+    const hit = all.filter((x) => `${x.label} ${x.hint}`.toLowerCase().includes(q) && (x.g !== "Цитаты" || q.length > 1));
+    groups = ["Документы", "Сцены", "Персонажи", "Цитаты", "Действия"].map((g) => [g, hit.filter((x) => x.g === g).slice(0, 5)]).filter(([, xs]) => xs.length);
+    groups.push([hit.length ? "Соавтор" : "Ничего не нашлось", [{ label: `Спросить соавтора: «${raw}»`, hint: "", cls: "ask", lead: ico("ai"), run: () => { const a = $("#askin"); a.value = raw; a.focus(); } }]]);
+  }
+  palItems = groups.flatMap(([, xs]) => xs);
+  let i = 0;
+  $("#pallist").innerHTML = groups.map(([g, xs]) => `<div class="pal-g">${g}</div>` + xs.map((x) => `<button class="pal-item ${x.cls || ""} ${i === palSel ? "on" : ""}" data-pal="${i++}"><span class="lead">${x.lead}</span><span class="pl ${x.quote ? "quote" : ""}">${hl(x.label, q)}</span><span class="ph2">${esc(x.hint)}</span></button>`).join("")).join("");
+}
+function markPal() {
+  document.querySelectorAll(".pal-item").forEach((el) => el.classList.toggle("on", Number(el.dataset.pal) === palSel));
+  $(`.pal-item[data-pal="${palSel}"]`).scrollIntoView({ block: "nearest" });
+}
+function openPalette() { palSel = 0; $("#palin").value = ""; $("#palette").classList.add("on"); renderPalette(); $("#palin").focus(); }
+function closePalette() { $("#palette").classList.remove("on"); }
+function runPal(i) { const item = palItems[i]; closePalette(); item.run(); }
 
 const book = (art, title, meta, info) => `<button class="book" data-act="demo" data-k="В макете подробно проработана «Тихая вода»."><div class="art ${art}"><b>${esc(title)}</b></div><h3>${esc(title)}</h3><p>${meta}</p><p>${info}</p></button>`;
 const rrow = ([text, value], i) => `<div class="rrow" style="animation-delay:${i * 0.5}s">${ico("check")}${text}<b>${value}</b></div>`;
@@ -1015,8 +1548,8 @@ function nextCard() {
   return card("cards", "Следующий шаг", "Карточки сцен", "Основа держится. Посмотрим, как сцены стоят по актам и где провисает ритм.", "Открыть");
 }
 const d2Meta = () => (STATE.d2Approved
-  ? `<div class="meta"><span class="pill approved"><i></i>Утверждён</span>только что<button class="chipbtn" data-act="change" style="margin-left:auto">Изменить решение</button><button class="approve" disabled style="margin-left:0">${ico("check")}Утверждено</button></div>`
-  : `<div class="meta"><span class="pill ready"><i></i>Ждёт утверждения</span>правка 2 ч назад<button class="approve" data-act="approve">${ico("check")}Утвердить</button></div>`);
+  ? `<div class="meta"><span class="pill approved"><i></i>Утверждён</span><button class="linkbtn quiet-link" data-open="versions" title="Открыть историю версий">только что</button><button class="chipbtn quiet" data-open="versions" style="margin-left:auto">Версии</button><button class="chipbtn" data-act="change">Изменить решение</button><button class="approve" disabled style="margin-left:0">${ico("check")}Утверждено</button></div>`
+  : `<div class="meta"><span class="pill ready"><i></i>Ждёт утверждения</span><button class="linkbtn quiet-link" data-open="versions" title="Открыть историю версий">правка 2 ч назад</button><button class="chipbtn quiet" data-open="versions" style="margin-left:auto">Версии</button><button class="approve" data-act="approve" style="margin-left:0">${ico("check")}Утвердить</button></div>`);
 const ASK = {
   home: ["Спросите о проекте: что мешает двигаться дальше?", "весь проект", []],
   d2: ["Попросите правку или спросите о теме…", "Манифест темы", [["me", "Не хочу, чтобы Вера выглядела виноватой."], ["ai", "Тогда держим контртезис: её молчание — тоже любовь. Я отметил его на полях, рядом с текстом."]]],
@@ -1028,6 +1561,10 @@ const ASK = {
   impact: ["Спросите, почему документ задет…", "Манифест темы → 7 документов", []],
   bible: ["Спросите о персонаже: как бы Вера ответила…", "Библия · Вера", [["me", "Как Вера говорит, когда злится?"], ["ai", "Тише, чем обычно, и о бытовом: «Куртку повесь». Так в профиле — гнев у неё тоже уходит в заботу."]]],
   cards: ["Спросите о структуре: где провисает ритм…", "Карточки · 3 акта", []],
+  versions: ["Спросите, что поменялось между версиями…", "Манифест темы · версии", []],
+  export: ["Спросите, что войдёт в файл…", "экспорт", []],
+  settings: ["Спросите, как настроить соавтора под себя…", "настройки", []],
+  states: ["Спросите о состояниях интерфейса…", "галерея состояний", []],
 };
 
 function layoutNotes() {
@@ -1077,9 +1614,10 @@ function flashAt(key) {
 }
 function ritual(html) { const r = $("#ritual"); r.innerHTML = `<div class="rcard">${html}</div>`; r.classList.add("on"); }
 function open(key) {
+  if (key === "settings" && current !== "settings") STATE.back = current;
   current = key;
   $("#desk").classList.remove("calm");
-  $("#app").classList.toggle("bare", ["shelf", "new", "import"].includes(key));
+  $("#app").classList.toggle("bare", ["shelf", "new", "import", "settings"].includes(key));
   document.getElementById("desk").innerHTML = VIEWS[key]();
   document.getElementById("desk").scrollTop = 0;
   const [ph, ctx, msgs] = ASK[key];
@@ -1120,16 +1658,18 @@ function setTheme(theme) {
 const ACTIONS = {
   accept(b, k, note) {
     const m = $(`[data-a="${k}"]`); m.classList.remove("sugg"); m.closest("p").classList.add("by-ai");
+    if (k === "s") STATE.d2.contrSugg = false;
     resolveNote(note, "Принято", "Тонкая черта слева напоминает, что абзац написан с соавтором.");
   },
   edit(b, k) { const m = $(`[data-a="${k}"]`); m.contentEditable = "true"; m.focus(); toast("Правьте прямо в тексте — заметка останется, пока вы не примете."); },
   reject(b, k, note) {
     const p = $(`[data-a="${k}"]`).closest("p"); p.classList.add("gone");
+    if (k === "s") STATE.d2.contr = "";
     setTimeout(() => { p.remove(); layoutNotes(); }, 360);
     resolveNote(note, "Убрано", "Хорошо, без этого."); dropNote(note);
   },
   variant(b, k, note) {
-    const m = $(`[data-a="${k}"]`); m.textContent = b.textContent; STATE.d2q = b.textContent; STATE.chgOld = b.textContent; m.classList.remove("flash"); void m.offsetWidth; m.classList.add("flash");
+    const m = $(`[data-a="${k}"]`); m.textContent = b.textContent; STATE.d2.q = b.textContent; STATE.chgOld = b.textContent; m.classList.remove("flash"); void m.offsetWidth; m.classList.add("flash");
     resolveNote(note, "Вопрос заменён", "Вы выбрали вариант — старая формулировка сохранена в истории.");
   },
   keep(b, k, note) { resolveNote(note, "Оставили ваш вариант", "Больше не предлагаю."); dropNote(note); },
@@ -1214,7 +1754,7 @@ const ACTIONS = {
   ck(b, k) { STATE.d11.checks[k] = !STATE.d11.checks[k]; paint(); },
 
   // Связка 3
-  change() { STATE.chgOld = STATE.d2q; if (STATE.chg !== "planned") STATE.chg = "edit"; open("impact"); },
+  change() { STATE.chgOld = STATE.d2.q; if (STATE.chg !== "planned") STATE.chg = "edit"; open("impact"); },
   scan() {
     const text = $("#newq").textContent.trim();
     if (!text) { toast("Новая формулировка пустая — напишите её или отмените изменение."); $("#newq").focus(); return; }
@@ -1224,7 +1764,7 @@ const ACTIONS = {
   },
   "plan-toggle"(b, k) { const n = Number(k); STATE.plan.has(n) ? STATE.plan.delete(n) : STATE.plan.add(n); paint(); },
   "plan-approve"() {
-    STATE.d2q = STATE.chgNew; STATE.d2Approved = true; STEPS[1][2] = "approved";
+    STATE.d2.q = STATE.chgNew; STATE.d2Approved = true; STEPS[1][2] = "approved";
     IMPACT.forEach((d) => { if (STATE.plan.has(d.n)) STEPS[d.n - 1][2] = d.v; });
     STATE.revision = STATE.plan.size > 0; STATE.chg = "planned"; paint();
     toast(STATE.revision ? "Новая тема сохранена. Задетые документы отмечены на пути — пройдём их по одному." : "Новая тема сохранена без пересмотра.");
@@ -1240,7 +1780,111 @@ const ACTIONS = {
     g.outerHTML = scard(SKETCH); toast("Набросал сцену 11. Это черновик: в «Поэпизодник» она попадёт, только когда вы её утвердите.");
   },
   "gap-no"(b) { STATE.gap = false; b.closest("[data-ghost]").remove(); toast("Хорошо. Для этого места больше не предлагаю."); },
+
+  // Версии
+  ver(b, k) { STATE.verSel = k; STATE.renaming = null; paint(); },
+  "ver-auto"() { STATE.showAuto = !STATE.showAuto; paint(); },
+  "ver-rename"() { STATE.renaming = STATE.verSel; paint(); const f = $("#rename"); f.focus(); f.select(); },
+  "ver-rename-save"() {
+    const name = $("#rename").value.trim();
+    if (!name) { toast("Напишите название — по нему версию будет легко найти."); $("#rename").focus(); return; }
+    const v = VERSIONS.find((x) => x.id === STATE.renaming);
+    v.name = `«${name}»`; v.kind = "named"; STATE.renaming = null; paint();
+  },
+  "ver-show"() { STATE.verShow = !STATE.verShow; paint(); },
+  "ver-name"() { STATE.naming = true; paint(); $("#vername").focus(); },
+  "ver-name-save"() {
+    const name = $("#vername").value.trim();
+    if (!name) { toast("Напишите название — по нему версию будет легко найти."); $("#vername").focus(); return; }
+    VERSIONS.push({ id: `n${VERSIONS.length}`, day: "Сегодня", time: nowTime(), name: `«${name}»`, kind: "named", text: d2Text() });
+    STATE.naming = false; paint(); toast("Текущий текст сохранён как именованная версия.");
+  },
+  "ver-restore"() {
+    const { sel } = verContext(), label = sel.name ? `версию ${sel.name}` : `автосохранение от ${sel.day}, ${sel.time}`;
+    if (STATE.d2Approved) return ACTIONS["ver-restore-go"]();
+    ritual(`<div class="dlg"><h2>Вернуть ${label}?</h2><p>Документ станет таким, каким был тогда. Текущий текст не пропадёт: он сохранится в истории как «До возврата», к нему можно вернуться.</p>
+      <div class="acts"><button class="chipbtn">Отмена</button><button class="chipbtn main" data-act="ver-restore-go">Вернуть</button></div></div>`);
+  },
+  "ver-restore-go"() {
+    const { sel } = verContext();
+    if (STATE.d2Approved) {
+      STATE.chgOld = STATE.d2.q; STATE.chgNew = sel.text[1]; STATE.chg = "edit"; open("impact");
+      toast("Документ утверждён: вернуть версию — значит изменить решение. Сначала проверим последствия."); return;
+    }
+    VERSIONS.push({ id: `b${VERSIONS.length}`, day: "Сегодня", time: nowTime(), name: "«До возврата»", kind: "named", text: d2Text() });
+    const [about, q, contr, not] = sel.text;
+    STATE.d2 = { about, about2: "", q, contr, contrSugg: false, not };
+    STATE.verSel = "cur"; paint();
+    toast(`Вернул версию ${sel.name || "от " + sel.time}. Текст до возврата сохранён как «До возврата».`);
+  },
+  "ver-sec"(b, k) {
+    const i = Number(k), { sel } = verContext();
+    if (STATE.d2Approved) {
+      if (i !== 1) { toast("Документ утверждён: вернуть раздел — значит изменить решение. В макете проверка последствий нарисована только для тематического вопроса."); return; }
+      STATE.chgOld = STATE.d2.q; STATE.chgNew = sel.text[1]; STATE.chg = "edit"; open("impact");
+      toast("Документ утверждён: вернуть раздел — значит изменить решение. Сначала проверим последствия."); return;
+    }
+    VERSIONS.push({ id: `b${VERSIONS.length}`, day: "Сегодня", time: nowTime(), name: "«До возврата раздела»", kind: "named", text: d2Text() });
+    const d = STATE.d2;
+    if (i === 0) { d.about = sel.text[0]; d.about2 = ""; }
+    if (i === 1) d.q = sel.text[1];
+    if (i === 2) { d.contr = sel.text[2]; d.contrSugg = false; }
+    if (i === 3) d.not = sel.text[3];
+    paint(); toast(`Вернул раздел «${D2_SECTIONS[i]}». Остальной текст не тронут, прежний сохранён как «До возврата раздела».`);
+  },
+
+  // Экспорт
+  "exp-what"(b, k) {
+    STATE.exp.what = k;
+    if ((k === "bible" || k === "outline") && SCRIPT_ONLY.includes(STATE.exp.fmt)) { STATE.exp.fmt = "pdf"; toast("Этот документ выгружается в PDF или DOCX — переключил на PDF."); }
+    paint();
+  },
+  "exp-fmt"(b, k) { STATE.exp.fmt = k; paint(); },
+  "exp-t"(b, k) { STATE.exp[k] = !STATE.exp[k]; paint(); },
+  "exp-download"() {
+    const ext = { pdf: "pdf", docx: "docx", fdx: "fdx", fountain: "fountain" }[STATE.exp.fmt];
+    toast(`Файл «Тихая вода — черновик.${ext}» готов. В макете файл не создаётся.`);
+  },
+
+  // Настройки
+  set(b, k) { const [key, val] = k.split(":"); STATE.set[key] = val; applySettings(); paint(); },
+  "set-t"(b, k) { STATE.set[k] = !STATE.set[k]; paint(); },
+  "set-go"(b, k) { document.getElementById(k).scrollIntoView({ behavior: "smooth", block: "start" }); },
+  back() { open(STATE.back); },
+  archive() { toast("Собираю архив: истории, версии и заметки. Пришлю ссылку на почту. В макете архив не создаётся."); },
+  "del-account"() {
+    ritual(`<div class="dlg"><h2>Удалить аккаунт?</h2><p>Удалятся все истории, версии и заметки. Восстановить их будет нельзя. Перед этим можно собрать архив.</p>
+      <input class="field" id="confirmDel" autocomplete="off" placeholder="Чтобы подтвердить, напишите: удалить" />
+      <div class="acts"><button class="chipbtn">Отмена</button><button class="chipbtn main bad" id="confirmBtn" data-act="del-account-go" disabled>Удалить навсегда</button></div></div>`);
+    $("#confirmDel").focus();
+  },
+  "del-account-go"() { toast("В макете аккаунт не удаляется."); },
+
+  // Состояния
+  offline() { setOffline(!STATE.offline); },
+  "del-project"() {
+    ritual(`<div class="dlg"><h2>Удалить «Северный ветер»?</h2><p>История переедет в корзину. 30 дней её можно вернуть, потом она удалится навсегда.</p>
+      <div class="acts"><button class="chipbtn">Отмена</button><button class="chipbtn main bad" data-act="del-project-go">Удалить</button></div></div>`);
+  },
+  "del-project-go"() { STATE.trash = true; paint(); toast("«Северный ветер» в корзине. Вернуть можно в течение 30 дней."); },
+  "restore-project"() { STATE.trash = false; paint(); toast("«Северный ветер» снова на полке."); },
+  "ai-fail"() {
+    const convo = $("#convo");
+    convo.insertAdjacentHTML("beforeend", `<div class="bubble me">Не спорит ли сцена 15 с профилем Веры?</div><div class="bubble ai typing"><i></i><i></i><i></i></div>`);
+    $("#ask").classList.add("open"); convo.scrollTop = convo.scrollHeight;
+    setTimeout(() => {
+      convo.querySelector(".typing").outerHTML = `<div class="bubble err">Не получилось ответить: соавтор не отвечает. Вопрос сохранён, ваш текст не изменился.<button data-act="ai-retry">Повторить</button></div>`;
+      convo.scrollTop = convo.scrollHeight;
+    }, 1200);
+  },
+  "ai-retry"(b) {
+    const bubble = b.closest(".bubble");
+    bubble.outerHTML = `<div class="bubble ai typing"><i></i><i></i><i></i></div>`;
+    setTimeout(() => { const t = $("#convo .typing"); t.classList.remove("typing"); t.textContent = "Сцена 15 пока пустая — сверять не с чем. Когда появится черновик, проверю её по профилю."; }, 1100);
+  },
 };
+// Действия, после которых меняется текст или решение, и значит — сохранение
+const SAVES = new Set(["accept", "reject", "variant", "keep", "line", "conf-line", "approve", "create", "merge", "apart", "loc-yes", "accept-import", "pick", "own", "ck", "plan-approve", "kolya", "gap-yes", "ver-name-save", "ver-restore-go", "ver-sec", "ver-rename-save", "set", "set-t"]);
 function impResolve(note, title, text) {
   STATE.impOpen -= 1; $("#impOpen").textContent = impOpenText(); note.classList.remove("pending");
   resolveNote(note, title, text);
@@ -1266,8 +1910,15 @@ function approveD11() {
 document.addEventListener("click", (e) => {
   const rit = e.target.closest("#ritual");
   if (rit && (e.target === rit || e.target.closest("button"))) rit.classList.remove("on");
+  if (e.target.id === "palette") return closePalette();
+  const pal = e.target.closest("[data-pal]"); if (pal) return runPal(Number(pal.dataset.pal));
+  if (e.target.closest("#cmdBtn")) return openPalette();
   const act = e.target.closest("[data-act]");
-  if (act) return ACTIONS[act.dataset.act](act, act.dataset.k, act.closest(".note"));
+  if (act) {
+    ACTIONS[act.dataset.act](act, act.dataset.k, act.closest(".note"));
+    if (SAVES.has(act.dataset.act)) touched();
+    return;
+  }
   const o = e.target.closest("[data-open]"); if (o) return open(o.dataset.open);
   const t = e.target.closest("[data-theme-btn]"); if (t) return setTheme(t.dataset.themeBtn);
   if (e.target.closest("#focusBtn")) return toggleFocus();
@@ -1280,6 +1931,11 @@ $("#askin").addEventListener("keydown", (e) => {
   if (e.key === "Escape") { $("#ask").classList.remove("open"); e.target.blur(); return; }
   if (e.key !== "Enter" || !e.target.value.trim()) return;
   const convo = $("#convo");
+  if (STATE.offline) {
+    convo.insertAdjacentHTML("beforeend", `<div class="bubble me"></div><div class="bubble err">Нет связи — отвечу, когда она вернётся. Вопрос я запомнил.</div>`);
+    [...convo.querySelectorAll(".bubble.me")].at(-1).textContent = e.target.value;
+    e.target.value = ""; $("#ask").classList.add("open"); convo.scrollTop = convo.scrollHeight; return;
+  }
   convo.insertAdjacentHTML("beforeend", `<div class="bubble me"></div><div class="bubble ai typing"><i></i><i></i><i></i></div>`);
   [...convo.querySelectorAll(".bubble.me")].at(-1).textContent = e.target.value;
   e.target.value = ""; $("#ask").classList.add("open"); convo.scrollTop = convo.scrollHeight;
@@ -1290,10 +1946,40 @@ $("#askin").addEventListener("keydown", (e) => {
   }, 1100);
 });
 document.addEventListener("input", (e) => {
-  if (e.target.id === "namein") STATE.draftName = e.target.value;
-  if (e.target.dataset.ans) STATE.d11.answers[Number(e.target.dataset.ans)] = e.target.textContent.trim();
+  const id = e.target.id;
+  if (id === "palin") { palSel = 0; renderPalette(); return; }
+  if (id === "askin" || id === "vername") return;
+  if (id === "confirmDel") { $("#confirmBtn").disabled = e.target.value.trim().toLowerCase() !== "удалить"; return; }
+  if (id === "namein") STATE.draftName = e.target.value;
+  if (id === "authorin") STATE.set.author = e.target.value;
+  if (id === "sizein") { STATE.set.size = Number(e.target.value); $("#sizeval").textContent = `${STATE.set.size} px`; applySettings(); }
+  if (e.target.dataset.ans !== undefined) STATE.d11.answers[Number(e.target.dataset.ans)] = e.target.textContent.trim();
+  touched();
+});
+$("#pallist").addEventListener("mousemove", (e) => {
+  const item = e.target.closest("[data-pal]");
+  if (item && Number(item.dataset.pal) !== palSel) { palSel = Number(item.dataset.pal); markPal(); }
 });
 document.addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && ["k", "K", "л", "Л"].includes(e.key)) {
+    e.preventDefault(); e.stopImmediatePropagation();
+    $("#palette").classList.contains("on") ? closePalette() : openPalette(); return;
+  }
+  if (!$("#palette").classList.contains("on")) return;
+  e.stopImmediatePropagation();
+  if (e.key === "Escape") closePalette();
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); palSel = (palSel + (e.key === "ArrowDown" ? 1 : -1) + palItems.length) % palItems.length; markPal(); }
+  if (e.key === "Enter") { e.preventDefault(); runPal(palSel); }
+}, true);
+document.addEventListener("keydown", (e) => {
+  if (current === "versions" && (e.key === "ArrowUp" || e.key === "ArrowDown") && !e.target.closest("input, textarea, [contenteditable=true]") && !$("#ritual").classList.contains("on")) {
+    e.preventDefault();
+    const list = versionList().filter((v) => v.kind !== "auto" || STATE.showAuto || v.id === STATE.verSel).reverse();
+    const i = list.findIndex((v) => v.id === STATE.verSel), next = list[i + (e.key === "ArrowDown" ? 1 : -1)];
+    if (next) { STATE.verSel = next.id; STATE.renaming = null; paint(); }
+    return;
+  }
+  if (e.key === "Enter" && e.target.matches("#rename")) { e.preventDefault(); ACTIONS["ver-rename-save"](); return; }
   if (e.key === "Enter" && e.target.matches("[data-own]")) { e.preventDefault(); ACTIONS.own(null, null, e.target.closest(".note")); }
   if (e.key === "Escape" && $("#ritual").classList.contains("on")) $("#ritual").classList.remove("on");
 });
@@ -1333,11 +2019,17 @@ const PRESETS = {
   "import/result": () => { STATE.imp = "result"; },
   "d11/checklist": () => { STATE.d11.answers = D11.map((q) => q.opts[0]); STATE.d11.own = D11.map(() => false); STATE.d11.checks = { want: true }; },
   "impact/result": () => { STATE.d2Approved = true; STEPS[1][2] = "approved"; STATE.chg = "result"; },
+  "versions/auto": () => { STATE.verSel = "a18"; },
+  "export/fountain": () => { STATE.exp.fmt = "fountain"; },
+  "export/bible": () => { STATE.exp.what = "bible"; STATE.exp.notes = true; },
+  "states/offline": () => { STATE.offline = true; STATE.pending = 3; },
 };
 const [hashView, hashTheme, hashPreset] = location.hash.slice(1).split("/");
 if (hashTheme) document.documentElement.dataset.theme = hashTheme;
 if (hashPreset) PRESETS[`${hashView}/${hashPreset}`]();
 document.querySelectorAll("[data-theme-btn]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.themeBtn === document.documentElement.dataset.theme)));
+applySettings();
+savedState(STATE.offline ? "off" : "");
 open(hashView || "home");
 </script>
 </body>
