@@ -70,3 +70,6 @@
 - [x] Дубль operationId `get_config`: это `GET /config` (`agno/os/router.py:102`) и `GET /components/{id}/configs/{version}` (`agno/os/routers/components/components.py:1352`). Факт записан в `api/components`; черновик issue в Agno подготовлен, не отправлен.
 - [x] `python -m app.main` слушает `127.0.0.1`, контейнер — `0.0.0.0`: так задумано, записано в `runtime`.
 - [ ] Спеки API длинные (INFO «Requirement text is very long»): разбивать домен при первом change, который его затрагивает.
+- [ ] `scripts/auth_check.sh` сразу после `docker compose up --wait` иногда падает на получении токена, через ~20 с проходит: blueprints Authentik применяются после того, как сервер стал healthy. Предложение: шаг ожидания в скрипте или healthcheck по готовности провайдера (замечено 2026-10-28).
+- [ ] Планировщик при старте API пишет `Schedule … attempt 1 failed: All connection attempts failed`: обращается к `AGENTOS_URL` раньше, чем API начал отвечать. Проверить, повторяет ли он попытку и не теряется ли запуск Routine (замечено 2026-10-28).
+- [ ] Архивный `changes/archive/2026-10-26-auth-module/proposal.md` называет фронтенд отдельным репозиторием `authorled-web`; фронтенд в `web/` (ADR-001). Архив не правим — учитывать при чтении.
