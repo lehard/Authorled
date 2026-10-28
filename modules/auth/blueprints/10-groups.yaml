@@ -1,3 +1,5 @@
+# The group names are part of the token contract (openspec/specs/auth, "Контракт токена"):
+# GROUP_SCOPES in app/auth/authorization.py must list the same groups (check_auth_boundary.sh).
 version: 1
 metadata:
   name: Authorled groups

@@ -56,7 +56,8 @@ cp example.env .env
 ```
 
 Open `.env` and fill the Required block: `LITELLM_MASTER_KEY`, `LITELLM_API_KEY`,
-`DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS` and `GIGACHAT_SCOPE`, and the block of the
+`DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE` and `AGENTOS_DB_PASSWORD` (password
+of the database role `agentos` the API connects with), and the block of the
 [auth module](#module-auth): `AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`,
 `AUTHENTIK_BOOTSTRAP_EMAIL`, `AUTHENTIK_BOOTSTRAP_PASSWORD`, `AUTH_FRONTEND_CLIENT_ID`,
 `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_DEV_SERVICE_TOKEN`, `AUTH_BRAND_DOMAIN` and `AUTH_ISSUER`. The CA bundle for
@@ -216,13 +217,17 @@ to port 8000 on your host. Use a reverse proxy on the host or an HTTPS tunnel.
 Production Compose reads `.env`. Fill the Required block (`LITELLM_MASTER_KEY`,
 `LITELLM_API_KEY`, `DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`),
 place `litellm/certs/ca-bundle.pem`, and set `AGENTOS_URL` to your public HTTPS URL,
-a strong `DB_PASS`, and `MCP_CONNECT_SECRET` (generate one with
+a strong `DB_PASS` (password of the bootstrap superuser of PostgreSQL, used only by the init
+services and administration), a strong `AGENTOS_DB_PASSWORD` (the role `agentos` the API
+connects with), and `MCP_CONNECT_SECRET` (generate one with
 `openssl rand -base64 32`). Compose passes the file through unchanged, so replace
 every `***` placeholder: a placeholder reaches the containers as a real value and
 model calls fail on authentication.
 
 For an existing database, changing `DB_PASS` in `.env` does not change the database
 password. Update the database password separately; do not delete the data volume.
+`AGENTOS_DB_PASSWORD` is applied by `agentos-db-init` (`db/init.sql`) on every `up`; on an
+existing database the same step makes `agentos` the owner of schema `ai` and its tables.
 
 ### 2. Set up authentication
 
@@ -353,9 +358,11 @@ reader and 5000-character chunks, which exceed the model's limit.
 
 Authentication and authorization are a module of this repository: [Authentik](https://goauthentik.io)
 (sign-in, 2FA, profile, password reset, groups, service accounts, admin interface) runs next to
-the API, in the same database (schema `authentik`, own role). Its configuration is code in
-`modules/auth/` (blueprints, database init, key export); `app/auth/` is the only code that reads
-tokens. The API accepts only tokens issued by Authentik, in every environment.
+the API, in the same database (schema `authentik`, own role; the API's role `agentos` has no
+access to it). Its configuration is code in `modules/auth/` (services in
+`modules/auth/compose.yaml`, included by `compose.yaml`; blueprints, database init, key export);
+`app/auth/` is the only code that reads tokens. The token claims and group names the API relies
+on are the token contract in `openspec/specs/auth`. The API accepts only tokens issued by Authentik, in every environment.
 
 - **Start.** `docker compose up -d --build` (or `./scripts/dev.sh api`) creates the schema and
   role, starts Authentik, applies the blueprints, exports the public keys to
@@ -407,7 +414,8 @@ add the others when you need them. Docker Compose reads `.env` for both local an
 | `JWT_JWKS_FILE` | Public keys of Authentik, the only source of token verification keys. Compose writes the file at start and sets the path; set it yourself when the API or `python -m evals` runs on the host (`dev.sh api` does for the API). |
 | `AGENTOS_URL` | Public URL used by scheduled jobs and MCP. Set it to your public HTTPS URL. |
 | `MCP_CONNECT_SECRET` | Connect browser MCP clients. Generate it before deployment. |
-| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `DB_DATABASE` | PostgreSQL connection settings. Local Compose configures these for you. |
+| `AGENTOS_DB_PASSWORD` | Password of the database role `agentos` the API connects with (required; not a superuser, no access to schema `authentik`). |
+| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `DB_DATABASE` | PostgreSQL connection settings of the API. Compose and `./scripts/dev.sh api` set them (`DB_USER=agentos`); in the production `.env`, `DB_PASS` is the bootstrap superuser password. |
 | `RUNTIME_ENV` | `prd` by default. Local Compose uses `dev`; token checks are on in both. |
 
 ## Learn more

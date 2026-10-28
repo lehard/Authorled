@@ -28,7 +28,8 @@ keys (`modules/auth/jwks/jwks.json`) are public and may be shared to complete co
   on the host. Replace every `***` placeholder. Check how the deploy scripts load
   settings rather than assuming they read `.env` or exported shell variables.
 - Keep production authentication enabled. Do not upload `RUNTIME_ENV=dev`.
-  Tokens come from Authentik (module `auth`, runs in `compose.yaml`): fill the auth block of
+  Set strong `DB_PASS` (bootstrap superuser) and `AGENTOS_DB_PASSWORD` (role `agentos` of the API).
+  Tokens come from Authentik (module `auth`, services in `modules/auth/compose.yaml`): fill the auth block of
   the production env file with strong values (`AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`,
   `AUTHENTIK_BOOTSTRAP_PASSWORD`, `AUTH_DEV_SERVICE_TOKEN`), the frontend's `AUTH_FRONTEND_*`
   values, `AUTH_BRAND_DOMAIN` (host name of Authentik) and `AUTH_ISSUER` (public HTTPS address of Authentik plus `/application/o/authorled/`).

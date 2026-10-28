@@ -38,8 +38,13 @@ services:
       AGNO_DEBUG: "False"
       AGNO_TELEMETRY: "false"
       AGENTOS_URL: ${AGENTOS_URL:?AGENTOS_URL must be set in .env}
-      DB_PASS: ${DB_PASS:?DB_PASS must be set in .env}
       MCP_CONNECT_SECRET: ${MCP_CONNECT_SECRET:-}
+
+  # The API connects as the role `agentos` (AGENTOS_DB_PASSWORD); DB_PASS is the password of the
+  # bootstrap superuser, used only by the init services and administration.
+  agentos-db-init:
+    environment:
+      PGPASSWORD: ${DB_PASS:?DB_PASS must be set in .env}
 
   # Module auth. The Authentik secrets (AUTHENTIK_SECRET_KEY, AUTHENTIK_DB_PASSWORD,
   # AUTHENTIK_BOOTSTRAP_*, AUTH_*) are required by compose.yaml and have no defaults.

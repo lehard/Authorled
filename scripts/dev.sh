@@ -57,16 +57,20 @@ case "${command}" in
         ;;
     api)
         command -v uv > /dev/null || fail "uv not found. Install: https://docs.astral.sh/uv/"
+        agentos_db_password="$(sed -n 's/^AGENTOS_DB_PASSWORD=//p' .env | tail -n 1)"
+        [[ -n "${agentos_db_password}" ]] || fail "AGENTOS_DB_PASSWORD is not set in .env (password of the database role agentos)."
         docker compose up -d --wait agentos-db litellm authentik-server authentik-worker
+        # The role the API connects with (db/init.sql); fails loudly like any compose step.
+        docker compose run --rm agentos-db-init
         # Module auth: write the Authentik public keys to modules/auth/jwks/jwks.json (fails loudly).
         docker compose run --rm authentik-jwks-export
         # The container publishes port 8000 too; stop it so the host API can bind.
         docker compose stop agentos-api
         # Host-side values of what compose.yaml sets for the agentos-api container
-        # (DB_* match agentos-db, the service names become loopback ports).
+        # (DB_* match agentos-db and the role agentos, the service names become loopback ports).
         export RUNTIME_ENV=dev AGNO_DEBUG=True AGNO_TELEMETRY=false
         export DB_DRIVER=postgresql+psycopg DB_HOST=127.0.0.1 DB_PORT=5432
-        export DB_USER=ai DB_PASS=ai DB_DATABASE=ai
+        export DB_USER=agentos DB_PASS="${agentos_db_password}" DB_DATABASE=ai
         export AGENTOS_URL=http://127.0.0.1:8000 LITELLM_URL=http://127.0.0.1:4000
         export JWT_JWKS_FILE="$(pwd)/modules/auth/jwks/jwks.json"
         exec uv run --no-project --env-file .env --with-requirements requirements.txt \

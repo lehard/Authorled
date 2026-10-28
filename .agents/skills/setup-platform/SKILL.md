@@ -38,7 +38,7 @@ Read [`AGENTS.md`](../../../AGENTS.md) end to end.
 
 If `.env` does not exist, `cp example.env .env`, then fill its Required block
 (`LITELLM_MASTER_KEY`, `LITELLM_API_KEY` equal to it, `DEEPSEEK_API_KEY`,
-`GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`) and the auth block (`AUTHENTIK_SECRET_KEY`,
+`GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`, `AGENTOS_DB_PASSWORD`) and the auth block (`AUTHENTIK_SECRET_KEY`,
 `AUTHENTIK_DB_PASSWORD`, `AUTHENTIK_BOOTSTRAP_EMAIL`, `AUTHENTIK_BOOTSTRAP_PASSWORD`,
 `AUTH_FRONTEND_CLIENT_ID`, `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_DEV_SERVICE_TOKEN`, `AUTH_BRAND_DOMAIN`, `AUTH_ISSUER`;
 generate the secrets with `openssl rand -hex`), and confirm `litellm/certs/ca-bundle.pem` exists:
