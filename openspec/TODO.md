@@ -11,6 +11,7 @@
 | `remove-config-fallbacks` | не создан; код уже в рабочем дереве | fallback-и, телеметрия: спеки и документация |
 | `core-*` (серия) | не создан | продуктовое ядро, Alembic, pytest, свои маршруты |
 | `auth-module` | архивирован 2026-10-26; остаток — в разделе «Расхождения с контекст-паком» | авторизация: модуль `auth` с полным Authentik, JWT, изоляция |
+| `prepare-auth-module-extraction` | архивирован 2026-10-28; prod не проверялся | подготовка модуля `auth` к выносу: compose-фрагмент, контракт токена, роль `agentos` без доступа к `authentik` |
 
 > Внимание: compose требует ключи LiteLLM, DeepSeek, GigaChat и файл `litellm/certs/ca-bundle.pem`; без них `docker compose up` не стартует.
 
