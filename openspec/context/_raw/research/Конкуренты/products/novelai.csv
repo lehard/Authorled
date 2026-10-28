@@ -232,3 +232,5 @@ NEW-AI-6,есть,https://docs.novelai.net/en/text/lorebook,"AI: Lorebook-усл
 NEW-AI-7,есть,https://docs.novelai.net/en/scripting/introduction,AI: скриптовый API пользователя. пользовательские скрипты с хуками и доступом к контексту
 NEW-IO-8,есть,https://docs.novelai.net/en/text/editor/storysettings,IO: сценарии (.scenario) с плейсхолдерами. экспорт стартового набора истории с тегами и плейсхолдерами
 NEW-AI-9,есть,https://docs.novelai.net/en/text/models,"AI: модели Xialong, GLM-4.6. Xialong (355B, дообучен на прозе), контекст 28 672 + 8192 токенов"
+IO-23,не проверено,,"Добавлено в таксономию 2026-10-28, не проверялось"
+IO-24,не проверено,,"Добавлено в таксономию 2026-10-28, не проверялось"

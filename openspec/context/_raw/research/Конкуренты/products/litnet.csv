@@ -234,3 +234,5 @@ NEW-IO-8,есть,https://litnet.com/info/spravka-avtoram,"Выплаты раз
 NEW-IO-9,есть,https://litnet.com/info/spravka-avtoram,Импорт FB2 создаёт главы автоматически; повторная загрузка удаляет все опубликованные главы
 NEW-IO-10,есть,https://litnet.com/info/spravka-avtoram,Награды читателей (тексты: https://litnet.com/ru/info/oplata)
 NEW-IO-11,есть,https://litnet.com/info/spravka-avtoram,Правила ИИ только для литмобов: без существенного использования генеративного ИИ; допустимы ИИ-редактура и нейрообложки
+IO-23,не проверено,,"Добавлено в таксономию 2026-10-28, не проверялось"
+IO-24,есть,https://litnet.com/info/spravka-avtoram,Импорт FB2 создаёт главы автоматически

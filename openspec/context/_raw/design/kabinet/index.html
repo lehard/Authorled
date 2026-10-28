@@ -264,6 +264,54 @@
   .card .lbl { font-size: 11.5px; letter-spacing: .09em; text-transform: uppercase; font-weight: 600; color: var(--ink-3); display: flex; align-items: center; gap: 6px; }
   .card h3 { font-family: var(--font-prose); font-size: 23px; font-weight: 500; margin: 10px 0 6px; letter-spacing: -.01em; }
   .card p { margin: 0; color: var(--ink-2); font-size: 14px; }
+  /* ——— Письмо: цель на день и прогресс ——— */
+  .wr { background: var(--panel); border-radius: 24px; box-shadow: var(--shadow-sm); padding: 22px 30px 20px; margin-bottom: 26px; }
+  .wr-h { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 16px; }
+  .wr-h b { font-family: var(--font-prose); font-size: 22px; font-weight: 500; }
+  .wr-h span { color: var(--ink-3); font-size: 13.5px; }
+  .wr-h .chipbtn { margin-left: auto; }
+  .wr-body { display: grid; grid-template-columns: 150px 1fr 260px; gap: 28px; align-items: center; }
+  .wr-today { display: grid; justify-items: center; gap: 4px; text-align: center; }
+  .wr-ring { width: 104px; height: 104px; display: block; }
+  .wr-ring .bg { stroke: var(--line); } .wr-ring .fg { stroke: var(--accent); transition: stroke-dasharray .4s; } .wr-ring.met .fg { stroke: var(--ok); }
+  .wr-ring text { font-family: var(--font-prose); fill: var(--ink); font-size: 26px; font-variant-numeric: tabular-nums; }
+  .wr-ring text.sub { font-family: var(--font-ui); fill: var(--ink-3); font-size: 11.5px; }
+  .wr-today small { color: var(--ink-3); font-size: 12.5px; line-height: 1.35; }
+  .wr-chart { min-width: 0; }
+  .wr-plot { position: relative; }
+  .wr-chart svg { width: 100%; height: 92px; display: block; overflow: visible; }
+  .wr-goal { position: absolute; right: 0; font-size: 11px; color: var(--ink-3); background: var(--panel-solid); padding: 0 4px; border-radius: 4px; }
+  .wr-axis { display: flex; justify-content: space-between; margin-top: 5px; font-size: 11px; color: var(--ink-3); }
+  .wr-chart .bar { fill: var(--ink-3); opacity: .35; } .wr-chart .bar.met { fill: var(--ok); opacity: .8; } .wr-chart .bar.today { fill: var(--accent); opacity: 1; }
+  .wr-chart .zero { fill: var(--ink-3); opacity: .35; }
+  .wr-chart .goal { stroke: var(--ink-2); stroke-dasharray: 4 4; opacity: .6; }
+  .wr-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; font-size: 12px; color: var(--ink-3); }
+  .wr-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .wr-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .wr-proj h4 { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+  .wr-proj .num { font-family: var(--font-prose); font-size: 21px; color: var(--ink); }
+  .wr-proj .num small { font-family: var(--font-ui); font-size: 12.5px; color: var(--ink-3); }
+  .wr-track { height: 8px; border-radius: 4px; background: var(--line); margin: 8px 0 8px; overflow: hidden; }
+  .wr-track i { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
+  .wr-proj p { margin: 0; font-size: 13px; color: var(--ink-2); line-height: 1.45; }
+  .wr-ai { margin-top: 16px; padding: 12px 14px; border-radius: 14px; background: var(--ai-soft); font-size: 13.5px; line-height: 1.45; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+  .wr-ai .i { color: var(--ai); flex: none; }
+  .wr-ai span { flex: 1 1 320px; }
+  .wr-ai .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+  .wr-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 20px; margin-top: 4px; }
+  .wr-form label { display: grid; gap: 6px; font-size: 13px; color: var(--ink-2); }
+  .wr-form label small { color: var(--ink-3); font-size: 12px; }
+  .wr-form .field { max-width: none; }
+  .wr-form .wide { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; font-size: 13px; color: var(--ink-2); }
+  .wr-form .acts { grid-column: 1 / -1; display: flex; gap: 8px; }
+  .wr-form .wide .seg { margin: 0; }
+  .wr-form .wide .sep { margin-left: 18px; }
+  .wr-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .wr-chip svg { width: 18px; height: 18px; }
+  .wr-chip .bg { stroke: var(--line); } .wr-chip .fg { stroke: var(--accent); } .wr-chip.met .fg { stroke: var(--ok); } .wr-chip.met b { color: var(--ok); }
+  .wr-chip b { color: var(--ink); font-weight: 600; }
+  @media (max-width: 1000px) { .wr-body { grid-template-columns: 130px 1fr; } .wr-proj { grid-column: 1 / -1; } }
+  @media (max-width: 600px) { .wr { padding: 18px 18px 16px; } .wr-body { grid-template-columns: 1fr; gap: 18px; } .wr-today { grid-template-columns: auto 1fr; justify-items: start; text-align: left; align-items: center; column-gap: 14px; } .wr-ring { width: 84px; height: 84px; } .wr-ai > .i { display: none; } .wr-form { grid-template-columns: 1fr; } .wr-h .chipbtn { margin-left: 0; } }
   .card.next { background: linear-gradient(140deg, var(--paper), var(--ai-soft)); }
   .card.next .lbl { color: var(--ai); }
   .card .go { margin-top: 16px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13.5px; color: var(--accent); }
@@ -1438,6 +1486,7 @@ const STATE = {
   bibleTab: "people", gap: null,
   tlSel: 14, tlThreads: true, tlKnow: true, grSel: 14, tnSel: 14, tnMood: ["v", "a"], tension: {}, relAt: 14, relSel: "va", relFocus: "v", relView: "arcs",
   ibSel: 10, ibEdit: null, ibRename: null, ibGone: [], ibUndo: null, ibPos: {}, ibLinks: ["1-9", "1-4", "13-14", "3-5", "2-5", "2-16", "5-17", "6-8", "7-8"], ibSugg: ["4-10", "6-12"], ibLink: null, ibYes: {}, ibNo: [], ibNew: [], ibWires: true, ibShowGrew: true, ibGroups: true, ibView: "board", ibCam: null, ibGroupSugg: true,
+  goal: { day: 500, pages: 110, by: "2026-11-30", count: "text", chip: true, edit: false }, wrToday: 340,
   // Рамки групп на доске импульсов: координаты в точках доски
   ibFrames: [{ id: "lake", name: "Озеро", x: 0, y: 0, w: 620, h: 452 }, { id: "vera", name: "Вера и тема", x: 700, y: 0, w: 620, h: 452 }, { id: "kitchen", name: "Кухня, ночь", x: 1400, y: 0, w: 420, h: 452 }],
 };
@@ -1509,6 +1558,7 @@ const VIEWS = {
         <button class="card" data-act="sc-open" data-k="14"><div class="lbl" style="color:var(--bad)">${ico("warn")}Противоречие</div><h3>Сцена 14</h3><p>Аня узнаёт правду о брате раньше, чем задумано в структуре.</p></button>
         <button class="card"><div class="lbl" style="color:var(--warn)">${ico("clock")}Устарело</div><h3>Тональный манифест</h3><p>Тема изменилась — тон стоит перечитать.</p></button>
       </div>
+      ${wrHtml()}
       <div class="journey">
         <div class="journey-h"><b>Путь истории</b><span>${approvedCount()} из 22 шагов утверждено ·последняя правка вчера в 23:40</span></div>
         ${journeySvg()}
@@ -1585,7 +1635,7 @@ const VIEWS = {
       <article class="sheet script">
         <div class="eyebrow">Шаг 20 · Черновик сцены${one ? ` · биты из шага 19` : " · акт II"}</div>
         <h1 style="font-size:36px">${one ? s.title : "Трещина"}</h1>
-        <div class="meta">${one ? pill : `<span class="pill in_progress"><i></i>3 из 10 сцен написаны</span>`}${seg}${one ? btn : ""}${one ? scpHtml(n) : ""}</div>
+        <div class="meta">${one ? pill : `<span class="pill in_progress"><i></i>3 из 10 сцен написаны</span>`}${seg}${one ? btn : ""}${wrChip()}${one ? scpHtml(n) : ""}</div>
         ${ids.map(body).join("")}
         <div class="elt" id="elt" hidden></div>
       </article>
@@ -2679,6 +2729,59 @@ function relUpdate() {
 }
 document.addEventListener("input", (e) => { if (e.target.id === "relrange") { STATE.relAt = Number(e.target.value); relUpdate(); } });
 const boardSeg = (cur) => `<div class="seg">${[["cards", "Карточки"], ["scene", 'Текст<span class="wide"> сценария</span>'], ["timeline", "Таймлайн"], ["grid", "Линии"], ["rhythm", "Ритм"]].map(([k, l]) => `<button aria-pressed="${k === cur}" ${k === cur ? "" : `data-open="${k}"`}>${l}</button>`).join("")}</div>`;
+// ——— Письмо: цель на день, график за 30 дней, цель по черновику ———
+// Считаются слова в сценах и прозе; документы шагов — обдумывание, а не текст. Сценарий меряется страницами, день — словами.
+const WR_TODAY = new Date(2026, 9, 28);
+const WR_PAGES = 38, WR_WPP = 180;
+// слова за 29 дней до сегодня, от старых к новым
+const WR_DAYS = [420, 0, 610, 380, 520, 0, 0, 450, 700, 300, 510, 0, 260, 540, 330, 0, 280, 410, 0, 350, 300, 0, 240, 520, 310, 0, 380, 290, 360];
+const ruDate = (d, year) => d.toLocaleDateString("ru-RU", { day: "numeric", month: "long", ...(year ? { year: "numeric" } : {}) });
+const wrDays = () => [...WR_DAYS, STATE.wrToday];
+function wrPlan() {
+  const g = STATE.goal, days = wrDays(), last = days.slice(-14), avg = Math.round(last.reduce((a, b) => a + b, 0) / last.length);
+  const left = Math.max(0, g.pages - WR_PAGES) * WR_WPP, by = new Date(g.by), daysLeft = Math.max(1, Math.round((by - WR_TODAY) / 864e5));
+  const eta = new Date(WR_TODAY.getTime() + Math.ceil(left / Math.max(avg, 1)) * 864e5);
+  return { avg, left, by, daysLeft, need: Math.ceil(left / daysLeft / 10) * 10, eta, late: eta > by, active: days.filter(Boolean).length };
+}
+const wrRing = (cls, size, r, w, inner) => {
+  const c = 2 * Math.PI * r, f = Math.min(1, STATE.wrToday / STATE.goal.day), met = STATE.wrToday >= STATE.goal.day;
+  return `<svg class="${cls} ${met ? "met" : ""}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle class="bg" cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke-width="${w}"/><circle class="fg" cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke-width="${w}" stroke-linecap="round" stroke-dasharray="${(c * f).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 ${size / 2} ${size / 2})"/>${inner || ""}</svg>`;
+};
+function wrChart() {
+  const days = wrDays(), g = STATE.goal.day, W = 600, H = 92, top = Math.max(g * 1.25, ...days), bw = W / days.length;
+  const y = (v) => H - (v / top) * H, gy = y(g).toFixed(1);
+  const bars = days.map((v, i) => {
+    const d = new Date(WR_TODAY.getTime() - (days.length - 1 - i) * 864e5), x = (i * bw + 2).toFixed(1), today = i === days.length - 1;
+    const tip = `<title>${ruDate(d)}: ${v ? `${v} слов` : "без письма"}</title>`;
+    if (!v) return `<rect class="zero" x="${x}" y="${H - 3}" width="${(bw - 4).toFixed(1)}" height="3" rx="1.5">${tip}</rect>`;
+    return `<rect class="bar ${v >= g ? "met" : ""} ${today ? "today" : ""}" x="${x}" y="${y(v).toFixed(1)}" width="${(bw - 4).toFixed(1)}" height="${(H - y(v)).toFixed(1)}" rx="3">${tip}</rect>`;
+  }).join("");
+  return `<div class="wr-plot"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Слова по дням за 30 дней">${bars}<line class="goal" x1="0" x2="${W}" y1="${gy}" y2="${gy}" vector-effect="non-scaling-stroke"/></svg><span class="wr-goal" style="top:${(gy - 17).toFixed(0)}px">цель ${g}</span></div><div class="wr-axis"><span>${ruDate(new Date(WR_TODAY.getTime() - 29 * 864e5))}</span><span>сегодня</span></div>`;
+}
+function wrHtml() {
+  const g = STATE.goal, pl = wrPlan(), met = STATE.wrToday >= g.day;
+  if (g.edit) return `<section class="wr"><div class="wr-h"><b>Цель письма</b><span>видна только вам</span></div>
+    <div class="wr-form">
+      <label>Слов в день<input class="field" id="wrday" type="number" min="50" step="50" value="${g.day}" /><small>считаются сцены и проза</small></label>
+      <label>Черновик сценария, страниц<input class="field" id="wrpages" type="number" min="1" value="${g.pages}" /><small>написано ${WR_PAGES}</small></label>
+      <label>Срок<input class="field" id="wrby" type="date" value="${g.by}" /><small>можно без срока — оставьте пустым</small></label>
+      <div class="wide"><span>Что считать:</span><div class="seg" role="group" aria-label="Что считать"><button aria-pressed="${g.count === "text"}" data-act="wr-count" data-k="text">Только текст истории</button><button aria-pressed="${g.count === "all"}" data-act="wr-count" data-k="all">Все документы</button></div>
+        <span class="sep">Счётчик на листе</span><button class="toggle ${g.chip ? "on" : ""}" data-act="wr-chip-t" aria-label="Счётчик на листе"><i></i></button></div>
+      <div class="acts"><button class="chipbtn main" data-act="wr-save">Сохранить</button><button class="chipbtn quiet" data-act="wr-edit">Отмена</button></div>
+    </div></section>`;
+  const byTxt = g.by ? ` к ${ruDate(pl.by)}` : "";
+  const ai = !g.by ? "" : pl.late
+    ? `<div class="wr-ai">${ico("ai")}<span>Последние две недели выходит около ${pl.avg} слов в день. При таком темпе черновик будет к ${ruDate(pl.eta)} — позже срока. Чтобы успеть${byTxt}, нужно около ${pl.need} слов в день.</span><div class="acts"><button class="chipbtn" data-act="wr-shift">Сдвинуть срок на ${ruDate(pl.eta)}</button><button class="chipbtn quiet" data-act="wr-keep">Оставить срок</button></div></div>`
+    : `<div class="wr-ai">${ico("ai")}<span>Около ${pl.avg} слов в день за две недели — черновик будет к ${ruDate(pl.eta)}${pl.eta.toDateString() === pl.by.toDateString() ? ", как раз к сроку" : ", раньше срока"}.</span></div>`;
+  return `<section class="wr">
+    <div class="wr-h"><b>Письмо</b><span>цель на день — ${g.day} слов · дней с письмом за месяц: ${pl.active} из 30</span><button class="chipbtn" data-act="wr-edit">Настроить цель</button></div>
+    <div class="wr-body">
+      <div class="wr-today">${wrRing("wr-ring", 104, 44, 8, `<text x="52" y="56" text-anchor="middle">${STATE.wrToday}</text><text class="sub" x="52" y="73" text-anchor="middle">из ${g.day}</text>`)}<small>${met ? "Цель на сегодня есть" : `сегодня · ещё ${g.day - STATE.wrToday}`}</small></div>
+      <div class="wr-chart">${wrChart()}<div class="wr-legend"><span><i style="background:var(--ok)"></i>цель есть</span><span><i style="background:var(--ink-3);opacity:.45"></i>меньше цели</span><span><i style="background:var(--accent)"></i>сегодня</span></div></div>
+      <div class="wr-proj"><h4>Черновик сценария${byTxt}</h4><div class="num">${WR_PAGES} <small>из ${g.pages} страниц</small></div><div class="wr-track"><i style="width:${Math.min(100, (WR_PAGES / g.pages) * 100).toFixed(1)}%"></i></div><p>${g.by ? `осталось ${pl.daysLeft} дн. · около ${Math.round(pl.left / 1000)} тыс. слов` : "без срока"}</p></div>
+    </div>${ai}</section>`;
+}
+const wrChip = () => STATE.goal.chip ? `<span class="wr-chip ${STATE.wrToday >= STATE.goal.day ? "met" : ""}" id="wrchip" title="Слова за сегодня. Цель — на главном экране">${wrRing("", 18, 7, 3)}сегодня <b>${STATE.wrToday}</b> из ${STATE.goal.day}</span>` : "";
 function nextCard() {
   const card = (key, label, title, text, go) => `<button class="card next" data-open="${key}"><div class="lbl">${ico("ai")}${label}</div><h3>${title}</h3><p>${text}</p><span class="go">${go} ${ico("arrow")}</span></button>`;
   if (STATE.revision) return card("impact", "План пересмотра", `0 из ${STATE.plan.size} документов`, "Тема изменилась. Начнём с «Тонального манифеста» — я отметил, что в нём устарело.", "Открыть план");
@@ -3096,7 +3199,7 @@ function segCenter() {
   const sg = $("#desk .seg"), b = sg && sg.querySelector('[aria-pressed="true"]');
   if (b && sg.scrollWidth > sg.clientWidth) sg.scrollLeft = b.offsetLeft - (sg.clientWidth - b.offsetWidth) / 2;
 }
-function relayout() { layoutNotes(); placeAsk(); segCenter(); if (current === "timeline") tlCenter(); if (current === "grid") grCenter(); if (current === "rhythm") tnCenter(); if (current === "d1") ibLayout(); }
+function relayout() { wrBase = current === "scene" ? { words: wrCount(), today: STATE.wrToday } : null; layoutNotes(); placeAsk(); segCenter(); if (current === "timeline") tlCenter(); if (current === "grid") grCenter(); if (current === "rhythm") tnCenter(); if (current === "d1") ibLayout(); }
 function highlight(key) {
   document.querySelectorAll(".hl").forEach((e) => e.classList.remove("hl"));
   document.querySelectorAll(`[data-a="${key}"], .note[data-for="${key}"]`).forEach((e) => e.classList.add("hl"));
@@ -4046,6 +4149,30 @@ Object.assign(ACTIONS, {
     toast(`Заменено: ${todo.length}.${skip ? ` В утверждённой сцене 13 не тронуто: ${skip} — её правка идёт через проверку последствий.` : ""} Вернуть можно в истории версий.`);
   },
 });
+Object.assign(ACTIONS, {
+  "wr-edit"() { STATE.goal.edit = !STATE.goal.edit; paint(); },
+  "wr-count"(b, k) { STATE.goal.count = k; paint(); },
+  "wr-chip-t"() { STATE.goal.chip = !STATE.goal.chip; paint(); },
+  "wr-save"() {
+    const day = Number($("#wrday").value), pages = Number($("#wrpages").value);
+    if (!(day > 0) || !(pages > 0)) { toast("Нужны число слов в день и число страниц — больше нуля."); return; }
+    Object.assign(STATE.goal, { day, pages, by: $("#wrby").value, edit: false }); paint();
+  },
+  "wr-shift"() { const pl = wrPlan(); const d = pl.eta; STATE.goal.by = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; paint(); toast(`Срок черновика — ${ruDate(d)}.`); },
+  "wr-keep"(b) { b.closest(".wr-ai").remove(); toast("Срок остаётся. Подскажу снова, если темп изменится."); },
+});
+["wr-save", "wr-shift", "wr-count", "wr-chip-t"].forEach((a) => SAVES.add(a));
+// Слова за сегодня растут, пока автор пишет на листе
+let wrBase = null;
+const wrCount = () => [...document.querySelectorAll(".script-body")].reduce((n, b) => n + (b.innerText.match(/[\p{L}\p{N}]+/gu) || []).length, 0);
+document.addEventListener("input", (e) => {
+  if (!(e.target.closest && e.target.closest(".script-body[contenteditable=true]"))) return;
+  if (wrBase === null) return;
+  const was = STATE.wrToday, grow = wrCount() - wrBase.words;
+  STATE.wrToday = Math.max(wrBase.today, wrBase.today + grow);
+  const chip = $("#wrchip"); if (chip) chip.outerHTML = wrChip();
+  if (was < STATE.goal.day && STATE.wrToday >= STATE.goal.day) toast(`Цель на сегодня есть — ${STATE.goal.day} слов. Можно остановиться или писать дальше.`);
+});
 ["scp-color", "find-rep", "find-rep-all"].forEach((a) => SAVES.add(a));
 document.addEventListener("input", (e) => {
   if (e.target.id === "findin") { runFind(); return; }
@@ -4182,6 +4309,9 @@ const PRESETS = {
   "export/fountain": () => { STATE.exp.fmt = "fountain"; },
   "export/bible": () => { STATE.exp.what = "bible"; STATE.exp.notes = true; },
   "states/offline": () => { STATE.offline = true; STATE.pending = 3; },
+  "home/goal": () => { STATE.goal.edit = true; },
+  "home/met": () => { STATE.wrToday = 540; },
+  "scene/goal": () => { STATE.wrToday = 488; },
 };
 const [hashView, hashTheme, hashPreset] = location.hash.slice(1).split("/");
 if (hashTheme) document.documentElement.dataset.theme = hashTheme;

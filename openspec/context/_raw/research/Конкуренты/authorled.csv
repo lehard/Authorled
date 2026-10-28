@@ -123,8 +123,8 @@ BI-13,в макете,openspec/context/_raw/design/kabinet/README.md (замет
 BI-14,в макете,openspec/context/_raw/design/kabinet/README.md (Библия: правила мира); openspec/context/02-domain-glossary.md (Д7),must-have,
 BI-15,в спеке,openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md (Д10 Референсное поле: галерея и ссылки),nice-to-have,
 BI-16,нет,,не нужно,Серий в MVP нет.
-GO-01,нет,,nice-to-have,
-GO-02,нет,,nice-to-have,Дедлайна нет; есть прогресс по шагам пути.
+GO-01,в макете,"openspec/context/_raw/design/kabinet/index.html (блок «Письмо» на home, #home/light/goal); openspec/context/01-product-context.md",must-have,Решение lehard 2026-10-28: делаем.
+GO-02,в макете,"openspec/context/_raw/design/kabinet/index.html (блок «Письмо» на home, #home/light/goal); openspec/context/01-product-context.md",must-have,Решение lehard 2026-10-28: делаем.
 GO-03,нет,,не нужно,
 GO-04,нет,,не нужно,
 GO-05,нет,,не нужно,
@@ -132,7 +132,7 @@ GO-06,в макете,"openspec/context/_raw/design/kabinet/README.md (Лини�
 GO-07,в макете,"openspec/context/_raw/design/kabinet/README.md (параметры сцены, Линии)",nice-to-have,
 GO-08,нет,openspec/context/_raw/design/kabinet/README.md (голоса: кто сколько говорит),nice-to-have,Доли диалога и действия не считаются.
 GO-09,в макете,openspec/context/_raw/design/kabinet/index.html (страницы · минуты в параметрах сцены),nice-to-have,
-GO-10,нет,openspec/context/_raw/design/kabinet/index.html (путь из 22 шагов со статусами),nice-to-have,"Графиков прогресса нет, только точки статусов пути."
+GO-10,в макете,"openspec/context/_raw/design/kabinet/index.html (блок «Письмо» на home, #home/light/goal); openspec/context/01-product-context.md",must-have,Решение lehard 2026-10-28: делаем.
 VE-01,в макете,"openspec/context/_raw/design/kabinet/README.md (Сохранение: «Сохранено», кнопки нет)",must-have,
 VE-02,в макете,openspec/context/_raw/design/kabinet/README.md (История версий: «Назвать»),must-have,
 VE-03,в макете,openspec/context/_raw/design/kabinet/README.md (История версий: правки подсвечены),must-have,
@@ -193,7 +193,7 @@ IO-07,в макете,openspec/context/_raw/design/kabinet/index.html (Эксп�
 IO-08,в макете,openspec/context/_raw/design/kabinet/index.html (Экспорт),must-have,
 IO-09,в макете,"openspec/context/_raw/design/kabinet/index.html (Экспорт, #export/dark/fountain)",must-have,Решение lehard 2026-10-28: импорт и экспорт Fountain и FDX нужны.
 IO-10,в макете,openspec/context/_raw/design/kabinet/index.html (Экспорт «Final Draft»),must-have,Решение lehard 2026-10-28: импорт и экспорт Fountain и FDX нужны.
-IO-11,нет,,nice-to-have,Для прозы.
+IO-11,в спеке,openspec/context/01-product-context.md,must-have,Решение lehard 2026-10-28: делаем.
 IO-12,нет,,не нужно,
 IO-13,в спеке,openspec/context/ADR/ADR-005-starc-reference-flows.md,must-have,Решение lehard 2026-10-28: экспорт Markdown нужен.
 IO-14,в макете,"openspec/context/_raw/design/kabinet/index.html (Экспорт: что выгрузить, титульный лист, номера сцен, заметки соавтора)",nice-to-have,
@@ -223,3 +223,5 @@ BZ-05,в макете,"openspec/context/_raw/design/kabinet/index.html; openspec
 BZ-06,в спеке,openspec/context/01-product-context.md (язык только русский); openspec/context/ADR/ADR-003-deepseek-litellm-gigachat.md,must-have,
 BZ-07,в макете,openspec/context/_raw/design/kabinet/README.md (панель «Как работать с доской»); путь из 22 шагов как встроенное обучение,nice-to-have,
 BZ-08,нет,,не нужно,
+IO-23,в спеке,openspec/context/01-product-context.md; openspec/context/ADR/ADR-005-starc-reference-flows.md,must-have,"Решение lehard 2026-10-28: экспорт FB2 нужен — мост на Author.Today, Литнет, ЛитРес."
+IO-24,нет,,nice-to-have,Предложение: импорт рукописи в FB2 с этих площадок.
