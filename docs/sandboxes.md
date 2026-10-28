@@ -5,9 +5,11 @@ runs them in a separate environment with its own copy of your repository.
 Choose Docker for local development or AWS AgentCore for a hosted sandbox.
 
 Follow the [platform setup](../README.md#run-locally) first. Run the commands below
-from the repository root. The engineers still need their model credentials:
-`OPENAI_API_KEY` for Codex, and `ANTHROPIC_API_KEY` or `CLAUDE_CODE_OAUTH_TOKEN` for Claude.
-Their models are configured in [agents/engineers.py](../agents/engineers.py).
+from the repository root. Claude Engineer runs Claude Code on DeepSeek through the
+LiteLLM proxy and needs no Anthropic key: [agents/engineers.py](../agents/engineers.py)
+sets `ANTHROPIC_BASE_URL` to `LITELLM_URL` and `ANTHROPIC_API_KEY` to `LITELLM_API_KEY`
+for Claude Code. Inside a sandbox, `LITELLM_URL` must point to an address of the proxy
+that the sandbox can reach; a loopback address of the API host is not reachable from it.
 
 ## Choose your repository
 
@@ -27,22 +29,22 @@ and configure `.env` using the [local setup instructions](../README.md#run-local
 If a Python environment is active, run `deactivate` first.
 
 ```sh
-docker compose up -d agentos-db
 ./scripts/venv_setup.sh
 docker build --target sandbox --load -t agno-sandbox:local .
-docker compose stop agentos-api
-RUNTIME_ENV=dev DB_HOST=127.0.0.1 DB_PORT=5432 \
-  AGENTOS_URL=http://127.0.0.1:8000 \
-  uv run --no-project --env-file .env --with-requirements requirements.txt \
-  uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload \
-  --reload-dir agents --reload-dir app --reload-dir db --reload-dir evals
+./scripts/dev.sh api
 ```
+
+`dev.sh api` starts `agentos-db`, `litellm` and Authentik, exports the Authentik keys, stops the
+`agentos-api` container and runs the API on the host with `--reload`, `DB_HOST=127.0.0.1`,
+`LITELLM_URL=http://127.0.0.1:4000` and `JWT_JWKS_FILE` pointing at the exported keys.
 
 Keep that terminal running. From another terminal, check the API's MCP connection:
 
 ```sh
-MCP_CHECK_HOST=1 ./scripts/mcp_check.sh
+MCP_CHECK_HOST=1 MCP_CHECK_TOKEN=<Authentik access token> ./scripts/mcp_check.sh
 ```
+
+The token comes from the development service account (README, "Module auth").
 
 Checkpoints are saved in `tmp/checkpoints`. Agno passes the engineers' model credentials
 to the sandbox. For a private repository, also supply `GITHUB_READ_TOKEN` through the

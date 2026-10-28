@@ -1,0 +1,237 @@
+id,значение,источник,комментарий
+ED-01,есть,https://writerduet.helpscoutdocs.com/article/154-format-text-style,Cmd/Ctrl+B
+ED-02,есть,https://writerduet.helpscoutdocs.com/article/154-format-text-style,Cmd/Ctrl+I
+ED-03,есть,https://writerduet.helpscoutdocs.com/article/154-format-text-style,Cmd/Ctrl+U
+ED-04,есть,https://writerduet.helpscoutdocs.com/article/154-format-text-style,Alt/Option+Cmd/Ctrl+X
+ED-05,не проверено,,Подтверждения в открытых источниках не найдено
+ED-06,не проверено,,Подтверждения в открытых источниках не найдено
+ED-07,не проверено,,Подтверждения в открытых источниках не найдено
+ED-08,нет,https://writerduet.helpscoutdocs.com/article/227-notes-overview,Сносок нет; рекомендуют Note как обходной путь
+ED-09,есть,https://writerduet.helpscoutdocs.com/article/72-insert-a-hyperlink,Платная функция (Pro)
+ED-10,есть,https://writerduet.helpscoutdocs.com/article/164-insert-multimedia,"Изображение, видео, аудио; файл, URL или камера"
+ED-11,не проверено,,Подтверждения в открытых источниках не найдено
+ED-12,есть,https://writerduet.helpscoutdocs.com/article/164-insert-multimedia,Выравнивание текста в меню Format
+ED-13,частично,https://writerduet.helpscoutdocs.com/article/161-page-line-margins,Поля настраиваются по типам строк (Pro); отступа первой строки отдельно нет
+ED-14,есть,https://writerduet.helpscoutdocs.com/article/158-line-spacing,Двойной интервал и отступ по типам строк
+ED-15,есть,https://writerduet.helpscoutdocs.com/article/155-change-font-type-size,По умолчанию Courier Prime 12
+ED-16,есть,https://writerduet.helpscoutdocs.com/article/352-custom-line-types,Custom Line Types (Pro)
+ED-17,не проверено,,Подтверждения в открытых источниках не найдено
+ED-18,не проверено,,Подтверждения в открытых источниках не найдено
+ED-19,не проверено,,Подтверждения в открытых источниках не найдено
+ED-20,есть,https://writerduet.helpscoutdocs.com/article/232-keyboard-shortcuts,"Undo и Redo, плюс Timeline"
+ED-21,есть,https://writerduet.helpscoutdocs.com/article/68-find-and-replace,Ctrl/Cmd+F
+ED-22,есть,https://writerduet.helpscoutdocs.com/article/68-find-and-replace,Find and Replace по документу
+ED-23,не проверено,,Подтверждения в открытых источниках не найдено
+ED-24,не проверено,,Подтверждения в открытых источниках не найдено
+ED-25,есть,https://writerduet.helpscoutdocs.com/article/129-spellchecker,Системная проверка и встроенный Spelling & Grammar
+ED-26,есть,https://writerduet.helpscoutdocs.com/article/129-spellchecker,Check Spelling & Grammar; платная ИИ-вычитка ScreenplayProof — https://writerduet.helpscoutdocs.com/article/386-screenplayproof-paid-feature
+ED-27,частично,https://writerduet.helpscoutdocs.com/article/129-spellchecker,Язык проверки меняется; поддержка русского явно не подтверждена
+ED-28,не проверено,,Подтверждения в открытых источниках не найдено
+ED-29,частично,https://writerduet.helpscoutdocs.com/article/214-document-statistics,"Word Count в отчёте Document Statistics (платно), не в реальном времени"
+ED-30,не проверено,,Подтверждения в открытых источниках не найдено
+ED-31,есть,https://writerduet.helpscoutdocs.com/article/221-comments,"Комментарии с цветом, ответами, резолвом, @-упоминаниями, файлами"
+ED-32,есть,https://writerduet.helpscoutdocs.com/article/227-notes-overview,Тип строки Note прямо в тексте; Outline-строки
+ED-33,не проверено,,Подтверждения в открытых источниках не найдено
+ED-34,частично,https://writerduet.helpscoutdocs.com/article/87-check-for-present-progressive-tense,Проверка настоящего продолженного времени в Action (Pro); наречий нет
+ED-35,не проверено,,Подтверждения в открытых источниках не найдено
+ED-36,есть,https://writerduet.helpscoutdocs.com/article/176-fullscreen,View > Full Screen
+ED-37,есть,https://writerduet.helpscoutdocs.com/article/79-typewriter-mode-pro-feature,Typewriter Mode (платно)
+ED-38,частично,https://writerduet.helpscoutdocs.com/article/183-display-layouts,Есть Focus Layout; затемнения всего кроме текущего абзаца не подтверждено
+ED-39,есть,https://writerduet.helpscoutdocs.com/article/177-dark-mode,View > Dark Mode
+ED-40,частично,https://writerduet.helpscoutdocs.com/article/183-display-layouts,Восемь настраиваемых раскладок; цвета интерфейса и текста настраиваются
+ED-41,не проверено,,Подтверждения в открытых источниках не найдено
+ED-42,не проверено,,Подтверждения в открытых источниках не найдено
+ED-43,есть,https://writerduet.helpscoutdocs.com/article/178-use-split-pane,Split Pane: два документа рядом
+SC-01,есть,https://writerduet.helpscoutdocs.com/article/168-change-document-template,"Типы строк Scene, Action, Dialogue и др. с умным вводом"
+SC-02,есть,https://writerduet.helpscoutdocs.com/article/168-change-document-template,см. SC-01
+SC-03,есть,https://writerduet.helpscoutdocs.com/article/168-change-document-template,см. SC-01
+SC-04,есть,https://writerduet.helpscoutdocs.com/article/168-change-document-template,см. SC-01
+SC-05,есть,https://writerduet.helpscoutdocs.com/article/117-customize-editing-options,Строка Parens по вводу «(»
+SC-06,есть,https://writerduet.helpscoutdocs.com/article/168-change-document-template,Переходы входят в набор типов строк шаблонов
+SC-07,не проверено,,Подтверждения в открытых источниках не найдено
+SC-08,есть,https://writerduet.helpscoutdocs.com/article/16-dual-dialogue,"Ctrl/Cmd+D, по одному блоку за раз"
+SC-09,есть,https://writerduet.helpscoutdocs.com/article/215-reports-overview,"Shot-строки, отчёт List of Shots"
+SC-10,не проверено,,Подтверждения в открытых источниках не найдено
+SC-11,есть,https://writerduet.helpscoutdocs.com/article/352-custom-line-types,Pro
+SC-12,есть,https://writerduet.helpscoutdocs.com/article/117-customize-editing-options,Enter/Tab traditional behavior
+SC-13,есть,https://writerduet.helpscoutdocs.com/article/117-customize-editing-options,Display suggestions: имена персонажей из сценария
+SC-14,частично,https://writerduet.helpscoutdocs.com/article/117-customize-editing-options,"Подсказки по словам, в т.ч. именам; локации отдельно не названы"
+SC-15,не проверено,,Подтверждения в открытых источниках не найдено
+SC-16,не проверено,,Подтверждения в открытых источниках не найдено
+SC-17,не проверено,,Подтверждения в открытых источниках не найдено
+SC-18,есть,https://writerduet.helpscoutdocs.com/article/168-change-document-template,Шаблон Screenplay
+SC-19,нет,https://writerduet.helpscoutdocs.com/article/168-change-document-template,В списке шаблонов российского формата нет (есть арабские и RTL)
+SC-20,есть,https://writerduet.helpscoutdocs.com/article/168-change-document-template,"Stageplay, UK Stageplay, Audio/Visual, Radio/Podcast, Graphic Novel"
+SC-21,есть,https://writerduet.helpscoutdocs.com/article/168-change-document-template,"Multi-Cam Sitcom, Single-Cam Sitcom"
+SC-22,частично,https://writerduet.helpscoutdocs.com/article/95-locations-scenes-report,Страницы и данные по сценам в отчёте; хронометраж отдельно не подтверждён
+SC-23,есть,https://writerduet.helpscoutdocs.com/article/358-enable-disable-scene-numbering,Customize > Page > Numbering
+SC-24,есть,https://writerduet.helpscoutdocs.com/article/112-lock-pages,Lock Pages (Pro): страницы 2A и т.д.
+SC-25,есть,https://writerduet.helpscoutdocs.com/article/109-view-and-track-revisions-edits,"Production Revision с цветными страницами Blue, Pink, Goldenrod и т.д. (Pro)"
+SC-26,есть,https://writerduet.helpscoutdocs.com/article/109-view-and-track-revisions-edits,"Звёздочка в правом поле, цветная кромка страницы"
+SC-27,есть,https://writerduet.helpscoutdocs.com/article/200-title-page,Отдельный документ Title Page в проекте
+SC-28,есть,https://writerduet.helpscoutdocs.com/article/217-tagger,Tagger с цветными тегами и фильтрацией; отчёт Locations & Scenes
+SC-29,есть,https://writerduet.helpscoutdocs.com/article/215-reports-overview,"Document Statistics, Locations & Scenes, Dialogue Filter и др. (платно)"
+SC-30,не проверено,,Подтверждения в открытых источниках не найдено
+SC-31,частично,https://writerduet.helpscoutdocs.com/article/164-insert-multimedia,"Опорные изображения для кадров, видео, аудио"
+SC-32,есть,https://writerduet.helpscoutdocs.com/article/119-readaloud,"ReadAloud (Premium): голоса для персонажей, скачиваемые записи"
+ST-01,частично,https://writerduet.helpscoutdocs.com/article/211-cards-widget-mode,Act lines и Sequences; глав и частей прозы нет
+ST-02,есть,https://writerduet.helpscoutdocs.com/article/125-move-rearrange-scenes,Перетаскивание карточек (не на мобильных)
+ST-03,частично,https://writerduet.helpscoutdocs.com/article/273-folders,Папки в портфолио; вложенность сцен — Sequences
+ST-04,частично,https://writerduet.helpscoutdocs.com/article/217-tagger,Цветные теги с иерархией (дочерние теги); статусов как таковых нет
+ST-05,есть,https://writerduet.helpscoutdocs.com/article/217-tagger,Цвет тега виден в редакторе и на карточках
+ST-06,частично,https://writerduet.helpscoutdocs.com/article/199-graveyard,Graveyard — архив вырезанных строк и сцен; корзины проектов не проверено
+ST-07,частично,https://writerduet.helpscoutdocs.com/article/168-change-document-template,"Шаблоны по формату (кино, сериал, пьеса, книга), не по жанру"
+ST-08,есть,https://writerduet.helpscoutdocs.com/article/63-character-list,"В проекте несколько документов (список персонажей, заметки, титульная)"
+ST-09,есть,https://writerduet.helpscoutdocs.com/article/223-collapse-scene-headings,Skeleton Outliner и карточки
+ST-10,есть,https://writerduet.helpscoutdocs.com/article/223-collapse-scene-headings,Свёртка содержимого сцен до заголовков
+ST-11,не проверено,,Подтверждения в открытых источниках не найдено
+ST-12,есть,https://writerduet.helpscoutdocs.com/article/228-outline-mode,Outline-строки под сценой видны на карточках
+ST-13,есть,https://writerduet.helpscoutdocs.com/article/261-export-a-document,Экспорт выбранных документов проекта одним файлом
+ST-14,не проверено,,Подтверждения в открытых источниках не найдено
+ST-15,не проверено,,Подтверждения в открытых источниках не найдено
+ST-16,частично,https://writerduet.helpscoutdocs.com/article/211-cards-widget-mode,Карточки для beat breakdown (в т.ч. шаблон Notes)
+ST-17,не проверено,,Подтверждения в открытых источниках не найдено
+ST-18,не проверено,,Подтверждения в открытых источниках не найдено
+BD-01,есть,https://writerduet.helpscoutdocs.com/article/211-cards-widget-mode,Cards Widget и Cards View; группы по актам и sequence
+BD-02,есть,https://writerduet.helpscoutdocs.com/article/212-mind-map,"Mind Map: свободное размещение, размер карточек"
+BD-03,есть,https://writerduet.helpscoutdocs.com/article/211-cards-widget-mode,"Группы по Act или Sequence: добавить, переименовать, свернуть"
+BD-04,есть,https://writerduet.helpscoutdocs.com/article/212-mind-map,Связи между карточками
+BD-05,частично,https://writerduet.helpscoutdocs.com/article/212-mind-map,Масштабирование есть; мини-карты не подтверждено
+BD-06,есть,https://writerduet.helpscoutdocs.com/article/211-cards-widget-mode,Правки карточек видны в Page view; перемещение в Mind Map порядок не меняет
+BD-07,не проверено,,Подтверждения в открытых источниках не найдено
+BD-08,не проверено,,Подтверждения в открытых источниках не найдено
+BD-09,не проверено,,Подтверждения в открытых источниках не найдено
+BD-10,не проверено,,Подтверждения в открытых источниках не найдено
+BD-11,не проверено,,Подтверждения в открытых источниках не найдено
+BD-12,не проверено,,Подтверждения в открытых источниках не найдено
+BD-13,не проверено,,Подтверждения в открытых источниках не найдено
+BD-14,есть,https://writerduet.helpscoutdocs.com/article/212-mind-map,Mind Map View
+BD-15,не проверено,,Подтверждения в открытых источниках не найдено
+BI-01,частично,https://writerduet.helpscoutdocs.com/article/63-character-list,Список персонажей — отдельный документ или титульная; автоматический список говорящих в Document Statistics
+BI-02,не проверено,,Подтверждения в открытых источниках не найдено
+BI-03,не проверено,,Подтверждения в открытых источниках не найдено
+BI-04,не проверено,,Подтверждения в открытых источниках не найдено
+BI-05,не проверено,,Подтверждения в открытых источниках не найдено
+BI-06,не проверено,,Подтверждения в открытых источниках не найдено
+BI-07,не проверено,,Подтверждения в открытых источниках не найдено
+BI-08,не проверено,,Подтверждения в открытых источниках не найдено
+BI-09,не проверено,,Подтверждения в открытых источниках не найдено
+BI-10,не проверено,,Подтверждения в открытых источниках не найдено
+BI-11,не проверено,,Подтверждения в открытых источниках не найдено
+BI-12,частично,https://writerduet.helpscoutdocs.com/article/66-change-character-name,"Переименование персонажа по всему тексту, включая Action"
+BI-13,не проверено,,Подтверждения в открытых источниках не найдено
+BI-14,не проверено,,Подтверждения в открытых источниках не найдено
+BI-15,частично,https://writerduet.helpscoutdocs.com/article/164-insert-multimedia,"Заметки, ссылки, медиа внутри документов; веб-клиппера нет"
+BI-16,не проверено,,Подтверждения в открытых источниках не найдено
+GO-01,не проверено,,Подтверждения в открытых источниках не найдено
+GO-02,не проверено,,Подтверждения в открытых источниках не найдено
+GO-03,не проверено,,Подтверждения в открытых источниках не найдено
+GO-04,не проверено,,Подтверждения в открытых источниках не найдено
+GO-05,не проверено,,Подтверждения в открытых источниках не найдено
+GO-06,есть,https://writerduet.helpscoutdocs.com/article/214-document-statistics,"Writing Metrics по персонажам; гендерная статистика, тест Бекдел"
+GO-07,есть,https://writerduet.helpscoutdocs.com/article/95-locations-scenes-report,Отчёт по локациям и сценам
+GO-08,есть,https://writerduet.helpscoutdocs.com/article/214-document-statistics,Соотношение Action и Dialogue
+GO-09,не проверено,,Подтверждения в открытых источниках не найдено
+GO-10,не проверено,,Подтверждения в открытых источниках не найдено
+VE-01,есть,https://writerduet.helpscoutdocs.com/article/201-project-backups,Работа синхронизируется с сервером непрерывно
+VE-02,есть,https://writerduet.helpscoutdocs.com/article/126-time-machine-snapshots,Time Machine и Snapshots (Premium)
+VE-03,частично,https://writerduet.helpscoutdocs.com/article/126-time-machine-snapshots,Снимок открывается рядом в Split Pane; автоматического diff не описано
+VE-04,частично,https://writerduet.helpscoutdocs.com/article/102-line-alternates,Line Alternates и копии из Timeline; веток целого документа нет
+VE-05,есть,https://writerduet.helpscoutdocs.com/article/256-timeline,Timeline: откат к версии (Premium); Revert Line to Previous Draft
+VE-06,есть,https://writerduet.helpscoutdocs.com/article/256-timeline,Полная история правок со шкалой времени (Premium)
+VE-07,есть,https://writerduet.helpscoutdocs.com/article/109-view-and-track-revisions-edits,"View & Track, Writer Revision (Pro); показ удалённого текста (Pro)"
+VE-08,есть,https://writerduet.helpscoutdocs.com/article/108-review-accept-collaborator-changes,"Принятие по диапазону дат, времени и авторам (Pro)"
+VE-09,есть,https://writerduet.helpscoutdocs.com/article/221-comments,"Reply, Resolve, фильтры"
+VE-10,есть,https://writerduet.helpscoutdocs.com/article/253-readthrough,ReadThrough: ссылка с комментариями без аккаунта
+VE-11,есть,https://writerduet.helpscoutdocs.com/article/149-invite-collaborators-to-a-project,Роль Read-only
+CO-01,есть,https://writerduet.helpscoutdocs.com/article/149-invite-collaborators-to-a-project,Правка в реальном времени; платить достаточно одному автору
+CO-02,есть,https://writerduet.helpscoutdocs.com/article/354-collaborator-location,"Подсветка строки соавтора, переход к нему, зеркальная прокрутка"
+CO-03,есть,https://writerduet.helpscoutdocs.com/article/149-invite-collaborators-to-a-project,"Admin, Editor, Read-only"
+CO-04,есть,https://writerduet.helpscoutdocs.com/article/222-chat,Личный и групповой чат
+CO-05,частично,https://writerduet.helpscoutdocs.com/article/222-chat,Видеочат один на один
+CO-06,не проверено,,Подтверждения в открытых источниках не найдено
+CO-07,есть,https://writerduet.helpscoutdocs.com/article/233-notifications-preferences,"Уведомления в приложении, на email и в чате"
+AI-01,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-02,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-03,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-04,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-05,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-06,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-07,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-08,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-09,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-10,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-11,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-12,частично,https://writerduet.helpscoutdocs.com/article/386-screenplayproof-paid-feature,"ScreenplayProof: ИИ-вычитка с принятием и отклонением правок, платно за прогон"
+AI-13,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-14,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-15,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-16,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-17,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-18,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-19,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-20,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-21,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-22,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-23,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-24,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-25,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-26,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-27,есть,https://writerduet.helpscoutdocs.com/article/386-screenplayproof-paid-feature,"ИИ-вычитка продаётся поштучно: $20 за сценарий, $30 с переформатированием"
+AI-28,нет,https://writerduet.helpscoutdocs.com/article/215-reports-overview,Встроенных ИИ-генераторов и ИИ-анализа в списке инструментов справки нет
+AI-29,не проверено,,Политика данных для ИИ не найдена; FAQ: автор сохраняет все права на работу
+AI-30,не проверено,,"Партнёрство с Leonardo.Ai (июнь 2024) известно по стороннему пересказу, в справке не подтверждено"
+AI-31,есть,https://writerduet.helpscoutdocs.com/article/119-readaloud,"Голоса подбираются по языку, полу и возрасту персонажа; тип синтеза (ИИ или нет) не указан"
+AI-32,есть,https://writerduet.helpscoutdocs.com/article/4-writerduet-faq,AutoTranslate (Premium): 80+ языков с сохранением формата
+IO-01,есть,https://writerduet.helpscoutdocs.com/article/18-import-content,.docx
+IO-02,есть,https://writerduet.helpscoutdocs.com/article/18-import-content,Fountain
+IO-03,есть,https://writerduet.helpscoutdocs.com/article/18-import-content,.fdx
+IO-04,есть,https://writerduet.helpscoutdocs.com/article/18-import-content,PDF
+IO-05,нет,https://writerduet.helpscoutdocs.com/article/18-import-content,"Список: fdx, PDF, Celtx, Fountain, Text, docx, wdz, RTF, JSON"
+IO-06,частично,https://writerduet.helpscoutdocs.com/article/18-import-content,Text есть; Markdown нет
+IO-07,есть,https://writerduet.helpscoutdocs.com/article/261-export-a-document,.docx
+IO-08,есть,https://writerduet.helpscoutdocs.com/article/261-export-a-document,"PDF с опциями: заметки, только ревизии"
+IO-09,есть,https://writerduet.helpscoutdocs.com/article/261-export-a-document,.fountain
+IO-10,есть,https://writerduet.helpscoutdocs.com/article/261-export-a-document,".fdx, в т.ч. без заметок"
+IO-11,нет,https://writerduet.helpscoutdocs.com/article/261-export-a-document,"Список: wdz, PDF, fdx, fountain, celtx, docx, rtf, txt, html, csv, json"
+IO-12,нет,https://writerduet.helpscoutdocs.com/article/261-export-a-document,Книжной вёрстки в списке экспорта нет; есть шаблон Book
+IO-13,нет,https://writerduet.helpscoutdocs.com/article/261-export-a-document,Markdown в списке экспорта нет
+IO-14,частично,https://writerduet.helpscoutdocs.com/article/261-export-a-document,Опции PDF и выбор документов; стилей компиляции как в Scrivener нет
+IO-15,не проверено,,Подтверждения в открытых источниках не найдено
+IO-16,не проверено,,Подтверждения в открытых источниках не найдено
+IO-17,нет,https://writerduet.helpscoutdocs.com/article/261-export-a-document,"Публикации, монетизации и обложек в справке нет"
+IO-18,нет,https://writerduet.helpscoutdocs.com/article/261-export-a-document,"Публикации, монетизации и обложек в справке нет"
+IO-19,нет,https://writerduet.helpscoutdocs.com/article/261-export-a-document,"Публикации, монетизации и обложек в справке нет"
+IO-20,частично,https://writerduet.helpscoutdocs.com/article/253-readthrough,Комментарии читателей по ссылке ReadThrough
+IO-21,нет,https://writerduet.helpscoutdocs.com/article/261-export-a-document,"Публикации, монетизации и обложек в справке нет"
+IO-22,нет,https://writerduet.helpscoutdocs.com/article/261-export-a-document,"Публикации, монетизации и обложек в справке нет"
+PL-01,есть,https://writerduet.helpscoutdocs.com/article/231-choose-the-best-subscription-for-you,Write online from any web browser
+PL-02,есть,https://writerduet.helpscoutdocs.com/article/236-writerduet-desktop-app-pro-feature,Десктоп-приложение (платный тариф)
+PL-03,есть,https://writerduet.helpscoutdocs.com/article/236-writerduet-desktop-app-pro-feature,Mac Universal
+PL-04,есть,https://writerduet.helpscoutdocs.com/article/236-writerduet-desktop-app-pro-feature,Linux 32 и 64 бит
+PL-05,частично,https://writerduet.helpscoutdocs.com/article/211-cards-widget-mode,В справке упомянуто мобильное приложение и мобильный браузер; магазин и платформы не уточнены
+PL-06,частично,https://writerduet.helpscoutdocs.com/article/211-cards-widget-mode,см. PL-05
+PL-07,есть,https://writerduet.helpscoutdocs.com/article/234-write-offline,Десктоп и браузер; синхронизация после подключения
+PL-08,есть,https://writerduet.helpscoutdocs.com/article/4-writerduet-faq,Облачная работа с любого устройства
+PL-09,частично,https://writerduet.helpscoutdocs.com/article/261-export-a-document,"Собственный .wdz; открытый обмен через FDX, Fountain, JSON"
+PL-10,есть,https://writerduet.helpscoutdocs.com/article/201-project-backups,"Бэкапы на диск, Google Drive, Dropbox, email; локальные копии в Fountain"
+BZ-01,есть,https://writerduet.helpscoutdocs.com/article/231-choose-the-best-subscription-for-you,"До трёх проектов (по одному документу), читатели; импорт/экспорт"
+BZ-02,есть,https://writerduet.helpscoutdocs.com/article/231-choose-the-best-subscription-for-you,"Plus $9.99/мес, Pro $11.99/мес, Premium $13.99/мес (по годовой подписке дешевле)"
+BZ-03,нет,https://writerduet.helpscoutdocs.com/article/231-choose-the-best-subscription-for-you,Только подписки; есть коды лицензий и подарочные карты
+BZ-04,есть,https://writerduet.helpscoutdocs.com/article/4-writerduet-faq,14-дневный триал полной версии
+BZ-05,частично,https://writerduet.helpscoutdocs.com/article/182-change-display-language,Язык интерфейса переключается; русский явно не подтверждён
+BZ-06,не проверено,,Подтверждения в открытых источниках не найдено
+BZ-07,частично,https://writerduet.helpscoutdocs.com/article/231-choose-the-best-subscription-for-you,"Блог и Screenwriting Resources, классные тарифы; курсов внутри продукта нет"
+BZ-08,не проверено,,Подтверждения в открытых источниках не найдено
+NEW-SC-1,есть,https://writerduet.helpscoutdocs.com/article/66-change-character-name,"Rename Character: переименование персонажа везде, включая действие"
+NEW-SC-2,есть,https://writerduet.helpscoutdocs.com/article/214-document-statistics,Гендерный анализ и тест Бекдел в Document Statistics
+NEW-ED-1,есть,https://writerduet.helpscoutdocs.com/article/102-line-alternates,Line Alternates: несколько вариантов строки в тексте
+NEW-ED-2,есть,https://writerduet.helpscoutdocs.com/article/199-graveyard,Graveyard: архив вырезанных сцен и строк
+NEW-CO-1,есть,https://writerduet.helpscoutdocs.com/article/253-readthrough,ReadThrough: публичная ссылка для чтения с комментариями
+NEW-ED-3,есть,https://writerduet.helpscoutdocs.com/article/216-shorten-document-length,Shorten Document: автоподгонка страниц за счёт полей и строк
+NEW-AI-1,есть,https://writerduet.helpscoutdocs.com/article/386-screenplayproof-paid-feature,ScreenplayProof: платная ИИ-вычитка сценария ($20 / $30 за прогон)
+NEW-ED-4,есть,https://writerduet.helpscoutdocs.com/article/85-check-formatting-feature,Check Formatting: поиск типовых ошибок оформления
+NEW-SC-3,есть,https://writerduet.helpscoutdocs.com/article/110-date-writers,Date & Writers Revisions: ретроспективный сбор правок по дню и автору
+NEW-BZ-1,есть,https://writerduet.helpscoutdocs.com/article/231-choose-the-best-subscription-for-you,Образовательные тарифы и классные лицензии
+IO-23,не проверено,,"Добавлено в таксономию 2026-10-28, не проверялось"
+IO-24,не проверено,,"Добавлено в таксономию 2026-10-28, не проверялось"

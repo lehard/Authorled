@@ -72,6 +72,7 @@ tmp
 .claude/*
 !.claude/skills
 !.claude/settings.json
+!.claude/commands/
 
 # Other coding agents write their own config here (Codex, etc.) — keep it local.
 # The shared, vendor-neutral assets live in .agents/skills/ and .mcp.json.
@@ -84,3 +85,12 @@ package-lock.json
 
 # Optional: local PyPI creds (uncomment if you ever create it)
 # .pypirc
+
+# =========================
+# Frontend (web/)
+# =========================
+web/node_modules/
+web/dist/
+# The Node rules above are for root deploy tooling; the frontend manifest and lockfile ship.
+!web/package.json
+!web/package-lock.json

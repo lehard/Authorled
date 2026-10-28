@@ -1,0 +1,48 @@
+# Spec Delta
+
+## Purpose
+Единый шлюз LiteLLM, через который система обращается ко всем чат-моделям и эмбеддингам: псевдонимы моделей, обязательная конфигурация и защита соединений.
+
+## ADDED Requirements
+
+### Requirement: Единственный путь к моделям
+Система MUST обращаться к чат-моделям и эмбеддингам только через LiteLLM-прокси по псевдонимам `deepseek-fast`, `deepseek-thinking` и `gigachat-embeddings`. Код приложения и Claude Code MUST NOT обращаться к API провайдеров моделей напрямую и MUST NOT содержать имён моделей провайдеров; соответствие псевдонимов моделям провайдеров MUST задаваться только конфигурацией прокси.
+
+#### Scenario: Смена модели провайдера
+- GIVEN псевдоним `deepseek-thinking` указывает на одну модель DeepSeek
+- WHEN оператор меняет модель провайдера для псевдонима в конфигурации прокси
+- THEN приложение MUST использовать новую модель без изменения своего кода
+
+#### Scenario: Claude Code не обращается к Anthropic
+- GIVEN на хосте задан `ANTHROPIC_API_KEY`
+- WHEN `claude-engineer` выполняет задачу
+- THEN запросы Claude Code MUST уходить на прокси, а не в Anthropic API
+
+### Requirement: Обязательная конфигурация шлюза
+API MUST требовать `LITELLM_URL` и `LITELLM_API_KEY`; прокси MUST требовать `LITELLM_MASTER_KEY`, `DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE` и файл сертификатов Russian Trusted Root CA. При отсутствии любой из них соответствующий сервис MUST завершаться с ошибкой, называющей отсутствующее значение. Значения MUST NOT подставляться по умолчанию.
+
+#### Scenario: Нет адреса прокси
+- GIVEN `LITELLM_URL` не задан
+- WHEN запускается API
+- THEN запуск MUST завершиться ошибкой `Required environment variable LITELLM_URL is not set`
+
+#### Scenario: Нет ключа DeepSeek
+- GIVEN `DEEPSEEK_API_KEY` не задан
+- WHEN выполняется `docker compose up`
+- THEN compose MUST отказаться запускать прокси с сообщением, называющим `DEEPSEEK_API_KEY`
+
+### Requirement: Режимы DeepSeek
+Псевдоним `deepseek-fast` MUST отвечать без режима размышлений; псевдоним `deepseek-thinking` MUST отвечать в режиме размышлений. В режиме размышлений вызовы инструментов MUST работать на протяжении нескольких шагов одного запуска.
+
+#### Scenario: Менеджер вызывает инструменты в режиме размышлений
+- GIVEN OS Manager использует `deepseek-thinking`
+- WHEN запуск требует нескольких вызовов инструментов подряд
+- THEN каждый следующий запрос к модели MUST завершаться успешно, без ошибки `400` от провайдера
+
+### Requirement: Защищённое соединение с GigaChat
+Запросы эмбеддингов к GigaChat MUST идти с проверкой TLS-сертификата по цепочке Russian Trusted Root CA. Отключение проверки сертификата в конфигурации прокси MUST NOT использоваться. Исключение: запрос OAuth-токена в LiteLLM v1.104.2 выполняется библиотекой без проверки TLS; это принятый риск, зафиксированный в ADR-003.
+
+#### Scenario: Сертификат не найден
+- GIVEN файл сертификатов Russian Trusted Root CA не смонтирован в прокси
+- WHEN прокси запускается
+- THEN запуск MUST завершиться ошибкой, а не продолжиться без проверки TLS

@@ -3,21 +3,32 @@ AgentOS Entrypoint
 ==================
 """
 
-from os import getenv
+from os import environ
 from pathlib import Path
 
 from agno.job_queue import QueueConfig
 from agno.os import AgentOS, CompanyConfig, OSManager
 
 from agents.engineers import engineers
+from app.auth import build_authorization
 from app.company import products
 from app.interfaces import attach_interfaces, mcp_auth
 from app.registry import registry, shared_knowledge, shared_learning
 from app.settings import manager_model
 from db import get_postgres_db
 
-runtime_env = getenv("RUNTIME_ENV", "prd")
-agentos_url = getenv("AGENTOS_URL", "http://127.0.0.1:8000")
+
+def _required_env(name: str) -> str:
+    value = environ.get(name)
+    if not value:
+        raise RuntimeError(f"Required environment variable {name} is not set")
+    return value
+
+
+runtime_env = _required_env("RUNTIME_ENV")
+if runtime_env not in ("dev", "prd"):
+    raise RuntimeError(f"RUNTIME_ENV must be exactly 'dev' or 'prd', got {runtime_env!r}")
+agentos_url = _required_env("AGENTOS_URL")
 agentos_root = Path(__file__).resolve().parent.parent
 db = get_postgres_db()
 
@@ -25,12 +36,13 @@ agent_os = AgentOS(
     db=db,
     mcp=True,
     tracing=True,
+    telemetry=False,
     scheduler=True,
     user_isolation=True,
     user_directory=True,
     scheduler_base_url=agentos_url,
     mcp_auth=mcp_auth(agentos_url),
-    authorization=runtime_env != "dev",
+    authorization=build_authorization(db),
     manager=OSManager(
         root=agentos_root,
         model=manager_model(),

@@ -1,6 +1,6 @@
 # AgentOS: The Agent Platform That Builds Itself
 
-AgentOS is a durable agent runtime that serves agents over API, MCP, and chat interfaces like Slack.
+AgentOS is a durable agent runtime that serves agents over API and MCP.
 Build agents for your product, your team, or yourself. Run them in your own cloud,
 keep their data in your own database, and manage them from [AgentOS](https://os.agno.com).
 
@@ -15,11 +15,10 @@ agent platform that you can run locally or deploy to your own Docker host.
    manage the platform and build new agents.
 3. **Use Studio.** Build agents visually in [AgentOS Studio](https://os.agno.com).
 
-**Three ways to use your agents.**
+**Two ways to use your agents.**
 
 1. **In your product.** Call your agents through the REST API.
 2. **In AI apps.** Connect apps such as Claude and ChatGPT through MCP.
-3. **In Slack.** Connect a Slack app to talk to OS Manager from your workspace.
 
 The AgentOS UI lets you chat with your agents, review past conversations, and see
 the steps an agent took. Your PostgreSQL database stores conversations, memories,
@@ -44,7 +43,8 @@ Prefer to set it up yourself? Follow the steps below.
 
 ## Run locally
 
-You'll need Git, Docker with Compose, and an OpenAI API key. Make sure Docker is running.
+You'll need Git, Docker with Compose, a DeepSeek API key and GigaChat API credentials.
+Make sure Docker is running.
 Run the commands below in a terminal.
 
 ### 1. Start the platform
@@ -55,16 +55,25 @@ cd agent-platform
 cp example.env .env
 ```
 
-Open `.env` and set `OPENAI_API_KEY`. Then start the platform:
+Open `.env` and fill the Required block: `LITELLM_MASTER_KEY`, `LITELLM_API_KEY`,
+`DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE` and `AGENTOS_DB_PASSWORD` (password
+of the database role `agentos` the API connects with), and the block of the
+[auth module](#module-auth): `AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`,
+`AUTHENTIK_BOOTSTRAP_EMAIL`, `AUTHENTIK_BOOTSTRAP_PASSWORD`, `AUTH_FRONTEND_CLIENT_ID`,
+`AUTH_FRONTEND_REDIRECT_URI`, `AUTH_DEV_SERVICE_TOKEN`, `AUTH_BRAND_DOMAIN` and `AUTH_ISSUER`. The CA bundle for
+GigaChat ships in `litellm/certs/ca-bundle.pem` (see [Models](#models)). Then start the platform:
 
 ```sh
 docker compose up -d --build
 ```
 
-The first build can take a few minutes. When it's ready, open
-[http://localhost:8000/docs](http://localhost:8000/docs) to see the API.
+The first build can take a few minutes: Authentik applies its migrations and blueprints before
+the API starts. When it's ready, open [http://localhost:8000/docs](http://localhost:8000/docs)
+to see the API. Authorization is on in every environment, so API calls need a token from
+Authentik (see [Module auth](#module-auth)); `./scripts/auth_check.sh` checks the chain.
 
-Check that AI apps can connect through MCP:
+Check that AI apps can connect through MCP (export `MCP_CHECK_TOKEN` first, see
+[Module auth](#module-auth)):
 
 ```sh
 ./scripts/mcp_check.sh
@@ -72,11 +81,31 @@ Check that AI apps can connect through MCP:
 
 The check should report `9 tools; required tools available`.
 
+### Develop with the API on the host
+
+For code changes without rebuilding the image, run PostgreSQL, LiteLLM and Authentik in Docker
+and the API on your computer with `--reload` (needs [uv](https://docs.astral.sh/uv/) and a filled
+`.env`). The command also exports the Authentik keys to `modules/auth/jwks/jwks.json` before
+the API starts:
+
+```sh
+./scripts/dev.sh api
+```
+
+Other commands: `./scripts/dev.sh db` starts only PostgreSQL and waits until it is healthy,
+`stop` stops the services and keeps the data, `psql` opens `psql` in the database,
+`reset-db --yes` deletes the database volume, including the Authentik data. `.env` is needed even
+for `db`: Compose requires the LiteLLM and Authentik settings for every service.
+
 ### 2. Connect the UI
 
 1. Open [os.agno.com](https://os.agno.com) and sign in.
 2. Choose **Connect OS**, select a local connection, and enter `http://localhost:8000`.
 3. Name it **Local AgentOS**, then open the chat for **OS Manager**.
+
+The API accepts only tokens issued by Authentik, so the connection needs one. How AgentOS UI
+obtains it is not settled yet (`openspec/changes/auth-module/design.md`, Open Questions); until
+then use `curl` or the scripts with a token as described in [Module auth](#module-auth).
 
 ### 3. Build your first agent
 
@@ -136,15 +165,15 @@ editing the Python file alone won't change an existing Routine.
 
 ## Engineers
 
-The platform includes **Claude Engineer** and **Codex Engineer**. They can read your
-code, make changes, and run commands.
+The platform includes **Claude Engineer**: Claude Code running on DeepSeek through
+the LiteLLM proxy. It can read your code, make changes, and run commands.
 
-Chat with either engineer in AgentOS, or ask OS Manager to use one:
+Chat with it in AgentOS, or ask OS Manager to use it:
 
-> Ask Codex Engineer to review this project and suggest improvements. Don't change any files yet.
+> Ask Claude Engineer to review this project and suggest improvements. Don't change any files yet.
 
-Codex uses the `OPENAI_API_KEY` you added during setup. To use Claude, add
-`ANTHROPIC_API_KEY` to `.env`. After changing `.env`, run `docker compose up -d` again.
+It uses the proxy settings you added during setup and needs no Anthropic key. After
+changing `.env`, run `docker compose up -d` again.
 
 By default, engineers work in this project's folder. When running locally with
 Docker Compose, their file changes appear in your local checkout. Review those
@@ -185,21 +214,31 @@ to port 8000 on your host. Use a reverse proxy on the host or an HTTPS tunnel.
 
 ### 1. Configure the host
 
-Production Compose reads `.env`. Set `OPENAI_API_KEY`, `AGENTOS_URL` to your
-public HTTPS URL, a strong `DB_PASS`, and `MCP_CONNECT_SECRET` (generate one with
-`openssl rand -base64 32`). For Claude Engineer, set `ANTHROPIC_API_KEY` or
-`CLAUDE_CODE_OAUTH_TOKEN`. Compose passes the file through unchanged, so delete
-any `sk-***` placeholder line you are not filling in: a placeholder reaches the
-container as a real value and the matching engineer fails on authentication.
+Production Compose reads `.env`. Fill the Required block (`LITELLM_MASTER_KEY`,
+`LITELLM_API_KEY`, `DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`),
+place `litellm/certs/ca-bundle.pem`, and set `AGENTOS_URL` to your public HTTPS URL,
+a strong `DB_PASS` (password of the bootstrap superuser of PostgreSQL, used only by the init
+services and administration), a strong `AGENTOS_DB_PASSWORD` (the role `agentos` the API
+connects with), and `MCP_CONNECT_SECRET` (generate one with
+`openssl rand -base64 32`). Compose passes the file through unchanged, so replace
+every `***` placeholder: a placeholder reaches the containers as a real value and
+model calls fail on authentication.
 
 For an existing database, changing `DB_PASS` in `.env` does not change the database
 password. Update the database password separately; do not delete the data volume.
+`AGENTOS_DB_PASSWORD` is applied by `agentos-db-init` (`db/init.sql`) on every `up`; on an
+existing database the same step makes `agentos` the owner of schema `ai` and its tables.
 
 ### 2. Set up authentication
 
-Open [os.agno.com](https://os.agno.com), choose **Connect OS → Live**, enter your
-public URL, and enable token-based authorization. Save the public verification
-key in `.env` as `JWT_VERIFICATION_KEY`, with the entire multiline value in quotes.
+Fill the auth block of `.env` (see [Module auth](#module-auth)): strong values for
+`AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`, `AUTHENTIK_BOOTSTRAP_PASSWORD` and
+`AUTH_DEV_SERVICE_TOKEN`, the real redirect URI of the frontend in
+`AUTH_FRONTEND_REDIRECT_URI`, `AUTH_BRAND_DOMAIN` (the Authentik host name) and `AUTH_ISSUER` set to the public address of Authentik plus
+`/application/o/authorled/`. Authentik listens on `127.0.0.1:9000`: publish it on its own
+HTTPS domain through the reverse proxy of the host (set `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS`
+for the proxy's address range). The Authentik data lives in the `authentik` schema of the same
+database, so the database backup covers it.
 
 ### 3. Start the production services
 
@@ -260,37 +299,124 @@ source .venv/bin/activate
 python -m evals --tag smoke
 ```
 
-`validate.sh` checks Python formatting, lint rules, and types. The smoke tests ask
+`validate.sh` checks Python formatting, lint rules, and types, and builds and checks the frontend. The smoke tests ask
 OS Manager to explain setup, check platform health, and explain agent memory.
 They use your model API keys and save results in the database for review in the UI.
-PostgreSQL must be running, even when you only want to list the tests.
+PostgreSQL must be running, even when you only want to list the tests. The evals import the
+application, so on the host they also need the auth settings in `.env` (`AUTH_ISSUER`,
+`AUTH_FRONTEND_CLIENT_ID`) and `JWT_JWKS_FILE` pointing at the exported keys
+(`modules/auth/jwks/jwks.json`, written by `./scripts/dev.sh api` or
+`docker compose run --rm authentik-jwks-export`); without them they stop with an error naming the
+missing variable.
 
 Add your own cases in [evals/cases.py](evals/cases.py), or use
 [/create-evals](.agents/skills/create-evals/SKILL.md). To save a report, add
 `--json-output tmp/evals.json`. To run one case, use `--name CASE_NAME`.
 Evals use your application's database and workspace; agents can call tools during a test.
 
+### Frontend
+
+The writer's interface lives in [web/](web/). Install [Node.js](https://nodejs.org/) 24
+(the version in `web/.nvmrc`), then:
+
+```sh
+npm ci --prefix web
+npm run dev --prefix web
+```
+
+The dev server opens the design-system showcase at http://127.0.0.1:5173.
+`./scripts/validate.sh` checks the frontend too, so install its dependencies first.
+
 Change dependencies in `pyproject.toml`, then run `./scripts/generate_requirements.sh`.
 Commit the updated `requirements.txt` and rebuild the API and any sandbox image you use.
 See [AGENTS.md](AGENTS.md) for the code layout and development conventions.
 
+## Models
+
+Every model call goes through the LiteLLM proxy (`litellm` service, [litellm/config.yaml](litellm/config.yaml)).
+The application uses only the proxy aliases:
+
+| Alias | Provider model | Used by |
+| --- | --- | --- |
+| `deepseek-fast` | DeepSeek `deepseek-flash`, thinking off | Agents by default |
+| `deepseek-thinking` | DeepSeek `deepseek-v4-pro`, thinking on | OS Manager, Company Manager, Claude Engineer |
+| `gigachat-embeddings` | GigaChat `Embeddings-2` (1024 dimensions) | Knowledge bases |
+
+The proxy verifies GigaChat TLS with `litellm/certs/ca-bundle.pem`: the certifi CA bundle
+with the Russian Trusted Root CA and Sub CA appended. The file is committed; rebuild it with
+`./scripts/build_ca_bundle.sh` (active `.venv`) after a `certifi` update. Without that file
+the proxy does not start. Changing the embedding model changes the vector size; rebuild the knowledge tables.
+
+`Embeddings-2` reads at most 512 tokens, so knowledge bases declare readers that cut
+documents into chunks of up to 1200 characters ([db/__init__.py](db/__init__.py)). URLs use
+them automatically. When you upload a file, pass the reader explicitly: `reader_id`
+(`pdf`, `docx`, `csv`, `excel`, `markdown`, `text`) in `POST /knowledge/content`, or
+`chunker` with `chunk_size=1200`. Without it, Agno 3.1.10 reads the file with its default
+reader and 5000-character chunks, which exceed the model's limit.
+
+## Module auth
+
+Authentication and authorization are a module of this repository: [Authentik](https://goauthentik.io)
+(sign-in, 2FA, profile, password reset, groups, service accounts, admin interface) runs next to
+the API, in the same database (schema `authentik`, own role; the API's role `agentos` has no
+access to it). Its configuration is code in `modules/auth/` (services in
+`modules/auth/compose.yaml`, included by `compose.yaml`; blueprints, database init, key export);
+`app/auth/` is the only code that reads tokens. The token claims and group names the API relies
+on are the token contract in `openspec/specs/auth`. The API accepts only tokens issued by Authentik, in every environment.
+
+- **Start.** `docker compose up -d --build` (or `./scripts/dev.sh api`) creates the schema and
+  role, starts Authentik, applies the blueprints, exports the public keys to
+  `modules/auth/jwks/jwks.json` and only then starts the API. Authentik is on
+  [http://localhost:9000](http://localhost:9000); the first administrator is `akadmin` with
+  `AUTHENTIK_BOOTSTRAP_PASSWORD`.
+- **Groups.** `screenwriters` and `editors` (authors), `admins` (superusers, the only ones in the
+  Authentik admin interface and with full API access), `plugins` (service accounts). What each
+  group may call is in `app/auth/authorization.py`.
+- **Token for curl and scripts.** The service account `sa-dev` signs in with the secret
+  `AUTH_DEV_SERVICE_TOKEN`:
+
+  ```sh
+  curl -s -X POST "$AUTHENTIK_URL/application/o/token/" \
+    -d grant_type=client_credentials -d client_id="$AUTH_FRONTEND_CLIENT_ID" \
+    -d "scope=openid profile email" -d username=sa-dev -d password="$AUTH_DEV_SERVICE_TOKEN"
+  ```
+
+  `AUTHENTIK_URL` must be the address from `AUTH_ISSUER` (without `/application/o/...`):
+  a token requested through another host name has another issuer and is rejected. Send the
+  `access_token` as `Authorization: Bearer ...`; for `./scripts/mcp_check.sh` export it as
+  `MCP_CHECK_TOKEN`.
+- **Check.** `./scripts/auth_check.sh` gets that token and checks `401` (no token, forged
+  signature), `200` and `403`.
+- **Rotate the signing key.** After changing the signing key in Authentik, run
+  `docker compose run --rm authentik-jwks-export` and restart `agentos-api`: tokens signed with
+  the removed key are rejected after the restart.
+- **Boundary.** `./scripts/validate.sh` fails when code outside `app/auth/` touches JWT, claims
+  or Authentik.
+
 ## Configuration
 
-[example.env](example.env) shows the main settings. Start with `OPENAI_API_KEY`;
+[example.env](example.env) shows the main settings. Start with its Required block;
 add the others when you need them. Docker Compose reads `.env` for both local and production runs.
 
 | Setting | What it's for |
 | --- | --- |
-| `OPENAI_API_KEY` | Embeddings (knowledge bases) and Codex Engineer. |
-| `ANTHROPIC_API_KEY` | OS Manager and the default agent model (required). Also used by Claude Engineer. |
-| `CLAUDE_CODE_OAUTH_TOKEN` | Alternative authentication for Claude Engineer only. |
-| `SLACK_BOT_TOKEN` and `SLACK_SIGNING_SECRET` | Connect OS Manager to Slack. Set both. |
+| `LITELLM_MASTER_KEY` | Admin key of the LiteLLM proxy (required). |
+| `LITELLM_API_KEY` | Key the API and Claude Engineer use to call the proxy (required). The proxy has no key database, so set it to the `LITELLM_MASTER_KEY` value. |
+| `LITELLM_URL` | Proxy address for the API. Local Compose sets `http://litellm:4000`; set it yourself when the API runs on the host. |
+| `DEEPSEEK_API_KEY` | DeepSeek models behind the proxy: agents, OS Manager, Company Manager and Claude Engineer (required). |
+| `GIGACHAT_CREDENTIALS` and `GIGACHAT_SCOPE` | GigaChat Embeddings-2 behind the proxy for knowledge bases (required). Scope is `GIGACHAT_API_PERS` or `GIGACHAT_API_B2B`. |
 | `PARALLEL_API_KEY` | Optional web search key. Without it, search uses Parallel's MCP server without an API key. |
-| `JWT_VERIFICATION_KEY` or `JWT_JWKS_FILE` | Check login tokens in production. A JWKS file must be available on the server. |
+| `AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`, `AUTHENTIK_BOOTSTRAP_EMAIL`, `AUTHENTIK_BOOTSTRAP_PASSWORD` | Authentik server secret, password of its database role, first administrator (required, see [Module auth](#module-auth)). |
+| `AUTH_FRONTEND_CLIENT_ID`, `AUTH_FRONTEND_REDIRECT_URI` | Client ID of the Authentik application (also the expected token audience) and the frontend's redirect URI (required). |
+| `AUTH_DEV_SERVICE_TOKEN` | Secret of the development service account `sa-dev` (required). |
+| `AUTH_BRAND_DOMAIN` | Host name of Authentik as users open it (no port); sign-in on this host requires a second factor (required). |
+| `AUTH_ISSUER` | Issuer of the tokens: the address clients use to reach Authentik plus `/application/o/authorled/` (required). |
+| `JWT_JWKS_FILE` | Public keys of Authentik, the only source of token verification keys. Compose writes the file at start and sets the path; set it yourself when the API or `python -m evals` runs on the host (`dev.sh api` does for the API). |
 | `AGENTOS_URL` | Public URL used by scheduled jobs and MCP. Set it to your public HTTPS URL. |
 | `MCP_CONNECT_SECRET` | Connect browser MCP clients. Generate it before deployment. |
-| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `DB_DATABASE` | PostgreSQL connection settings. Local Compose configures these for you. |
-| `RUNTIME_ENV` | `prd` by default. Local Compose uses `dev`, which disables token checks. |
+| `AGENTOS_DB_PASSWORD` | Password of the database role `agentos` the API connects with (required; not a superuser, no access to schema `authentik`). |
+| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `DB_DATABASE` | PostgreSQL connection settings of the API. Compose and `./scripts/dev.sh api` set them (`DB_USER=agentos`); in the production `.env`, `DB_PASS` is the bootstrap superuser password. |
+| `RUNTIME_ENV` | `prd` by default. Local Compose uses `dev`; token checks are on in both. |
 
 ## Learn more
 

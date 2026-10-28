@@ -17,7 +17,7 @@ Take the user from a fresh clone to a running platform with their first agent li
 Kicking off /setup-platform. Here's the map:
 
 1. Docker — confirm it's installed and running
-2. Environment — .env and your OpenAI key
+2. Environment — .env with LiteLLM, DeepSeek and GigaChat keys
 3. Boot — build and start the platform containers
 4. Prove it — MCP handshake and tools; an optional agent answer
 5. Connect the UI — os.agno.com, one click
@@ -36,14 +36,19 @@ Read [`AGENTS.md`](../../../AGENTS.md) end to end.
 
 ## 2. Environment
 
-If `.env` does not exist, `cp example.env .env`, then set `OPENAI_API_KEY`:
+If `.env` does not exist, `cp example.env .env`, then fill its Required block
+(`LITELLM_MASTER_KEY`, `LITELLM_API_KEY` equal to it, `DEEPSEEK_API_KEY`,
+`GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`, `AGENTOS_DB_PASSWORD`) and the auth block (`AUTHENTIK_SECRET_KEY`,
+`AUTHENTIK_DB_PASSWORD`, `AUTHENTIK_BOOTSTRAP_EMAIL`, `AUTHENTIK_BOOTSTRAP_PASSWORD`,
+`AUTH_FRONTEND_CLIENT_ID`, `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_DEV_SERVICE_TOKEN`, `AUTH_BRAND_DOMAIN`, `AUTH_ISSUER`;
+generate the secrets with `openssl rand -hex`), and confirm `litellm/certs/ca-bundle.pem` exists:
 
 - Already in their shell → say so and copy it across without reading or printing it.
 - Otherwise open `.env` in their editor (`cursor`, `code`) and ask them to paste it. Never open a terminal editor from your shell — it hangs the session.
 
 ## 3. Boot
 
-For standard development, `docker compose up -d --build`, then poll http://localhost:8000/docs until 200 (first build takes minutes). If it never comes up, read `docker compose logs agentos-api`.
+For standard development, `docker compose up -d --build`, then poll http://localhost:8000/docs until 200 (first build takes minutes; Authentik applies its migrations and blueprints before the API starts). If it never comes up, read `docker compose logs litellm authentik-server authentik-jwks-export agentos-api`.
 
 For sandbox development, follow the host API commands in the
 [sandbox setup guide](../../../docs/sandboxes.md#local-docker-sandbox).
@@ -60,7 +65,7 @@ For this host path use `MCP_CHECK_HOST=1 ./scripts/mcp_check.sh` below.
 
 ## 4. Prove it
 
-`./scripts/mcp_check.sh` initializes MCP and verifies the required tools without a model call. For an answer, use `--prompt "<read-only prompt>"`; that spends model calls. Report which check was actually run.
+Authorization is on in every environment. `./scripts/auth_check.sh` gets a token of the development service account from Authentik and checks `401`/`200`/`403`; export that token as `MCP_CHECK_TOKEN` for the MCP check (README, "Module auth"). `./scripts/mcp_check.sh` initializes MCP and verifies the required tools without a model call. For an answer, use `--prompt "<read-only prompt>"`; that spends model calls. Report which check was actually run. `python -m evals` on the host imports the application, so it also needs `JWT_JWKS_FILE` in `.env` (or exported) pointing at `modules/auth/jwks/jwks.json`, written by `./scripts/dev.sh api` or `docker compose run --rm authentik-jwks-export`; without it the evals stop with an error naming the variable.
 
 ## 5. Connect the AgentOS UI
 
@@ -72,6 +77,8 @@ Render the connection as a table, then one line of direction:
 | Connection type | **Local** |
 | Endpoint | `http://localhost:8000` |
 | Name | `Local AgentOS` |
+
+The API accepts only Authentik tokens, so the UI connection needs one; how AgentOS UI obtains it is an open question of change `auth-module` (see its `design.md`). Tell the user this instead of promising a one-click connection.
 
 Most users arrive from the Agno onboarding with **Connect your OS** still open ("Awaiting connection"): tell them to flip back and hit **Connect OS**. Otherwise: sign in, **Connect OS**, fill the form from the table.
 
@@ -92,7 +99,7 @@ Whatever they type is the first discovery answer for [`create-agent`](../create-
 Follow create-agent through its smoke test, then land where the agent now lives, in the same breath as its first answer:
 
 - **In the UI** — **Refresh** puts it in the Agents list, and its base on the Knowledge page.
-- **On OS Manager's roster** — registering in `app/main.py` lets OS Manager run it by name ("Agno, ask the <Product> agent…" through the `agno` MCP tool) from the UI, Slack, or any MCP client.
+- **On OS Manager's roster** — registering in `app/main.py` lets OS Manager run it by name ("Agno, ask the <Product> agent…" through the `agno` MCP tool) from the UI or any MCP client.
 - **Ready to serve** — REST inside their product and MCP now; claude.ai and ChatGPT once deployed (Step 8).
 
 Stop before create-agent's own closing — Steps 7 and 8 replace it. If they push back or want to stop, adapt and carry on.

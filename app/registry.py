@@ -3,7 +3,8 @@ AgentOS Registry
 ================
 """
 
-from os import getenv
+from os import environ
+from typing import Literal
 
 from agno.fs import FileSystem
 from agno.learn import LearningMachine, LearningMode, UserMemoryConfig, UserProfileConfig
@@ -14,13 +15,21 @@ from agno.tools.mcp import MCPTools
 from agno.tools.parallel import ParallelTools
 from agno.workflow.functions import content_to_file, csv_to_markdown_table, extract_json, extract_urls, json_to_csv
 
-from app.settings import default_model
+from app.settings import default_model, manager_model
 from db import create_knowledge, get_postgres_db
+
+# Code-level setting, not environment-switched. "sdk" uses ParallelTools and requires
+# PARALLEL_API_KEY; "keyless_mcp" uses the public keyless Parallel search MCP endpoint.
+PARALLEL_MODE: Literal["sdk", "keyless_mcp"] = "keyless_mcp"
 
 
 def get_web_tools() -> list[ParallelTools | MCPTools]:
-    if getenv("PARALLEL_API_KEY"):
+    if PARALLEL_MODE == "sdk":
+        if not environ.get("PARALLEL_API_KEY"):
+            raise RuntimeError("PARALLEL_MODE is 'sdk' but required environment variable PARALLEL_API_KEY is not set")
         return [ParallelTools()]
+    if PARALLEL_MODE != "keyless_mcp":
+        raise RuntimeError(f"PARALLEL_MODE must be 'sdk' or 'keyless_mcp', got {PARALLEL_MODE!r}")
     return [
         MCPTools(
             url="https://search.parallel.ai/mcp",
@@ -53,7 +62,7 @@ registry = Registry(
         FileGenerationTools(enable_pdf_generation=False, enable_docx_generation=False),
         CalculatorTools(),
     ],
-    models=[default_model()],
+    models=[default_model(), manager_model()],
     functions=[
         extract_json,
         extract_urls,

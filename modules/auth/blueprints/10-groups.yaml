@@ -1,0 +1,28 @@
+# The group names are part of the token contract (openspec/specs/auth, "Контракт токена"):
+# GROUP_SCOPES in app/auth/authorization.py must list the same groups (check_auth_boundary.sh).
+version: 1
+metadata:
+  name: Authorled groups
+  labels:
+    blueprints.goauthentik.io/instantiate: "true"
+entries:
+  - model: authentik_core.group
+    id: group-screenwriters
+    identifiers:
+      name: screenwriters
+  - model: authentik_core.group
+    id: group-editors
+    identifiers:
+      name: editors
+  # Members of admins are superusers: only they reach the Authentik admin interface.
+  - model: authentik_core.group
+    id: group-admins
+    identifiers:
+      name: admins
+    attrs:
+      is_superuser: true
+  # Service accounts of plugins (Stark, IDE) and development tooling.
+  - model: authentik_core.group
+    id: group-plugins
+    identifiers:
+      name: plugins

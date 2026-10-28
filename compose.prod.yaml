@@ -3,7 +3,8 @@
 #   docker compose -f compose.yaml -f compose.prod.yaml up -d --build
 #
 # Switches RUNTIME_ENV to prd (JWT auth on — the app refuses to serve without
-# JWT_VERIFICATION_KEY or JWT_JWKS_FILE; see "Run in production" in README.md),
+# JWT_JWKS_FILE, the Authentik public keys written by authentik-jwks-export; see
+# "Module auth" and "Run in production" in README.md),
 # drops the dev bind mount and hot reload so the container runs the code baked
 # into the image, and reads AGENTOS_URL from .env so the scheduler reaches the
 # platform over its public URL. MCP_CONNECT_SECRET passes through the same way
@@ -13,32 +14,65 @@
 # of merging with it; `!override` (v2.24.4+) replaces the ports list below so
 # Postgres rebinds to 127.0.0.1 instead of gaining a second mapping.
 # Compose passes .env through unchanged, placeholders included: a copied
-# example.env ships ANTHROPIC_API_KEY=sk-*** (and OPENAI_API_KEY=sk-***), and
-# there is no script in front of the container to strip them. Fill each key
-# you use and delete the lines you don't before starting production.
+# example.env ships LITELLM_MASTER_KEY, LITELLM_API_KEY, DEEPSEEK_API_KEY and
+# GIGACHAT_CREDENTIALS as *** placeholders, and there is no script in front of
+# the containers to strip them. Fill each one with a real value before starting
+# production; the LiteLLM proxy and the API require all of them.
 services:
   agentos-api:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-    volumes: !reset []
+    # Drops the dev bind mount of the repository but keeps the public keys of Authentik
+    # (written by authentik-jwks-export) that JWT_JWKS_FILE points to.
+    volumes: !override
+      - type: bind
+        source: ./modules/auth/jwks
+        target: /app/modules/auth/jwks
+        read_only: true
     # AgentCore sandbox checkpoints need a persistent /data mount, which
-    # app/sandbox.py refuses to run without (docs/sandboxes.md). Replace the
-    # reset above with this named volume before enabling agentcore_sandbox(),
+    # app/sandbox.py refuses to run without (docs/sandboxes.md). Add this named
+    # volume to the list above before enabling agentcore_sandbox(),
     # and uncomment the top-level `volumes:` block at the end of this file.
-    # volumes: !override
     #   - agentos-checkpoints:/data
     environment:
       RUNTIME_ENV: prd
       AGNO_DEBUG: "False"
-      AGENTOS_URL: ${AGENTOS_URL:-http://127.0.0.1:8000}
+      AGNO_TELEMETRY: "false"
+      AGENTOS_URL: ${AGENTOS_URL:?AGENTOS_URL must be set in .env}
       MCP_CONNECT_SECRET: ${MCP_CONNECT_SECRET:-}
+
+  # The API connects as the role `agentos` (AGENTOS_DB_PASSWORD); DB_PASS is the password of the
+  # bootstrap superuser, used only by the init services and administration.
+  agentos-db-init:
+    environment:
+      PGPASSWORD: ${DB_PASS:?DB_PASS must be set in .env}
+
+  # Module auth. The Authentik secrets (AUTHENTIK_SECRET_KEY, AUTHENTIK_DB_PASSWORD,
+  # AUTHENTIK_BOOTSTRAP_*, AUTH_*) are required by compose.yaml and have no defaults.
+  # Authentik listens on 127.0.0.1:9000 only: publish it on its own domain through a
+  # reverse proxy on the host (README, "Module auth"); behind the proxy set
+  # AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS to the proxy address range.
+  authentik-db-init:
+    environment:
+      PGPASSWORD: ${DB_PASS:?DB_PASS must be set in .env}
+
+  authentik-server:
+    ports: !override
+      - "127.0.0.1:9000:9000"
+
+  # The LiteLLM proxy is reached only over the compose network in production;
+  # its keys and the CA bundle mount come from compose.yaml unchanged.
+  litellm:
+    ports: !reset []
 
   # In dev, Postgres is published on all interfaces for GUI/psql convenience.
   # In production that would expose the database to the internet (Docker's
   # iptables rules bypass ufw-style host firewalls), so bind it to loopback:
   # containers still reach it over the compose network, and host-side tools
-  # (psql, python -m evals) still connect via localhost. Set a strong DB_PASS
-  # in .env — the dev default is ai/ai.
+  # (psql, python -m evals) still connect via localhost. DB_PASS is required
+  # in .env (strong value); the dev ai/ai is not used here.
   agentos-db:
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASS:?DB_PASS must be set in .env}
     ports: !override
       - "127.0.0.1:5432:5432"
 

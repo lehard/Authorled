@@ -14,14 +14,8 @@ manifest:
       - "Propose up to three improvements for AgentOS with evidence, expected impact, and acceptance criteria. Check for duplicates first; leave proposals for review without accepting or executing them."
       - "Review existing Projects and Tasks for AgentOS. Identify overlaps, missing evidence, and unclear acceptance criteria without changing them."
   claude-engineer:
-    description: "Explain, review, and improve repository code using Claude."
+    description: "Explain, review, and improve repository code using Claude Code on DeepSeek."
     quick_prompts:
       - "Explain how this repository starts AgentOS and connects its agents, database, and sandboxes. Point me to the relevant files."
       - "Review the repository for concrete bugs and setup problems. Prioritize findings with file references; do not change files."
-      - "Run the documented local checks and fix the first reproducible failure with the smallest change. Report what you changed and verified."
-  codex-engineer:
-    description: "Investigate bugs, implement focused changes, and run repository checks using Codex."
-    quick_prompts:
-      - "Inspect the repository and summarize its setup, validation, and test commands without changing files."
-      - "Review the development scripts for broken assumptions and unnecessary complexity. Recommend focused fixes without editing files."
       - "Run the documented local checks and fix the first reproducible failure with the smallest change. Report what you changed and verified."

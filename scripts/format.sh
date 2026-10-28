@@ -31,5 +31,9 @@ echo -e "${DIM}> ruff format ${REPO_ROOT}${NC}"
 ruff format "${REPO_ROOT}"
 
 echo ""
+echo -e "${DIM}> npm run format --prefix web${NC}"
+npm run --silent format --prefix "${REPO_ROOT}/web"
+
+echo ""
 echo -e "${BOLD}Done.${NC}"
 echo ""

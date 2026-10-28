@@ -36,7 +36,7 @@ resources for mutations; a unique user does not isolate global tools or external
 Do not run externally mutating scenarios unless their effects are authorized and contained.
 Never sweep database rows or delete historical sessions, notes, schedules or Company records.
 
-The built-in Case contract targets native Agno agents and teams. For Claude/Codex engineers,
+The built-in Case contract targets native Agno agents and teams. For the Claude engineer,
 workflows or HTTP/Company execution, verify support before choosing a runner; do not force an
 unsupported target into Case or add an adapter here. Report the unsupported verification path
 and route a specific change through [extend-agent](../extend-agent/SKILL.md).

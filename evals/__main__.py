@@ -1,6 +1,5 @@
 """python -m evals [--name CASE] [--tag smoke] [--json-output FILE]."""
 
-import os
 import sys
 from pathlib import Path
 
@@ -9,7 +8,6 @@ from dotenv import load_dotenv
 
 def main() -> int:
     load_dotenv(Path(__file__).resolve().parents[1] / ".env")
-    os.environ.setdefault("RUNTIME_ENV", "dev")
 
     from agno.eval import cli
     from agno.os.utils import collect_mcp_tools_from_team

@@ -1,0 +1,237 @@
+id,значение,источник,комментарий
+ED-01,есть,https://www.dabblewriter.com/docs/writing-editing/format-text,Жирный/курсив/подчёркнутый/зачёркнутый на плавающей панели
+ED-02,есть,https://www.dabblewriter.com/docs/writing-editing/format-text,"Инлайн-форматы: жирный, курсив, подчёркнутый, зачёркнутый"
+ED-03,есть,https://www.dabblewriter.com/docs/writing-editing/format-text,"Инлайн-форматы: жирный, курсив, подчёркнутый, зачёркнутый"
+ED-04,есть,https://www.dabblewriter.com/docs/writing-editing/format-text,"Инлайн-форматы: жирный, курсив, подчёркнутый, зачёркнутый"
+ED-05,есть,https://www.dabblewriter.com/docs/writing-editing/format-text,Heading 1-Heading 6
+ED-06,есть,https://www.dabblewriter.com/docs/writing-editing/format-text,Восемь стилей списков от маркированных до чеклистов; markdown-сокращения
+ED-07,есть,https://www.dabblewriter.com/docs/writing-editing/format-text,Indented Blockquote и Centered Italic Blockquote
+ED-08,не проверено,https://www.dabblewriter.com/docs/writing-editing/format-text,Сноски на странице форматирования не упомянуты
+ED-09,есть,https://www.dabblewriter.com/docs/writing-editing,"Статья «Add links, blockquotes, and highlights»"
+ED-10,есть,https://www.dabblewriter.com/docs/writing-editing,"Загрузка или поиск в Unsplash, изменение размера и выравнивание"
+ED-11,не проверено,https://www.dabblewriter.com/docs/writing-editing/format-text,"Есть «property lists» (двухколоночные термин-определение) и копирование двухколоночных таблиц, но обычные таблицы в рукописи не подтверждены"
+ED-12,не проверено,https://www.dabblewriter.com/docs/writing-editing/format-text,Выравнивание абзаца не упомянуто (выравниваются только изображения)
+ED-13,частично,https://www.dabblewriter.com/docs/writing-space,Стиль абзаца (в т.ч. отступ) задаётся на уровне проекта в Project Settings; точечная настройка абзаца не подтверждена
+ED-14,есть,https://www.dabblewriter.com/docs/writing-space,Межстрочный интервал задаётся в Project Settings (на весь проект)
+ED-15,есть,https://www.dabblewriter.com/docs/writing-space,Выбор шрифта рукописи и размера в Project Settings
+ED-16,не проверено,https://www.dabblewriter.com/docs/writing-editing/format-text,"Пользовательские стили абзацев не упомянуты; есть фиксированные блоки (Body Text, Blockquote, Property List)"
+ED-17,есть,https://www.dabblewriter.com/docs/writing-editing,Меню «+» вставляет разрыв сцены/главы и разделитель; символ разделителя задаётся в Project Settings > Export; также --- даёт горизонтальную линию
+ED-18,есть,https://www.dabblewriter.com/docs/writing-editing/format-text,"Автозамена -- на тире, ... на многоточие, прямых кавычек на изогнутые"
+ED-19,частично,https://www.dabblewriter.com/docs/writing-editing/format-text,Автозамены типографики и Prevent Extra Spaces (лишние пробелы после точки); неразрывные пробелы не подтверждены
+ED-20,частично,https://www.dabblewriter.com/docs/reference/release-notes,"С 3.0.85 undo/redo для переименования, перемещения, удаления, целей; отмена набора текста явно не описана"
+ED-21,есть,https://www.dabblewriter.com/docs/writing-editing,"Статья «Find and replace text»: поиск по рукописи и Notebook, замена по одной и всех"
+ED-22,есть,https://www.dabblewriter.com/docs/writing-editing,"Статья «Find and replace text»: поиск по рукописи и Notebook, замена по одной и всех"
+ED-23,есть,https://www.dabblewriter.com/docs/writing-editing,Quick Open (Cmd/Ctrl+K) ищет по названиям и полному тексту проекта; Find and Replace охватывает рукопись и Notebook
+ED-24,не проверено,https://www.dabblewriter.com/docs/writing-editing,Регулярные выражения не упомянуты
+ED-25,есть,https://www.dabblewriter.com/docs/writing-editing/spelling-and-grammar,"Проверка орфографии бесплатна для всех, офлайн-проверка и личный словарь"
+ED-26,есть,https://www.dabblewriter.com/docs/writing-editing/spelling-and-grammar,"Grammar and style на платных тарифах, на движке ProWritingAid (не генеративный ИИ): зелёные подчёркивания грамматики и синие стиля"
+ED-27,не проверено,https://www.dabblewriter.com/docs/writing-editing/spelling-and-grammar,Список языков проверки на странице не приведён; русский не подтверждён
+ED-28,есть,https://www.dabblewriter.com/docs/writing-editing,"Thesaurus прямо в рукописи, только английский"
+ED-29,есть,https://www.dabblewriter.com/docs/goals-progress/how-dabble-counts-words,"Точный счёт слов, обновляется через ~0,3 с после паузы; суммы по сценам, главам, книге"
+ED-30,не проверено,https://www.dabblewriter.com/docs/goals-progress/how-dabble-counts-words,Счётчик выделенного фрагмента не упомянут
+ED-31,есть,https://www.dabblewriter.com/docs/collaboration-sharing/how-co-authoring-works,"Комментарии с ответами, resolve, Comment History (тариф Author и выше)"
+ED-32,частично,https://www.dabblewriter.com/docs/planning-story-notes,"Цветная подсветка текста; sticky notes привязаны к сцене/персонажу, а не к фрагменту текста"
+ED-33,не проверено,https://www.dabblewriter.com/docs/writing-editing/spelling-and-grammar,Подсветка повторов слов не упомянута
+ED-34,частично,https://www.dabblewriter.com/docs/writing-editing/spelling-and-grammar,"Style-подсказки через ProWritingAid, пример: наречие + усилитель («very quickly»); общей подсветки наречий и штампов не подтверждено"
+ED-35,есть,https://www.dabblewriter.com/docs/manuscript-structure,Split at cursor и Merge для сцен и глав
+ED-36,есть,https://www.dabblewriter.com/docs/writing-space/focus-mode,"Focus Mode скрывает всё, кроме рукописи; Cmd/Ctrl+Opt/Alt+M"
+ED-37,есть,https://www.dabblewriter.com/docs/writing-space/focus-mode,Typewriter Scrolling: строка набора остаётся на одном месте экрана
+ED-38,нет,https://www.dabblewriter.com/docs/writing-space/focus-mode,"Auto-Fade приглушает элементы интерфейса вокруг текста, а не соседние абзацы; затемнения абзацев в описании нет"
+ED-39,есть,https://www.dabblewriter.com/docs/reference/release-notes,Light/Dark/Auto и высококонтрастная тема
+ED-40,частично,https://www.dabblewriter.com/docs/writing-space,"Шесть цветовых тем, тема отдельного проекта, режим для дальтоников; загрузка своего фона не подтверждена"
+ED-41,не проверено,https://www.dabblewriter.com/docs/writing-space,Звуки и эмбиент не упомянуты
+ED-42,не проверено,https://www.dabblewriter.com/docs/writing-space,Режим «только вперёд» не упомянут
+ED-43,не проверено,https://www.dabblewriter.com/docs/writing-space/understanding-views,Разделённый экран не описан; показана одна область редактора
+SC-01,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-02,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-03,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-04,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-05,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-06,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-07,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-08,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-09,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-10,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-11,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-12,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-13,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-14,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-15,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-16,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-17,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-18,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-19,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-20,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-21,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-22,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-23,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-24,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-25,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-26,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-27,не проверено,https://www.dabblewriter.com/docs/import-export-printing/export-your-manuscript,Титульной страницы нет в описании экспорта; есть колонтитул (short title) и контакты автора в экспорте Manuscript Format
+SC-28,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-29,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-30,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-31,нет,https://www.dabblewriter.com/features,"Сценарного режима нет: ни в списке функций, ни в справке; Dabble ориентирован на прозу (романы, мемуары, нон-фикшн)"
+SC-32,есть,https://www.dabblewriter.com/docs/writing-editing,Read to Me читает рукопись голосами браузера или ОС; сценарных голосов по ролям нет
+ST-01,есть,https://www.dabblewriter.com/docs/manuscript-structure,"Книги > Части > Главы > Сцены, плюс Sections (пролог, эпилог)"
+ST-02,есть,https://www.dabblewriter.com/docs/manuscript-structure,Drag and drop в боковой панели
+ST-03,частично,https://www.dabblewriter.com/docs/manuscript-structure,Иерархия книга/часть/глава/сцена фиксирована; произвольные папки есть в Notebook
+ST-04,частично,https://www.dabblewriter.com/docs/planning-story-notes,"Цветные ярлыки (labels) на сценах, пунктах сюжета и заметках; именованных статусов (черновик/правка) не подтверждено"
+ST-05,есть,https://www.dabblewriter.com/docs/planning-story-notes,Цветные ярлыки с переименованием и перекраской по всему проекту
+ST-06,есть,https://www.dabblewriter.com/docs/managing-projects,"Корзина проекта и документов, восстановление и окончательное удаление"
+ST-07,частично,https://www.dabblewriter.com/docs/planning-story-notes,"Шаблоны сцен, персонажей и заметок в папке Templates; шаблоны проекта показываются без аккаунта (3.0.59), но жанровые структуры не подтверждены"
+ST-08,есть,https://www.dabblewriter.com/docs/planning-story-notes,"Characters, Notebook, Notes, Ideas в одном проекте"
+ST-09,нет,https://www.dabblewriter.com/docs/writing-space/understanding-views,Сценариев нет; навигация по сценам прозы есть в левой панели
+ST-10,не проверено,https://www.dabblewriter.com/docs/writing-space/understanding-views,Свёрнутый outline-вид текста не описан (есть карточки Scenes view)
+ST-11,частично,https://www.dabblewriter.com/docs/planning-story-notes/plot-grid-overview,Plot Grid как таблица «сцены × сюжетные линии»; колонок произвольных метаданных нет
+ST-12,есть,https://www.dabblewriter.com/docs/planning-story-notes/scenes-view,Карточка сцены: заголовок и описание «что происходит»
+ST-13,есть,https://www.dabblewriter.com/docs/import-export-printing/export-your-manuscript,"Экспорт выбранного документа, диапазона глав или страниц, с заметками или без"
+ST-14,не проверено,https://www.dabblewriter.com/docs/planning-story-notes/plot-grid-overview,Шаблонов трёх актов и подобных в справке не найдено
+ST-15,не проверено,https://www.dabblewriter.com/docs/planning-story-notes,Пошаговый мастер истории не упомянут
+ST-16,не проверено,https://www.dabblewriter.com/docs/planning-story-notes/plot-grid-overview,Готовых бит-шитов не найдено; Plot Grid позволяет строить свои
+ST-17,не проверено,https://www.dabblewriter.com/docs/planning-story-notes,Отдельных документов логлайна и синопсиса не описано (можно вести в Notebook)
+ST-18,нет,https://www.dabblewriter.com/features,Автоматического плана из сценария нет (сценариев нет)
+BD-01,есть,https://www.dabblewriter.com/docs/planning-story-notes/scenes-view,"Scenes view: карточка на сцену, сгруппированные по главам, перетаскивание меняет порядок в рукописи"
+BD-02,нет,https://www.dabblewriter.com/docs/planning-story-notes/plot-grid-overview,"Свободного холста, связей и стрелок, мини-карты, майнд-карт и карт мира нет; Plot Grid устроен как таблица"
+BD-03,нет,https://www.dabblewriter.com/docs/planning-story-notes/plot-grid-overview,"Свободного холста, связей и стрелок, мини-карты, майнд-карт и карт мира нет; Plot Grid устроен как таблица"
+BD-04,нет,https://www.dabblewriter.com/docs/planning-story-notes/plot-grid-overview,"Свободного холста, связей и стрелок, мини-карты, майнд-карт и карт мира нет; Plot Grid устроен как таблица"
+BD-05,нет,https://www.dabblewriter.com/docs/planning-story-notes/plot-grid-overview,"Свободного холста, связей и стрелок, мини-карты, майнд-карт и карт мира нет; Plot Grid устроен как таблица"
+BD-06,есть,https://www.dabblewriter.com/docs/planning-story-notes/plot-grid-overview,Связанная сетка повторяет порядок сцен рукописи; перенос сцены переупорядочивает сетку
+BD-07,нет,https://www.dabblewriter.com/features,Таймлайна событий и внутреннего календаря в списке функций нет
+BD-08,нет,https://www.dabblewriter.com/features,Таймлайна событий и внутреннего календаря в списке функций нет
+BD-09,есть,https://www.dabblewriter.com/docs/planning-story-notes/plot-grid-overview,Plot Grid: сюжетные линии (колонки) и пункты (карточки) против сцен
+BD-10,есть,https://www.dabblewriter.com/docs/planning-story-notes/plot-grid-overview,Любое число сюжетных линий и несколько сеток на проект (3.0.62)
+BD-11,нет,https://www.dabblewriter.com/features,Графика напряжения/темпа нет
+BD-12,частично,https://www.dabblewriter.com/features,"В профиле персонажа заявлены черты, предыстория и арка; связи арок со сценами нет"
+BD-13,нет,https://www.dabblewriter.com/features,Карты отношений нет; связи только через @упоминания
+BD-14,нет,https://www.dabblewriter.com/docs/planning-story-notes/plot-grid-overview,"Свободного холста, связей и стрелок, мини-карты, майнд-карт и карт мира нет; Plot Grid устроен как таблица"
+BD-15,нет,https://www.dabblewriter.com/docs/planning-story-notes/plot-grid-overview,"Свободного холста, связей и стрелок, мини-карты, майнд-карт и карт мира нет; Plot Grid устроен как таблица"
+BI-01,есть,https://www.dabblewriter.com/docs/planning-story-notes/characters-and-casts,"Персонажи и касты: имя, описание, excerpt, портрет, баннер, заметки"
+BI-02,есть,https://www.dabblewriter.com/docs/reference/release-notes,С 3.0.65 заметки о персонаже как property-секции с шаблонами
+BI-03,частично,https://www.dabblewriter.com/docs/planning-story-notes,"Отдельных типов нет; ведутся заметками в Notebook в папках (мир, лор, исследования)"
+BI-04,частично,https://www.dabblewriter.com/docs/planning-story-notes,"Отдельных типов нет; ведутся заметками в Notebook в папках (мир, лор, исследования)"
+BI-05,частично,https://www.dabblewriter.com/docs/planning-story-notes,"Отдельных типов нет; ведутся заметками в Notebook в папках (мир, лор, исследования)"
+BI-06,частично,https://www.dabblewriter.com/docs/planning-story-notes,Notebook-папки и шаблоны заметок позволяют свои разделы; настраиваемых типов с полями нет
+BI-07,есть,https://www.dabblewriter.com/docs/planning-story-notes/characters-and-casts,Портрет и баннер у персонажа; изображения в заметках
+BI-08,частично,https://www.dabblewriter.com/docs/planning-story-notes/mentions,Связи через @упоминания документов; типизированных связей нет
+BI-09,частично,https://www.dabblewriter.com/docs/planning-story-notes/mentions,@упоминания вставляются вручную как ссылки; автопоиск имён в тексте не описан
+BI-10,не проверено,https://www.dabblewriter.com/docs/planning-story-notes/mentions,"Статья об @упоминаниях не описывает backlinks, всплывающие карточки, псевдонимы или проверку противоречий"
+BI-11,не проверено,https://www.dabblewriter.com/docs/planning-story-notes/mentions,"Статья об @упоминаниях не описывает backlinks, всплывающие карточки, псевдонимы или проверку противоречий"
+BI-12,не проверено,https://www.dabblewriter.com/docs/planning-story-notes/mentions,"Статья об @упоминаниях не описывает backlinks, всплывающие карточки, псевдонимы или проверку противоречий"
+BI-13,не проверено,https://www.dabblewriter.com/docs/planning-story-notes/mentions,"Статья об @упоминаниях не описывает backlinks, всплывающие карточки, псевдонимы или проверку противоречий"
+BI-14,частично,https://www.dabblewriter.com/docs/planning-story-notes,"Отдельных типов нет; ведутся заметками в Notebook в папках (мир, лор, исследования)"
+BI-15,частично,https://www.dabblewriter.com/docs/planning-story-notes,Notebook хранит исследования; веб-страницы и PDF как вложения не подтверждены (картинки есть)
+BI-16,частично,https://www.dabblewriter.com/docs/manuscript-structure,"Проект может содержать несколько книг с общими документами, фильтр по книге"
+GO-01,есть,https://www.dabblewriter.com/docs/goals-progress,"Цели по словам с дедлайном на документ или проект, дни отдыха"
+GO-02,есть,https://www.dabblewriter.com/docs/goals-progress,"Цели по словам с дедлайном на документ или проект, дни отдыха"
+GO-03,есть,https://www.dabblewriter.com/docs/goals-progress,Серии (streaks) по ежедневной цели; вставленный текст не засчитывается
+GO-04,не проверено,https://www.dabblewriter.com/docs/goals-progress,"Календаря письма не найдено, есть дашборд и графики прогресса"
+GO-05,есть,https://www.dabblewriter.com/docs/goals-progress,Таймер для спринтов; спринты с WordSprints.org
+GO-06,нет,https://www.dabblewriter.com/features,Статистики по персонажам и доле диалогов в списке функций нет
+GO-07,частично,https://www.dabblewriter.com/docs/goals-progress/how-dabble-counts-words,Счёт слов по сценам и главам с суммированием; по локациям нет
+GO-08,нет,https://www.dabblewriter.com/features,Статистики по персонажам и доле диалогов в списке функций нет
+GO-09,частично,https://www.dabblewriter.com/docs/goals-progress/how-dabble-counts-words,Оценка страниц по 250 слов на страницу; времени чтения нет
+GO-10,есть,https://www.dabblewriter.com/docs/goals-progress,Графики прогресса на дашборде и карточках целей
+VE-01,есть,https://www.dabblewriter.com/docs/managing-projects/version-history,"Автосохранение при письме, автоверсии"
+VE-02,есть,https://www.dabblewriter.com/docs/managing-projects/version-history,«Create new version» — именованные контрольные точки; только на платном тарифе
+VE-03,частично,https://www.dabblewriter.com/docs/managing-projects/version-history,Time Machine подсвечивает изменение на каждой точке; текстового diff двух версий не описано; в Track Changes есть вид Difference
+VE-04,частично,https://www.dabblewriter.com/docs/collaboration-sharing/review-copies,Review Copies — изолированные копии с последующим слиянием (MAIN/BRANCH с разрешением конфликтов); общих веток-драфтов нет
+VE-05,есть,https://www.dabblewriter.com/docs/managing-projects/version-history,Restore this version для всего проекта и Bring Forward для одного документа
+VE-06,есть,https://www.dabblewriter.com/docs/managing-projects/version-history,Список версий и слайдер Time Machine
+VE-07,есть,https://www.dabblewriter.com/docs/collaboration-sharing,"Track Changes: Original, Difference, Suggestions; принять или отклонить (тариф Author)"
+VE-08,есть,https://www.dabblewriter.com/docs/collaboration-sharing,"Track Changes: Original, Difference, Suggestions; принять или отклонить (тариф Author)"
+VE-09,есть,https://www.dabblewriter.com/docs/collaboration-sharing,"Треды комментариев, resolve, Comment History с фильтрами"
+VE-10,частично,https://www.dabblewriter.com/docs/collaboration-sharing,"Ссылка только для чтения есть; для комментариев по review-ссылке приглашение принимается в рабочем пространстве, нужен ли аккаунт — явно не сказано"
+VE-11,есть,https://www.dabblewriter.com/docs/collaboration-sharing,Роль Reader и ссылка только для чтения
+CO-01,есть,https://www.dabblewriter.com/docs/collaboration-sharing/how-co-authoring-works,"Одновременное редактирование, офлайн-правки синхронизируются при подключении"
+CO-02,есть,https://www.dabblewriter.com/docs/collaboration-sharing/how-co-authoring-works,"Аватары в шапке и курсоры с именами, клик по аватару переходит к месту"
+CO-03,есть,https://www.dabblewriter.com/docs/collaboration-sharing/how-co-authoring-works,"Роли: Co-Author, Editor (только предложения), Reviewer, Reader"
+CO-04,нет,https://www.dabblewriter.com/features,"Чата, созвонов и комнаты сценаристов в списке функций нет"
+CO-05,нет,https://www.dabblewriter.com/features,"Чата, созвонов и комнаты сценаристов в списке функций нет"
+CO-06,нет,https://www.dabblewriter.com/features,"Чата, созвонов и комнаты сценаристов в списке функций нет"
+CO-07,частично,https://www.dabblewriter.com/docs/reference/release-notes,Счётчики непрочитанных комментариев; общей ленты уведомлений об изменениях не подтверждено
+AI-01,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-02,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-03,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-04,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-05,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-06,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-07,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-08,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-09,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-10,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-11,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-12,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-13,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-14,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-15,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-16,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-17,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-18,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-19,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-20,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-21,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-22,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-23,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-24,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-25,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-26,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-27,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-28,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-29,есть,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Текст автора никогда не отправляется в генеративную модель, значит не используется для обучения; то же сказано на странице тарифов"
+AI-30,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+AI-31,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,ИИ-голосов нет; Read to Me использует системные голоса браузера или ОС
+AI-32,нет,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,"Dabble принципиально без генеративного ИИ: не добавляет, не переписывает и не резюмирует текст"
+IO-01,есть,https://www.dabblewriter.com/docs/import-export-printing,"Импорт Word, Markdown, HTML, RTF или вставка текста"
+IO-02,нет,https://www.dabblewriter.com/docs/import-export-printing,"Перечень импорта: Word, Markdown, HTML, RTF; Fountain, FDX, PDF и Scrivener не названы"
+IO-03,нет,https://www.dabblewriter.com/docs/import-export-printing,"Перечень импорта: Word, Markdown, HTML, RTF; Fountain, FDX, PDF и Scrivener не названы"
+IO-04,нет,https://www.dabblewriter.com/docs/import-export-printing,"Перечень импорта: Word, Markdown, HTML, RTF; Fountain, FDX, PDF и Scrivener не названы"
+IO-05,нет,https://www.dabblewriter.com/docs/import-export-printing,"Перечень импорта: Word, Markdown, HTML, RTF; Fountain, FDX, PDF и Scrivener не названы"
+IO-06,есть,https://www.dabblewriter.com/docs/import-export-printing,"Импорт Word, Markdown, HTML, RTF или вставка текста"
+IO-07,есть,https://www.dabblewriter.com/docs/import-export-printing/export-your-manuscript,"Word (.docx), форматы Manuscript Format и Dabble Format; с комментариями и правками (3.0.59)"
+IO-08,частично,https://www.dabblewriter.com/docs/import-export-printing/export-your-manuscript,Кнопки экспорта в PDF нет; PDF через Print > Save as PDF
+IO-09,нет,https://www.dabblewriter.com/docs/import-export-printing/export-your-manuscript,"Экспорт: Word, Google Docs, Web, Markdown; Fountain и FDX не названы"
+IO-10,нет,https://www.dabblewriter.com/docs/import-export-printing/export-your-manuscript,"Экспорт: Word, Google Docs, Web, Markdown; Fountain и FDX не названы"
+IO-11,нет,https://www.dabblewriter.com/docs/import-export-printing/export-your-manuscript,Справка: Dabble не экспортирует PDF и ePub напрямую
+IO-12,частично,https://www.dabblewriter.com/docs/import-export-printing,"Печать главы, сцены или рукописи через браузер; книжной вёрстки нет"
+IO-13,есть,https://www.dabblewriter.com/docs/import-export-printing/export-your-manuscript,Экспорт .md
+IO-14,нет,https://www.dabblewriter.com/docs/import-export-printing/export-your-manuscript,Компиляции со стилями и шаблонами в описании экспорта нет; два формата и настройки колонтитула
+IO-15,есть,https://www.dabblewriter.com/docs/import-export-printing/export-your-manuscript,"Manuscript Format: отступы, двойной интервал, Times New Roman 12, колонтитул с short title, контакты автора"
+IO-16,нет,https://www.dabblewriter.com/docs/import-export-printing/export-your-manuscript,Вёрстки под trim size и колонтитулов книги нет
+IO-17,частично,https://www.dabblewriter.com/docs/import-export-printing/export-your-manuscript,Share to Web — публичная HTML-страница по ссылке; публикации на площадках нет
+IO-18,нет,https://www.dabblewriter.com/features,"Серийной публикации, монетизации и статистики читателей в списке функций нет"
+IO-19,нет,https://www.dabblewriter.com/features,"Серийной публикации, монетизации и статистики читателей в списке функций нет"
+IO-20,частично,https://www.dabblewriter.com/docs/collaboration-sharing,Комментарии бета-ридеров в review copy; комментариев публичных читателей нет
+IO-21,нет,https://www.dabblewriter.com/features,"Серийной публикации, монетизации и статистики читателей в списке функций нет"
+IO-22,есть,https://www.dabblewriter.com/features,"Конструктор обложки, обложки книг и изображения глав, Book Settings"
+PL-01,есть,https://www.dabblewriter.com/docs/reference/system-requirements,"Браузер, установка как приложения (PWA) на Windows, macOS, Linux, Chromebook, iOS, Android; десктопное приложение тоже есть"
+PL-02,есть,https://www.dabblewriter.com/docs/reference/system-requirements,"Браузер, установка как приложения (PWA) на Windows, macOS, Linux, Chromebook, iOS, Android; десктопное приложение тоже есть"
+PL-03,есть,https://www.dabblewriter.com/docs/reference/system-requirements,"Браузер, установка как приложения (PWA) на Windows, macOS, Linux, Chromebook, iOS, Android; десктопное приложение тоже есть"
+PL-04,есть,https://www.dabblewriter.com/docs/reference/system-requirements,"Браузер, установка как приложения (PWA) на Windows, macOS, Linux, Chromebook, iOS, Android; десктопное приложение тоже есть"
+PL-05,есть,https://www.dabblewriter.com/docs/reference/system-requirements,"Браузер, установка как приложения (PWA) на Windows, macOS, Linux, Chromebook, iOS, Android; десктопное приложение тоже есть"
+PL-06,есть,https://www.dabblewriter.com/docs/reference/system-requirements,"Браузер, установка как приложения (PWA) на Windows, macOS, Linux, Chromebook, iOS, Android; десктопное приложение тоже есть"
+PL-07,есть,https://www.dabblewriter.com/docs/apps-sync-offline,"Работа офлайн, синхронизация при подключении"
+PL-08,есть,https://www.dabblewriter.com/docs/apps-sync-offline,"Копия на устройстве и в облаке, Sync Places"
+PL-09,не проверено,https://www.dabblewriter.com/docs/import-export-printing/export-your-manuscript,"Экспорт Word и Markdown есть, но открытость собственного формата хранения проекта не раскрыта"
+PL-10,есть,https://www.dabblewriter.com/docs/managing-projects,"Бэкап проекта или локальной базы из Preferences, непрерывное облачное резервирование"
+BZ-01,нет,https://www.dabblewriter.com/pricing,Только 14 дней триала; бесплатного тарифа на странице тарифов нет (в справке изредка упомянут «free plan»)
+BZ-02,есть,https://www.dabblewriter.com/pricing,"Writer $15, Author $23, Bestseller $39 в месяц при оплате за год"
+BZ-03,есть,https://www.dabblewriter.com/pricing,"Lifetime Author $699, Lifetime Bestseller $899"
+BZ-04,есть,https://www.dabblewriter.com/pricing,"14 дней, все функции, без карты"
+BZ-05,не проверено,https://www.dabblewriter.com/docs/reference/release-notes,"Добавлено девять языков интерфейса (каталанский, хорватский, чешский, греческий и др.), русский не назван; сайт заявляет 12 языков письма"
+BZ-06,нет,https://www.dabblewriter.com/pricing,"Валюты USD/EUR/GBP/CAD/AUD/NZD, англоязычный продукт; русскоязычной ориентации нет"
+BZ-07,есть,https://www.dabblewriter.com/pricing,"Тариф Bestseller: Academy, воркшопы, записи; DabbleU бесплатный хаб статей и курсов"
+BZ-08,есть,https://www.dabblewriter.com/docs/reference,"DabbleU и сообщество, challenges (60-Day Novel Challenge), группы письма"
+NEW-DAB-1,есть,https://www.dabblewriter.com/docs/collaboration-sharing/review-copies,"Review Copies: изолированная копия части проекта для друга, бета-ридера или редактора, с типом, областью доступа и слиянием обратно"
+NEW-DAB-2,есть,https://www.dabblewriter.com/docs/managing-projects/version-history,"Time Machine: слайдер по истории проекта, Restore и Bring Forward одного документа"
+NEW-DAB-3,есть,https://www.dabblewriter.com/docs/reference/release-notes,Писательские челленджи (60-Day Novel Challenge) прямо в форме цели; Days Off
+NEW-DAB-4,есть,https://www.dabblewriter.com/docs/planning-story-notes,"Ideas: отдельный проект на дашборде для идей, превращаются в проект"
+NEW-DAB-5,есть,https://www.dabblewriter.com/docs/collaboration-sharing,"Co-Author Colors: цвета авторов для текста, курсора и комментариев"
+NEW-DAB-6,есть,https://www.dabblewriter.com/docs/writing-editing,Command palette Quick Open (Cmd/Ctrl+K): поиск по названиям и полному тексту
+NEW-DAB-7,есть,https://www.dabblewriter.com/docs/reference/dabble-is-ai-free,Позиционирование «AI-free»: обещание никогда не писать текст за автора
+NEW-DAB-8,есть,https://www.dabblewriter.com/docs/import-export-printing/export-your-manuscript,Экспорт сюжетной линии на индексных карточках 4x5 и 3x5
+NEW-DAB-9,есть,https://www.dabblewriter.com/docs/managing-projects,"Слияние, дублирование проектов, перенос глав/сцен/персонажей между проектами"
+NEW-DAB-10,есть,https://www.dabblewriter.com/docs/writing-editing,"Read to Me: чтение вслух голосами системы, в т.ч. на мобильных"
+IO-23,не проверено,,"Добавлено в таксономию 2026-10-28, не проверялось"
+IO-24,не проверено,,"Добавлено в таксономию 2026-10-28, не проверялось"

@@ -1,0 +1,236 @@
+id,значение,источник,комментарий
+ED-01,есть,https://highland-kb.quoteunquoteapps.com/kb/fountain-syntax/formatting ; https://apps.apple.com/us/app/highland-pro/id6612007609?see-all=reviews,"Cmd+B и разметка Fountain/Markdown (справка Highland 2); в отзывах Pro жалоба на горячие клавиши bold/italic, значит функция есть"
+ED-02,есть,https://highland-kb.quoteunquoteapps.com/kb/fountain-syntax/formatting ; https://apps.apple.com/us/app/highland-pro/id6612007609?see-all=reviews,"Cmd+I, звёздочки (справка Highland 2)"
+ED-03,есть,https://highland-kb.quoteunquoteapps.com/kb/fountain-syntax/formatting,Cmd+U (справка Highland 2)
+ED-04,не проверено,,Перечислено без синтаксиса в справке Highland 2
+ED-05,есть,https://getfreewrite.com/blogs/writing-success/the-power-of-plain-text-screenwriting-with-freewrite-highland-pro ; https://highland-kb.quoteunquoteapps.com/kb/sidebar/navigator,Разделы и подразделы через разметку заголовков (#); в Pro основа Navigator
+ED-06,не проверено,,Не описано
+ED-07,не проверено,,Не описано
+ED-08,не проверено,,Не описано
+ED-09,есть,https://highland-kb.quoteunquoteapps.com/,Ссылки с текстом в Markdown-разметке (справка Highland 2); Navigator перечисляет ссылки
+ED-10,частично,https://apps.apple.com/us/app/highland-pro/id6612007609?see-all=reviews ; https://quoteunquoteapps.com/highland-pro/highland-format,"Картинки поддерживаются (папка assets в .highland), но отзыв Pro критикует вставку изображений"
+ED-11,не проверено,,Не описано
+ED-12,есть,https://highland-kb.quoteunquoteapps.com/kb/fountain-syntax/formatting,Центрирование и выравнивание вправо разметкой (справка Highland 2)
+ED-13,не проверено,,Не описано
+ED-14,не проверено,,Не описано
+ED-15,частично,https://highland-kb.quoteunquoteapps.com/kb/preview/pdf-templates-fba3ad7b434a9943,Выбор шрифта для шапок и текста в некоторых шаблонах PDF (справка Highland 2); Courier Prime фирменный
+ED-16,не проверено,,Есть шаблоны (14) и темы; пользовательские стили абзацев не описаны
+ED-17,не проверено,,Не описано
+ED-18,не проверено,,Не описано
+ED-19,не проверено,,Не описано
+ED-20,не проверено,,Не описано
+ED-21,не проверено,,Не описано
+ED-22,не проверено,,Не описано
+ED-23,не проверено,,Поиск есть в Navigator (фильтр) в Highland 2; поиск по проекту не описан
+ED-24,не проверено,,Не описано
+ED-25,не проверено,,Не описано
+ED-26,частично,https://apps.apple.com/us/app/highland-pro/id6612007609 ; https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,"Grammar Highlight (подсветка); что именно подсвечивается, не раскрыто"
+ED-27,не проверено,,Не описано
+ED-28,частично,https://quoteunquoteapps.com/highland-pro/ ; https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,"/Lookup: определения, рифмы, факты прямо из редактора; полноценного тезауруса не подтверждено"
+ED-29,есть,https://highland-kb.quoteunquoteapps.com/kb/sidebar/goals-slash-stats ; https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,"Слова и страницы в реальном времени (справка Highland 2, цели и спринты сохранены в Pro)"
+ED-30,есть,https://highland-kb.quoteunquoteapps.com/kb/sidebar/goals-slash-stats,Слова в выделении (справка Highland 2)
+ED-31,есть,https://quoteunquoteapps.com/highland-pro/ ; https://johnaugust.com/apps/highland,Comments в Pro; Fling возвращает комментарии читателей в документ
+ED-32,есть,https://quoteunquoteapps.com/highland-pro/ ; https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,Встроенные заметки и синопсисы остались в Pro
+ED-33,не проверено,,Не описано
+ED-34,не проверено,,Не описано
+ED-35,не проверено,,Не описано
+ED-36,есть,https://quoteunquoteapps.com/highland-pro/ ; https://apps.apple.com/us/app/highland-pro/id6612007609?see-all=reviews,На Mac; на iPhone полноэкранного редактирования нет (отзыв)
+ED-37,есть,https://quoteunquoteapps.com/highland-pro/ ; https://highland-kb.quoteunquoteapps.com/kb/editor,Typewriter scrolling
+ED-38,не проверено,,Не описано
+ED-39,есть,https://quoteunquoteapps.com/highland-pro/ ; https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,Тёмная тема; 12 тем или свои
+ED-40,есть,https://www.screenweaver.ai/blog/highland-2-vs-highland-pro ; https://quoteunquoteapps.com/highland-pro/,12 тем и создание своих
+ED-41,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+ED-42,не проверено,,Не описано
+ED-43,нет,https://highland-kb.quoteunquoteapps.com/kb/editor,Редактор и Preview переключаются; два документа рядом не описаны
+SC-01,есть,https://highland-kb.quoteunquoteapps.com/kb/fountain-syntax/basic-elements,"Автоформат Fountain (INT./EXT., принудительно точкой)"
+SC-02,есть,https://highland-kb.quoteunquoteapps.com/kb/fountain-syntax/basic-elements,Любая строка без другого признака
+SC-03,есть,https://highland-kb.quoteunquoteapps.com/kb/fountain-syntax/basic-elements,Заглавные буквы
+SC-04,есть,https://highland-kb.quoteunquoteapps.com/kb/fountain-syntax/basic-elements,После реплики
+SC-05,есть,https://highland-kb.quoteunquoteapps.com/kb/fountain-syntax/basic-elements,В скобках
+SC-06,есть,https://highland-kb.quoteunquoteapps.com/kb/fountain-syntax/basic-elements,Заканчивается на TO:
+SC-07,не проверено,,Не описано
+SC-08,есть,https://highland-kb.quoteunquoteapps.com/kb/fountain-syntax/basic-elements,Каретка ^ после второго персонажа
+SC-09,нет,https://highland-kb.quoteunquoteapps.com/kb/fountain-syntax/basic-elements,Перечень элементов Fountain не содержит shot
+SC-10,есть,https://highland-kb.quoteunquoteapps.com/kb/fountain-syntax/basic-elements,Тильда ~
+SC-11,не проверено,,Не описано
+SC-12,частично,https://apps.apple.com/us/app/highland-pro/id6612007609 ; https://apps.apple.com/us/app/highland-pro/id6612007609?see-all=reviews,Формат применяется автоматически без Tab; есть горячие клавиши для реплик и переходов (отзыв)
+SC-13,не проверено,,Не описано
+SC-14,не проверено,,Не описано
+SC-15,не проверено,,Не описано
+SC-16,не проверено,,Не описано
+SC-17,есть,https://getfreewrite.com/blogs/writing-success/the-power-of-plain-text-screenwriting-with-freewrite-highland-pro ; https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,Fountain основа приложения
+SC-18,есть,https://apps.apple.com/us/app/highland-pro/id6612007609,Шаблон Screenplay
+SC-19,не проверено,,Не описано
+SC-20,частично,https://highland-kb.quoteunquoteapps.com/kb/preview/pdf-templates-fba3ad7b434a9943 ; https://apps.apple.com/us/app/highland-pro/id6612007609?see-all=reviews,Шаблон Stage Play (получил критику в отзыве Pro); аудиодрамы нет
+SC-21,есть,https://apps.apple.com/us/app/highland-pro/id6612007609 ; https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,Шаблон Multi-Cam
+SC-22,частично,https://highland-kb.quoteunquoteapps.com/,Метки разрыва страниц в PDF (справка Highland 2); хронометраж отдельно не описан
+SC-23,есть,https://apps.apple.com/us/app/highland-pro/id6612007609 ; https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,"Scene numbering, в macOS с нумерацией абзацев"
+SC-24,не проверено,,Не описано
+SC-25,есть,https://quoteunquoteapps.com/highland-pro/ ; https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,Revision Mode: цветное отслеживание изменений и звёздочки на полях; цвета видны при отправке читателю
+SC-26,есть,https://quoteunquoteapps.com/highland-pro/,Звёздочки на полях
+SC-27,есть,https://quoteunquoteapps.com/highland-pro/,Title Page Builder для кино и сериалов
+SC-28,не проверено,,Не описано
+SC-29,частично,https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,"Списки персонажей и локаций, гендерный анализ; отчётов по сценам нет в описании"
+SC-30,не проверено,,Не описано
+SC-31,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+SC-32,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций; озвучка читки есть в отдельном приложении Weekend Read 2 того же издателя
+ST-01,есть,https://highland-kb.quoteunquoteapps.com/kb/sidebar/navigator ; https://getfreewrite.com/blogs/writing-success/the-power-of-plain-text-screenwriting-with-freewrite-highland-pro,Разделы и подразделы; Navigator показывает карту
+ST-02,не проверено,,Перетаскивание не описано в справке Highland 2
+ST-03,не проверено,,Не описано
+ST-04,не проверено,,Не описано
+ST-05,не проверено,,Не описано
+ST-06,есть,https://quoteunquoteapps.com/highland-pro/highland-format,Bin: удалённые элементы хранятся в .highland (Highland 2; в Pro формат совместим)
+ST-07,есть,https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,"14 шаблонов (Screenplay, Multi-Cam, Manuscript и др.)"
+ST-08,не проверено,,Не описано; в Highland 2 был {{INCLUDE}} файлов
+ST-09,есть,https://quoteunquoteapps.com/highland-pro/,"Navigator: разделы, сцены, синопсисы, заметки"
+ST-10,частично,https://apps.apple.com/us/app/highland-pro/id6612007609,Overview показывает весь документ целиком; детали не раскрыты
+ST-11,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+ST-12,есть,https://quoteunquoteapps.com/highland-pro/ ; https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,"Синопсисы в разметке, видны в Navigator"
+ST-13,частично,https://highland-kb.quoteunquoteapps.com/kb/sidebar/navigator ; https://highland-kb.quoteunquoteapps.com/kb/editor,В Highland 2: {{INCLUDE}} для сборки и экспорт видимых элементов Navigator; для Pro не подтверждено
+ST-14,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+ST-15,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+ST-16,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+ST-17,не проверено,,Не описано
+ST-18,частично,https://highland-kb.quoteunquoteapps.com/kb/sidebar/navigator,Экспорт видимых элементов Navigator в новый документ-план (Highland 2)
+BD-01,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BD-02,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BD-03,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BD-04,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BD-05,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BD-06,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BD-07,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BD-08,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BD-09,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BD-10,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BD-11,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BD-12,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BD-13,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BD-14,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BD-15,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BI-01,частично,https://quoteunquoteapps.com/highland-pro/ ; https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,Автосписок Cast; описания персонажей хранятся в комментариях; карточек нет
+BI-02,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BI-03,частично,https://quoteunquoteapps.com/highland-pro/ ; https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,Автосписок Location
+BI-04,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BI-05,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BI-06,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BI-07,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BI-08,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BI-09,частично,https://apps.apple.com/us/app/highland-pro/id6612007609,Подсветка реплик выбранного персонажа (character highlighting)
+BI-10,не проверено,,Не описано
+BI-11,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BI-12,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BI-13,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BI-14,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+BI-15,частично,https://quoteunquoteapps.com/highland-pro/ ; https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,"Comments для заметок, описаний и исследований; Shelf для заметок; хранения файлов нет"
+BI-16,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+GO-01,есть,https://quoteunquoteapps.com/highland-pro/,"Цели-вехи по страницам, словам, знакам"
+GO-02,не проверено,,Срок не описан
+GO-03,не проверено,,Не описано
+GO-04,не проверено,,Не описано
+GO-05,есть,https://quoteunquoteapps.com/highland-pro/,Writing Sprints
+GO-06,частично,https://quoteunquoteapps.com/highland-pro/,Gender Analysis: доля реплик по полу; статистики по персонажам нет
+GO-07,не проверено,,Не описано
+GO-08,не проверено,,Не описано
+GO-09,частично,https://highland-kb.quoteunquoteapps.com/kb/sidebar/goals-slash-stats,Оценка времени чтения по 250 слов/мин (справка Highland 2)
+GO-10,частично,https://highland-kb.quoteunquoteapps.com/kb/sidebar/goals-slash-stats,История целей и отчёт по вехам и спринтам (Highland 2)
+VE-01,не проверено,,Не описано; синхронизация iCloud
+VE-02,частично,https://apps.apple.com/us/app/highland-pro/id6612007609?see-all=reviews,"Отзывы Pro хвалят «version tracking»; как устроено, не раскрыто"
+VE-03,не проверено,,Не описано
+VE-04,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+VE-05,не проверено,,Не описано
+VE-06,не проверено,,Не описано
+VE-07,частично,https://quoteunquoteapps.com/highland-pro/,Revision Mode цветом и звёздочками; принять/отклонить не описано
+VE-08,не проверено,,Не описано
+VE-09,частично,https://johnaugust.com/apps/highland,Fling: комментарии читателей возвращаются в документ; ответы в тредах не описаны
+VE-10,есть,https://johnaugust.com/apps/highland,"Highland Fling: временная веб-версия по ссылке, читателю Highland Pro не нужен (март 2026)"
+VE-11,не проверено,,Не описано
+CO-01,нет,https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,Живой совместной работы нет
+CO-02,нет,https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,Живой совместной работы нет
+CO-03,не проверено,,Не описано
+CO-04,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+CO-05,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+CO-06,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+CO-07,не проверено,,Не описано
+AI-01,нет,https://quoteunquoteapps.com/highland-pro/,ИИ в Highland Pro не описан ни в одном источнике
+AI-02,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-03,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-04,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-05,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-06,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-07,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-08,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-09,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-10,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-11,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-12,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-13,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-14,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-15,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-16,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-17,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-18,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-19,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-20,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-21,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-22,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-23,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-24,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-25,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-26,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-27,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-28,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-29,не проверено,,Политика конфиденциальности не открывалась
+AI-30,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-31,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+AI-32,нет,https://quoteunquoteapps.com/highland-pro/,ИИ нет
+IO-01,не проверено,,DOCX в описании Pro не упомянут
+IO-02,есть,https://apps.apple.com/us/app/highland-pro/id6612007609,Fountain
+IO-03,есть,https://apps.apple.com/us/app/highland-pro/id6612007609,FDX (старые FDR не открываются; в отзывах ошибки при конвертации)
+IO-04,есть,https://apps.apple.com/us/app/highland-pro/id6612007609 ; https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,PDF melting превращает PDF сценария в редактируемый
+IO-05,не проверено,,Не описано
+IO-06,есть,https://quoteunquoteapps.com/highland-pro/highland-format ; https://highland-kb.quoteunquoteapps.com/,"Открывает .fountain, .markdown, .txt"
+IO-07,не проверено,,DOCX в описании Pro не упомянут
+IO-08,есть,https://apps.apple.com/us/app/highland-pro/id6612007609,PDF; после окончания подписки экспорт остаётся
+IO-09,есть,https://apps.apple.com/us/app/highland-pro/id6612007609,Fountain
+IO-10,есть,https://apps.apple.com/us/app/highland-pro/id6612007609,FDX
+IO-11,не проверено,,Не описано
+IO-12,не проверено,,Не описано; есть шаблон Manuscript
+IO-13,есть,https://quoteunquoteapps.com/highland-pro/highland-format,Текст документа хранится как .markdown/.fountain/.txt (формат .highland)
+IO-14,частично,https://highland-kb.quoteunquoteapps.com/kb/preview/export-options ; https://highland-kb.quoteunquoteapps.com/kb/preview/pdf-templates-fba3ad7b434a9943,"Выбор шаблона PDF, включение номеров абзацев и синопсисов (Highland 2)"
+IO-15,не проверено,,Не описано
+IO-16,не проверено,,Не описано
+IO-17,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+IO-18,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+IO-19,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+IO-20,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+IO-21,нет,https://quoteunquoteapps.com/highland-pro/,Нет в списке функций
+IO-22,частично,https://quoteunquoteapps.com/highland-pro/,"Title Page Builder и Custom Pages (предисловие, цитата)"
+PL-01,нет,https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,Веб-версии нет
+PL-02,нет,https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,Windows нет
+PL-03,есть,https://apps.apple.com/us/app/highland-pro/id6612007609,macOS 13+
+PL-04,нет,https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,Linux нет
+PL-05,есть,https://apps.apple.com/us/app/highland-pro/id6612007609,iPhone; зрелость ниже Mac (отзывы)
+PL-06,нет,https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,Android нет
+PL-07,не проверено,,Нативные приложения; офлайн явно не описан
+PL-08,есть,https://quoteunquoteapps.com/highland-pro/,"iCloud между Mac, iPad, iPhone"
+PL-09,есть,https://quoteunquoteapps.com/highland-pro/highland-format ; https://highland-kb.quoteunquoteapps.com/,".highland = zip на основе TextBundle, внутри обычный текст; спецификация не опубликована"
+PL-10,не проверено,,Не описано
+BZ-01,нет,https://quoteunquoteapps.com/highland-pro/,Только 30-дневная проба; бесплатная Highland 2 больше не продаётся
+BZ-02,есть,https://apps.apple.com/us/app/highland-pro/id6612007609,"59,99 USD/год или 9,99 USD/мес"
+BZ-03,нет,https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,"Highland 2 с разовой покупкой снята с продажи, Pro только по подписке"
+BZ-04,есть,https://quoteunquoteapps.com/highland-pro/,30 дней
+BZ-05,не проверено,,Не описано
+BZ-06,нет,https://quoteunquoteapps.com/,Англоязычный продукт для экосистемы Apple
+BZ-07,частично,https://highland-kb.quoteunquoteapps.com/ ; https://theblindmachine.com/introducing-highland-pro/,"Справка Highland 2, Cheat Sheet в меню, видеообзор; курсов нет"
+BZ-08,не проверено,,Не описано
+NEW-HL-1,есть,https://johnaugust.com/apps/highland,Highland Fling: гостевая веб-версия для читателей с комментариями (март 2026)
+NEW-HL-2,есть,https://quoteunquoteapps.com/highland-pro/,"Shelf: хранение вырезанных реплик, сниппетов и заметок"
+NEW-HL-3,есть,https://www.screenweaver.ai/blog/highland-2-vs-highland-pro,PDF melting: превращение PDF сценария в редактируемый
+NEW-HL-4,есть,https://quoteunquoteapps.com/highland-pro/,"/Lookup: определения, рифмы и факты слэш-командой"
+NEW-HL-5,есть,https://quoteunquoteapps.com/highland-pro/highland-format,Открытый формат .highland на основе TextBundle (Zip с plain text)
+NEW-HL-6,есть,https://getfreewrite.com/blogs/writing-success/the-power-of-plain-text-screenwriting-with-freewrite-highland-pro,Pro вместе с Freewrite: черновик в Fountain с устройства Freewrite открывается в Highland Pro
+NEW-HL-7,есть,https://apps.apple.com/us/app/highland-pro/id6612007609,Доступность на Apple Vision
+NEW-HL-8,есть,https://quoteunquoteapps.com/highland-pro/,Header/Footer Builder с drag-and-drop
+NEW-HL-9,есть,https://highland-kb.quoteunquoteapps.com/,"Markers, {{INCLUDE}}, {{SERIES}}, {{TIMESTAMP}} (справка Highland 2, в Pro не подтверждены)"
+IO-23,не проверено,,"Добавлено в таксономию 2026-10-28, не проверялось"
+IO-24,не проверено,,"Добавлено в таксономию 2026-10-28, не проверялось"
