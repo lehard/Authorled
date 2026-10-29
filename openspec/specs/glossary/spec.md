@@ -14,7 +14,7 @@
 | Agent | Исполнитель с моделью и инструментами | `GET /agents` |
 | ClaudeAgent | Внешний агент (`BaseExternalAgent`) на `claude-agent-sdk`: Claude Code, работающий на DeepSeek через Anthropic-endpoint LiteLLM-прокси | `agents/engineers.py` |
 | Engineer | `claude-engineer`: агент, работающий с кодом репозитория | `agents/engineers.py` |
-| LiteLLM-прокси | Единственный шлюз к моделям; приложение обращается к нему по псевдонимам `deepseek-fast`, `deepseek-thinking`, `gigachat-embeddings` | `litellm/config.yaml` |
+| LiteLLM-прокси | Единственный шлюз к моделям; приложение обращается к нему по псевдонимам `deepseek-fast`, `deepseek-thinking` и псевдонимы эмбеддингов из `EMBEDDINGS_MODEL` | `litellm/config.yaml` |
 | Team | Группа агентов; `os-manager-internal` работает в режиме `coordinate` | `GET /teams` |
 | OS Manager | Встроенная команда управления платформой (`OSManager`) | `app/main.py` |
 | Company Manager | Встроенный агент CompanyOS `company-manager-internal` | `GET /agents` |
