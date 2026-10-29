@@ -89,6 +89,8 @@ services:
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?DEEPSEEK_API_KEY must be set in .env}
       GIGACHAT_CREDENTIALS: ${GIGACHAT_CREDENTIALS:?GIGACHAT_CREDENTIALS must be set in .env}
       GIGACHAT_SCOPE: ${GIGACHAT_SCOPE:?GIGACHAT_SCOPE must be set in .env}
+      SBER500_API_BASE: ${SBER500_API_BASE:?SBER500_API_BASE must be set in .env}
+      SBER500_API_KEY: ${SBER500_API_KEY:?SBER500_API_KEY must be set in .env}
     healthcheck:
       test:
         - CMD

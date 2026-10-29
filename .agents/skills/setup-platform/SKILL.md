@@ -17,7 +17,7 @@ Take the user from a fresh clone to a running platform with their first agent li
 Kicking off /setup-platform. Here's the map:
 
 1. Docker — confirm it's installed and running
-2. Environment — .env with LiteLLM, DeepSeek and GigaChat keys
+2. Environment — .env with LiteLLM, DeepSeek, GigaChat and Sber500 keys and EMBEDDINGS_MODEL
 3. Boot — build and start the platform containers
 4. Prove it — MCP handshake and tools; an optional agent answer
 5. Connect the UI — os.agno.com, one click
@@ -38,7 +38,7 @@ Read [`AGENTS.md`](../../../AGENTS.md) end to end.
 
 If `.env` does not exist, `cp example.env .env`, then fill its Required block
 (`LITELLM_MASTER_KEY`, `LITELLM_API_KEY` equal to it, `DEEPSEEK_API_KEY`,
-`GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`, `AGENTOS_DB_PASSWORD`) and the auth block (`AUTHENTIK_SECRET_KEY`,
+`GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`, `SBER500_API_BASE`, `SBER500_API_KEY`, `EMBEDDINGS_MODEL`, `AGENTOS_DB_PASSWORD`) and the auth block (`AUTHENTIK_SECRET_KEY`,
 `AUTHENTIK_DB_PASSWORD`, `AUTHENTIK_BOOTSTRAP_EMAIL`, `AUTHENTIK_BOOTSTRAP_PASSWORD`,
 `AUTH_FRONTEND_CLIENT_ID`, `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_DEV_SERVICE_TOKEN`, `AUTH_BRAND_DOMAIN`, `AUTH_ISSUER`;
 generate the secrets with `openssl rand -hex`), and confirm `litellm/certs/ca-bundle.pem` exists:

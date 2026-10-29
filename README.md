@@ -43,7 +43,7 @@ Prefer to set it up yourself? Follow the steps below.
 
 ## Run locally
 
-You'll need Git, Docker with Compose, a DeepSeek API key and GigaChat API credentials.
+You'll need Git, Docker with Compose, a DeepSeek API key, an embeddings provider key (Sber500 gateway or GigaChat API credentials) and the choice of embedding model.
 Make sure Docker is running.
 Run the commands below in a terminal.
 
@@ -56,12 +56,12 @@ cp example.env .env
 ```
 
 Open `.env` and fill the Required block: `LITELLM_MASTER_KEY`, `LITELLM_API_KEY`,
-`DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE` and `AGENTOS_DB_PASSWORD` (password
+`DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`, `SBER500_API_BASE`, `SBER500_API_KEY`, `EMBEDDINGS_MODEL` and `AGENTOS_DB_PASSWORD` (password
 of the database role `agentos` the API connects with), and the block of the
 [auth module](#module-auth): `AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`,
 `AUTHENTIK_BOOTSTRAP_EMAIL`, `AUTHENTIK_BOOTSTRAP_PASSWORD`, `AUTH_FRONTEND_CLIENT_ID`,
 `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_DEV_SERVICE_TOKEN`, `AUTH_BRAND_DOMAIN` and `AUTH_ISSUER`. The CA bundle for
-GigaChat ships in `litellm/certs/ca-bundle.pem` (see [Models](#models)). Then start the platform:
+GigaChat (the Russian Trusted CA) ships in `litellm/certs/ca-bundle.pem` (see [Models](#models)). Then start the platform:
 
 ```sh
 docker compose up -d --build
@@ -215,7 +215,8 @@ to port 8000 on your host. Use a reverse proxy on the host or an HTTPS tunnel.
 ### 1. Configure the host
 
 Production Compose reads `.env`. Fill the Required block (`LITELLM_MASTER_KEY`,
-`LITELLM_API_KEY`, `DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`),
+`LITELLM_API_KEY`, `DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`, `SBER500_API_BASE`,
+`SBER500_API_KEY`, `EMBEDDINGS_MODEL`),
 place `litellm/certs/ca-bundle.pem`, and set `AGENTOS_URL` to your public HTTPS URL,
 a strong `DB_PASS` (password of the bootstrap superuser of PostgreSQL, used only by the init
 services and administration), a strong `AGENTOS_DB_PASSWORD` (the role `agentos` the API
@@ -340,19 +341,29 @@ The application uses only the proxy aliases:
 | --- | --- | --- |
 | `deepseek-fast` | DeepSeek `deepseek-flash`, thinking off | Agents by default |
 | `deepseek-thinking` | DeepSeek `deepseek-v4-pro`, thinking on | OS Manager, Company Manager, Claude Engineer |
-| `gigachat-embeddings` | GigaChat `Embeddings-2` (1024 dimensions) | Knowledge bases |
+| `gigachat-embeddings` | GigaChat API `Embeddings-2` (1024 dimensions) | Knowledge bases, when selected |
+| `giga-embeddings` | Sber500 gateway `giga-embeddings-instruct-480m` (1024 dimensions) | Knowledge bases, when selected |
+| `bge-m3-embeddings` | Sber500 gateway `bge-m3` (1024 dimensions) | Knowledge bases, when selected |
+| `qwen3-embeddings` | Sber500 gateway `qwen3-embedding-0.6b` (1024 dimensions) | Knowledge bases, when selected |
 
-The proxy verifies GigaChat TLS with `litellm/certs/ca-bundle.pem`: the certifi CA bundle
+`EMBEDDINGS_MODEL` in `.env` picks the one embedding alias the API uses; it is required and has no
+default, and an unknown value stops the API at startup. An error from the chosen alias is not
+retried on another one. Only models with 1024 dimensions are accepted (the pgvector HNSW index
+holds at most 2000), and the API rejects any vector of another size. To switch: change
+`EMBEDDINGS_MODEL`, restart the API, **recreate the `shared_knowledge` table and upload the
+documents again**: vectors of different models are incompatible even at the same size.
+
+For `gigachat-embeddings` the proxy verifies GigaChat TLS with `litellm/certs/ca-bundle.pem`: the certifi CA bundle
 with the Russian Trusted Root CA and Sub CA appended. The file is committed; rebuild it with
 `./scripts/build_ca_bundle.sh` (active `.venv`) after a `certifi` update. Without that file
-the proxy does not start. Changing the embedding model changes the vector size; rebuild the knowledge tables.
+the proxy does not start. The Sber500 gateway uses a public certificate.
 
-`Embeddings-2` reads at most 512 tokens, so knowledge bases declare readers that cut
+`gigachat-embeddings` (`Embeddings-2`) reads at most 512 tokens, so knowledge bases declare readers that cut
 documents into chunks of up to 1200 characters ([db/__init__.py](db/__init__.py)). URLs use
 them automatically. When you upload a file, pass the reader explicitly: `reader_id`
 (`pdf`, `docx`, `csv`, `excel`, `markdown`, `text`) in `POST /knowledge/content`, or
 `chunker` with `chunk_size=1200`. Without it, Agno 3.1.10 reads the file with its default
-reader and 5000-character chunks, which exceed the model's limit.
+reader and 5000-character chunks, which exceed that limit.
 
 ## Module auth
 
@@ -404,7 +415,9 @@ add the others when you need them. Docker Compose reads `.env` for both local an
 | `LITELLM_API_KEY` | Key the API and Claude Engineer use to call the proxy (required). The proxy has no key database, so set it to the `LITELLM_MASTER_KEY` value. |
 | `LITELLM_URL` | Proxy address for the API. Local Compose sets `http://litellm:4000`; set it yourself when the API runs on the host. |
 | `DEEPSEEK_API_KEY` | DeepSeek models behind the proxy: agents, OS Manager, Company Manager and Claude Engineer (required). |
-| `GIGACHAT_CREDENTIALS` and `GIGACHAT_SCOPE` | GigaChat Embeddings-2 behind the proxy for knowledge bases (required). Scope is `GIGACHAT_API_PERS` or `GIGACHAT_API_B2B`. |
+| `GIGACHAT_CREDENTIALS` and `GIGACHAT_SCOPE` | GigaChat Embeddings-2 behind the proxy, alias `gigachat-embeddings` (required). Scope is `GIGACHAT_API_PERS` or `GIGACHAT_API_B2B`. |
+| `SBER500_API_BASE` and `SBER500_API_KEY` | Sber500 gateway behind the proxy: aliases `giga-embeddings`, `bge-m3-embeddings`, `qwen3-embeddings` (required). |
+| `EMBEDDINGS_MODEL` | Active embedding alias for the API (required, no default); see [Models](#models). |
 | `PARALLEL_API_KEY` | Optional web search key. Without it, search uses Parallel's MCP server without an API key. |
 | `AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`, `AUTHENTIK_BOOTSTRAP_EMAIL`, `AUTHENTIK_BOOTSTRAP_PASSWORD` | Authentik server secret, password of its database role, first administrator (required, see [Module auth](#module-auth)). |
 | `AUTH_FRONTEND_CLIENT_ID`, `AUTH_FRONTEND_REDIRECT_URI` | Client ID of the Authentik application (also the expected token audience) and the frontend's redirect URI (required). |

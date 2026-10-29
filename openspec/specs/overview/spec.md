@@ -8,7 +8,7 @@
 Стек (по `pyproject.toml`, `Dockerfile`, `compose.yaml`):
 - Backend: Python `>=3.14,<4`; ASGI-приложение `app.main:app` из `AgentOS.get_app()` (FastAPI), сервер uvicorn.
 - Хранилище: PostgreSQL 18 с pgvector (`agnohq/pgvector:18`), SQLAlchemy/psycopg.
-- Модели: DeepSeek через LiteLLM-прокси (`litellm/config.yaml`) по псевдонимам `deepseek-fast` (агенты по умолчанию) и `deepseek-thinking` (OS Manager, Company Manager, Claude Engineer); эмбеддинги — GigaChat `Embeddings-2` (1024 измерения), псевдоним `gigachat-embeddings` (ADR-003).
+- Модели: DeepSeek через LiteLLM-прокси (`litellm/config.yaml`) по псевдонимам `deepseek-fast` (агенты по умолчанию) и `deepseek-thinking` (OS Manager, Company Manager, Claude Engineer); эмбеддинги (1024 измерения) — один из псевдонимов `gigachat-embeddings`, `giga-embeddings`, `bge-m3-embeddings`, `qwen3-embeddings`, выбранный переменной `EMBEDDINGS_MODEL` (ADR-003).
 - Шлюз моделей: LiteLLM-прокси `ghcr.io/berriai/litellm:v1.104.2` (сервис `litellm` в compose).
 - Развёртывание: Docker Compose (`compose.yaml` — разработка, `compose.prod.yaml` — production-override).
 - Frontend: каталог `web/` (монорепозиторий, ADR-001): React + TypeScript на Vite, shadcn/ui на Tailwind CSS; пока содержит дизайн-систему и её витрину, продуктовых экранов нет (`openspec/specs/web/*`). Интерфейс управления платформой — внешний AgentOS UI (`os.agno.com`).

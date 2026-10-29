@@ -21,8 +21,9 @@ __all__ = ["create_knowledge", "db_url", "get_postgres_db"]
 
 DB_ID = "agentos-db"
 
-# GigaChat Embeddings-2 accepts 512 input tokens; 1200 characters of Russian
-# text stay well below it. CSV and Excel keep Agno's row chunking.
+# GigaChat Embeddings-2 (alias gigachat-embeddings) accepts 512 input tokens;
+# 1200 characters of Russian text stay well below it. CSV and Excel keep Agno's
+# row chunking.
 CHUNK_SIZE = 1200
 
 

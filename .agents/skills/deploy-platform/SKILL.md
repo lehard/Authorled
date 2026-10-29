@@ -23,8 +23,8 @@ keys (`modules/auth/jwks/jwks.json`) are public and may be shared to complete co
   before making changes. Use the inputs required by this repository's commands.
 - Set up the project environment if the deploy scripts need it. Use the production
   env file documented in the README; create it from `example.env` only if absent.
-  Configure credentials without printing them: the LiteLLM, DeepSeek and GigaChat
-  keys from the Required block of `example.env`, and `litellm/certs/ca-bundle.pem`
+  Configure credentials without printing them: the LiteLLM, DeepSeek, GigaChat and Sber500
+  keys and `EMBEDDINGS_MODEL` from the Required block of `example.env`, and `litellm/certs/ca-bundle.pem`
   on the host. Replace every `***` placeholder. Check how the deploy scripts load
   settings rather than assuming they read `.env` or exported shell variables.
 - Keep production authentication enabled. Do not upload `RUNTIME_ENV=dev`.

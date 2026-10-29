@@ -13,7 +13,7 @@
 | `auth-module` | архивирован 2026-10-26; остаток — в разделе «Расхождения с контекст-паком» | авторизация: модуль `auth` с полным Authentik, JWT, изоляция |
 | `prepare-auth-module-extraction` | архивирован 2026-10-28; prod не проверялся | подготовка модуля `auth` к выносу: compose-фрагмент, контракт токена, роль `agentos` без доступа к `authentik` |
 
-> Внимание: compose требует ключи LiteLLM, DeepSeek, GigaChat и файл `litellm/certs/ca-bundle.pem`; без них `docker compose up` не стартует.
+> Внимание: compose требует ключи LiteLLM, DeepSeek, GigaChat, Sber500 (`SBER500_API_BASE`, `SBER500_API_KEY`) и файл `litellm/certs/ca-bundle.pem`; без них `docker compose up` не стартует.
 
 ## Живая проверка DeepSeek/LiteLLM/GigaChat
 Из архивированного change `switch-models-to-deepseek-litellm` (tasks 1.1, 6.2–6.7). Ждут ключей. Код, прокси и документация проверены статически и в контейнерах на фиктивных ключах (`tmp/VERIFY.md`). Если проверка требует правки кода или design — новый change.
