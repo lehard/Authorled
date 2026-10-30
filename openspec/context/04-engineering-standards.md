@@ -1,13 +1,13 @@
 ---
 owner: lehard
-updated: 2026-10-24
+updated: 2026-10-30
 ---
 # Engineering Standards
 Стек: Python `>=3.14`, Agno `3.1.10` (FastAPI/uvicorn), PostgreSQL 18 + pgvector, Alembic, pytest, Docker Compose. Линт/типы: ruff (line-length 120, E,F,I,UP), mypy + pydantic plugin.
 
 ## Общее
-- Зависимости — в `pyproject.toml`; `requirements.txt` генерировать `./scripts/generate_requirements.sh`; `uv.lock` не добавлять. После смены зависимостей пересобрать обе цели Dockerfile.
-- Агент: стабильный ID, явные instructions/tools, `default_model()`, общая БД, history и datetime (скилл `create-agent`). Регистрация — `app/main.py`, описания/промпты — `app/config.yaml`.
+- Зависимости — в `agno/pyproject.toml`; `agno/requirements.txt` генерировать `./agno/scripts/generate_requirements.sh`; `uv.lock` не добавлять. После смены зависимостей пересобрать обе цели `agno/Dockerfile`. Окружение — `agno/.venv` (`./agno/scripts/venv_setup.sh`).
+- Агент: стабильный ID, явные instructions/tools, `default_model()`, общая БД, history и datetime (скилл `create-agent`). Регистрация — `agno/app/main.py`, описания/промпты — `agno/app/config.yaml`.
 - Минимум абстракций и инфраструктуры — только под конкретную потребность. Перед правкой — читать исходник и `git status`, держаться scope.
 - Без fallback: отсутствующий/невалидный ввод, конфиг или env — явная ошибка с понятным сообщением.
 
@@ -32,7 +32,7 @@ updated: 2026-10-24
 - формат/линт/типы: `./scripts/validate.sh` (тот же гейт в CI), автоформат `./scripts/format.sh`; `git diff --check`
 - тесты: `pytest` (на реальном PostgreSQL в контейнере)
 - MCP без модели: `./scripts/mcp_check.sh`; поведение агента — `python -m evals`
-- сборка: `docker compose up -d --build`; sandbox: `docker build --target sandbox --load -t agno-sandbox:local .`
+- сборка: `docker compose up -d --build`; sandbox: `docker build --target sandbox --load -t agno-sandbox:local -f agno/Dockerfile .`
 > TODO: точные команды pytest/Alembic и CI-проверки методологии появятся с кодом ядра.
 
 ## Готово, когда

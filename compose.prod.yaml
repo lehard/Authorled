@@ -15,7 +15,7 @@
 # Postgres rebinds to 127.0.0.1 instead of gaining a second mapping.
 # Compose passes .env through unchanged, placeholders included: a copied
 # example.env ships LITELLM_MASTER_KEY, LITELLM_API_KEY, DEEPSEEK_API_KEY and
-# GIGACHAT_CREDENTIALS as *** placeholders, and there is no script in front of
+# GIGACHAT_CREDENTIALS and SBER500_API_KEY as *** placeholders, and there is no script in front of
 # the containers to strip them. Fill each one with a real value before starting
 # production; the LiteLLM proxy and the API require all of them.
 services:
@@ -25,11 +25,11 @@ services:
     # (written by authentik-jwks-export) that JWT_JWKS_FILE points to.
     volumes: !override
       - type: bind
-        source: ./modules/auth/jwks
-        target: /app/modules/auth/jwks
+        source: ./auth/jwks
+        target: /app/auth/jwks
         read_only: true
     # AgentCore sandbox checkpoints need a persistent /data mount, which
-    # app/sandbox.py refuses to run without (docs/sandboxes.md). Add this named
+    # agno/app/sandbox.py refuses to run without (agno/docs/sandboxes.md). Add this named
     # volume to the list above before enabling agentcore_sandbox(),
     # and uncomment the top-level `volumes:` block at the end of this file.
     #   - agentos-checkpoints:/data

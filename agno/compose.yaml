@@ -1,0 +1,132 @@
+# Backend module (agno/): the role the API connects with, the LiteLLM proxy and the API.
+# compose.yaml at the repository root includes this file; relative paths resolve from agno/,
+# variables come from the root .env. The services use agentos-db, the agentos network and
+# the services of the auth module declared in the other files.
+services:
+  # The role the API connects with: not a superuser, owns schema `ai`, no access to schema
+  # `authentik` (db/init.sql). Runs on every `up` (idempotent) under the bootstrap user;
+  # the API starts only after it succeeds.
+  agentos-db-init:
+    image: agnohq/pgvector:18
+    container_name: agentos-db-init
+    restart: "no"
+    entrypoint: ["psql", "-v", "ON_ERROR_STOP=1", "-v", "agentos_password=${AGENTOS_DB_PASSWORD:?AGENTOS_DB_PASSWORD must be set in .env}", "-f", "/init/init.sql"]
+    volumes:
+      - type: bind
+        source: ./db/init.sql
+        target: /init/init.sql
+        read_only: true
+        bind:
+          create_host_path: false
+    environment:
+      PGHOST: agentos-db
+      PGPORT: "5432"
+      PGUSER: ai
+      PGPASSWORD: ai
+      PGDATABASE: ai
+    depends_on:
+      agentos-db:
+        condition: service_healthy
+      # Both init scripts grant CREATE on the database; run concurrently on a new database,
+      # PostgreSQL rejects one of them ("tuple concurrently updated"). The backend waits for the
+      # auth module, never the reverse.
+      authentik-db-init:
+        condition: service_completed_successfully
+    networks:
+      - agentos
+
+  # LiteLLM proxy: every chat and embedding call goes through it (litellm/config.yaml).
+  # GigaChat TLS is verified against litellm/certs/ca-bundle.pem: the certifi CA
+  # bundle with the Russian Trusted Root CA and Sub CA appended
+  # (agno/scripts/build_ca_bundle.sh). The bind mount
+  # does not create a missing file, so the proxy refuses to start without it.
+  litellm:
+    image: ghcr.io/berriai/litellm:v1.104.2
+    container_name: agentos-litellm
+    restart: unless-stopped
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    ports:
+      - "127.0.0.1:4000:4000"
+    volumes:
+      - type: bind
+        source: ./litellm/config.yaml
+        target: /app/config.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./litellm/certs/ca-bundle.pem
+        target: /certs/ca-bundle.pem
+        read_only: true
+        bind:
+          create_host_path: false
+    environment:
+      SSL_CERT_FILE: /certs/ca-bundle.pem
+      REQUESTS_CA_BUNDLE: /certs/ca-bundle.pem
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?LITELLM_MASTER_KEY must be set in .env}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?DEEPSEEK_API_KEY must be set in .env}
+      GIGACHAT_CREDENTIALS: ${GIGACHAT_CREDENTIALS:?GIGACHAT_CREDENTIALS must be set in .env}
+      GIGACHAT_SCOPE: ${GIGACHAT_SCOPE:?GIGACHAT_SCOPE must be set in .env}
+      SBER500_API_BASE: ${SBER500_API_BASE:?SBER500_API_BASE must be set in .env}
+      SBER500_API_KEY: ${SBER500_API_KEY:?SBER500_API_KEY must be set in .env}
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4000/health/liveliness', timeout=5)"
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 20s
+    networks:
+      - agentos
+
+  agentos-api:
+    build:
+      context: ..
+      dockerfile: agno/Dockerfile
+      target: agentos
+    container_name: agentos-api
+    image: ${IMAGE_NAME:-agentos}:${IMAGE_TAG:-latest}
+    # --reload-dir limits the watcher to dirs that contain runtime code.
+    command: >
+      uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      --reload-dir /app/agno/agents --reload-dir /app/agno/app --reload-dir /app/agno/db --reload-dir /app/agno/evals
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ..:/app
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      RUNTIME_ENV: dev
+      AGNO_DEBUG: "True"
+      WAIT_FOR_DB: "True"
+      AGENTOS_URL: http://127.0.0.1:8000
+      AGNO_TELEMETRY: "false"
+      DB_DRIVER: postgresql+psycopg
+      DB_HOST: agentos-db
+      DB_PORT: "5432"
+      DB_USER: agentos
+      DB_PASS: ${AGENTOS_DB_PASSWORD:?AGENTOS_DB_PASSWORD must be set in .env}
+      DB_DATABASE: ai
+      LITELLM_URL: http://litellm:4000
+      LITELLM_API_KEY: ${LITELLM_API_KEY:?LITELLM_API_KEY must be set in .env}
+      # Module auth: tokens are issued by Authentik, public keys come from authentik-jwks-export.
+      JWT_JWKS_FILE: /app/auth/jwks/jwks.json
+      AUTH_ISSUER: ${AUTH_ISSUER:?AUTH_ISSUER must be set in .env}
+      AUTH_FRONTEND_CLIENT_ID: ${AUTH_FRONTEND_CLIENT_ID:?AUTH_FRONTEND_CLIENT_ID must be set in .env}
+    depends_on:
+      agentos-db-init:
+        condition: service_completed_successfully
+      litellm:
+        condition: service_healthy
+      authentik-jwks-export:
+        condition: service_completed_successfully
+    networks:
+      - agentos
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

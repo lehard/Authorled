@@ -15,7 +15,7 @@ report behavior changes separately unless the user has authorized their repair.
 
 Inspect the working tree before editing and preserve concurrent changes. Review the named
 files first. A repository-wide pass covers `README.md`, `AGENTS.md`, `example.env`, skills,
-`app/`, `agents/`, `teams/`, `db/`, `evals/`, `scripts/`, and build/deployment configuration.
+`agno/app/`, `agno/agents/`, `agno/teams/`, `agno/db/`, `agno/evals/`, `scripts/`, and build/deployment configuration.
 Include user-added workflows or other directories when present. Exclude environments,
 caches, generated files and Git internals from content scans. Do not print env-file values.
 
@@ -28,23 +28,23 @@ report the runtime verification gap.
 
 | Check | Evidence |
 |---|---|
-| Application agents and teams are deliberately registered, with stable IDs | Source declarations, `app/main.py`, `app/config.yaml` |
+| Application agents and teams are deliberately registered, with stable IDs | Source declarations, `agno/app/main.py`, `agno/app/config.yaml` |
 | Framework-owned components stay in Agno | `OSManager(...)`, `CompanyConfig(...)`, installed framework source |
-| Shared resources and Studio capabilities match documentation | `app/registry.py`, `db/`, AgentOS registration |
+| Shared resources and Studio capabilities match documentation | `agno/app/registry.py`, `agno/db/`, AgentOS registration |
 | Configuration names, defaults and prerequisites agree | Environment reads, `example.env`, README, Compose, deployment scripts |
 | Documented commands and file paths work | Scripts, skills, CLI help and installed signatures |
 | Skills remain discoverable and their routing is coherent | Frontmatter, relative links, `.claude/skills`, `CLAUDE.md` |
-| Eval targets, tool names and CLI examples exist | `evals/cases.py`, `evals/__main__.py`, installed Agno eval APIs |
-| Sandbox documentation matches execution and persistence requirements | `app/sandbox.py`, `agents/engineers.py`, Dockerfile, README |
-| MCP claims match the exposed interface and authentication behavior | `app/interfaces.py`, `app/main.py`, `scripts/mcp_check.sh` |
+| Eval targets, tool names and CLI examples exist | `agno/evals/cases.py`, `agno/evals/__main__.py`, installed Agno eval APIs |
+| Sandbox documentation matches execution and persistence requirements | `agno/app/sandbox.py`, `agno/agents/engineers.py`, `agno/Dockerfile`, README |
+| MCP claims match the exposed interface and authentication behavior | `agno/app/interfaces.py`, `agno/app/main.py`, `scripts/mcp_check.sh` |
 
-Do not register every file found under `agents/` or invent manifest entries for internal
+Do not register every file found under `agno/agents/` or invent manifest entries for internal
 components: determine whether it is an intended public component, a helper or framework-owned.
 OS Manager, its members and Company Manager are framework-owned; do not restore
 the old application-owned manager/builder/engineer stack. OS, Company and queue storage
 reuse `get_postgres_db()`; knowledge content adapters have distinct IDs.
 
-`app/company.py` declares `agentos-maintenance`: Company Manager reviews releases and
+`agno/app/company.py` declares `agentos-maintenance`: Company Manager reviews releases and
 the codebase every day at 09:00 UTC, proposes up to three Backlog Tasks and has automatic
 acceptance disabled. Verify the declaration against saved schedule state; do not infer
 successful execution from its presence. Before removing or renaming a component in an
@@ -57,7 +57,7 @@ historical sessions, notes and Company records.
 Use static checks first:
 
 ```sh
-source .venv/bin/activate
+source agno/.venv/bin/activate
 ./scripts/validate.sh
 git diff --check
 ```
@@ -76,7 +76,7 @@ initialization and required tool availability, not an agent answer.
 Run model probes or evals only within the user's authorized scope and budget. Inspect
 available cases before selecting a tag; do not assume `release` or `live` cases exist.
 Even eval CLI help/list commands import knowledge storage and require PostgreSQL; inspect
-`evals/cases.py` directly when the database is unavailable.
+`agno/evals/cases.py` directly when the database is unavailable.
 Evals use the application's database and persist sessions and results. Use explicitly owned
 fixtures for mutating cases; do not restore snapshot-diff cleanup or delete historical data.
 Do not smoke every engineer automatically: those runs can execute code and modify workspaces.

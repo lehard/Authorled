@@ -13,7 +13,7 @@ For Docker or an existing Kubernetes cluster, follow the repository's Compose or
 Helm instructions.
 
 Never print credentials, the MCP connect secret or the Authentik secrets. The Authentik public
-keys (`modules/auth/jwks/jwks.json`) are public and may be shared to complete configuration.
+keys (`auth/jwks/jwks.json`) are public and may be shared to complete configuration.
 
 ## 1. Prepare
 
@@ -23,19 +23,19 @@ keys (`modules/auth/jwks/jwks.json`) are public and may be shared to complete co
   before making changes. Use the inputs required by this repository's commands.
 - Set up the project environment if the deploy scripts need it. Use the production
   env file documented in the README; create it from `example.env` only if absent.
-  Configure credentials without printing them: the LiteLLM, DeepSeek and GigaChat
-  keys from the Required block of `example.env`, and `litellm/certs/ca-bundle.pem`
+  Configure credentials without printing them: the LiteLLM, DeepSeek, GigaChat and Sber500
+  keys and `EMBEDDINGS_MODEL` from the Required block of `example.env`, and `agno/litellm/certs/ca-bundle.pem`
   on the host. Replace every `***` placeholder. Check how the deploy scripts load
   settings rather than assuming they read `.env` or exported shell variables.
 - Keep production authentication enabled. Do not upload `RUNTIME_ENV=dev`.
   Set strong `DB_PASS` (bootstrap superuser) and `AGENTOS_DB_PASSWORD` (role `agentos` of the API).
-  Tokens come from Authentik (module `auth`, services in `modules/auth/compose.yaml`): fill the auth block of
+  Tokens come from Authentik (module `auth`, services in `auth/compose.yaml`): fill the auth block of
   the production env file with strong values (`AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`,
   `AUTHENTIK_BOOTSTRAP_PASSWORD`, `AUTH_DEV_SERVICE_TOKEN`), the frontend's `AUTH_FRONTEND_*`
   values, `AUTH_BRAND_DOMAIN` (host name of Authentik) and `AUTH_ISSUER` (public HTTPS address of Authentik plus `/application/o/authorled/`).
   `authentik-jwks-export` writes `JWT_JWKS_FILE` at start; the API does not start without it.
 - If a sandbox is requested, configure its provider and `REPOSITORY` in
-  `app/sandbox.py` using the [sandbox setup guide](../../../docs/sandboxes.md).
+  `agno/app/sandbox.py` using the [sandbox setup guide](../../../agno/docs/sandboxes.md).
   AgentCore needs an existing runtime, host AWS access, and persistent checkpoints at `/data`. Confirm the
   deployment target supports that mount before enabling it. Use volume flags only
   if this repository's deploy scripts support them. Bedrock settings and private

@@ -1,0 +1,133 @@
+# Module auth (openspec/specs/auth): the Authentik services. compose.yaml at the repository
+# root includes this file; relative paths resolve from auth/, variables come from the
+# root .env. The services use agentos-db and the agentos network declared in the root file.
+services:
+  # Module auth (auth/): Authentik runs in the shared database, schema
+  # `authentik`, under its own role. authentik-db-init creates both on every `up`
+  # (idempotent); the server and worker start only after it succeeds.
+  authentik-db-init:
+    image: agnohq/pgvector:18
+    container_name: authentik-db-init
+    restart: "no"
+    entrypoint: ["psql", "-v", "ON_ERROR_STOP=1", "-v", "authentik_password=${AUTHENTIK_DB_PASSWORD:?AUTHENTIK_DB_PASSWORD must be set in .env}", "-f", "/init/init.sql"]
+    volumes:
+      - type: bind
+        source: ./db/init.sql
+        target: /init/init.sql
+        read_only: true
+        bind:
+          create_host_path: false
+    environment:
+      PGHOST: agentos-db
+      PGPORT: "5432"
+      PGUSER: ai
+      PGPASSWORD: ai
+      PGDATABASE: ai
+    depends_on:
+      agentos-db:
+        condition: service_healthy
+    networks:
+      - agentos
+
+  # Authentik: identity provider with its own UI (login, profile, admin). Blueprints in
+  # auth/blueprints configure it from empty state. The image tag is pinned.
+  authentik-server:
+    image: ghcr.io/goauthentik/server:2026.8.5
+    container_name: authentik-server
+    restart: unless-stopped
+    command: server
+    ports:
+      - "127.0.0.1:9000:9000"
+    volumes:
+      - type: bind
+        source: ./blueprints
+        target: /blueprints/custom
+        read_only: true
+        bind:
+          create_host_path: false
+    environment: &authentik-env
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?AUTHENTIK_SECRET_KEY must be set in .env}
+      AUTHENTIK_POSTGRESQL__HOST: agentos-db
+      AUTHENTIK_POSTGRESQL__PORT: "5432"
+      AUTHENTIK_POSTGRESQL__USER: authentik
+      AUTHENTIK_POSTGRESQL__NAME: ai
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_DB_PASSWORD:?AUTHENTIK_DB_PASSWORD must be set in .env}
+      AUTHENTIK_POSTGRESQL__DEFAULT_SCHEMA: authentik
+      # PostgreSQL is reached only over the compose network, without TLS.
+      AUTHENTIK_POSTGRESQL__SSLMODE: disable
+      AUTHENTIK_BOOTSTRAP_EMAIL: ${AUTHENTIK_BOOTSTRAP_EMAIL:?AUTHENTIK_BOOTSTRAP_EMAIL must be set in .env}
+      AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_BOOTSTRAP_PASSWORD:?AUTHENTIK_BOOTSTRAP_PASSWORD must be set in .env}
+      # Read by the blueprints (!Env).
+      AUTH_FRONTEND_CLIENT_ID: ${AUTH_FRONTEND_CLIENT_ID:?AUTH_FRONTEND_CLIENT_ID must be set in .env}
+      AUTH_FRONTEND_REDIRECT_URI: ${AUTH_FRONTEND_REDIRECT_URI:?AUTH_FRONTEND_REDIRECT_URI must be set in .env}
+      AUTH_DEV_SERVICE_TOKEN: ${AUTH_DEV_SERVICE_TOKEN:?AUTH_DEV_SERVICE_TOKEN must be set in .env}
+      AUTH_BRAND_DOMAIN: ${AUTH_BRAND_DOMAIN:?AUTH_BRAND_DOMAIN must be set in .env}
+    healthcheck:
+      test: ["CMD", "ak", "healthcheck"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 90s
+    depends_on:
+      authentik-db-init:
+        condition: service_completed_successfully
+    networks:
+      - agentos
+
+  authentik-worker:
+    image: ghcr.io/goauthentik/server:2026.8.5
+    container_name: authentik-worker
+    restart: unless-stopped
+    command: worker
+    volumes:
+      - type: bind
+        source: ./blueprints
+        target: /blueprints/custom
+        read_only: true
+        bind:
+          create_host_path: false
+    environment: *authentik-env
+    healthcheck:
+      test: ["CMD", "ak", "healthcheck"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 90s
+    # The server applies the database migrations; the worker starts after it is healthy.
+    depends_on:
+      authentik-db-init:
+        condition: service_completed_successfully
+      authentik-server:
+        condition: service_healthy
+    networks:
+      - agentos
+
+  # Writes the public signing keys of Authentik to auth/jwks/jwks.json, which
+  # the API reads as JWT_JWKS_FILE. Fails (and the API does not start) when it cannot.
+  # Re-run after rotating the signing key: docker compose run --rm authentik-jwks-export
+  authentik-jwks-export:
+    image: curlimages/curl:8.11.1
+    container_name: authentik-jwks-export
+    restart: "no"
+    entrypoint: ["/bin/sh", "/export/export.sh"]
+    user: root
+    volumes:
+      - type: bind
+        source: ./jwks
+        target: /out
+      - type: bind
+        source: ./jwks/export.sh
+        target: /export/export.sh
+        read_only: true
+        bind:
+          create_host_path: false
+    environment:
+      AUTHENTIK_URL: http://authentik-server:9000
+      AUTH_APPLICATION_SLUG: authorled
+      # Blueprints create the provider shortly after the server is healthy.
+      AUTH_JWKS_WAIT_SECONDS: "180"
+    depends_on:
+      authentik-server:
+        condition: service_healthy
+    networks:
+      - agentos

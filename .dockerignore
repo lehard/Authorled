@@ -41,7 +41,7 @@ package.json
 package-lock.json
 
 # Module auth: public signing keys exported from Authentik at start
-modules/auth/jwks/jwks.json*
+auth/jwks/jwks.json*
 
 # Frontend: built and deployed separately (ADR-001), not part of the backend image.
 web/

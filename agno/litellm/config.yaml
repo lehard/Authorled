@@ -1,0 +1,53 @@
+# LiteLLM proxy: the only path from AgentOS and Claude Code to model providers.
+# The application knows only the aliases below (app/settings.py); provider model
+# names change here. Keys come from the proxy container's environment.
+model_list:
+  # Agents by default: DeepSeek without thinking.
+  - model_name: deepseek-fast
+    litellm_params:
+      model: deepseek/deepseek-flash
+      api_key: os.environ/DEEPSEEK_API_KEY
+      thinking:
+        type: disabled
+
+  # OS Manager, Company Manager and Claude Code: DeepSeek with thinking.
+  - model_name: deepseek-thinking
+    litellm_params:
+      model: deepseek/deepseek-v4-pro
+      api_key: os.environ/DEEPSEEK_API_KEY
+
+  # Knowledge embeddings, GigaChat API: Embeddings-2, 1024 dimensions, 512 input tokens.
+  # The GigaChat provider reads GIGACHAT_CREDENTIALS and GIGACHAT_SCOPE from the
+  # environment. drop_params only here: OpenAIEmbedder always sends `dimensions`,
+  # which this provider rejects; the model's fixed 1024 matches app/settings.py.
+  - model_name: gigachat-embeddings
+    litellm_params:
+      model: gigachat/Embeddings-2
+      drop_params: true
+
+  # Knowledge embeddings on the Sber500 gateway (OpenAI-compatible LiteLLM).
+  # All three return 1024 dimensions. drop_params: the gateway rejects `dimensions`,
+  # which OpenAIEmbedder always sends. The active alias is chosen by EMBEDDINGS_MODEL.
+  - model_name: giga-embeddings
+    litellm_params:
+      model: openai/giga-embeddings-instruct-480m
+      api_base: os.environ/SBER500_API_BASE
+      api_key: os.environ/SBER500_API_KEY
+      drop_params: true
+
+  - model_name: bge-m3-embeddings
+    litellm_params:
+      model: openai/bge-m3
+      api_base: os.environ/SBER500_API_BASE
+      api_key: os.environ/SBER500_API_KEY
+      drop_params: true
+
+  - model_name: qwen3-embeddings
+    litellm_params:
+      model: openai/qwen3-embedding-0.6b
+      api_base: os.environ/SBER500_API_BASE
+      api_key: os.environ/SBER500_API_KEY
+      drop_params: true
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY

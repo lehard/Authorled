@@ -8,7 +8,7 @@
  *
  * Themes are selected by data-theme on <html> (light, sepia, dark); layers 2–3 are declared on
  * every themed element so a subtree with its own data-theme resolves its own values.
- * This is the only file allowed to contain raw colours (scripts/check_web_tokens.sh).
+ * This is the only file allowed to contain raw colours (web/scripts/check_web_tokens.sh).
  */
 @import "tailwindcss";
 @import "tw-animate-css";
