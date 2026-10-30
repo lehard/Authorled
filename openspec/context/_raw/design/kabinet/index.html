@@ -366,6 +366,45 @@
   /* ——— Связки: старт, этап с пустого листа, изменение решения, библия и карточки ——— */
   .app.bare { grid-template-columns: 0 minmax(0, 1fr); }
   .app.bare .rail { display: none; }
+  /* ——— Вход и регистрация: страницы Authentik в оформлении «Кабинета» ——— */
+  .app.signin ~ .ask, .app.signin ~ .tools > :not(.themes):not(.set-btn) { display: none; }
+  .auth { width: 440px; max-width: 100%; align-self: center; }
+  .auth .brand { display: flex; align-items: center; gap: 10px; margin: 0 0 22px 4px; font-family: var(--font-prose); font-size: 22px; color: var(--ink); }
+  .auth .brand i { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(160deg, var(--accent), oklch(from var(--accent) calc(l - .12) c h)); display: inline-block; }
+  .au-card { background: var(--paper); border-radius: 22px; box-shadow: var(--shadow); padding: 34px 36px 28px; }
+  .au-card h1 { font-family: var(--font-prose); font-size: 30px; font-weight: 500; letter-spacing: -.015em; line-height: 1.15; margin: 0 0 8px; }
+  .au-card .lede { color: var(--ink-2); font-size: 14.5px; line-height: 1.5; margin: 0 0 22px; }
+  .au-card .lede b { color: var(--ink); font-weight: 600; }
+  .au-card label { display: block; font-size: 13px; color: var(--ink-2); margin-bottom: 6px; }
+  .au-card .field { max-width: none; height: 44px; font-size: 15.5px; }
+  .au-card .field.bad { box-shadow: inset 0 0 0 1.5px var(--bad); }
+  .au-err { color: var(--bad); font-size: 13px; margin: 8px 0 0; }
+  .au-go { width: 100%; height: 44px; margin-top: 16px; border-radius: 22px; background: var(--accent); color: var(--accent-ink); font-size: 15px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 8px 20px -8px oklch(from var(--accent) l c h / .7); }
+  .au-go:disabled { opacity: .5; box-shadow: none; cursor: not-allowed; }
+  .au-alt { width: 100%; height: 40px; margin-top: 8px; border-radius: 20px; font-size: 14px; color: var(--ink-2); }
+  .au-alt:hover { background: oklch(from var(--ink) l c h / .05); color: var(--ink); }
+  .au-links { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 14px; margin-top: 16px; font-size: 13px; color: var(--ink-3); }
+  .au-links .linkbtn { font-size: 13px; }
+  .au-code { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+  .au-code input { width: 100%; height: 54px; border: 0; border-radius: 12px; background: var(--desk, var(--paper)); box-shadow: inset 0 0 0 1px var(--line); text-align: center; font-family: var(--font-prose); font-size: 26px; color: var(--ink); outline: 0; font-variant-numeric: tabular-nums; }
+  .au-code input:focus { box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .au-code.bad input { box-shadow: inset 0 0 0 1.5px var(--bad); }
+  .au-who { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: oklch(from var(--ink) l c h / .04); margin-bottom: 18px; font-size: 14px; }
+  .au-who .av { width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 600; font-size: 13px; }
+  .au-who .linkbtn { margin-left: auto; }
+  .au-steps { display: flex; gap: 6px; margin-bottom: 18px; } .au-steps i { height: 4px; flex: 1; border-radius: 2px; background: var(--line); } .au-steps i.on { background: var(--accent); }
+  .au-pass { position: relative; } .au-pass .field { padding-right: 84px; }
+  .au-pass button { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 12.5px; color: var(--ink-3); padding: 4px 8px; border-radius: 8px; }
+  .au-meter { display: flex; gap: 4px; margin-top: 8px; } .au-meter i { height: 4px; flex: 1; border-radius: 2px; background: var(--line); } .au-meter i.on { background: var(--ok); }
+  .au-note { display: flex; gap: 8px; margin-top: 16px; padding: 10px 12px; border-radius: 12px; background: var(--ai-soft); color: var(--ink-2); font-size: 13px; line-height: 1.45; } .au-note .i { color: var(--ai); flex: none; margin-top: 1px; }
+  .au-foot { margin: 16px 4px 0; font-size: 12px; color: var(--ink-3); line-height: 1.5; text-align: center; }
+  .au-demo { margin: 14px 4px 0; font-size: 12px; color: var(--ink-3); text-align: center; }
+  .au-demo b { color: var(--ink-2); }
+  @media (max-width: 600px) { .au-card { padding: 26px 20px 22px; } .au-card h1 { font-size: 26px; } .au-code { gap: 6px; } .au-code input { height: 48px; font-size: 22px; } }
+  .sec-dev { display: grid; gap: 8px; }
+  .sec-dev > div { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+  .sec-dev small { color: var(--ink-3); font-size: 12.5px; }
+  .sec-dev .chipbtn { margin-left: auto; }
   .calm .stage, .calm .note:not(.fresh) { animation: none; }
   .step.link::before { display: none; }
   .step.link .dot { color: var(--ink-3); }
@@ -1487,6 +1526,7 @@ const STATE = {
   tlSel: 14, tlThreads: true, tlKnow: true, grSel: 14, tnSel: 14, tnMood: ["v", "a"], tension: {}, relAt: 14, relSel: "va", relFocus: "v", relView: "arcs",
   ibSel: 10, ibEdit: null, ibRename: null, ibGone: [], ibUndo: null, ibPos: {}, ibLinks: ["1-9", "1-4", "13-14", "3-5", "2-5", "2-16", "5-17", "6-8", "7-8"], ibSugg: ["4-10", "6-12"], ibLink: null, ibYes: {}, ibNo: [], ibNew: [], ibWires: true, ibShowGrew: true, ibGroups: true, ibView: "board", ibCam: null, ibGroupSugg: true,
   goal: { day: 500, pages: 110, by: "2026-11-30", count: "text", chip: true, edit: false }, wrToday: 340,
+  au: { step: "email", email: "", known: false, hasPass: false, err: "", left: 5, wait: 0, show: false, newPass: "" }, secPass: true,
   // Рамки групп на доске импульсов: координаты в точках доски
   ibFrames: [{ id: "lake", name: "Озеро", x: 0, y: 0, w: 620, h: 452 }, { id: "vera", name: "Вера и тема", x: 700, y: 0, w: 620, h: 452 }, { id: "kitchen", name: "Кухня, ночь", x: 1400, y: 0, w: 420, h: 452 }],
 };
@@ -1640,6 +1680,40 @@ const VIEWS = {
         <div class="elt" id="elt" hidden></div>
       </article>
       <aside class="margin" id="margin" data-f="${STATE.mfilter}">${mfilterHtml(ids)}${ids.includes(14) ? sceneNotes() : ""}${STATE.dyn.filter((d) => ids.includes(d.sc)).map(dynNote).join("")}</aside></div>`;
+  },
+
+  // ——— Вход и регистрация (страницы Authentik на домене продукта, в оформлении «Кабинета») ———
+  auth: () => {
+    const a = STATE.au, who = `<div class="au-who"><span class="av">${esc(a.email[0] || "?").toUpperCase()}</span>${esc(a.email)}<button class="linkbtn" data-act="au-back">Изменить</button></div>`;
+    const err = a.err ? `<p class="au-err">${a.err}</p>` : "";
+    const steps = (n) => a.known ? "" : `<div class="au-steps">${[1, 2, 3].map((i) => `<i class="${i <= n ? "on" : ""}"></i>`).join("")}</div>`;
+    const pass = (id, ph, ac) => `<div class="au-pass"><input class="field ${a.err ? "bad" : ""}" id="${id}" type="${a.show ? "text" : "password"}" autocomplete="${ac}" placeholder="${ph}" /><button data-act="au-show">${a.show ? "Скрыть" : "Показать"}</button></div>`;
+    const card = {
+      email: `<h1>Вход в Authorled</h1><p class="lede">Введите почту. Если аккаунта ещё нет, создадим его — пароль не нужен.</p>
+        <label for="auemail">Почта</label><input class="field ${a.err ? "bad" : ""}" id="auemail" type="email" autocomplete="email" inputmode="email" placeholder="name@example.com" value="${esc(a.email)}" />${err}
+        <button class="au-go" data-act="au-email">Продолжить ${ico("arrow")}</button>`,
+      password: `<h1>Пароль</h1>${who}<label for="aupass">Пароль</label>${pass("aupass", "", "current-password")}${err}
+        <button class="au-go" data-act="au-pass">Дальше ${ico("arrow")}</button>
+        <div class="au-links"><button class="linkbtn" data-act="au-forgot">Забыли пароль?</button><span>Потом — код из письма</span></div>`,
+      code: `${steps(1)}<h1>${a.known ? "Код из письма" : "Подтвердите почту"}</h1><p class="lede">Отправили 6 цифр на <b>${esc(a.email)}</b>. Код действует 10 минут.</p>
+        <div class="au-code ${a.err ? "bad" : ""}" role="group" aria-label="Код из письма">${[0, 1, 2, 3, 4, 5].map((i) => `<input data-code="${i}" inputmode="numeric" autocomplete="${i ? "off" : "one-time-code"}" maxlength="1" aria-label="Цифра ${i + 1}" />`).join("")}</div>${err}
+        <button class="au-go" data-act="au-code" id="aucodego" disabled>${a.known ? "Войти" : "Подтвердить"} ${ico("arrow")}</button>
+        <div class="au-links"><span id="auwait">${a.wait ? `Отправить ещё раз через 0:${String(a.wait).padStart(2, "0")}` : `<button class="linkbtn" data-act="au-resend">Отправить ещё раз</button>`}</span><button class="linkbtn" data-act="au-back">Другая почта</button></div>
+        <div class="au-note">${ico("clock")}<span>Письма нет? Проверьте «Спам» и «Промоакции». Отправитель — no-reply@authorled.ru.</span></div>`,
+      name: `${steps(2)}<h1>Как вас зовут?</h1><p class="lede">Имя видно на титульном листе и в заметках. Поменять можно в настройках.</p>
+        <label for="auname">Имя и фамилия</label><input class="field" id="auname" autocomplete="name" placeholder="Например, Анна Северова" />
+        <button class="au-go" data-act="au-name">Дальше ${ico("arrow")}</button>`,
+      offer: `${steps(3)}<h1>Пароль — по желанию</h1><p class="lede">Код из письма нужен при каждом входе. Пароль добавит вторую защиту: без него войти не сможет даже тот, у кого есть доступ к вашей почте.</p>
+        <label for="aunew">Новый пароль</label>${pass("aunew", "Не короче 10 символов", "new-password")}<div class="au-meter" id="aumeter"><i></i><i></i><i></i><i></i></div>${err}
+        <button class="au-go" data-act="au-setpass">Сохранить и войти</button><button class="au-alt" data-act="au-skip">Позже — задам в настройках</button>`,
+      reset: `<h1>Новый пароль</h1>${who}<p class="lede">Почта подтверждена кодом. Задайте новый пароль или войдите без него — тогда пароль будет снят.</p>
+        <label for="aunew">Новый пароль</label>${pass("aunew", "Не короче 10 символов", "new-password")}<div class="au-meter" id="aumeter"><i></i><i></i><i></i><i></i></div>${err}
+        <button class="au-go" data-act="au-setpass">Сохранить и войти</button><button class="au-alt" data-act="au-nopass">Войти без пароля</button>`,
+    }[a.step];
+    const demo = { email: `В макете <b>author@example.com</b> — аккаунт с паролем, <b>vera@example.com</b> — без пароля, другая почта — новый аккаунт.`, code: `В макете подходит любой код, кроме <b>000000</b>.`, password: `В макете подходит любой пароль, кроме <b>неверный</b>.` }[a.step];
+    return `<div class="stage"><div class="auth"><div class="brand"><i></i>Authorled</div><div class="au-card">${card}</div>
+      <p class="au-foot">Продолжая, вы принимаете <button class="linkbtn">условия</button> и <button class="linkbtn">политику конфиденциальности</button>. Ваши тексты не используются для обучения моделей.</p>
+      ${demo ? `<p class="au-demo">${demo}</p>` : ""}</div></div>`;
   },
 
   // ——— Связка 1: полка, новая история, разбор рукописи ———
@@ -1852,7 +1926,7 @@ const VIEWS = {
     const tog = (key) => `<button class="toggle ${s[key] ? "on" : ""}" data-act="set-t" data-k="${key}"><i></i></button>`;
     const theme = document.documentElement.dataset.theme;
     const sw = (k, t, desk, paper) => `<button class="swatch" data-theme-btn="${k}" aria-pressed="${theme === k}"><span class="sw" style="background:${desk}"><i style="background:${paper}"></i></span>${t}</button>`;
-    const nav = [["s-look", "Внешний вид"], ["s-editor", "Редактор"], ["s-ai", "Соавтор"], ["s-data", "Данные"], ["s-acc", "Аккаунт"]].map(([id, t]) => `<button data-act="set-go" data-k="${id}">${t}</button>`).join("");
+    const nav = [["s-look", "Внешний вид"], ["s-editor", "Редактор"], ["s-ai", "Соавтор"], ["s-sec", "Вход"], ["s-data", "Данные"], ["s-acc", "Аккаунт"]].map(([id, t]) => `<button data-act="set-go" data-k="${id}">${t}</button>`).join("");
     const mode = (v, t, d) => `<button class="aimode ${s.ai === v ? "on" : ""}" data-act="set" data-k="ai:${v}"><b>${t}</b>${d}</button>`;
     return `<div class="stage"><article class="sheet wide">
       <button class="back" data-act="back">${ico("back")}Назад</button>
@@ -1879,6 +1953,17 @@ const VIEWS = {
           <div class="srow"><div><b>Обращение</b></div><div>${seg("address", [["vy", "На «вы»"], ["ty", "На «ты»"]])}</div></div>
           <div class="srow"><div><b>Язык</b></div><div><span class="chip">Русский</span><p class="muted">Другие языки — после первой версии.</p></div></div>
         </section>
+        <section id="s-sec"><h2 class="set-h">Вход и безопасность</h2>
+          <div class="srow"><div><b>Почта для входа</b><small>на неё приходит код</small></div><div><input class="field" value="author@example.com" readonly aria-label="Почта для входа" /><p class="muted">Сменить — код придёт на новый адрес. <button class="linkbtn" data-act="demo" data-k="Код отправлен на новый адрес. Старый адрес работает, пока новый не подтверждён.">Сменить почту</button></p></div></div>
+          <div class="srow"><div><b>Код из письма</b><small>второй фактор</small></div><div class="okline">${ico("check")}Нужен при каждом входе. Не выключается.</div></div>
+          <div class="srow"><div><b>Пароль</b><small>по желанию</small></div><div>${STATE.secPass
+            ? `<div class="okline">${ico("check")}Задан 12 октября. При входе: пароль, затем код.</div><div class="row-acts" style="margin-top:8px"><button class="chipbtn" data-act="demo" data-k="Откроется смена пароля — сначала код из письма.">Сменить</button><button class="chipbtn quiet" data-act="sec-pass">Убрать пароль</button></div>`
+            : `<p class="muted" style="margin-top:0">Не задан — входите только по коду из письма. Пароль добавит вторую защиту.</p><button class="chipbtn" data-act="sec-pass">Задать пароль</button>`}</div></div>
+          <div class="srow"><div><b>Где выполнен вход</b><small>сеанс живёт 30 дней</small></div><div class="sec-dev">
+            <div><b>Chrome, macOS</b><small>это устройство · Екатеринбург</small></div>
+            <div><b>Safari, iPhone</b><small>вчера в 23:40 · Екатеринбург</small><button class="chipbtn quiet" data-act="demo" data-k="Вход на iPhone закрыт.">Выйти</button></div>
+            <div><button class="chipbtn" style="margin-left:0" data-act="demo" data-k="Вход закрыт везде, кроме этого устройства.">Выйти на всех других</button></div></div></div>
+        </section>
         <section id="s-data"><h2 class="set-h">Данные и приватность</h2>
           <div class="srow"><div><b>Ваши тексты</b></div><div class="okline">${ico("check")}Принадлежат вам и не используются для обучения моделей.</div></div>
           <div class="srow"><div><b>Выгрузить всё</b><small>все истории, версии и заметки</small></div><div><button class="chipbtn" data-act="archive">Собрать архив</button></div></div>
@@ -1886,8 +1971,7 @@ const VIEWS = {
         </section>
         <section id="s-acc"><h2 class="set-h">Аккаунт</h2>
           <div class="srow"><div><b>Имя автора</b><small>для титульного листа</small></div><div><input class="field" id="authorin" autocomplete="off" placeholder="Как подписывать сценарий" value="${esc(s.author)}" /></div></div>
-          <div class="srow"><div><b>Почта</b></div><div><input class="field" value="author@example.com" readonly aria-label="Почта" /></div></div>
-          <div class="srow"><div></div><div><button class="chipbtn" data-act="demo" data-k="В макете вход не настроен.">Выйти</button></div></div>
+          <div class="srow"><div></div><div><button class="chipbtn" data-act="au-logout">Выйти</button></div></div>
         </section>
       </div></div></article></div>`;
   },
@@ -3147,6 +3231,7 @@ const ASK = {
   versions: ["Спросите, что поменялось между версиями…", "Манифест темы · версии", []],
   export: ["Спросите, что войдёт в файл…", "экспорт", []],
   settings: ["Спросите, как настроить соавтора под себя…", "настройки", []],
+  auth: ["", "", []],
   states: ["Спросите о состояниях интерфейса…", "галерея состояний", []],
 };
 
@@ -3171,6 +3256,8 @@ function layoutNotes() {
   margin.style.minHeight = floor + "px";
 }
 function placeAsk() {
+  // the sign-in page has no co-author bar
+  if (current === "auth") return;
   const target = document.querySelector("#desk .sheet, #desk .home, #desk .ibmain");
   const r = target.getBoundingClientRect();
   const ask = $("#ask");
@@ -3225,10 +3312,12 @@ function open(key) {
   if (key === "settings" && current !== "settings") STATE.back = current;
   current = key;
   $("#desk").classList.remove("calm");
-  $("#app").classList.toggle("bare", ["shelf", "new", "import", "settings"].includes(key));
+  $("#app").classList.toggle("bare", ["shelf", "new", "import", "settings", "auth"].includes(key));
+  $("#app").classList.toggle("signin", key === "auth");
   $("#app").classList.toggle("canvas", key === "d1");
   document.getElementById("desk").innerHTML = VIEWS[key]();
   document.getElementById("desk").scrollTop = 0;
+  if (STATE.setGo) { $(`#${STATE.setGo}`).scrollIntoView({ block: "start" }); STATE.setGo = null; }
   const [ph, ctx, msgs] = ASK[key];
   document.getElementById("askin").placeholder = ph;
   document.getElementById("askctx").textContent = ctx;
@@ -3560,7 +3649,7 @@ $("#askin").addEventListener("keydown", (e) => {
 document.addEventListener("input", (e) => {
   const id = e.target.id;
   if (id === "palin") { palSel = 0; renderPalette(); return; }
-  if (["askin", "vername", "findin", "repin"].includes(id)) return;
+  if (["askin", "vername", "findin", "repin"].includes(id) || (e.target.closest && e.target.closest(".auth"))) return;
   if (id === "confirmDel") { $("#confirmBtn").disabled = e.target.value.trim().toLowerCase() !== "удалить"; return; }
   if (id === "namein") STATE.draftName = e.target.value;
   if (id === "authorin") STATE.set.author = e.target.value;
@@ -4161,6 +4250,59 @@ Object.assign(ACTIONS, {
   "wr-shift"() { const pl = wrPlan(); const d = pl.eta; STATE.goal.by = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; paint(); toast(`Срок черновика — ${ruDate(d)}.`); },
   "wr-keep"(b) { b.closest(".wr-ai").remove(); toast("Срок остаётся. Подскажу снова, если темп изменится."); },
 });
+// Вход: почта → (пароль, если задан) → код из письма → внутри. Новый адрес: код подтверждает почту → имя → пароль по желанию.
+let auTimer;
+function auGo(step, extra = {}) {
+  Object.assign(STATE.au, { step, err: "", show: false }, extra);
+  if (step === "code") { STATE.au.wait = 60; clearInterval(auTimer); auTimer = setInterval(() => { STATE.au.wait = Math.max(0, STATE.au.wait - 1); const w = $("#auwait"); if (!w) return clearInterval(auTimer); if (!STATE.au.wait) { clearInterval(auTimer); w.innerHTML = `<button class="linkbtn" data-act="au-resend">Отправить ещё раз</button>`; } else w.textContent = `Отправить ещё раз через 0:${String(STATE.au.wait).padStart(2, "0")}`; }, 1000); }
+  paint(); requestAnimationFrame(() => { const f = $("#desk .au-card input"); if (f) f.focus(); });
+}
+function auIn() { clearInterval(auTimer); STATE.au = { step: "email", email: "", known: false, hasPass: false, err: "", left: 5, wait: 0, show: false }; open("shelf"); toast("Вы вошли. Сеанс держится 30 дней на этом устройстве."); }
+const auErr = (t) => { STATE.au.err = t; paint(); requestAnimationFrame(() => { const f = $("#desk .au-card input"); if (f) f.focus(); }); };
+Object.assign(ACTIONS, {
+  "au-email"() {
+    const v = $("#auemail").value.trim().toLowerCase(); STATE.au.email = v;
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) return auErr("Похоже, в адресе ошибка. Пример: name@example.com");
+    const known = ["author@example.com", "vera@example.com"].includes(v), hasPass = v === "author@example.com";
+    auGo(hasPass ? "password" : "code", { known, hasPass, left: 5 });
+  },
+  "au-pass"() { const v = $("#aupass").value; if (!v) return auErr("Введите пароль."); if (v === "неверный") return auErr("Пароль не подошёл."); auGo("code"); },
+  "au-forgot"() { STATE.au.forgot = true; auGo("code"); toast("Отправили код. После него можно задать новый пароль."); },
+  "au-code"() {
+    const v = [...document.querySelectorAll("[data-code]")].map((x) => x.value).join("");
+    if (v === "000000") { STATE.au.left -= 1; return STATE.au.left ? auErr(`Неверный код. Осталось попыток: ${STATE.au.left}.`) : auGo("email", { err: "Слишком много попыток. Запросите новый код." }); }
+    if (STATE.au.forgot) return auGo("reset", { forgot: false });
+    STATE.au.known ? auIn() : auGo("name");
+  },
+  "au-resend"() { STATE.au.left = 5; auGo("code"); toast(`Новый код отправлен на ${STATE.au.email}. Прежний больше не действует.`); },
+  "au-back"() { clearInterval(auTimer); auGo("email", { known: false, hasPass: false, forgot: false }); },
+  "au-name"() { const v = $("#auname").value.trim(); if (v) STATE.set.author = v; auGo("offer"); },
+  "au-show"() { const f = $("#desk .au-pass input"), v = f.value; STATE.au.show = !STATE.au.show; f.type = STATE.au.show ? "text" : "password"; $("#desk .au-pass button").textContent = STATE.au.show ? "Скрыть" : "Показать"; f.value = v; f.focus(); },
+  "au-setpass"() { const v = $("#aunew").value; if (v.length < 10) return auErr("Нужно не короче 10 символов."); STATE.secPass = true; auIn(); },
+  "au-skip"() { STATE.secPass = false; auIn(); },
+  "au-nopass"() { STATE.secPass = false; auIn(); },
+  "au-logout"() { open("auth"); toast("Вы вышли на этом устройстве."); },
+  "sec-pass"() { STATE.secPass = !STATE.secPass; paint(); toast(STATE.secPass ? "Пароль задан. При входе: пароль, затем код из письма." : "Пароль убран. Входить можно по коду из письма."); },
+});
+["au-setpass", "sec-pass"].forEach((a) => SAVES.add(a));
+document.addEventListener("input", (e) => {
+  const c = e.target.dataset && e.target.dataset.code; if (c === undefined && e.target.id !== "aunew") return;
+  if (e.target.id === "aunew") { const v = e.target.value, n = (v.length >= 10) + (v.length >= 14) + /\d/.test(v) + /[^\p{L}\d]/u.test(v); document.querySelectorAll("#aumeter i").forEach((x, i) => x.classList.toggle("on", i < n)); return; }
+  const boxes = [...document.querySelectorAll("[data-code]")], i = Number(c), digits = e.target.value.replace(/\D/g, "");
+  if (digits.length > 1) { digits.slice(0, 6 - i).split("").forEach((d, k) => (boxes[i + k].value = d)); boxes[Math.min(5, i + digits.length - 1)].focus(); }
+  else { e.target.value = digits; if (digits && i < 5) boxes[i + 1].focus(); }
+  const full = boxes.every((x) => x.value);
+  $("#aucodego").disabled = !full;
+  if (full) ACTIONS["au-code"]();
+});
+document.addEventListener("keydown", (e) => {
+  if (current !== "auth") return;
+  const c = e.target.dataset && e.target.dataset.code;
+  if (c !== undefined && e.key === "Backspace" && !e.target.value && c > 0) { const prev = document.querySelector(`[data-code="${c - 1}"]`); prev.value = ""; prev.focus(); return; }
+  if (e.key !== "Enter" || !e.target.closest(".au-card")) return;
+  e.preventDefault();
+  const go = $("#desk .au-go"); if (go && !go.disabled) go.click();
+});
 ["wr-save", "wr-shift", "wr-count", "wr-chip-t"].forEach((a) => SAVES.add(a));
 // Слова за сегодня растут, пока автор пишет на листе
 let wrBase = null;
@@ -4312,6 +4454,13 @@ const PRESETS = {
   "home/goal": () => { STATE.goal.edit = true; },
   "home/met": () => { STATE.wrToday = 540; },
   "scene/goal": () => { STATE.wrToday = 488; },
+  "auth/code": () => { Object.assign(STATE.au, { step: "code", email: "vera@example.com", known: true, wait: 42 }); },
+  "auth/pass": () => { Object.assign(STATE.au, { step: "password", email: "author@example.com", known: true, hasPass: true }); },
+  "auth/new": () => { Object.assign(STATE.au, { step: "code", email: "anna@example.com", known: false, wait: 42 }); },
+  "auth/name": () => { Object.assign(STATE.au, { step: "name", email: "anna@example.com", known: false }); },
+  "auth/offer": () => { Object.assign(STATE.au, { step: "offer", email: "anna@example.com", known: false }); },
+  "auth/error": () => { Object.assign(STATE.au, { step: "code", email: "vera@example.com", known: true, err: "Неверный код. Осталось попыток: 4." }); },
+  "settings/security": () => { STATE.setGo = "s-sec"; },
 };
 const [hashView, hashTheme, hashPreset] = location.hash.slice(1).split("/");
 if (hashTheme) document.documentElement.dataset.theme = hashTheme;
