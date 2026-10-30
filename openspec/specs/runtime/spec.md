@@ -6,11 +6,30 @@
 ## Requirements
 
 ### Requirement: Контейнеры разработки
-`compose.yaml` MUST поднимать `agentos-db` (`agnohq/pgvector:18`, порт `127.0.0.1:5432`, том `pgdata`), `agentos-api` (цель `agentos`, порт `127.0.0.1:8000`, bind-mount `.:/app`, `uvicorn --reload` по каталогам `agents`, `app`, `db`, `evals`) и сервисы модуля `auth`: `authentik-db-init`, `authentik-server`, `authentik-worker` и `authentik-jwks-export`. `authentik-db-init` MUST однократно и идемпотентно создавать роль Authentik и схему `authentik` в `agentos-db` до старта `authentik-server` и `authentik-worker`. `authentik-server` и `authentik-worker` MUST использовать образ Authentik с закреплённой версией, подключаться к `agentos-db` ролью Authentik с `AUTHENTIK_POSTGRESQL__DEFAULT_SCHEMA=authentik` и публиковать порты только на `127.0.0.1`. `authentik-jwks-export` MUST после статуса `healthy` сервера Authentik дождаться появления ключей подписи (ограниченное время) и записать их в `JWT_JWKS_FILE`, а `agentos-api` MUST стартовать только после его успешного завершения. `authentik-worker` MUST стартовать только после статуса `healthy` у `authentik-server`, который применяет миграции базы. Для `agentos-db` MUST быть задан healthcheck `pg_isready` для пользователя и базы `ai` по TCP (`127.0.0.1`); он MUST считать контейнер здоровым только когда база принимает сетевые соединения (на первом запуске PostgreSQL сначала отвечает только через сокет). Для `agentos-api` MUST задаваться `RUNTIME_ENV=dev`, `AGNO_DEBUG=True`, `WAIT_FOR_DB=True`, `AGENTOS_URL=http://127.0.0.1:8000`, `DB_HOST=agentos-db`, `JWT_JWKS_FILE`; `.env` MUST подключаться необязательно (`required: false`), но обязательные переменные Authentik (`AUTHENTIK_SECRET_KEY` и пароль роли БД Authentik) MUST быть заданы, иначе `docker compose up` MUST завершаться ошибкой, называющей переменную.
+Корневой `compose.yaml` MUST объявлять `agentos-db` (`agnohq/pgvector:18`, порт `127.0.0.1:5432`, том `pgdata`) и подключать через `include` фрагменты модулей:
+- `agno/compose.yaml` — `agentos-db-init`, `litellm`, `agentos-api`;
+- `auth/compose.yaml` — `authentik-db-init`, `authentik-server`, `authentik-worker`, `authentik-jwks-export`.
+
+`agentos-api`:
+- цель образа `agentos`, порт `127.0.0.1:8000`;
+- bind-mount корня репозитория в `/app`;
+- `uvicorn --reload` по каталогам `agno/agents`, `agno/app`, `agno/db`, `agno/evals`.
+
+Порядок и поведение сервисов модуля `auth`:
+- `authentik-db-init` MUST однократно и идемпотентно создавать роль Authentik и схему `authentik` в `agentos-db` до старта `authentik-server` и `authentik-worker`;
+- `authentik-server` и `authentik-worker` MUST использовать образ Authentik с закреплённой версией, подключаться к `agentos-db` ролью Authentik с `AUTHENTIK_POSTGRESQL__DEFAULT_SCHEMA=authentik` и публиковать порты только на `127.0.0.1`;
+- `authentik-jwks-export` MUST после статуса `healthy` сервера Authentik дождаться появления ключей подписи (ограниченное время) и записать их в `JWT_JWKS_FILE`; `agentos-api` MUST стартовать только после его успешного завершения;
+- `authentik-worker` MUST стартовать только после статуса `healthy` у `authentik-server`, который применяет миграции базы.
+
+Для `agentos-db` MUST быть задан healthcheck `pg_isready` для пользователя и базы `ai` по TCP (`127.0.0.1`). Он MUST считать контейнер здоровым только когда база принимает сетевые соединения (на первом запуске PostgreSQL сначала отвечает только через сокет).
+
+Для `agentos-api` MUST задаваться `RUNTIME_ENV=dev`, `AGNO_DEBUG=True`, `WAIT_FOR_DB=True`, `AGENTOS_URL=http://127.0.0.1:8000`, `DB_HOST=agentos-db`, `JWT_JWKS_FILE`. `.env` из корня репозитория MUST подключаться необязательно (`required: false`), но обязательные переменные Authentik (`AUTHENTIK_SECRET_KEY` и пароль роли БД Authentik) MUST быть заданы, иначе `docker compose up` MUST завершаться ошибкой, называющей переменную.
+
+Имя compose-проекта (`authorled`), имена сервисов, контейнеров, сетей и томов MUST NOT зависеть от того, в каком фрагменте объявлен сервис.
 
 #### Scenario: Ожидание БД
 - GIVEN `WAIT_FOR_DB` равен `true` или `True`
-- WHEN стартует `scripts/entrypoint.sh`
+- WHEN стартует `agno/scripts/entrypoint.sh`
 - THEN он MUST ждать `tcp://DB_HOST:DB_PORT` через `dockerize` до 300 с, затем выполнить команду через `exec "$@"`
 
 #### Scenario: Режим chill
@@ -35,6 +54,11 @@
 - WHEN выполняется `docker compose up`
 - THEN команда MUST завершиться ошибкой, называющей `AUTHENTIK_SECRET_KEY`
 
+#### Scenario: Конфигурация не изменилась после переноса
+- GIVEN один и тот же `.env`
+- WHEN сравниваются результаты `docker compose config` и `docker compose -f compose.yaml -f compose.prod.yaml config` до и после переноса в `agno/` и `auth/`
+- THEN имя проекта, сервисы, образы, команды, порты, переменные окружения, тома, сети и зависимости MUST совпадать, кроме путей к файлам на хосте, контекста и файла сборки, каталогов reload и путей внутри `/app`
+
 ### Requirement: Production-override
 `compose.prod.yaml` MUST переключать `RUNTIME_ENV=prd`, `AGNO_DEBUG=False`, убирать bind-mount и reload, брать `AGENTOS_URL` и `MCP_CONNECT_SECRET` из `.env` и привязывать PostgreSQL к `127.0.0.1:5432`. Для сервисов Authentik `compose.prod.yaml` MUST требовать секреты из `.env` (без значений по умолчанию), привязывать порты к `127.0.0.1` и MUST NOT публиковать их на внешних интерфейсах. Том `/data` для AgentCore MUST оставаться закомментированным, пока AgentCore не включён.
 
@@ -57,14 +81,24 @@
 - THEN соединение MUST быть невозможно, так как сервер слушает только `127.0.0.1`
 
 ### Requirement: Образы
-`Dockerfile` MUST собирать общую базу `agnohq/python:3.14` с `uv pip sync requirements.txt` и цели `agentos` (по умолчанию; entrypoint `scripts/entrypoint.sh`, CMD `uvicorn app.main:app --host 0.0.0.0 --port 8000`) и `sandbox` (пользователь UID 1000, порт 8080, `python -I -m agno.sandbox.agentcore.server serve`). `.dockerignore` MUST исключать `.env*`, `.claude/`, `.codex/`, `tmp/` и MUST оставлять `.agents/skills/`.
+`agno/Dockerfile` MUST собираться с контекстом — корнем репозитория. Он MUST собирать общую базу `agnohq/python:3.14` с `uv pip sync` по `agno/requirements.txt` и две цели:
+- `agentos` (по умолчанию): весь контекст сборки в `/app`, рабочий каталог и `PYTHONPATH` — `/app/agno`, entrypoint `/app/agno/scripts/entrypoint.sh`, CMD `uvicorn app.main:app --host 0.0.0.0 --port 8000`;
+- `sandbox`: пользователь UID 1000, порт 8080, `python -I -m agno.sandbox.agentcore.server serve`.
+
+`.dockerignore` в корне репозитория MUST исключать `.env*`, `.claude/`, `.codex/`, `tmp/`, `web/` и выгруженные ключи `auth/jwks/jwks.json*` и MUST оставлять `.agents/skills/`, `AGENTS.md` и `openspec/`.
 
 #### Scenario: Сборка sandbox
-- WHEN выполняется `docker build --target sandbox --load -t agno-sandbox:local .`
+- WHEN выполняется `docker build --target sandbox --load -t agno-sandbox:local -f agno/Dockerfile .` из корня репозитория
 - THEN MUST собираться образ, используемый `docker_sandbox()`
 
+#### Scenario: Состав образа API
+- GIVEN образ цели `agentos` собран
+- WHEN перечисляется содержимое `/app`
+- THEN MUST присутствовать `/app/AGENTS.md`, `/app/.agents/skills/`, `/app/openspec/` и `/app/agno/app/main.py`
+- AND `/app/web` и `/app/.env` MUST отсутствовать
+
 ### Requirement: Публикация образа
-`scripts/build_image.sh` MUST требовать `IMAGE_NAME` с namespace реестра и MUST собирать и пушить `linux/amd64,linux/arm64` цели `agentos`.
+`agno/scripts/build_image.sh` MUST требовать `IMAGE_NAME` с namespace реестра и MUST собирать и пушить `linux/amd64,linux/arm64` цели `agentos` по `agno/Dockerfile` с контекстом — корнем репозитория.
 
 #### Scenario: IMAGE_NAME без namespace
 - GIVEN `IMAGE_NAME=agentos`
@@ -72,10 +106,19 @@
 - THEN он MUST завершиться кодом `1` до сборки
 
 ### Requirement: Проверки кода
-`scripts/validate.sh` MUST выполнять `ruff format --check`, `ruff check` и `mypy` по корню репозитория, а для фронтенда — `prettier --check`, ESLint, проверку типов, сборку, проверку контраста токенов и `scripts/check_web_tokens.sh` (сырые цвета вне файла токенов). Скрипт MUST завершаться ненулевым кодом при любой ошибке. Если зависимости фронтенда не установлены (`web/node_modules` отсутствует), скрипт MUST завершиться ошибкой с подсказкой `npm ci --prefix web` и MUST NOT пропускать проверки фронтенда. CI (`.github/workflows/validate.yml`, Python 3.14, Node.js из `web/.nvmrc`) MUST устанавливать зависимости фронтенда через `npm ci` и выполнять тот же скрипт. `scripts/format.sh` MUST выполнять `ruff check --select I --fix`, `ruff format` и `prettier --write` для `web/`.
+`scripts/validate.sh` MUST выполнять:
+- для бэкенда: `ruff format --check`, `ruff check` и `mypy` по `agno/` с настройками `agno/pyproject.toml`;
+- проверку границ модуля `auth` (`scripts/check_auth_boundary.sh`);
+- для фронтенда: `prettier --check`, ESLint, проверку типов, сборку, проверку контраста токенов и `web/scripts/check_web_tokens.sh` (сырые цвета вне файла токенов).
+
+Скрипт MUST завершаться ненулевым кодом при любой ошибке. Если зависимости фронтенда не установлены (`web/node_modules` отсутствует), скрипт MUST завершиться ошибкой с подсказкой `npm ci --prefix web` и MUST NOT пропускать проверки фронтенда.
+
+CI (`.github/workflows/validate.yml`, Python 3.14, Node.js из `web/.nvmrc`) MUST ставить зависимости бэкенда по `agno/requirements.txt` и `agno/pyproject.toml`, ставить зависимости фронтенда через `npm ci` и выполнять тот же скрипт.
+
+`scripts/format.sh` MUST выполнять `ruff check --select I --fix` и `ruff format` по `agno/` и `prettier --write` для `web/`.
 
 #### Scenario: Ошибка форматирования
-- GIVEN файл не отформатирован
+- GIVEN файл в `agno/` не отформатирован
 - WHEN выполняется `./scripts/validate.sh`
 - THEN скрипт MUST подсказать `./scripts/format.sh` и вернуть `1`
 
@@ -85,11 +128,11 @@
 - THEN скрипт MUST вывести подсказку `npm ci --prefix web` и вернуть `1`
 
 ### Requirement: Окружение Python
-`scripts/venv_setup.sh` MUST создавать `.venv` на Python 3.14 через `uv` и ставить `requirements.txt` и проект `-e .[dev]` с ограничениями `requirements.txt`; при активном venv или без `uv` MUST завершаться кодом `1`. `scripts/generate_requirements.sh` MUST компилировать `requirements.txt` из `pyproject.toml` через `uv pip compile` в режимах standard, `upgrade` и обновления отдельных пакетов.
+`agno/scripts/venv_setup.sh` MUST создавать `agno/.venv` на Python 3.14 через `uv` и ставить `agno/requirements.txt` и проект `-e agno[dev]` с ограничениями `agno/requirements.txt`; при активном venv или без `uv` MUST завершаться кодом `1`. `agno/scripts/generate_requirements.sh` MUST компилировать `agno/requirements.txt` из `agno/pyproject.toml` через `uv pip compile` в режимах standard, `upgrade` и обновления отдельных пакетов.
 
 #### Scenario: Активный venv
 - GIVEN `VIRTUAL_ENV` задан
-- WHEN выполняется `./scripts/venv_setup.sh`
+- WHEN выполняется `./agno/scripts/venv_setup.sh`
 - THEN скрипт MUST завершиться с сообщением «Deactivate your current venv first.»
 
 ### Requirement: Evals
@@ -101,7 +144,7 @@
 - THEN MUST запуститься три кейса, а результаты MUST сохраниться в БД
 
 ### Requirement: Скрипт локальной разработки
-`scripts/dev.sh` MUST быть единым входом в локальную разработку с API на хосте и MUST поддерживать команды `db`, `api`, `stop`, `reset-db`, `psql`. Он MUST использовать сервисы `compose.yaml` (`agentos-db`, `litellm` и сервисы модуля `auth`), а не собственные определения контейнеров, и MUST ждать их статуса `healthy` (для разовых сервисов — успешного завершения) до продолжения. Команда `api` MUST запускать API на хосте только после успешной выгрузки ключей Authentik в `JWT_JWKS_FILE`. Скрипт MUST завершаться ненулевым кодом с сообщением, называющим причину, если не найден `docker`, не найден `uv` (для `api`), отсутствует `.env` или команда неизвестна; значений по умолчанию вместо недостающего ввода он MUST NOT подставлять.
+`scripts/dev.sh` MUST быть единым входом в локальную разработку с API на хосте и MUST поддерживать команды `db`, `api`, `stop`, `reset-db`, `psql`. Он MUST использовать сервисы compose-файлов репозитория (`agentos-db`, `agentos-db-init`, `litellm` и сервисы модуля `auth`), а не собственные определения контейнеров, и MUST ждать их статуса `healthy` (для разовых сервисов — успешного завершения) до продолжения. Команда `api` MUST запускать API на хосте только после успешной выгрузки ключей Authentik в `JWT_JWKS_FILE`. Скрипт MUST завершаться ненулевым кодом с сообщением, называющим причину, если не найден `docker`, не найден `uv` (для `api`), отсутствует `.env` или команда неизвестна; значений по умолчанию вместо недостающего ввода он MUST NOT подставлять.
 
 #### Scenario: Только база
 - GIVEN `.env` заполнен обязательным блоком
@@ -113,9 +156,9 @@
 - GIVEN `.env` заполнен и `uv` установлен
 - WHEN выполняется `./scripts/dev.sh api`
 - THEN MUST быть запущены `agentos-db`, `litellm`, `authentik-db-init`, `authentik-server` и `authentik-worker` и дождаться `healthy` или успешного завершения
-- AND `authentik-jwks-export` MUST завершиться успешно до запуска API
+- AND `agentos-db-init` и `authentik-jwks-export` MUST завершиться успешно до запуска API
 - AND контейнер `agentos-api` MUST быть остановлен, чтобы освободить порт 8000
-- AND API MUST запускаться на `127.0.0.1:8000` с `--reload` по каталогам `agents`, `app`, `db`, `evals`, с `RUNTIME_ENV=dev`, `DB_HOST=127.0.0.1`, `DB_PORT=5432`, `LITELLM_URL=http://127.0.0.1:4000` и `JWT_JWKS_FILE`, указывающим на выгруженный файл
+- AND API MUST запускаться из `agno/` на `127.0.0.1:8000` с `--reload` по каталогам `agents`, `app`, `db`, `evals` модуля бэкенда, с `RUNTIME_ENV=dev`, `DB_HOST=127.0.0.1`, `DB_PORT=5432`, `DB_USER=agentos`, `LITELLM_URL=http://127.0.0.1:4000`, зависимостями из `agno/requirements.txt`, `.env` из корня репозитория и `JWT_JWKS_FILE`, указывающим на `auth/jwks/jwks.json`
 
 #### Scenario: Нет .env
 - GIVEN файла `.env` нет

@@ -1,6 +1,6 @@
 # Бизнес-интент: монорепозиторий из трёх модулей — `agno/`, `web/`, `auth/`
 
-Статус: change `restructure-monorepo-modules` предложен 2026-10-30 (`openspec/changes/restructure-monorepo-modules/`), ждёт согласования перед `/opsx:apply`. Открытые вопросы ниже решены в его design (D3, D5, D6). Владелец: lehard. Обновлено: 2026-10-30.
+Статус: change `restructure-monorepo-modules` реализован и архивирован 2026-10-30 (`openspec/changes/archive/2026-10-30-restructure-monorepo-modules/`). Открытые вопросы ниже решены в его design (D3, D5, D6). Владелец: lehard. Обновлено: 2026-10-30.
 Рамки: `openspec/context/ADR/ADR-001-three-services.md` (модульный монолит, монорепозиторий), `openspec/context/03-architecture.md`, `openspec/specs/auth`, `openspec/specs/architecture`.
 
 ## Why

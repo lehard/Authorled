@@ -12,7 +12,7 @@
 | `core-*` (серия) | не создан | продуктовое ядро, Alembic, pytest, свои маршруты |
 | `auth-module` | архивирован 2026-10-26; остаток — в разделе «Расхождения с контекст-паком» | авторизация: модуль `auth` с полным Authentik, JWT, изоляция |
 | `prepare-auth-module-extraction` | архивирован 2026-10-28; prod не проверялся | подготовка модуля `auth` к выносу: compose-фрагмент, контракт токена, роль `agentos` без доступа к `authentik` |
-| `restructure-monorepo-modules` | реализован 2026-10-30, не архивирован; prod не проверялся | три модуля верхнего уровня `agno/`, `web/`, `auth/`, общий корень |
+| `restructure-monorepo-modules` | архивирован 2026-10-30; prod не проверялся | три модуля верхнего уровня `agno/`, `web/`, `auth/`, общий корень |
 
 > Внимание: compose требует ключи LiteLLM, DeepSeek, GigaChat, Sber500 (`SBER500_API_BASE`, `SBER500_API_KEY`) и файл `agno/litellm/certs/ca-bundle.pem`; без них `docker compose up` не стартует.
 
