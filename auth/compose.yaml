@@ -1,8 +1,8 @@
 # Module auth (openspec/specs/auth): the Authentik services. compose.yaml at the repository
-# root includes this file; relative paths resolve from modules/auth/, variables come from the
+# root includes this file; relative paths resolve from auth/, variables come from the
 # root .env. The services use agentos-db and the agentos network declared in the root file.
 services:
-  # Module auth (modules/auth): Authentik runs in the shared database, schema
+  # Module auth (auth/): Authentik runs in the shared database, schema
   # `authentik`, under its own role. authentik-db-init creates both on every `up`
   # (idempotent); the server and worker start only after it succeeds.
   authentik-db-init:
@@ -30,7 +30,7 @@ services:
       - agentos
 
   # Authentik: identity provider with its own UI (login, profile, admin). Blueprints in
-  # modules/auth/blueprints configure it from empty state. The image tag is pinned.
+  # auth/blueprints configure it from empty state. The image tag is pinned.
   authentik-server:
     image: ghcr.io/goauthentik/server:2026.8.5
     container_name: authentik-server
@@ -102,7 +102,7 @@ services:
     networks:
       - agentos
 
-  # Writes the public signing keys of Authentik to modules/auth/jwks/jwks.json, which
+  # Writes the public signing keys of Authentik to auth/jwks/jwks.json, which
   # the API reads as JWT_JWKS_FILE. Fails (and the API does not start) when it cannot.
   # Re-run after rotating the signing key: docker compose run --rm authentik-jwks-export
   authentik-jwks-export:

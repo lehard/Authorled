@@ -1,6 +1,6 @@
 ---
 name: create-agent
-description: Add a new agent to this AgentOS. Runs guided discovery or takes a concrete idea, then generates agents/slug.py, registers it in app/main.py, adds its manifest entry (description + quick prompts), reloads the selected development runtime, and smoke-tests it for you. Covers the product agent too — ingest a product's website/docs into the product knowledge base and build a knowledge-only agent over it. Use whenever the user wants to add or create a new agent, or names a product (theirs or one they use) they want an agent for.
+description: Add a new agent to this AgentOS. Runs guided discovery or takes a concrete idea, then generates agno/agents/slug.py, registers it in agno/app/main.py, adds its manifest entry (description + quick prompts), reloads the selected development runtime, and smoke-tests it for you. Covers the product agent too — ingest a product's website/docs into the product knowledge base and build a knowledge-only agent over it. Use whenever the user wants to add or create a new agent, or names a product (theirs or one they use) they want an agent for.
 ---
 
 # Create a New Agent
@@ -15,10 +15,10 @@ do not switch modes or start a second API on port 8000.
 - **Compose API:** confirm its bind mount points to this checkout. Run Python with
   `docker compose exec -T agentos-api python`; inspect `docker compose logs agentos-api`.
   If setup is needed, follow [setup-platform](../setup-platform/SKILL.md).
-- **Host API:** follow the [sandbox setup commands](../../../docs/sandboxes.md#local-docker-sandbox).
+- **Host API:** follow the [sandbox setup commands](../../../agno/docs/sandboxes.md#local-docker-sandbox).
   Confirm the process's working directory and startup environment. Run Python with
-  `.venv/bin/python` and the same `.env`/runtime/DB settings as that process; use
-  `uv run --no-project --env-file .env .venv/bin/python` when loading the env file.
+  `agno/.venv/bin/python` and the same `.env`/runtime/DB settings as that process; use
+  `uv run --no-project --env-file .env agno/.venv/bin/python` when loading the env file.
   Keep the API in a persistent terminal and inspect that process's log. No API container
   or container bind mount is required in this mode.
 
@@ -31,7 +31,7 @@ wait and inspect logs on failure. For MCP checks use `scripts/mcp_check.sh` with
 
 **Be self-driving: ask only what needs a human, decide the rest, say what you decided.** Two exchanges is the target. Use the harness's structured choice control for choice-shaped questions, plain prompts for free-form ones.
 
-This skill builds lane 1 — a source file in `agents/`, governed by git. Lane 2 is a component OS Manager composes at runtime; it can't touch the repo, so anything needing a code change (a toolkit the registry lacks, custom Python, a dependency, growing [`app/registry.py`](../../../app/registry.py)) is yours.
+This skill builds lane 1 — a source file in `agno/agents/`, governed by git. Lane 2 is a component OS Manager composes at runtime; it can't touch the repo, so anything needing a code change (a toolkit the registry lacks, custom Python, a dependency, growing [`agno/app/registry.py`](../../../agno/app/registry.py)) is yours.
 
 **Check the id is free first** — both lanes share one id space and code silently wins, hiding a Studio-built component under your file:
 
@@ -70,7 +70,7 @@ Run this Python in the Compose container or the host environment selected in Ste
 from agno.tools.exa import ExaTools
 ```
 
-Check the installed Agno version against `pyproject.toml`; verify optional dependencies
+Check the installed Agno version against `agno/pyproject.toml`; verify optional dependencies
 instead of assuming that a toolkit is installed.
 
 For web access, reuse `get_web_tools()` from `app.registry` when its contract fits. Its keyless branch uses this MCP configuration:
@@ -87,7 +87,7 @@ web_tools = MCPTools(
 
 ## 3. Generate the agent file
 
-Create `agents/<slug_underscore>.py`:
+Create `agno/agents/<slug_underscore>.py`:
 
 ```python
 """
@@ -133,17 +133,17 @@ How you <work>:
 
 ### The product agent
 
-Answers questions about one product from that product's docs, and nothing else. The recommended first agent (setup-platform hands off here). Two trust rules: **knowledge search is its only tool** (no web tools, no notes — it can answer badly but must not act badly; `learning=shared_learning` stays, so it knows each person across sessions), and **it reads a dedicated product knowledge base, never `shared-knowledge`** — operator content stays out of an end-user agent's retrieval. No product knowledge base ships by default. Declare one in [`app/registry.py`](../../../app/registry.py) when creating this agent; Studio can use it once registered.
+Answers questions about one product from that product's docs, and nothing else. The recommended first agent (setup-platform hands off here). Two trust rules: **knowledge search is its only tool** (no web tools, no notes — it can answer badly but must not act badly; `learning=shared_learning` stays, so it knows each person across sessions), and **it reads a dedicated product knowledge base, never `shared-knowledge`** — operator content stays out of an end-user agent's retrieval. No product knowledge base ships by default. Declare one in [`agno/app/registry.py`](../../../agno/app/registry.py) when creating this agent; Studio can use it once registered.
 
 Choose the slug, documentation root URL and an initial page cap (normally 50). Explain that ingestion may incur embedding and extraction charges; do not quote a fixed cost without a current, applicable estimate. A capped crawl can omit relevant pages, so report its actual coverage and expand it when needed.
 
-**Declare the knowledge base** in `app/registry.py` before `registry = Registry(...)`:
+**Declare the knowledge base** in `agno/app/registry.py` before `registry = Registry(...)`:
 
 ```python
 product_knowledge = create_knowledge(name="product-knowledge", table_name="product_knowledge")
 ```
 
-Add it to `registry.knowledge` and the existing `AgentOS(knowledge=[...])` list in `app/main.py`, preserving all current knowledge entries.
+Add it to `registry.knowledge` and the existing `AgentOS(knowledge=[...])` list in `agno/app/main.py`, preserving all current knowledge entries.
 Use a product-specific variable, name and table for additional products. Reuse a matching
 existing declaration; do not mix unrelated products or operator documents. Import the
 knowledge object and `shared_learning` from `app.registry` in the new agent.
@@ -163,7 +163,7 @@ print(asyncio.run(tools.aingest_url(None, "https://docs.example.com", max_pages=
 
 Inspect the returned result and verify content was stored before testing retrieval. Do not promise a page count, cost or runtime without measuring it. For host development run the same code with the configured venv and environment.
 
-**The file:** the structure above with `knowledge=product_knowledge` (from [`app/registry.py`](../../../app/registry.py)), `learning=shared_learning`, and no tools. Write `INSTRUCTIONS` yourself in the product's own terms — its name, how its docs speak, the support channel you saw in the pages — and write them against the failure mode that breaks product agents: **the model remembers the real docs and completes gaps from memory under a real citation** — exact flags, prices, and code that were never in the returned text. A prompt that merely says "answer from the docs, say so if not covered" does not stop it; the following rules make that expectation explicit and testable. Include these rules and verify them with probes:
+**The file:** the structure above with `knowledge=product_knowledge` (from [`agno/app/registry.py`](../../../agno/app/registry.py)), `learning=shared_learning`, and no tools. Write `INSTRUCTIONS` yourself in the product's own terms — its name, how its docs speak, the support channel you saw in the pages — and write them against the failure mode that breaks product agents: **the model remembers the real docs and completes gaps from memory under a real citation** — exact flags, prices, and code that were never in the returned text. A prompt that merely says "answer from the docs, say so if not covered" does not stop it; the following rules make that expectation explicit and testable. Include these rules and verify them with probes:
 
 - a detail counts as documented only when it appears in text the search returned — a page that merely mentions a topic (a name in a list, a link, a heading) does not document it;
 - only returned Source URLs get cited, never one from memory, and none on a refusal;
@@ -171,7 +171,7 @@ Inspect the returned result and verify content was stored before testing retriev
 
 Step 7: three probes, not one — a covered question (details plus a Source URL), an in-scope question the cap probably excluded (a grounded refusal pointing at support — the pass that matters most), an off-topic one (a scoped refusal). Before calling a refusal-probe answer a leak, check the base — `select count(*) from ai.product_knowledge where content ilike '%<detail>%'` — index and cheat-sheet pages cover far more than their titles. Thin covered answers → raise the cap and re-ingest before touching the prompt. Step 9: lead with the serving story — live in the UI, over MCP, on Agno's roster; claude.ai/ChatGPT via connectors once deployed; for their end users, REST with per-user JWTs (`user_isolation=True` ships on; `JWT_JWKS_FILE` lets their login mint the tokens).
 
-## 4. Register in `app/main.py`
+## 4. Register in `agno/app/main.py`
 
 Import the new agent and insert it into the existing `agents` list. Preserve every existing
 application agent and `*engineers`; do not replace the list with a starter example. Preserve
@@ -190,7 +190,7 @@ For example, adding a new agent when another already exists is an insertion:
 
 ## 5. Manifest entry
 
-In [`app/config.yaml`](../../../app/config.yaml) under `manifest`, keyed by id: one-line description and three quick prompts (the home card and chat page read these; `Agent(description=)` is unused here).
+In [`agno/app/config.yaml`](../../../agno/app/config.yaml) under `manifest`, keyed by id: one-line description and three quick prompts (the home card and chat page read these; `Agent(description=)` is unused here).
 
 ## 6. Reload the selected runtime
 
@@ -198,8 +198,8 @@ For Compose, restart `agentos-api` when needed; for the host API, use the existi
 process or restart that host process with its original environment. YAML/env changes need
 an explicit restart. Do not run `docker compose up` for a host API.
 
-After dependency changes, regenerate `requirements.txt`, update the host venv if used
-(deactivate before `scripts/venv_setup.sh`), and rebuild both Dockerfile targets as required
+After dependency changes, regenerate `agno/requirements.txt`, update the host venv if used
+(deactivate before `agno/scripts/venv_setup.sh`), and rebuild both Dockerfile targets as required
 by `AGENTS.md`. Restart the selected API and confirm `/health` within a bounded wait.
 Verify the new agent and all previously registered application agents remain in `/agents`.
 

@@ -1,23 +1,23 @@
 ---
 name: create-evals
-description: Author eval coverage for an agent in this AgentOS — map what the agent promises, mine real sessions and eval history from Postgres for scenarios, propose capabilities worth testing, then write, run, and audit Case entries in evals/cases.py. Use when the user wants evals created, coverage added, or an agent's behavior pinned down as tests. For failing suites or exploratory simulation-driven hardening, use eval-and-improve instead.
+description: Author eval coverage for an agent in this AgentOS — map what the agent promises, mine real sessions and eval history from Postgres for scenarios, propose capabilities worth testing, then write, run, and audit Case entries in agno/evals/cases.py. Use when the user wants evals created, coverage added, or an agent's behavior pinned down as tests. For failing suites or exploratory simulation-driven hardening, use eval-and-improve instead.
 ---
 
 # Create Evals
 
 > _Coding-agent workflow: run as `/create-evals` or by describing the task._
 
-Turn what an agent promises into `Case` entries in [`evals/cases.py`](../../../evals/cases.py). The template's cases cover the reference components only; a user-built agent is invisible to the suite until this skill writes one. Failing suite → [`eval-and-improve`](../eval-and-improve/SKILL.md); agent needs hardening → [`eval-and-improve`](../eval-and-improve/SKILL.md).
+Turn what an agent promises into `Case` entries in [`agno/evals/cases.py`](../../../agno/evals/cases.py). The template's cases cover the reference components only; a user-built agent is invisible to the suite until this skill writes one. Failing suite → [`eval-and-improve`](../eval-and-improve/SKILL.md); agent needs hardening → [`eval-and-improve`](../eval-and-improve/SKILL.md).
 
-Preconditions: configured PostgreSQL reachable, venv active (`source .venv/bin/activate`; `./scripts/venv_setup.sh` if missing), `.env` populated. Even CLI `--help`/`--list` imports application knowledge storage and requires PostgreSQL; no API server is needed for native agent/team cases.
+Preconditions: configured PostgreSQL reachable, venv active (`source agno/.venv/bin/activate`; `./agno/scripts/venv_setup.sh` if missing), `.env` populated. Even CLI `--help`/`--list` imports application knowledge storage and requires PostgreSQL; no API server is needed for native agent/team cases.
 
 **Be self-driving:** the repo and the database answer most questions. Ask the user only what they alone know — which jobs matter and which failures would hurt. One pick per exchange, recommendation first.
 
 ## 1. Pick the agent
 
-The user's choice, or the least-covered component — almost always one of theirs. Source components have a file under `agents/` or `teams/`. Studio-built components have none: `Agent.load("<id>", db=get_postgres_db(), registry=registry, published_only=True)` (or `Team.load`) rehydrates the published config at import time; it returns `None` for an archived or unpublished component, and a `Case` with neither field set raises — guard the load or the whole suite fails at import. Workflows cannot be case targets.
+The user's choice, or the least-covered component — almost always one of theirs. Source components have a file under `agno/agents/` or `agno/teams/`. Studio-built components have none: `Agent.load("<id>", db=get_postgres_db(), registry=registry, published_only=True)` (or `Team.load`) rehydrates the published config at import time; it returns `None` for an archived or unpublished component, and a `Case` with neither field set raises — guard the load or the whole suite fails at import. Workflows cannot be case targets.
 
-Before cases that use MCP, inspect `evals/__main__.py`: it currently collects MCP tools
+Before cases that use MCP, inspect `agno/evals/__main__.py`: it currently collects MCP tools
 from OS Manager. Ensure the target's required MCP tools are connected in the eval loop;
 API-side connections do not carry into a separate CLI process. Use the pinned framework
 collection helpers in the existing entrypoint when additional target tools are needed.
@@ -84,4 +84,4 @@ Loop to Step 4 or finish.
 
 ## 7. Hand over
 
-New cases by name and tag, `git diff evals/cases.py`, suggested commit `eval(<agent>): …`. `smoke` cases run on demand through `python -m evals`; failures go to [`/eval-and-improve`](../eval-and-improve/SKILL.md).
+New cases by name and tag, `git diff agno/evals/cases.py`, suggested commit `eval(<agent>): …`. `smoke` cases run on demand through `python -m evals`; failures go to [`/eval-and-improve`](../eval-and-improve/SKILL.md).

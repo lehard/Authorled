@@ -23,12 +23,12 @@ echo ""
 echo -e "${ORANGE}▸${NC} ${BOLD}Formatting workspace${NC}"
 echo ""
 
-echo -e "${DIM}> ruff check --select I --fix ${REPO_ROOT}${NC}"
-ruff check --select I --fix "${REPO_ROOT}"
+echo -e "${DIM}> ruff check --select I --fix agno${NC}"
+ruff check --select I --fix "${REPO_ROOT}/agno"
 
 echo ""
-echo -e "${DIM}> ruff format ${REPO_ROOT}${NC}"
-ruff format "${REPO_ROOT}"
+echo -e "${DIM}> ruff format agno${NC}"
+ruff format "${REPO_ROOT}/agno"
 
 echo ""
 echo -e "${DIM}> npm run format --prefix web${NC}"

@@ -7,7 +7,7 @@ updated: 2026-10-26
 ## Context
 Контекст требует вызывать модели только через LiteLLM и запрещает зарубежные эмбеддинги (п.16 анти-паттернов). Шаблон вызывал Anthropic напрямую, брал эмбеддинги OpenAI `text-embedding-3-small`, а инженеры хардкодили `claude-opus-5-5` и `gpt-6.1-sol`. Владелец решил (2026-10-24): система работает на DeepSeek (обычная и думающая модели), эмбеддинги — GigaChat, ключи Anthropic и OpenAI не нужны. Change `switch-models-to-deepseek-litellm`.
 ## Decision
-- LiteLLM работает отдельным прокси (сервис `litellm` в compose, `litellm/config.yaml`). Это единственный путь к моделям и для агентов Agno (OpenAI-формат), и для Claude Code (`/v1/messages`), и для эмбеддингов (`/v1/embeddings`).
+- LiteLLM работает отдельным прокси (сервис `litellm` в compose, `agno/litellm/config.yaml`). Это единственный путь к моделям и для агентов Agno (OpenAI-формат), и для Claude Code (`/v1/messages`), и для эмбеддингов (`/v1/embeddings`).
 - Приложение знает только псевдонимы прокси:
   - `deepseek-fast` — `deepseek-flash` без размышлений, агенты по умолчанию;
   - `deepseek-thinking` — `deepseek-v4-pro` с размышлениями, OS Manager, Company Manager и Claude Code;
@@ -32,7 +32,7 @@ updated: 2026-10-26
 - Прокси — новая точка отказа без отката: при его недоступности все модели недоступны.
 - Размерность векторов меняется с 1536 на 1024. `shared_knowledge` пересоздаётся, документы загружаются заново.
 - У `Embeddings-2` лимит — 512 токенов на вход, поэтому документы нужно резать мельче 5000 символов (по умолчанию в Agno).
-- Имена моделей провайдеров меняются только в `litellm/config.yaml`.
+- Имена моделей провайдеров меняются только в `agno/litellm/config.yaml`.
 - Передача ПДн в DeepSeek — тот же открытый вопрос ИБ, что и для прежних зарубежных LLM.
 ## Alternatives considered
 - **Claude и OpenAI напрямую (как в шаблоне)** — нарушает п.16; ключи Anthropic и OpenAI владелец не использует.

@@ -5,16 +5,16 @@
 #    Agno Requirements Generator
 #
 #    Usage:
-#      ./scripts/generate_requirements.sh           # Generate
-#      ./scripts/generate_requirements.sh upgrade   # Generate with upgrade
-#      ./scripts/generate_requirements.sh <pkg>...  # Refresh only these pins
+#      ./agno/scripts/generate_requirements.sh           # Generate
+#      ./agno/scripts/generate_requirements.sh upgrade   # Generate with upgrade
+#      ./agno/scripts/generate_requirements.sh <pkg>...  # Refresh only these pins
 #
 ############################################################################
 
 set -euo pipefail
 
 CURR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(dirname "${CURR_DIR}")"
+AGNO_DIR="$(dirname "${CURR_DIR}")"
 
 # Colors
 ORANGE='\033[38;5;208m'
@@ -30,8 +30,8 @@ if [[ "${1:-}" = "upgrade" ]]; then
     echo -e "    ${DIM}Mode: upgrade${NC}"
     echo -e "    ${DIM}> uv pip compile pyproject.toml --no-cache --upgrade -o requirements.txt${NC}"
     echo ""
-    UV_CUSTOM_COMPILE_COMMAND="./scripts/generate_requirements.sh upgrade" \
-        uv pip compile "${REPO_ROOT}/pyproject.toml" --no-cache --upgrade -o "${REPO_ROOT}/requirements.txt"
+    UV_CUSTOM_COMPILE_COMMAND="./agno/scripts/generate_requirements.sh upgrade" \
+        uv pip compile "${AGNO_DIR}/pyproject.toml" --no-cache --upgrade -o "${AGNO_DIR}/requirements.txt"
 elif [[ $# -gt 0 ]]; then
     # Refresh only the named packages.
     UPGRADE_FLAGS=()
@@ -41,14 +41,14 @@ elif [[ $# -gt 0 ]]; then
     echo -e "    ${DIM}Mode: refresh ($*)${NC}"
     echo -e "    ${DIM}> uv pip compile pyproject.toml --no-cache ${UPGRADE_FLAGS[*]} -o requirements.txt${NC}"
     echo ""
-    UV_CUSTOM_COMPILE_COMMAND="./scripts/generate_requirements.sh $*" \
-        uv pip compile "${REPO_ROOT}/pyproject.toml" --no-cache "${UPGRADE_FLAGS[@]}" -o "${REPO_ROOT}/requirements.txt"
+    UV_CUSTOM_COMPILE_COMMAND="./agno/scripts/generate_requirements.sh $*" \
+        uv pip compile "${AGNO_DIR}/pyproject.toml" --no-cache "${UPGRADE_FLAGS[@]}" -o "${AGNO_DIR}/requirements.txt"
 else
     echo -e "    ${DIM}Mode: standard${NC}"
     echo -e "    ${DIM}> uv pip compile pyproject.toml --no-cache -o requirements.txt${NC}"
     echo ""
-    UV_CUSTOM_COMPILE_COMMAND="./scripts/generate_requirements.sh" \
-        uv pip compile "${REPO_ROOT}/pyproject.toml" --no-cache -o "${REPO_ROOT}/requirements.txt"
+    UV_CUSTOM_COMPILE_COMMAND="./agno/scripts/generate_requirements.sh" \
+        uv pip compile "${AGNO_DIR}/pyproject.toml" --no-cache -o "${AGNO_DIR}/requirements.txt"
 fi
 
 echo ""

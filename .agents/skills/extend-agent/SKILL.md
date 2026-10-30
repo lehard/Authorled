@@ -19,10 +19,10 @@ do not switch modes or start a second API on port 8000.
 - **Compose API:** confirm its bind mount points to this checkout. Run Python with
   `docker compose exec -T agentos-api python`; inspect `docker compose logs agentos-api`.
   If setup is needed, follow [setup-platform](../setup-platform/SKILL.md).
-- **Host API:** follow the [sandbox setup commands](../../../docs/sandboxes.md#local-docker-sandbox).
+- **Host API:** follow the [sandbox setup commands](../../../agno/docs/sandboxes.md#local-docker-sandbox).
   Confirm the process's working directory and startup environment. Run Python with
-  `.venv/bin/python` and the same `.env`/runtime/DB settings as that process; use
-  `uv run --no-project --env-file .env .venv/bin/python` when loading the env file.
+  `agno/.venv/bin/python` and the same `.env`/runtime/DB settings as that process; use
+  `uv run --no-project --env-file .env agno/.venv/bin/python` when loading the env file.
   Keep the API in a persistent terminal and inspect that process's log. No API container
   or container bind mount is required in this mode.
 
@@ -41,9 +41,9 @@ Confirm the slug is code, not a Studio-built component:
 curl -s http://localhost:8000/agents | jq -r '.[] | "\(.id)\tis_component=\(.is_component)"'
 ```
 
-`is_component=true` has no source file — route the change through OS Manager (`edit_agent` / `edit_team` / `edit_workflow`, then `publish_component`). Never create `agents/<slug>.py` under that id: code wins on resolution and silently shadows the built component.
+`is_component=true` has no source file — route the change through OS Manager (`edit_agent` / `edit_team` / `edit_workflow`, then `publish_component`). Never create `agno/agents/<slug>.py` under that id: code wins on resolution and silently shadows the built component.
 
-Open the user's `agents/<slug>.py`. For OS Manager (`os-manager-internal`), inspect its `OSManager(...)` configuration in [`app/main.py`](../../../app/main.py) and the installed framework source; its members are framework-owned. Capture purpose, tools, learning, knowledge and model. Do not recreate the internal agents in this template.
+Open the user's `agno/agents/<slug>.py`. For OS Manager (`os-manager-internal`), inspect its `OSManager(...)` configuration in [`agno/app/main.py`](../../../agno/app/main.py) and the installed framework source; its members are framework-owned. Capture purpose, tools, learning, knowledge and model. Do not recreate the internal agents in this template.
 
 ## 2. Resolve the requested change
 
@@ -51,7 +51,7 @@ Use the change already specified by the user. Ask only for missing details that 
 
 - **Add a tool** — MCP server, agno toolkit, or function tool.
 - **Add a capability** — knowledge base, learning/memory, sub-agent/context provider, scheduled task.
-- **Grow the registry** — declare a block in [`app/registry.py`](../../../app/registry.py) so everything the platform *builds* can carry it. Offer this unprompted when the ask is plural ("agents should be able to…").
+- **Grow the registry** — declare a block in [`agno/app/registry.py`](../../../agno/app/registry.py) so everything the platform *builds* can carry it. Offer this unprompted when the ask is plural ("agents should be able to…").
 - **Refine instructions** — clarify, narrow, change tone or format.
 - **Fix a bug** — ask for the failing prompt, the observed behavior, what they want instead.
 - **Something else.**
@@ -71,15 +71,15 @@ print(inspect.signature(Agent.__init__))
 
 Verify proposed imports in that same environment before adding them to startup.
 
-A failing import is a dead platform, not a degraded agent — `app/main.py` imports every agent at module scope.
+A failing import is a dead platform, not a degraded agent — `agno/app/main.py` imports every agent at module scope.
 
 Repo-specific rules per branch:
 
-- **Learning / memory** — the lever is `learning=shared_learning` ([`app/registry.py`](../../../app/registry.py)). `enable_user_memories` is not an `Agent` parameter; `enable_agentic_memory` must stay off beside a LearningMachine. Entities are Agno's — don't index them from a second component. `add_history_to_context` includes session history; it does not replace per-user learning.
-- **Knowledge** — wire `knowledge=shared_knowledge` ([`app/registry.py`](../../../app/registry.py)) as one object (a list on an agent searches nothing). A product agent gets its own base — see create-agent's product pattern.
+- **Learning / memory** — the lever is `learning=shared_learning` ([`agno/app/registry.py`](../../../agno/app/registry.py)). `enable_user_memories` is not an `Agent` parameter; `enable_agentic_memory` must stay off beside a LearningMachine. Entities are Agno's — don't index them from a second component. `add_history_to_context` includes session history; it does not replace per-user learning.
+- **Knowledge** — wire `knowledge=shared_knowledge` ([`agno/app/registry.py`](../../../agno/app/registry.py)) as one object (a list on an agent searches nothing). A product agent gets its own base — see create-agent's product pattern.
 - **Shared notes** — import `shared_notes` from `app.registry` and add `shared_notes.tools()` to `tools`. Studio uses the declared toolkit name `filesystem`. Default tools read, write, append, replace, list, search and move PostgreSQL notes. User scoping follows AgentOS user isolation; keep personal profiles in learning and Company knowledge in Company wiki. Do not attach it to end-user product agents.
 - **Sub-agent / context** — choose a supported Agent/Team composition or tool interface from the pinned framework, and verify the import and constructor before wiring it. For read access to a directory, use `WorkspaceContextProvider` (`agno.context.workspace`) with `mode=ContextMode.tools` (`agno.context.mode`): spread `provider.get_tools()` into `tools=` and append `provider.instructions()` to the instructions. Default exclusions block env and credential files.
-- **Scheduled task** — [agno scheduler docs](https://docs.agno.com/agent-os/scheduler); `scheduler=True` is already on in `app/main.py`.
+- **Scheduled task** — [agno scheduler docs](https://docs.agno.com/agent-os/scheduler); `scheduler=True` is already on in `agno/app/main.py`.
 - **Grow the registry** — the bucket you declare into decides how a built component references it (`tool_names`, `model_id`, `knowledge_name`, `learning_name`, `function_name`). Tool names are global to an agent, so a toolkit exposing a name another declared toolkit already has is silently dropped — check first, enable `add_instructions=True` when the toolkit supports and supplies useful instructions:
 
   Inspect `registry.tools` and the proposed toolkit's registered functions in the selected
@@ -97,10 +97,10 @@ Repo-specific rules per branch:
 State the intended change and why. Proceed when the user has already authorized it; ask only when a material decision or scope expansion remains. Preserve existing registrations and shared resources. Edit the applicable files:
 
 - The component's file — instructions, tools, model, `learning=`, `knowledge=`.
-- [`app/registry.py`](../../../app/registry.py) — shared capabilities and resource wiring; keep the starter lean instead of creating a new module by default.
-- [`app/main.py`](../../../app/main.py) — only for a new sub-agent, `knowledge=[...]`, or interface wiring.
-- [`app/config.yaml`](../../../app/config.yaml) — refresh the description and add a quick prompt that exercises the change.
-- [`pyproject.toml`](../../../pyproject.toml) — only for new pip deps.
+- [`agno/app/registry.py`](../../../agno/app/registry.py) — shared capabilities and resource wiring; keep the starter lean instead of creating a new module by default.
+- [`agno/app/main.py`](../../../agno/app/main.py) — only for a new sub-agent, `knowledge=[...]`, or interface wiring.
+- [`agno/app/config.yaml`](../../../agno/app/config.yaml) — refresh the description and add a quick prompt that exercises the change.
+- [`agno/pyproject.toml`](../../../agno/pyproject.toml) — only for new pip deps.
 
 ## 5. Reload the selected runtime
 

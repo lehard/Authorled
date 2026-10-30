@@ -2,22 +2,22 @@
 
 ############################################################################
 #
-#    Build litellm/certs/ca-bundle.pem for the LiteLLM proxy
+#    Build agno/litellm/certs/ca-bundle.pem for the LiteLLM proxy
 #
 #    The proxy uses this file as SSL_CERT_FILE, so it must hold the public
 #    CAs (DeepSeek) and the Russian Trusted Root CA and Sub CA (GigaChat).
 #    Public CAs come from certifi in the active Python environment.
 #
 #    Usage (with .venv active):
-#      ./scripts/build_ca_bundle.sh
+#      ./agno/scripts/build_ca_bundle.sh
 #
 ############################################################################
 
 set -euo pipefail
 
 CURR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(dirname "${CURR_DIR}")"
-OUT="${REPO_ROOT}/litellm/certs/ca-bundle.pem"
+AGNO_DIR="$(dirname "${CURR_DIR}")"
+OUT="${AGNO_DIR}/litellm/certs/ca-bundle.pem"
 BASE_URL="https://gu-st.ru/content/lending"
 CERTS=(russian_trusted_root_ca_pem.crt russian_trusted_sub_ca_pem.crt)
 

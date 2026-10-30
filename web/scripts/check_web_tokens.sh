@@ -4,7 +4,7 @@
 #
 #    Design token check for web/
 #
-#    Usage: ./scripts/check_web_tokens.sh
+#    Usage: ./web/scripts/check_web_tokens.sh
 #
 #    Colours live only in web/src/design-system/tokens.css. Everywhere else in
 #    web/src code uses semantic tokens (openspec/specs/web/design-system):
@@ -15,7 +15,7 @@
 
 set -uo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${REPO_ROOT}"
 
 TOKENS_FILE="web/src/design-system/tokens.css"

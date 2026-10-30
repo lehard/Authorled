@@ -4,15 +4,15 @@
 #
 #    Agno Virtual Environment Setup
 #
-#    Usage: ./scripts/venv_setup.sh
+#    Usage: ./agno/scripts/venv_setup.sh
 #
 ############################################################################
 
 set -euo pipefail
 
 CURR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(dirname "${CURR_DIR}")"
-VENV_DIR="${REPO_ROOT}/.venv"
+AGNO_DIR="$(dirname "${CURR_DIR}")"
+VENV_DIR="${AGNO_DIR}/.venv"
 
 # Colors
 ORANGE='\033[38;5;208m'
@@ -56,16 +56,16 @@ fi
 
 echo ""
 echo -e "    ${DIM}Installing requirements...${NC}"
-echo -e "    ${DIM}> uv pip install --python ${VENV_DIR}/bin/python -r requirements.txt${NC}"
-uv pip install --python "${VENV_DIR}/bin/python" -r "${REPO_ROOT}/requirements.txt" --quiet
+echo -e "    ${DIM}> uv pip install --python ${VENV_DIR}/bin/python -r agno/requirements.txt${NC}"
+uv pip install --python "${VENV_DIR}/bin/python" -r "${AGNO_DIR}/requirements.txt" --quiet
 
 echo ""
 echo -e "    ${DIM}Installing project in editable mode with dev dependencies...${NC}"
-echo -e "    ${DIM}> uv pip install --python ${VENV_DIR}/bin/python -c requirements.txt -e .[dev]${NC}"
-uv pip install --python "${VENV_DIR}/bin/python" -c "${REPO_ROOT}/requirements.txt" -e "${REPO_ROOT}[dev]" --quiet
+echo -e "    ${DIM}> uv pip install --python ${VENV_DIR}/bin/python -c agno/requirements.txt -e agno[dev]${NC}"
+uv pip install --python "${VENV_DIR}/bin/python" -c "${AGNO_DIR}/requirements.txt" -e "${AGNO_DIR}[dev]" --quiet
 
 # Copy activation command to clipboard
-ACTIVATE_CMD="source .venv/bin/activate"
+ACTIVATE_CMD="source agno/.venv/bin/activate"
 CLIPBOARD_MSG=""
 if command -v pbcopy &> /dev/null; then
     if printf '%s' "${ACTIVATE_CMD}" | pbcopy; then

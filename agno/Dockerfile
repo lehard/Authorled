@@ -5,7 +5,7 @@ FROM agnohq/python:3.14 AS base
 
 USER root
 WORKDIR /app
-COPY requirements.txt ./
+COPY agno/requirements.txt ./
 RUN uv pip sync requirements.txt --system
 
 # ===========================================================================
@@ -29,14 +29,17 @@ CMD []
 # ===========================================================================
 FROM base AS agentos
 
-ENV PYTHONPATH=/app
-COPY . .
+# The build context is the repository root (agno/compose.yaml): /app mirrors the repository,
+# so OS Manager reads AGENTS.md, .agents/skills and openspec/ next to the backend in agno/.
+COPY . /app
+WORKDIR /app/agno
+ENV PYTHONPATH=/app/agno
 
 # ---------------------------------------------------------------------------
 # Entrypoint
 # ---------------------------------------------------------------------------
-RUN chmod +x /app/scripts/entrypoint.sh
-ENTRYPOINT ["/app/scripts/entrypoint.sh"]
+RUN chmod +x /app/agno/scripts/entrypoint.sh
+ENTRYPOINT ["/app/agno/scripts/entrypoint.sh"]
 
 # ---------------------------------------------------------------------------
 # Default command (overridden by compose for dev)

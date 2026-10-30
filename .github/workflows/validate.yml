@@ -23,7 +23,7 @@ jobs:
         uses: astral-sh/setup-uv@v3
         with:
           enable-cache: true
-          cache-dependency-glob: "requirements.txt"
+          cache-dependency-glob: "agno/requirements.txt"
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -32,8 +32,8 @@ jobs:
 
       - name: Install the project with dev dependencies
         run: |
-          uv pip install --system -r requirements.txt
-          uv pip install --system -c requirements.txt -e '.[dev]'
+          uv pip install --system -r agno/requirements.txt
+          uv pip install --system -c agno/requirements.txt -e 'agno[dev]'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

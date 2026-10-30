@@ -61,7 +61,7 @@ of the database role `agentos` the API connects with), and the block of the
 [auth module](#module-auth): `AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`,
 `AUTHENTIK_BOOTSTRAP_EMAIL`, `AUTHENTIK_BOOTSTRAP_PASSWORD`, `AUTH_FRONTEND_CLIENT_ID`,
 `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_DEV_SERVICE_TOKEN`, `AUTH_BRAND_DOMAIN` and `AUTH_ISSUER`. The CA bundle for
-GigaChat (the Russian Trusted CA) ships in `litellm/certs/ca-bundle.pem` (see [Models](#models)). Then start the platform:
+GigaChat (the Russian Trusted CA) ships in `agno/litellm/certs/ca-bundle.pem` (see [Models](#models)). Then start the platform:
 
 ```sh
 docker compose up -d --build
@@ -85,7 +85,7 @@ The check should report `9 tools; required tools available`.
 
 For code changes without rebuilding the image, run PostgreSQL, LiteLLM and Authentik in Docker
 and the API on your computer with `--reload` (needs [uv](https://docs.astral.sh/uv/) and a filled
-`.env`). The command also exports the Authentik keys to `modules/auth/jwks/jwks.json` before
+`.env`). The command also exports the Authentik keys to `auth/jwks/jwks.json` before
 the API starts:
 
 ```sh
@@ -131,10 +131,10 @@ Ask your coding agent to follow the relevant skill:
 | Fix failing tests or try more scenarios | [/eval-and-improve](.agents/skills/eval-and-improve/SKILL.md) |
 | Check the repo before sharing or releasing it | [/review-and-improve](.agents/skills/review-and-improve/SKILL.md) |
 
-If you write an agent in Python, put it in `agents/` and add it to
-[app/main.py](app/main.py) so the platform can run it. Set its description and
-suggested prompts in [app/config.yaml](app/config.yaml). To make a tool or model
-available in Studio, add it to [app/registry.py](app/registry.py).
+If you write an agent in Python, put it in `agno/agents/` and add it to
+[agno/app/main.py](agno/app/main.py) so the platform can run it. Set its description and
+suggested prompts in [agno/app/config.yaml](agno/app/config.yaml). To make a tool or model
+available in Studio, add it to [agno/app/registry.py](agno/app/registry.py).
 
 You can give agents documents to search, a notebook to keep notes, and memory
 to remember each user. Keep a product's documentation in its own knowledge base,
@@ -159,7 +159,7 @@ Automatic acceptance is off.
 Scheduled reviews use your model API keys and incur usage costs. Check the saved
 schedule and run history in Company to see when a review will run and what it did.
 
-[app/company.py](app/company.py) sets the initial review instructions and schedule.
+[agno/app/company.py](agno/app/company.py) sets the initial review instructions and schedule.
 Once they're saved in the database, update the saved Routine to change them;
 editing the Python file alone won't change an existing Routine.
 
@@ -182,7 +182,7 @@ changes before committing them.
 You don't need to configure a sandbox or repository URL to get started.
 
 To have engineers work on a separate copy of your repository, follow the
-[sandbox setup guide](docs/sandboxes.md) for Docker or AWS AgentCore.
+[sandbox setup guide](agno/docs/sandboxes.md) for Docker or AWS AgentCore.
 
 ## Make it yours
 
@@ -200,14 +200,14 @@ Future pushes go to your repository. You can still fetch updates from `upstream`
 and review them before merging.
 
 If you use sandboxes, also set the repository URL and branch in
-[the sandbox configuration](docs/sandboxes.md#choose-your-repository).
+[the sandbox configuration](agno/docs/sandboxes.md#choose-your-repository).
 
 <a id="deploy-in-production"></a>
 
 ## Deploy in production
 
 Ask your coding agent to follow [deploy-platform](.agents/skills/deploy-platform/SKILL.md),
-or use the steps below. For an existing deployment, read the [upgrade guide](docs/upgrading.md) first.
+or use the steps below. For an existing deployment, read the [upgrade guide](agno/docs/upgrading.md) first.
 
 You'll need Docker Compose 2.24.4 or newer and a stable public HTTPS URL routed
 to port 8000 on your host. Use a reverse proxy on the host or an HTTPS tunnel.
@@ -217,7 +217,7 @@ to port 8000 on your host. Use a reverse proxy on the host or an HTTPS tunnel.
 Production Compose reads `.env`. Fill the Required block (`LITELLM_MASTER_KEY`,
 `LITELLM_API_KEY`, `DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`, `SBER500_API_BASE`,
 `SBER500_API_KEY`, `EMBEDDINGS_MODEL`),
-place `litellm/certs/ca-bundle.pem`, and set `AGENTOS_URL` to your public HTTPS URL,
+place `agno/litellm/certs/ca-bundle.pem`, and set `AGENTOS_URL` to your public HTTPS URL,
 a strong `DB_PASS` (password of the bootstrap superuser of PostgreSQL, used only by the init
 services and administration), a strong `AGENTOS_DB_PASSWORD` (the role `agentos` the API
 connects with), and `MCP_CONNECT_SECRET` (generate one with
@@ -227,7 +227,7 @@ model calls fail on authentication.
 
 For an existing database, changing `DB_PASS` in `.env` does not change the database
 password. Update the database password separately; do not delete the data volume.
-`AGENTOS_DB_PASSWORD` is applied by `agentos-db-init` (`db/init.sql`) on every `up`; on an
+`AGENTOS_DB_PASSWORD` is applied by `agentos-db-init` (`agno/db/init.sql`) on every `up`; on an
 existing database the same step makes `agentos` the owner of schema `ai` and its tables.
 
 ### 2. Set up authentication
@@ -280,7 +280,7 @@ docker compose -f compose.yaml -f compose.prod.yaml down
 
 ### Sandbox storage
 
-Local Docker sandbox instructions are in the [sandbox guide](docs/sandboxes.md).
+Local Docker sandbox instructions are in the [sandbox guide](agno/docs/sandboxes.md).
 The production deployment does not attach sandbox checkpoint storage by default.
 Before enabling AWS AgentCore, enable the commented `agentos-checkpoints` volume in
 [compose.prod.yaml](compose.prod.yaml) so it is mounted at `/data` on the API
@@ -294,11 +294,17 @@ and run these commands from the project folder. Keep the local platform running.
 If another Python environment is active, run `deactivate` first.
 
 ```sh
-./scripts/venv_setup.sh
-source .venv/bin/activate
+./agno/scripts/venv_setup.sh
+source agno/.venv/bin/activate
 ./scripts/validate.sh
 python -m evals --tag smoke
 ```
+
+The repository has three modules: the backend in `agno/`, the frontend in `web/` and the
+Authentik configuration in `auth/`; the root holds what they share (`compose.yaml`, `.env`,
+`openspec/`, `scripts/`). The Python environment lives in `agno/.venv`. If you still have a
+`.venv` at the repository root from before the backend moved to `agno/`, delete it and run
+`./agno/scripts/venv_setup.sh` again.
 
 `validate.sh` checks Python formatting, lint rules, and types, and builds and checks the frontend. The smoke tests ask
 OS Manager to explain setup, check platform health, and explain agent memory.
@@ -306,11 +312,11 @@ They use your model API keys and save results in the database for review in the 
 PostgreSQL must be running, even when you only want to list the tests. The evals import the
 application, so on the host they also need the auth settings in `.env` (`AUTH_ISSUER`,
 `AUTH_FRONTEND_CLIENT_ID`) and `JWT_JWKS_FILE` pointing at the exported keys
-(`modules/auth/jwks/jwks.json`, written by `./scripts/dev.sh api` or
+(`auth/jwks/jwks.json`, written by `./scripts/dev.sh api` or
 `docker compose run --rm authentik-jwks-export`); without them they stop with an error naming the
 missing variable.
 
-Add your own cases in [evals/cases.py](evals/cases.py), or use
+Add your own cases in [agno/evals/cases.py](agno/evals/cases.py), or use
 [/create-evals](.agents/skills/create-evals/SKILL.md). To save a report, add
 `--json-output tmp/evals.json`. To run one case, use `--name CASE_NAME`.
 Evals use your application's database and workspace; agents can call tools during a test.
@@ -328,13 +334,13 @@ npm run dev --prefix web
 The dev server opens the design-system showcase at http://127.0.0.1:5173.
 `./scripts/validate.sh` checks the frontend too, so install its dependencies first.
 
-Change dependencies in `pyproject.toml`, then run `./scripts/generate_requirements.sh`.
-Commit the updated `requirements.txt` and rebuild the API and any sandbox image you use.
+Change dependencies in `agno/pyproject.toml`, then run `./agno/scripts/generate_requirements.sh`.
+Commit the updated `agno/requirements.txt` and rebuild the API and any sandbox image you use.
 See [AGENTS.md](AGENTS.md) for the code layout and development conventions.
 
 ## Models
 
-Every model call goes through the LiteLLM proxy (`litellm` service, [litellm/config.yaml](litellm/config.yaml)).
+Every model call goes through the LiteLLM proxy (`litellm` service, [agno/litellm/config.yaml](agno/litellm/config.yaml)).
 The application uses only the proxy aliases:
 
 | Alias | Provider model | Used by |
@@ -353,13 +359,13 @@ holds at most 2000), and the API rejects any vector of another size. To switch: 
 `EMBEDDINGS_MODEL`, restart the API, **recreate the `shared_knowledge` table and upload the
 documents again**: vectors of different models are incompatible even at the same size.
 
-For `gigachat-embeddings` the proxy verifies GigaChat TLS with `litellm/certs/ca-bundle.pem`: the certifi CA bundle
+For `gigachat-embeddings` the proxy verifies GigaChat TLS with `agno/litellm/certs/ca-bundle.pem`: the certifi CA bundle
 with the Russian Trusted Root CA and Sub CA appended. The file is committed; rebuild it with
-`./scripts/build_ca_bundle.sh` (active `.venv`) after a `certifi` update. Without that file
+`./agno/scripts/build_ca_bundle.sh` (active `.venv`) after a `certifi` update. Without that file
 the proxy does not start. The Sber500 gateway uses a public certificate.
 
 `gigachat-embeddings` (`Embeddings-2`) reads at most 512 tokens, so knowledge bases declare readers that cut
-documents into chunks of up to 1200 characters ([db/__init__.py](db/__init__.py)). URLs use
+documents into chunks of up to 1200 characters ([agno/db/__init__.py](agno/db/__init__.py)). URLs use
 them automatically. When you upload a file, pass the reader explicitly: `reader_id`
 (`pdf`, `docx`, `csv`, `excel`, `markdown`, `text`) in `POST /knowledge/content`, or
 `chunker` with `chunk_size=1200`. Without it, Agno 3.1.10 reads the file with its default
@@ -370,19 +376,19 @@ reader and 5000-character chunks, which exceed that limit.
 Authentication and authorization are a module of this repository: [Authentik](https://goauthentik.io)
 (sign-in, 2FA, profile, password reset, groups, service accounts, admin interface) runs next to
 the API, in the same database (schema `authentik`, own role; the API's role `agentos` has no
-access to it). Its configuration is code in `modules/auth/` (services in
-`modules/auth/compose.yaml`, included by `compose.yaml`; blueprints, database init, key export);
-`app/auth/` is the only code that reads tokens. The token claims and group names the API relies
+access to it). Its configuration is code in `auth/` (services in
+`auth/compose.yaml`, included by `compose.yaml`; blueprints, database init, key export);
+`agno/app/auth/` is the only code that reads tokens. The token claims and group names the API relies
 on are the token contract in `openspec/specs/auth`. The API accepts only tokens issued by Authentik, in every environment.
 
 - **Start.** `docker compose up -d --build` (or `./scripts/dev.sh api`) creates the schema and
   role, starts Authentik, applies the blueprints, exports the public keys to
-  `modules/auth/jwks/jwks.json` and only then starts the API. Authentik is on
+  `auth/jwks/jwks.json` and only then starts the API. Authentik is on
   [http://localhost:9000](http://localhost:9000); the first administrator is `akadmin` with
   `AUTHENTIK_BOOTSTRAP_PASSWORD`.
 - **Groups.** `screenwriters` and `editors` (authors), `admins` (superusers, the only ones in the
   Authentik admin interface and with full API access), `plugins` (service accounts). What each
-  group may call is in `app/auth/authorization.py`.
+  group may call is in `agno/app/auth/authorization.py`.
 - **Token for curl and scripts.** The service account `sa-dev` signs in with the secret
   `AUTH_DEV_SERVICE_TOKEN`:
 
@@ -401,7 +407,7 @@ on are the token contract in `openspec/specs/auth`. The API accepts only tokens 
 - **Rotate the signing key.** After changing the signing key in Authentik, run
   `docker compose run --rm authentik-jwks-export` and restart `agentos-api`: tokens signed with
   the removed key are rejected after the restart.
-- **Boundary.** `./scripts/validate.sh` fails when code outside `app/auth/` touches JWT, claims
+- **Boundary.** `./scripts/validate.sh` fails when code outside `agno/app/auth/` touches JWT, claims
   or Authentik.
 
 ## Configuration

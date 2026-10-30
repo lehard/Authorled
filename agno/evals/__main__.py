@@ -1,13 +1,14 @@
 """python -m evals [--name CASE] [--tag smoke] [--json-output FILE]."""
 
 import sys
-from pathlib import Path
 
 from dotenv import load_dotenv
 
+from app.paths import REPO_ROOT
+
 
 def main() -> int:
-    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+    load_dotenv(REPO_ROOT / ".env")
 
     from agno.eval import cli
     from agno.os.utils import collect_mcp_tools_from_team

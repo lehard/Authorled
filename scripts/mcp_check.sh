@@ -44,7 +44,7 @@ for name in MCP_CHECK_TOKEN AGENTOS_URL; do
 done
 runner+=(agentos-api python -u)
 if [[ "${MCP_CHECK_HOST:-0}" == 1 ]]; then
-    runner=(uv run --no-project --env-file .env --with-requirements requirements.txt python -u)
+    runner=(uv run --no-project --env-file .env --with-requirements agno/requirements.txt python -u)
 fi
 
 echo ""

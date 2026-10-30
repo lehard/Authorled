@@ -6,7 +6,7 @@ from pathlib import Path
 from agno.db.base import BaseDb
 from agno.os.authz import Authorization
 
-# Authentik groups (modules/auth/blueprints/10-groups.yaml) and the Agno scopes each one gets.
+# Authentik groups (auth/blueprints/10-groups.yaml) and the Agno scopes each one gets.
 # The group names are part of the token contract (openspec/specs/auth, "Контракт токена");
 # scripts/check_auth_boundary.sh fails when they differ from the blueprints.
 # Authors get no run scopes yet: the only agents registered today are platform tools (OS Manager,

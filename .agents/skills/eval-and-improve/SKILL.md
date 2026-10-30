@@ -12,8 +12,8 @@ Choose the mode from the user's request; do not ask them to supply test cases fo
   to observed failures, improve it, and retain useful regression cases. This preserves the
   exploratory workflow formerly provided by `improve-agent`.
 
-Both modes use [evals/cases.py](../../../evals/cases.py) and
-[evals/__main__.py](../../../evals/__main__.py), with Agno's `Case`, `criteria` and
+Both modes use [agno/evals/cases.py](../../../agno/evals/cases.py) and
+[agno/evals/__main__.py](../../../agno/evals/__main__.py), with Agno's `Case`, `criteria` and
 `expected_tool_calls`. Explore mode simulates user requests; the agent, tools and database
 are real unless explicitly substituted. Do not describe these probes as a side-effect-free
 simulator, a separate simulator agent, or proof of production behavior.
@@ -23,7 +23,7 @@ simulator, a separate simulator agent, or proof of production behavior.
 Read [AGENTS.md](../../../AGENTS.md), inspect `git status`, and locate the target's
 declaration or published Studio configuration. Infer the target from the request when clear.
 Capture its promised behavior, tools, model and existing coverage. Confirm the installed
-Agno version matches `pyproject.toml` before relying on its APIs.
+Agno version matches `agno/pyproject.toml` before relying on its APIs.
 
 Use the project venv and configured PostgreSQL database. The CLI loads `.env` and defaults
 to `dev` unless configured otherwise. It imports the application but does not start its API
@@ -41,7 +41,7 @@ workflows or HTTP/Company execution, verify support before choosing a runner; do
 unsupported target into Case or add an adapter here. Report the unsupported verification path
 and route a specific change through [extend-agent](../extend-agent/SKILL.md).
 
-Before cases that use MCP, inspect `evals/__main__.py`: it currently collects MCP tools
+Before cases that use MCP, inspect `agno/evals/__main__.py`: it currently collects MCP tools
 from OS Manager. Ensure the target's required MCP tools are connected in the eval loop;
 API-side connections do not carry into a separate CLI process. Use the pinned framework
 collection helpers in the existing entrypoint when additional target tools are needed.
@@ -51,7 +51,7 @@ collection helpers in the existing entrypoint when additional target tools are n
 Select the named failure first. Inspect available names/tags before choosing a wider run:
 
 ```sh
-source .venv/bin/activate
+source agno/.venv/bin/activate
 python -m evals --tag smoke --list
 python -m evals --name <case> --json-output tmp/eval-repair-before.json
 ```
@@ -74,7 +74,7 @@ a missing-evidence/refusal case, a tool-selection case and a relevant adversaria
 For each, write the user goal, input, expected behavior and evidence needed to judge it.
 Do not invent a new product requirement and then label its absence a failure.
 
-Add uniquely named exploratory `Case` entries to `evals/cases.py`, preserving existing cases,
+Add uniquely named exploratory `Case` entries to `agno/evals/cases.py`, preserving existing cases,
 with a campaign-specific tag, timeout and fixture `user_id`. Use a Team in `team=`, an Agent
 in `agent=`, and choose `expected_tool_calls` only where a tool is required. Run via
 `python -m evals --name <case> --json-output tmp/<case>.json`.
@@ -110,8 +110,8 @@ bypass approval or weaken the scenario to manufacture a passing score. Treat uns
 judge verdicts as uncertainty and inspect the rubric before repeating paid calls.
 
 Change one relevant decision at a time in application-owned agents/teams or their existing
-application configuration. This may include a necessary wiring change in `app/main.py`,
-`app/registry.py` or `app/settings.py`; keep it specific to the demonstrated defect.
+application configuration. This may include a necessary wiring change in `agno/app/main.py`,
+`agno/app/registry.py` or `agno/app/settings.py`; keep it specific to the demonstrated defect.
 Preserve explicit model choices unless the user authorizes changing them. Correct a case
 only when its expectation is demonstrably wrong; never remove a required assertion to pass.
 

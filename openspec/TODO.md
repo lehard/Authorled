@@ -12,8 +12,9 @@
 | `core-*` (серия) | не создан | продуктовое ядро, Alembic, pytest, свои маршруты |
 | `auth-module` | архивирован 2026-10-26; остаток — в разделе «Расхождения с контекст-паком» | авторизация: модуль `auth` с полным Authentik, JWT, изоляция |
 | `prepare-auth-module-extraction` | архивирован 2026-10-28; prod не проверялся | подготовка модуля `auth` к выносу: compose-фрагмент, контракт токена, роль `agentos` без доступа к `authentik` |
+| `restructure-monorepo-modules` | реализован 2026-10-30, не архивирован; prod не проверялся | три модуля верхнего уровня `agno/`, `web/`, `auth/`, общий корень |
 
-> Внимание: compose требует ключи LiteLLM, DeepSeek, GigaChat, Sber500 (`SBER500_API_BASE`, `SBER500_API_KEY`) и файл `litellm/certs/ca-bundle.pem`; без них `docker compose up` не стартует.
+> Внимание: compose требует ключи LiteLLM, DeepSeek, GigaChat, Sber500 (`SBER500_API_BASE`, `SBER500_API_KEY`) и файл `agno/litellm/certs/ca-bundle.pem`; без них `docker compose up` не стартует.
 
 ## Живая проверка DeepSeek/LiteLLM/GigaChat
 Из архивированного change `switch-models-to-deepseek-litellm` (tasks 1.1, 6.2–6.7). Ждут ключей. Код, прокси и документация проверены статически и в контейнерах на фиктивных ключах (`tmp/VERIFY.md`). Если проверка требует правки кода или design — новый change.
@@ -64,12 +65,13 @@
 - [ ] `app/registry.py`: режим веб-инструмента — константа `PARALLEL_MODE` (`keyless_mcp` по умолчанию в коде, `sdk` требует `PARALLEL_API_KEY`), без переключения по env.
 - [ ] `evals/__main__.py`: `RUNTIME_ENV` не подставляется, должен быть задан явно.
 - [ ] Документация под обязательные переменные: `README.md:188-195,288-293`, `example.env` (блоки `AGENTOS_URL`, `PARALLEL_API_KEY`, `DB_*`, нет `RUNTIME_ENV`), `docs/sandboxes.md:34-35` (команда хоста без `DB_DRIVER`/`DB_USER`/`DB_PASS`/`DB_DATABASE`), `.agents/skills/create-agent/SKILL.md:86`, `.agents/skills/deploy-platform/SKILL.md:68`, `AGENTS.md` («application code defaults to `prd`»).
-- [ ] Оставшиеся fallback-и (на решение владельца): `scripts/mcp_check.sh:93` (`AGENTOS_URL` по умолчанию `http://localhost:8000`), `compose.prod.yaml` `MCP_CONNECT_SECRET: ${MCP_CONNECT_SECRET:-}`, `compose.yaml` `${IMAGE_NAME:-agentos}:${IMAGE_TAG:-latest}`; `app/interfaces.py` и `app/sandbox.py` не проверены.
+- [ ] Оставшиеся fallback-и (на решение владельца): `scripts/mcp_check.sh:93` (`AGENTOS_URL` по умолчанию `http://localhost:8000`), `compose.prod.yaml` `MCP_CONNECT_SECRET: ${MCP_CONNECT_SECRET:-}`, `agno/compose.yaml` `${IMAGE_NAME:-agentos}:${IMAGE_TAG:-latest}`, `agno/scripts/build_image.sh` `IMAGE_TAG:-latest`; `agno/app/interfaces.py` и `agno/app/sandbox.py` не проверены.
 
 ## Замечания по качеству
 - [x] Дубль operationId `get_config`: это `GET /config` (`agno/os/router.py:102`) и `GET /components/{id}/configs/{version}` (`agno/os/routers/components/components.py:1352`). Факт записан в `api/components`; черновик issue в Agno подготовлен, не отправлен.
 - [x] `python -m app.main` слушает `127.0.0.1`, контейнер — `0.0.0.0`: так задумано, записано в `runtime`.
 - [ ] Спеки API длинные (INFO «Requirement text is very long»): разбивать домен при первом change, который его затрагивает.
 - [ ] `scripts/auth_check.sh` сразу после `docker compose up --wait` иногда падает на получении токена, через ~20 с проходит: blueprints Authentik применяются после того, как сервер стал healthy. Предложение: шаг ожидания в скрипте или healthcheck по готовности провайдера (замечено 2026-10-28).
+- [ ] На пустой базе первый `docker compose up -d --wait` не доходит до API: `authentik-server` получает статус `unhealthy`, пока применяет миграции, а `authentik-jwks-export` после повторного `up` ждёт ключи 180 с и падает, потому что worker ещё применяет blueprints; третий `up` проходит, `auth_check.sh` — ещё через ~45 с. Предложение то же: ждать готовности провайдера, а не только healthcheck сервера (замечено 2026-10-30, `restructure-monorepo-modules`).
 - [ ] Планировщик при старте API пишет `Schedule … attempt 1 failed: All connection attempts failed`: обращается к `AGENTOS_URL` раньше, чем API начал отвечать. Проверить, повторяет ли он попытку и не теряется ли запуск Routine (замечено 2026-10-28).
 - [ ] Архивный `changes/archive/2026-10-26-auth-module/proposal.md` называет фронтенд отдельным репозиторием `authorled-web`; фронтенд в `web/` (ADR-001). Архив не правим — учитывать при чтении.

@@ -5,8 +5,8 @@
 #    Agno Docker Image Builder
 #
 #    Usage:
-#      IMAGE_NAME=you/agentos ./scripts/build_image.sh
-#      IMAGE_NAME=you/agentos IMAGE_TAG=3.0.0 ./scripts/build_image.sh
+#      IMAGE_NAME=you/agentos ./agno/scripts/build_image.sh
+#      IMAGE_NAME=you/agentos IMAGE_TAG=3.0.0 ./agno/scripts/build_image.sh
 #
 #    Prerequisites:
 #      - Docker Buildx installed
@@ -18,8 +18,9 @@
 set -euo pipefail
 
 CURR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-OS_ROOT="$(dirname "${CURR_DIR}")"
-DOCKER_FILE="${OS_ROOT}/Dockerfile"
+# The Dockerfile lives in agno/, the build context is the repository root (agno/Dockerfile).
+REPO_ROOT="$(cd "${CURR_DIR}/../.." && pwd)"
+DOCKER_FILE="${REPO_ROOT}/agno/Dockerfile"
 IMAGE_NAME="${IMAGE_NAME:?Set IMAGE_NAME to your registry namespace, for example you/agentos}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 
@@ -36,7 +37,7 @@ if [[ "${IMAGE_NAME}" != */* ]]; then
     echo ""
     echo -e "    ${RED}${BOLD}IMAGE_NAME has no registry namespace:${NC} ${IMAGE_NAME}"
     echo -e "    ${DIM}Pushing there means docker.io/library/${IMAGE_NAME}, which is not writable.${NC}"
-    echo -e "    ${DIM}Set one: IMAGE_NAME=you/${IMAGE_NAME} ./scripts/build_image.sh${NC}"
+    echo -e "    ${DIM}Set one: IMAGE_NAME=you/${IMAGE_NAME} ./agno/scripts/build_image.sh${NC}"
     echo ""
     exit 1
 fi
@@ -47,8 +48,8 @@ echo -e "    ${DIM}Image: ${IMAGE_NAME}:${IMAGE_TAG}${NC}"
 echo -e "    ${DIM}Platforms: linux/amd64, linux/arm64${NC}"
 echo ""
 
-echo -e "    ${DIM}> docker buildx build --target agentos --platform=linux/amd64,linux/arm64 -t ${IMAGE_NAME}:${IMAGE_TAG} -f ${DOCKER_FILE} ${OS_ROOT} --push${NC}"
-docker buildx build --target agentos --platform=linux/amd64,linux/arm64 -t "${IMAGE_NAME}:${IMAGE_TAG}" -f "${DOCKER_FILE}" "${OS_ROOT}" --push
+echo -e "    ${DIM}> docker buildx build --target agentos --platform=linux/amd64,linux/arm64 -t ${IMAGE_NAME}:${IMAGE_TAG} -f ${DOCKER_FILE} ${REPO_ROOT} --push${NC}"
+docker buildx build --target agentos --platform=linux/amd64,linux/arm64 -t "${IMAGE_NAME}:${IMAGE_TAG}" -f "${DOCKER_FILE}" "${REPO_ROOT}" --push
 
 echo ""
 echo -e "    ${BOLD}Done.${NC}"

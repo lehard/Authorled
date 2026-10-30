@@ -29,6 +29,11 @@ Routine with automatic acceptance still requires the user who authorized that ac
 
 ## Upgrade from an older template
 
+In this repository the files of the `agentos-docker` template live in `agno/` (backend module),
+not at the repository root: `app/`, `agents/`, `db/`, `evals/`, `litellm/`, `docs/`,
+`Dockerfile`, `pyproject.toml` and the backend scripts. Map template paths to `agno/` when
+bringing template changes over; `compose.yaml` and the stack-wide scripts stay at the root.
+
 Before deploying:
 
 - Disable old `deployment-check` and `run-evals` schedules, whose workflows have been removed.
@@ -50,4 +55,4 @@ for that URL; it doesn't remove previously saved Sources. Keep the local Source
 so Company can read the code. Sandbox Company Tasks also need the saved Git Source
 to match the configured repository. See the [sandbox guide](sandboxes.md#company-tasks).
 
-Return to the [deployment instructions](../README.md#deploy-in-production).
+Return to the [deployment instructions](../../README.md#deploy-in-production).

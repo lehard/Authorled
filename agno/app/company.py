@@ -3,10 +3,9 @@ CompanyOS
 =========
 """
 
-from pathlib import Path
-
 from agno.company import Product, Routine, Source
 
+from app.paths import REPO_ROOT
 from app.sandbox import REPOSITORY
 
 MAINTENANCE = """\
@@ -26,7 +25,7 @@ products = [
         purpose="Improve this AgentOS by scanning this codebase and agno releases.",
         sources=[
             Source(type="website", reference="https://github.com/agno-agi/agno/releases"),
-            Source(type="git", reference=str(Path(__file__).resolve().parents[1])),
+            Source(type="git", reference=str(REPO_ROOT)),
             *([Source(type="git", reference=REPOSITORY.url)] if REPOSITORY is not None else []),
         ],
         routines=[

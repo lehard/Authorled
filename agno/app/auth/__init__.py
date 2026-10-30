@@ -2,7 +2,7 @@
 Module auth
 ===========
 
-Application side of the auth module (deployment side: `modules/auth/`). Authentik
+Application side of the auth module (deployment side: `auth/`). Authentik
 issues the tokens; Agno verifies them. Everything that reads token claims lives here:
 other modules see only `Principal` and `can_access_project`.
 """

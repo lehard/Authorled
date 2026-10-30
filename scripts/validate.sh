@@ -12,6 +12,8 @@ set -uo pipefail
 
 CURR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "${CURR_DIR}")"
+# The backend module: Python sources and its pyproject.toml (ruff and mypy settings).
+AGNO_DIR="${REPO_ROOT}/agno"
 
 # Colors
 ORANGE='\033[38;5;208m'
@@ -21,7 +23,7 @@ BOLD='\033[1m'
 NC='\033[0m'
 
 if [[ -z "${VIRTUAL_ENV:-}" ]]; then
-  echo -e "${RED}Warning:${NC} no virtualenv active. Run: ${BOLD}source .venv/bin/activate${NC}"
+  echo -e "${RED}Warning:${NC} no virtualenv active. Run: ${BOLD}source agno/.venv/bin/activate${NC}"
   echo ""
 fi
 
@@ -31,21 +33,21 @@ echo ""
 
 failed=0
 
-echo -e "${DIM}> ruff format --check ${REPO_ROOT}${NC}"
-if ! ruff format --check "${REPO_ROOT}"; then
+echo -e "${DIM}> ruff format --check agno${NC}"
+if ! ruff format --check "${AGNO_DIR}"; then
   echo -e "${RED}Fix with:${NC} ${BOLD}./scripts/format.sh${NC}"
   failed=1
 fi
 
 echo ""
-echo -e "${DIM}> ruff check ${REPO_ROOT}${NC}"
-if ! ruff check "${REPO_ROOT}"; then
+echo -e "${DIM}> ruff check agno${NC}"
+if ! ruff check "${AGNO_DIR}"; then
   failed=1
 fi
 
 echo ""
-echo -e "${DIM}> mypy ${REPO_ROOT} --config-file ${REPO_ROOT}/pyproject.toml${NC}"
-if ! mypy "${REPO_ROOT}" --config-file "${REPO_ROOT}/pyproject.toml"; then
+echo -e "${DIM}> (cd agno && mypy . --config-file pyproject.toml)${NC}"
+if ! (cd "${AGNO_DIR}" && mypy . --config-file pyproject.toml); then
   failed=1
 fi
 
@@ -80,7 +82,7 @@ fi
 
 echo ""
 echo -e "${DIM}> check_web_tokens${NC}"
-if ! "${CURR_DIR}/check_web_tokens.sh"; then
+if ! "${WEB_DIR}/scripts/check_web_tokens.sh"; then
   failed=1
 fi
 

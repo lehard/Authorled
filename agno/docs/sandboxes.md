@@ -4,7 +4,7 @@ By default, engineers work in the project folder on the AgentOS server. A sandbo
 runs them in a separate environment with its own copy of your repository.
 Choose Docker for local development or AWS AgentCore for a hosted sandbox.
 
-Follow the [platform setup](../README.md#run-locally) first. Run the commands below
+Follow the [platform setup](../../README.md#run-locally) first. Run the commands below
 from the repository root. Claude Engineer runs Claude Code on DeepSeek through the
 LiteLLM proxy and needs no Anthropic key: [agents/engineers.py](../agents/engineers.py)
 sets `ANTHROPIC_BASE_URL` to `LITELLM_URL` and `ANTHROPIC_API_KEY` to `LITELLM_API_KEY`
@@ -25,12 +25,12 @@ Set `sandbox_provider()` to return `docker_sandbox()`. Update `REPOSITORY` to yo
 GitHub repository and branch. The sandbox checks out that repository.
 
 Run the API on your computer so it can reach Docker. Install [uv](https://docs.astral.sh/uv/)
-and configure `.env` using the [local setup instructions](../README.md#run-locally).
+and configure `.env` using the [local setup instructions](../../README.md#run-locally).
 If a Python environment is active, run `deactivate` first.
 
 ```sh
-./scripts/venv_setup.sh
-docker build --target sandbox --load -t agno-sandbox:local .
+./agno/scripts/venv_setup.sh
+docker build --target sandbox --load -t agno-sandbox:local -f agno/Dockerfile .
 ./scripts/dev.sh api
 ```
 
@@ -57,7 +57,7 @@ Build an ARM64 sandbox image, using your ECR image URL and tag:
 
 ```sh
 SANDBOX_ECR_IMAGE=YOUR-ECR-URI:YOUR-TAG
-docker build --target sandbox --platform linux/arm64 --load -t "${SANDBOX_ECR_IMAGE}" .
+docker build --target sandbox --platform linux/arm64 --load -t "${SANDBOX_ECR_IMAGE}" -f agno/Dockerfile .
 ```
 
 Push the image to ECR, then create an AgentCore runtime and execution role with your
@@ -66,7 +66,7 @@ Update `REPOSITORY` to your repository and branch. The API host needs AWS creden
 the runtime ARN determines the region. It does not need a Docker daemon.
 
 The API also needs a persistent volume mounted at `/data` to save checkpoints.
-Follow your template's [deployment instructions](../README.md#sandbox-storage) to
+Follow your template's [deployment instructions](../../README.md#sandbox-storage) to
 configure that storage before enabling AgentCore. Keep one API replica. The
 application refuses to use AgentCore without the `/data` mount.
 

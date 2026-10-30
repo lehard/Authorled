@@ -25,11 +25,11 @@ services:
     # (written by authentik-jwks-export) that JWT_JWKS_FILE points to.
     volumes: !override
       - type: bind
-        source: ./modules/auth/jwks
-        target: /app/modules/auth/jwks
+        source: ./auth/jwks
+        target: /app/auth/jwks
         read_only: true
     # AgentCore sandbox checkpoints need a persistent /data mount, which
-    # app/sandbox.py refuses to run without (docs/sandboxes.md). Add this named
+    # agno/app/sandbox.py refuses to run without (agno/docs/sandboxes.md). Add this named
     # volume to the list above before enabling agentcore_sandbox(),
     # and uncomment the top-level `volumes:` block at the end of this file.
     #   - agentos-checkpoints:/data
