@@ -342,10 +342,11 @@ export function CoauthorChat({
         </div>
       )}
 
-      <div className="grid gap-2 px-3 pt-2.5 pb-3">
+      {/* minmax(0, 1fr): a long selection is cut by the chat width, not widening the column. */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-2 px-3 pt-2.5 pb-3">
         {selection !== "" && (
           <span className="inline-flex max-w-full items-center gap-1.5 justify-self-start rounded-full bg-ai-subtle py-1 pr-1.5 pl-2.5 text-caption text-ai">
-            <span className="truncate">
+            <span className="min-w-0 truncate">
               Выделено: «{selection.slice(0, 60)}
               {selection.length > 60 ? "…" : ""}»
             </span>
