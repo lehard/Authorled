@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { parse as parseColor, wcagContrast } from "culori";
+import { converter, parse as parseColor, wcagContrast } from "culori";
 import postcss, { type Rule } from "postcss";
 
 const TOKENS = fileURLToPath(
@@ -46,6 +46,13 @@ const PAIRS: [string, string, number][] = [
   ["destructive", "background", TEXT],
   ["sidebar-foreground", "sidebar", TEXT],
   ["sidebar-primary-foreground", "sidebar-primary", TEXT],
+  ["foreground", "desk", TEXT],
+  ["muted-foreground", "desk", TEXT],
+  ["foreground", "panel", TEXT],
+  ["muted-foreground", "panel", TEXT],
+  ["ai", "panel", TEXT],
+  ["border-strong", "desk", NON_TEXT],
+  ["border-strong", "panel", NON_TEXT],
   ["paper-foreground", "paper", TEXT],
   ["paper-foreground", "deco-comment-subtle", TEXT],
   ["ai", "ai-subtle", TEXT],
@@ -63,6 +70,17 @@ const PAIRS: [string, string, number][] = [
     NON_TEXT,
   ]),
 ];
+
+// Kabinet surfaces (ADR-006): shadcn tokens must point at the same values as the surfaces
+const SAME: [string, string][] = [
+  ["background", "desk"],
+  ["card", "panel"],
+  ["sidebar", "panel"],
+  ["popover", "paper"],
+];
+// The dark theme is warm coal, not blue-black; the AI is plum and stays apart from the accent and statuses
+const WARM = { tokens: ["desk", "panel", "paper"], from: 40, to: 100 };
+const AI_HUE = { from: 310, to: 340, minGap: 40 };
 
 function matchesTheme(selector: string, theme: string): boolean {
   const s = selector.trim();
@@ -114,6 +132,17 @@ try {
 }
 const root = postcss.parse(css);
 
+const toOklch = converter("oklch");
+function hue(tokens: Map<string, string>, name: string): number {
+  const h = toOklch(colour(tokens, name)).h;
+  if (h === undefined) throw new Error(`--${name} has no hue (achromatic)`);
+  return h;
+}
+const hueGap = (a: number, b: number) => {
+  const d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+};
+
 const failures: string[] = [];
 for (const theme of THEMES) {
   const tokens = tokensFor(root, theme);
@@ -125,13 +154,42 @@ for (const theme of THEMES) {
       );
     }
   }
+  for (const [a, b] of SAME) {
+    const va = resolve(tokens, `--${a}`),
+      vb = resolve(tokens, `--${b}`);
+    if (va !== vb)
+      failures.push(`${theme}: --${a} = ${va}, must equal --${b} = ${vb}`);
+  }
+  if (theme === "dark") {
+    for (const name of WARM.tokens) {
+      const h = hue(tokens, name);
+      if (h < WARM.from || h > WARM.to)
+        failures.push(
+          `${theme}: --${name} hue ${h.toFixed(0)}°, needs ${WARM.from}–${WARM.to}° (warm)`,
+        );
+    }
+  }
+  const ai = hue(tokens, "ai");
+  if (ai < AI_HUE.from || ai > AI_HUE.to)
+    failures.push(
+      `${theme}: --ai hue ${ai.toFixed(0)}°, needs ${AI_HUE.from}–${AI_HUE.to}° (plum)`,
+    );
+  for (const other of ["primary", ...STATUSES.map((s) => `status-${s}`)]) {
+    const gap = hueGap(ai, hue(tokens, other));
+    if (gap < AI_HUE.minGap)
+      failures.push(
+        `${theme}: --ai is ${gap.toFixed(0)}° from --${other}, needs ${AI_HUE.minGap}°`,
+      );
+  }
 }
 
 if (failures.length > 0) {
-  console.error("check-contrast: token pairs below WCAG 2.2 AA:");
+  console.error(
+    "check-contrast: design tokens break openspec/specs/web/design-system:",
+  );
   for (const line of failures) console.error(`  ${line}`);
   process.exit(1);
 }
 console.log(
-  `check-contrast: ${PAIRS.length} pairs pass in ${THEMES.join(", ")}`,
+  `check-contrast: ${PAIRS.length} pairs, surfaces and hues pass in ${THEMES.join(", ")}`,
 );

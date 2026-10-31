@@ -4,7 +4,13 @@
  * Layer 1 — primitives: 12-step OKLCH scales per theme (Radix step roles: 1–2 backgrounds,
  *           3–5 subtle fills, 6–8 borders, 9–10 solid fills, 11–12 text). Use them only here.
  * Layer 2 — shadcn/ui semantic tokens under their standard names.
- * Layer 3 — product tokens: paper, document statuses, editor decorations, AI, font roles.
+ * Layer 3 — product tokens: Kabinet surfaces (desk, lamp glow, panel, paper, shadows, grain),
+ *           document statuses, editor decorations, AI, font roles.
+ *
+ * The look follows ADR-006 «Кабинет»: a sheet of paper on a warm desk under a lamp, light grain.
+ * Light is «Утро», sepia is «Бумага», dark is «Вечер у лампы» (warm coal, not blue-black).
+ * Light surfaces: desk (neutral-3) < panel (neutral-2) < paper (neutral-1);
+ * dark surfaces: desk (neutral-1) < panel (neutral-2) < paper (neutral-3).
  *
  * Themes are selected by data-theme on <html> (light, sepia, dark); layers 2–3 are declared on
  * every themed element so a subtree with its own data-theme resolves its own values.
@@ -24,22 +30,22 @@
 
 /* ---------- Layer 1: primitives ---------- */
 
-/* Theme: light (also the colour scales of sepia) */
+/* Theme: light «Утро» (also the colour scales of sepia); neutral-12 is the blue-black ink */
 :root,
 [data-theme="light"],
 [data-theme="sepia"] {
-  --neutral-1: oklch(0.99 0.003 72);
-  --neutral-2: oklch(0.975 0.005 72);
-  --neutral-3: oklch(0.95 0.007 72);
-  --neutral-4: oklch(0.925 0.008 72);
-  --neutral-5: oklch(0.9 0.009 72);
-  --neutral-6: oklch(0.87 0.01 72);
-  --neutral-7: oklch(0.82 0.012 72);
-  --neutral-8: oklch(0.74 0.014 72);
-  --neutral-9: oklch(0.6 0.015 72);
-  --neutral-10: oklch(0.55 0.014 72);
-  --neutral-11: oklch(0.45 0.012 72);
-  --neutral-12: oklch(0.24 0.01 72);
+  --neutral-1: oklch(0.993 0.005 90);
+  --neutral-2: oklch(0.972 0.011 82);
+  --neutral-3: oklch(0.935 0.017 78);
+  --neutral-4: oklch(0.91 0.018 76);
+  --neutral-5: oklch(0.89 0.017 75);
+  --neutral-6: oklch(0.87 0.016 75);
+  --neutral-7: oklch(0.82 0.016 74);
+  --neutral-8: oklch(0.74 0.016 72);
+  --neutral-9: oklch(0.6 0.016 72);
+  --neutral-10: oklch(0.55 0.018 71);
+  --neutral-11: oklch(0.47 0.02 70);
+  --neutral-12: oklch(0.25 0.028 262);
 
   --blue-1: oklch(0.99 0.014 258);
   --blue-2: oklch(0.975 0.028 258);
@@ -49,23 +55,23 @@
   --blue-6: oklch(0.85 0.098 258);
   --blue-7: oklch(0.79 0.112 258);
   --blue-8: oklch(0.71 0.126 258);
-  --blue-9: oklch(0.52 0.14 258);
-  --blue-10: oklch(0.47 0.14 258);
+  --blue-9: oklch(0.43 0.115 262);
+  --blue-10: oklch(0.39 0.11 262);
   --blue-11: oklch(0.44 0.133 258);
   --blue-12: oklch(0.27 0.084 258);
 
-  --violet-1: oklch(0.99 0.016 298);
-  --violet-2: oklch(0.975 0.032 298);
-  --violet-3: oklch(0.95 0.056 298);
-  --violet-4: oklch(0.92 0.08 298);
-  --violet-5: oklch(0.89 0.096 298);
-  --violet-6: oklch(0.85 0.112 298);
-  --violet-7: oklch(0.79 0.128 298);
-  --violet-8: oklch(0.71 0.144 298);
-  --violet-9: oklch(0.52 0.16 298);
-  --violet-10: oklch(0.47 0.16 298);
-  --violet-11: oklch(0.44 0.152 298);
-  --violet-12: oklch(0.27 0.096 298);
+  --plum-1: oklch(0.99 0.012 318);
+  --plum-2: oklch(0.975 0.022 318);
+  --plum-3: oklch(0.95 0.028 318);
+  --plum-4: oklch(0.92 0.045 318);
+  --plum-5: oklch(0.89 0.055 318);
+  --plum-6: oklch(0.85 0.065 318);
+  --plum-7: oklch(0.8 0.07 318);
+  --plum-8: oklch(0.71 0.1 318);
+  --plum-9: oklch(0.5 0.13 318);
+  --plum-10: oklch(0.46 0.13 318);
+  --plum-11: oklch(0.48 0.13 318);
+  --plum-12: oklch(0.27 0.08 318);
 
   --teal-1: oklch(0.99 0.01 185);
   --teal-2: oklch(0.975 0.02 185);
@@ -107,36 +113,36 @@
   --crimson-12: oklch(0.27 0.102 12);
 }
 
-/* Theme: sepia — warm paper neutrals for long reading; colour scales come from light */
+/* Theme: sepia «Бумага» — cream desk and paper for long reading; colour scales come from light */
 [data-theme="sepia"] {
-  --neutral-1: oklch(0.96 0.02 80);
-  --neutral-2: oklch(0.94 0.024 80);
-  --neutral-3: oklch(0.915 0.028 80);
-  --neutral-4: oklch(0.89 0.03 80);
-  --neutral-5: oklch(0.865 0.032 80);
-  --neutral-6: oklch(0.83 0.033 80);
-  --neutral-7: oklch(0.78 0.035 80);
-  --neutral-8: oklch(0.7 0.035 80);
-  --neutral-9: oklch(0.57 0.033 80);
-  --neutral-10: oklch(0.52 0.03 80);
-  --neutral-11: oklch(0.43 0.028 80);
-  --neutral-12: oklch(0.27 0.022 80);
+  --neutral-1: oklch(0.955 0.033 84);
+  --neutral-2: oklch(0.91 0.035 78);
+  --neutral-3: oklch(0.83 0.042 70);
+  --neutral-4: oklch(0.8 0.042 70);
+  --neutral-5: oklch(0.79 0.041 70);
+  --neutral-6: oklch(0.78 0.04 70);
+  --neutral-7: oklch(0.72 0.04 68);
+  --neutral-8: oklch(0.65 0.04 64);
+  --neutral-9: oklch(0.53 0.04 60);
+  --neutral-10: oklch(0.48 0.042 58);
+  --neutral-11: oklch(0.4 0.045 55);
+  --neutral-12: oklch(0.29 0.04 50);
 }
 
-/* Theme: dark */
+/* Theme: dark «Вечер у лампы» — warm coal */
 [data-theme="dark"] {
-  --neutral-1: oklch(0.17 0.005 72);
-  --neutral-2: oklch(0.2 0.006 72);
-  --neutral-3: oklch(0.23 0.007 72);
-  --neutral-4: oklch(0.26 0.008 72);
-  --neutral-5: oklch(0.29 0.009 72);
-  --neutral-6: oklch(0.33 0.01 72);
-  --neutral-7: oklch(0.39 0.011 72);
-  --neutral-8: oklch(0.48 0.012 72);
-  --neutral-9: oklch(0.6 0.013 72);
-  --neutral-10: oklch(0.66 0.013 72);
-  --neutral-11: oklch(0.78 0.01 72);
-  --neutral-12: oklch(0.94 0.006 72);
+  --neutral-1: oklch(0.175 0.012 60);
+  --neutral-2: oklch(0.215 0.013 62);
+  --neutral-3: oklch(0.235 0.013 68);
+  --neutral-4: oklch(0.26 0.013 66);
+  --neutral-5: oklch(0.28 0.014 65);
+  --neutral-6: oklch(0.3 0.014 65);
+  --neutral-7: oklch(0.36 0.015 68);
+  --neutral-8: oklch(0.46 0.016 72);
+  --neutral-9: oklch(0.58 0.018 75);
+  --neutral-10: oklch(0.66 0.019 78);
+  --neutral-11: oklch(0.74 0.02 80);
+  --neutral-12: oklch(0.91 0.022 85);
 
   --blue-1: oklch(0.18 0.042 258);
   --blue-2: oklch(0.21 0.056 258);
@@ -146,23 +152,23 @@
   --blue-6: oklch(0.37 0.098 258);
   --blue-7: oklch(0.43 0.112 258);
   --blue-8: oklch(0.52 0.126 258);
-  --blue-9: oklch(0.62 0.14 258);
-  --blue-10: oklch(0.67 0.14 258);
+  --blue-9: oklch(0.78 0.085 255);
+  --blue-10: oklch(0.82 0.08 255);
   --blue-11: oklch(0.8 0.112 258);
   --blue-12: oklch(0.93 0.056 258);
 
-  --violet-1: oklch(0.18 0.048 298);
-  --violet-2: oklch(0.21 0.064 298);
-  --violet-3: oklch(0.25 0.08 298);
-  --violet-4: oklch(0.28 0.096 298);
-  --violet-5: oklch(0.32 0.104 298);
-  --violet-6: oklch(0.37 0.112 298);
-  --violet-7: oklch(0.43 0.128 298);
-  --violet-8: oklch(0.52 0.144 298);
-  --violet-9: oklch(0.62 0.16 298);
-  --violet-10: oklch(0.67 0.16 298);
-  --violet-11: oklch(0.8 0.128 298);
-  --violet-12: oklch(0.93 0.064 298);
+  --plum-1: oklch(0.18 0.03 318);
+  --plum-2: oklch(0.21 0.04 318);
+  --plum-3: oklch(0.29 0.045 318);
+  --plum-4: oklch(0.31 0.055 318);
+  --plum-5: oklch(0.34 0.065 318);
+  --plum-6: oklch(0.39 0.07 318);
+  --plum-7: oklch(0.5 0.08 318);
+  --plum-8: oklch(0.58 0.09 318);
+  --plum-9: oklch(0.7 0.1 318);
+  --plum-10: oklch(0.74 0.1 318);
+  --plum-11: oklch(0.79 0.1 318);
+  --plum-12: oklch(0.93 0.05 318);
 
   --teal-1: oklch(0.18 0.03 185);
   --teal-2: oklch(0.21 0.04 185);
@@ -209,18 +215,18 @@
 :root,
 [data-theme] {
   /* Layer 2: shadcn/ui */
-  --radius: 0.625rem;
-  --background: var(--neutral-1);
+  --radius: 0.75rem;
+  --background: var(--desk);
   --foreground: var(--neutral-12);
-  --card: var(--neutral-1);
+  --card: var(--panel);
   --card-foreground: var(--neutral-12);
-  --popover: var(--neutral-1);
+  --popover: var(--paper);
   --popover-foreground: var(--neutral-12);
   --primary: var(--blue-9);
   --primary-foreground: var(--neutral-1);
-  --secondary: var(--neutral-3);
+  --secondary: var(--neutral-4);
   --secondary-foreground: var(--neutral-12);
-  --muted: var(--neutral-3);
+  --muted: var(--neutral-4);
   --muted-foreground: var(--neutral-11);
   --accent: var(--neutral-4);
   --accent-foreground: var(--neutral-12);
@@ -231,9 +237,9 @@
   --chart-1: var(--blue-9);
   --chart-2: var(--teal-9);
   --chart-3: var(--amber-9);
-  --chart-4: var(--violet-9);
+  --chart-4: var(--plum-9);
   --chart-5: var(--crimson-9);
-  --sidebar: var(--neutral-2);
+  --sidebar: var(--panel);
   --sidebar-foreground: var(--neutral-12);
   --sidebar-primary: var(--blue-9);
   --sidebar-primary-foreground: var(--neutral-1);
@@ -241,6 +247,21 @@
   --sidebar-accent-foreground: var(--neutral-12);
   --sidebar-border: var(--neutral-6);
   --sidebar-ring: var(--blue-9);
+
+  /* Layer 3: Kabinet surfaces (ADR-006) — desk under the lamp, panels on it, paper on top */
+  --desk: var(--neutral-3);
+  --desk-glow: oklch(0.985 0.03 85 / 0.9);
+  --panel: var(--neutral-2);
+  --border-strong: var(--neutral-9);
+  --shadow-panel:
+    0 1px 2px oklch(0.4 0.03 60 / 0.08),
+    0 6px 16px -8px oklch(0.4 0.04 60 / 0.2);
+  --shadow-paper:
+    0 1px 1px oklch(0.4 0.03 60 / 0.05),
+    0 8px 24px -6px oklch(0.4 0.04 60 / 0.16),
+    0 32px 64px -24px oklch(0.4 0.05 60 / 0.22);
+  --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.22 0 0 0 0 0.12 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --grain-opacity: 0.07;
 
   /* Layer 3: paper (the text column of a document) */
   --paper: var(--neutral-1);
@@ -275,25 +296,50 @@
   --deco-delete: var(--crimson-9);
   --deco-comment: var(--amber-9);
   --deco-comment-subtle: var(--amber-4);
-  --deco-ai: var(--violet-9);
+  --deco-ai: var(--plum-9);
   --deco-conflict: var(--crimson-9);
   --deco-mention: var(--neutral-9);
   --deco-stale: var(--amber-9);
 
   /* Layer 3: AI — distinct from every status colour */
-  --ai: var(--violet-11);
-  --ai-subtle: var(--violet-3);
-  --ai-border: var(--violet-7);
+  --ai: var(--plum-11);
+  --ai-subtle: var(--plum-3);
+  --ai-border: var(--plum-7);
 
   /* Layer 3: font roles (families are loaded in fonts.css) */
   --font-ui: "Golos Text Variable", system-ui, sans-serif;
   --font-prose: "Literata Variable", Georgia, serif;
+  --font-heading: var(--font-prose);
   --font-script: "Cousine", "Courier New", monospace;
 
   color-scheme: light;
 }
 
+[data-theme="sepia"] {
+  /* the shared crimson-9 is too light for text on the cream desk */
+  --destructive: var(--crimson-11);
+  --desk-glow: oklch(0.93 0.05 80 / 0.85);
+  --shadow-panel:
+    0 1px 2px oklch(0.3 0.05 50 / 0.1),
+    0 6px 16px -8px oklch(0.3 0.06 50 / 0.25);
+  --shadow-paper:
+    0 1px 1px oklch(0.3 0.05 50 / 0.08),
+    0 8px 24px -6px oklch(0.3 0.06 50 / 0.22),
+    0 32px 64px -24px oklch(0.3 0.06 50 / 0.3);
+  --grain-opacity: 0.09;
+}
+
 [data-theme="dark"] {
+  --desk: var(--neutral-1);
+  --desk-glow: oklch(0.36 0.055 70 / 0.55);
+  --paper: var(--neutral-3);
+  --shadow-panel:
+    0 1px 2px oklch(0 0 0 / 0.35), 0 6px 16px -8px oklch(0 0 0 / 0.5);
+  --shadow-paper:
+    0 1px 1px oklch(0 0 0 / 0.3), 0 10px 30px -8px oklch(0 0 0 / 0.55),
+    0 40px 80px -30px oklch(0 0 0 / 0.6);
+  --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 0.9 0 0 0 0 0.75 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --grain-opacity: 0.04;
   color-scheme: dark;
 }
 
@@ -332,6 +378,11 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
+  --color-desk: var(--desk);
+  --color-panel: var(--panel);
+  --color-border-strong: var(--border-strong);
+  --shadow-panel: var(--shadow-panel);
+  --shadow-paper: var(--shadow-paper);
   --color-paper: var(--paper);
   --color-paper-foreground: var(--paper-foreground);
   --color-status-not-started: var(--status-not-started);
@@ -370,6 +421,8 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  /* Layer 3: panels and cards on the desk (ADR-006); the same in every theme */
+  --radius-panel: 1.25rem;
 }
 
 @layer base {
