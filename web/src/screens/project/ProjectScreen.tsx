@@ -17,7 +17,9 @@ import { MessageScreen } from "@/screens/system/MessageScreen";
 import { NotFoundScreen } from "@/screens/system/NotFoundScreen";
 import "@/screens/workspace.css";
 
-import { ChatColumn } from "./ChatColumn";
+import { CoauthorChat } from "./chat/CoauthorChat";
+import { CoauthorProvider } from "./chat/CoauthorProvider";
+import { useSelectionIn } from "./chat/useSelectionIn";
 import { DocView } from "./docs/DocView";
 import { parseDoc } from "./docRef";
 import { docTitle } from "./docTitle";
@@ -41,6 +43,7 @@ export function ProjectScreen() {
   const narrow = useMediaQuery("(max-width: 900px)");
   const [navOpen, setNavOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [selection, clearSelection] = useSelectionIn();
 
   // An unknown story is «Не найдено»; any other failure is shown as it is.
   if (pq.isError) {
@@ -105,76 +108,88 @@ export function ProjectScreen() {
 
   return (
     <ProjectContext.Provider value={data}>
-      {narrow ? (
-        <div className="flex h-dvh flex-col">
-          <header className="flex items-center gap-1.5 bg-panel px-2 py-1.5 shadow-panel">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-              aria-label="Навигатор"
-              onClick={() => setNavOpen(true)}
-            >
-              <Menu />
-            </Button>
-            <b className="min-w-0 flex-1 truncate">{title}</b>
-            <UserMenu compact />
-          </header>
-          <main className="min-h-0 flex-1 overflow-auto">
-            <DocView />
-          </main>
-          <button
-            type="button"
-            onClick={() => setChatOpen(true)}
-            className="flex h-12 items-center gap-2 rounded-t-panel bg-panel px-4 text-left shadow-panel"
-          >
-            <Sparkles className="size-4 text-ai" />
-            <b>Соавтор</b>
-            <small className="truncate text-xs text-muted-foreground">
-              Видит: {title}
-            </small>
-          </button>
-          <Sheet open={navOpen} onOpenChange={setNavOpen}>
-            <SheetContent
-              side="left"
-              className="w-[min(320px,86vw)] gap-0 rounded-r-panel border-0 bg-panel p-0"
-            >
-              <SheetTitle className="sr-only">Навигатор</SheetTitle>
-              <SheetDescription className="sr-only">
-                Документы истории «{project.title}»
-              </SheetDescription>
-              {navigator}
-            </SheetContent>
-          </Sheet>
-          <Sheet open={chatOpen} onOpenChange={setChatOpen}>
-            <SheetContent
-              side="bottom"
-              className="h-[70vh] gap-0 rounded-t-panel border-0 bg-panel p-0"
-            >
-              <SheetTitle className="sr-only">Соавтор</SheetTitle>
-              <SheetDescription className="sr-only">
-                Чат с соавтором
-              </SheetDescription>
-              <ChatColumn sees={title} />
-            </SheetContent>
-          </Sheet>
-        </div>
-      ) : (
-        <div className="grid h-dvh grid-cols-[240px_minmax(0,1fr)_320px] gap-3 p-3 min-[1241px]:grid-cols-[284px_minmax(0,1fr)_360px]">
-          <aside className="min-h-0 overflow-hidden rounded-panel bg-panel shadow-panel">
-            {navigator}
-          </aside>
-          <main className="relative min-h-0 overflow-auto">
-            <div className="absolute top-0 right-0 z-10">
+      <CoauthorProvider>
+        {narrow ? (
+          <div className="flex h-dvh flex-col">
+            <header className="flex items-center gap-1.5 bg-panel px-2 py-1.5 shadow-panel">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                aria-label="Навигатор"
+                onClick={() => setNavOpen(true)}
+              >
+                <Menu />
+              </Button>
+              <b className="min-w-0 flex-1 truncate">{title}</b>
               <UserMenu compact />
-            </div>
-            <DocView />
-          </main>
-          <aside className="min-h-0 overflow-hidden rounded-panel bg-panel shadow-panel">
-            <ChatColumn sees={title} />
-          </aside>
-        </div>
-      )}
+            </header>
+            <main className="min-h-0 flex-1 overflow-auto">
+              <DocView />
+            </main>
+            <button
+              type="button"
+              onClick={() => setChatOpen(true)}
+              className="flex h-12 items-center gap-2 rounded-t-panel bg-panel px-4 text-left shadow-panel"
+            >
+              <Sparkles className="size-4 text-ai" />
+              <b>Соавтор</b>
+              <small className="truncate text-xs text-muted-foreground">
+                Видит: {title}
+              </small>
+            </button>
+            <Sheet open={navOpen} onOpenChange={setNavOpen}>
+              <SheetContent
+                side="left"
+                className="gap-0 rounded-r-panel border-0 bg-panel p-0 data-[side=left]:w-[min(320px,86vw)]"
+              >
+                <SheetTitle className="sr-only">Навигатор</SheetTitle>
+                <SheetDescription className="sr-only">
+                  Документы истории «{project.title}»
+                </SheetDescription>
+                {navigator}
+              </SheetContent>
+            </Sheet>
+            <Sheet open={chatOpen} onOpenChange={setChatOpen}>
+              <SheetContent
+                side="bottom"
+                showCloseButton={false}
+                className="gap-0 rounded-t-panel border-0 bg-panel p-0 data-[side=bottom]:h-[70vh]"
+              >
+                <SheetTitle className="sr-only">Соавтор</SheetTitle>
+                <SheetDescription className="sr-only">
+                  Чат с соавтором
+                </SheetDescription>
+                <CoauthorChat
+                  sees={title}
+                  selection={selection}
+                  clearSelection={clearSelection}
+                  onClose={() => setChatOpen(false)}
+                />
+              </SheetContent>
+            </Sheet>
+          </div>
+        ) : (
+          <div className="grid h-dvh grid-cols-[240px_minmax(0,1fr)_320px] gap-3 p-3 min-[1241px]:grid-cols-[284px_minmax(0,1fr)_360px]">
+            <aside className="min-h-0 overflow-hidden rounded-panel bg-panel shadow-panel">
+              {navigator}
+            </aside>
+            <main className="relative min-h-0 overflow-auto">
+              <div className="absolute top-0 right-0 z-10">
+                <UserMenu compact />
+              </div>
+              <DocView />
+            </main>
+            <aside className="min-h-0 overflow-hidden rounded-panel bg-panel shadow-panel">
+              <CoauthorChat
+                sees={title}
+                selection={selection}
+                clearSelection={clearSelection}
+              />
+            </aside>
+          </div>
+        )}
+      </CoauthorProvider>
     </ProjectContext.Provider>
   );
 }

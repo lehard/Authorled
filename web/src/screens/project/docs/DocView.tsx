@@ -14,6 +14,7 @@ export function DocView() {
   // key: switching documents resets local form state and saves pending edits of the previous one.
   return (
     <div
+      data-chat-source
       key={docSegment}
       className="min-h-full px-3 pt-16 pb-20 min-[901px]:px-5 min-[1241px]:px-8"
     >

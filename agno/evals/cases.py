@@ -2,6 +2,7 @@
 
 from agno.eval import Case
 
+from agents.coauthor import coauthor
 from app.main import agent_os
 
 CASES = (
@@ -37,5 +38,17 @@ CASES = (
         "enabled stores or claim a successful live learning test.",
         expected_tool_calls=("read_file",),
         tags=("smoke",),
+    ),
+    # The chat appends the AG-UI context to the question in this form (agno AG-UI interface).
+    Case(
+        name="coauthor_uses_context",
+        agent=coauthor,
+        input="Чего боится героиня?\n\n<additional context>\n"
+        '{"Что сейчас открыто у автора в Authorled": "История: «Тихая вода». Открыт документ: Вера. '
+        "Персонаж: Вера. Роль: Главный. Возраст: 52. Одной фразой: Мать Ани; двадцать лет молчит о "
+        'гибели брата. Личность — Главный страх: Что Аня узнает правду и уйдёт."}\n</additional context>',
+        criteria="Отвечает по-русски, что Вера боится, что Аня узнает правду и уйдёт; опирается на "
+        "присланный профиль и не выдумывает других страхов как факт; не утверждает, что изменил текст.",
+        tags=("coauthor",),
     ),
 )

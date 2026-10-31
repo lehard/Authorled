@@ -15,6 +15,14 @@ Settings come from the repository `.env` (see `example.env`): `AUTH_ISSUER`,
 sample data in page memory, reset on reload, until the backend has project routes. A missing
 setting stops the app with its name. The design-system showcase is at `/showcase`.
 
+The chat column talks to the co-author agent (`coauthor`) of AgentOS over AG-UI with CopilotKit
+v2 (core and hooks only; the chat UI is ours, `src/screens/project/chat/`). The browser reaches
+AgentOS on its own origin under `/os/`: the dev server proxies it to `AGENTOS_URL` from the
+repository `.env` and refuses to start without it; production needs the same path on the
+reverse proxy. Conversations are Agno sessions of the user, one story each
+(`<story id>:<uuid>`). The CopilotKit dev console and inspector are off: the inspector loads
+third-party fonts and assets.
+
 - `src/app/` — settings, Refine root, routes. `src/auth/` — OIDC sign-in (oidc-client-ts).
 - `src/data/` — model, data provider (`fixtures`), sample data, profile fields.
 - `src/screens/` — shelf, story trash, story window (navigator, documents, chat column).

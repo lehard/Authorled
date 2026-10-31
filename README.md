@@ -389,10 +389,11 @@ on are the token contract in `openspec/specs/auth`. The API accepts only tokens 
 - **Sign-in.** The web frontend has its own sign-in screens (`/login`): e-mail → password, only
   when the account has one → a 6-digit code by e-mail → OIDC tokens without Authentik pages.
   The screens walk the Authentik flow `authorled-authentication` through its flow executor API
-  on the frontend's origin; «Выйти» runs the flow `authorled-invalidation` (ends the Authentik
-  session) and returns to `AUTH_FRONTEND_LOGOUT_URI`. Locally the Vite dev server proxies
-  `/api/v3/flows/executor/` and `/flows/-/cancel/` to Authentik. In production the reverse proxy
-  of the frontend must forward the same two paths to Authentik, and `AUTHENTIK_COOKIE_DOMAIN`
+  on the frontend's origin; «Выйти» revokes the tokens, runs the flow `authorled-invalidation`
+  (ends the Authentik session) and opens `AUTH_FRONTEND_LOGOUT_URI`, all without Authentik pages.
+  Locally the Vite dev server proxies `/api/v3/flows/executor/`, `/flows/-/cancel/` and
+  `/application/o/revoke/` to Authentik. In production the reverse proxy of the frontend must
+  forward the same three paths to Authentik, and `AUTHENTIK_COOKIE_DOMAIN`
   (the parent domain, e.g. `.example.com`) lets that session reach the Authentik domain.
 - **Mail.** Authentik sends the codes over SMTP (`AUTHENTIK_EMAIL__*`). Locally that is the
   `mailpit` container: every e-mail shows at [http://localhost:8025](http://localhost:8025).
@@ -402,7 +403,7 @@ on are the token contract in `openspec/specs/auth`. The API accepts only tokens 
   `AUTH_DEV_USER_PASSWORD` and a confirmed e-mail code device. In the dev server the sign-in
   screen has «Войти как Сценарист» and «Войти как Редактор»: they walk the same flow and take
   the code from Mailpit. Production builds do not contain these buttons.
-- **Groups.** `screenwriters` and `editors` (authors), `admins` (superusers, the only ones in the
+- **Groups.** `screenwriters` and `editors` (authors; they may run only the product agent `coauthor`, scope `agents:coauthor:run`), `admins` (superusers, the only ones in the
   Authentik admin interface and with full API access), `plugins` (service accounts). What each
   group may call is in `agno/app/auth/authorization.py`.
 - **Token for curl and scripts.** The service account `sa-dev` signs in with the secret

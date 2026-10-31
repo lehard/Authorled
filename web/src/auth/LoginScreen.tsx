@@ -32,9 +32,11 @@ type Stage = "email" | "password" | "code" | "finishing";
 
 /** Safe return address: a path of this app, never another origin. */
 function returnPath(value: string | null): string {
-  return value !== null && value.startsWith("/") && !value.startsWith("//")
-    ? value
-    : "/";
+  if (value === null || !value.startsWith("/") || value.startsWith("//")) {
+    return "/";
+  }
+  // Coming back to the sign-in screen itself would loop.
+  return value.startsWith("/login") ? "/" : value;
 }
 
 /** Sign-in screens after mockup v1 (openspec/specs/web/workspace, «Вход»). */

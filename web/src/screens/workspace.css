@@ -246,4 +246,69 @@
       padding: 32px 24px;
     }
   }
+
+  /* Answers of the co-author (Markdown). */
+  .chat-md {
+    display: grid;
+    gap: 0.6em;
+    overflow-wrap: break-word;
+  }
+  .chat-md > * {
+    margin: 0;
+  }
+  .chat-md ul,
+  .chat-md ol {
+    display: grid;
+    gap: 0.3em;
+    padding-left: 1.3em;
+  }
+  .chat-md ul {
+    list-style: disc;
+  }
+  .chat-md ol {
+    list-style: decimal;
+  }
+  .chat-md li::marker {
+    color: var(--muted-foreground);
+  }
+  .chat-md strong {
+    font-weight: 600;
+  }
+  .chat-md h1,
+  .chat-md h2,
+  .chat-md h3,
+  .chat-md h4 {
+    font-family: var(--font-heading);
+    font-size: var(--text-heading-3);
+    font-weight: 600;
+  }
+  .chat-md blockquote {
+    padding-left: 10px;
+    border-left: 2px solid var(--ai-border);
+    color: var(--muted-foreground);
+  }
+  .chat-md code {
+    padding: 0.1em 0.35em;
+    border-radius: 6px;
+    background: var(--muted);
+    font-size: var(--text-code);
+  }
+  .chat-md pre {
+    overflow-x: auto;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--muted);
+  }
+  .chat-md pre code {
+    padding: 0;
+    background: none;
+  }
+  .chat-md a {
+    color: var(--primary);
+    text-decoration: underline;
+  }
+  .chat-md hr {
+    border: 0;
+    border-top: 1px solid var(--border);
+  }
 }

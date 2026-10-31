@@ -7,7 +7,9 @@ from os import environ
 
 from agno.job_queue import QueueConfig
 from agno.os import AgentOS, CompanyConfig, OSManager
+from agno.os.interfaces.agui import AGUI
 
+from agents.coauthor import COAUTHOR_ID, coauthor
 from agents.engineers import engineers
 from app.auth import build_authorization
 from app.company import products
@@ -50,7 +52,10 @@ agent_os = AgentOS(
     company=CompanyConfig(products=products, model=manager_model()),
     queue=QueueConfig(durable=True, db=db),
     knowledge=[shared_knowledge],
-    agents=[*engineers],
+    agents=[*engineers, coauthor],
+    # Chat of the web frontend (CopilotKit). Under /agents/<id>/ so the per-agent scope
+    # agents:coauthor:run is enough to run it (openspec/specs/api/agents, «AG-UI соавтора»).
+    interfaces=[AGUI(agent=coauthor, prefix=f"/agents/{COAUTHOR_ID}")],
     registry=registry,
     config=str(REPO_ROOT / "agno" / "app" / "config.yaml"),
 )

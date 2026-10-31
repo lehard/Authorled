@@ -29,6 +29,13 @@ export default defineConfig(({ command, mode }) => {
   // «Вход фронтенда»); without AUTH_ISSUER the app stops at start with its name, so no proxy.
   const authOrigin =
     env.AUTH_ISSUER === undefined ? null : new URL(env.AUTH_ISSUER).origin;
+  // The dev server needs the API address for the chat; a build (CI) does not.
+  const agentosUrl = env.AGENTOS_URL ?? null;
+  if (command === "serve" && agentosUrl === null) {
+    throw new Error(
+      "AGENTOS_URL is not set in the repository .env: the dev server proxies /os/ to AgentOS.",
+    );
+  }
   return {
     plugins: [react(), tailwindcss()],
     // VITE_* variables (VITE_DATA_SOURCE) come from the repository .env.
@@ -57,12 +64,23 @@ export default defineConfig(({ command, mode }) => {
                 target: authOrigin,
                 changeOrigin: true,
               },
+              // Token revocation on sign-out (Authentik sends no CORS headers for it).
+              "/application/o/revoke/": {
+                target: authOrigin,
+                changeOrigin: true,
+              },
               // Resets an unfinished sign-in kept in the Authentik session.
               "/flows/-/cancel/": {
                 target: authOrigin,
                 changeOrigin: true,
               },
             }),
+        // AgentOS API (chat AG-UI, sessions) on the frontend's own origin.
+        "/os/": {
+          target: agentosUrl ?? undefined,
+          changeOrigin: true,
+          rewrite: (p: string) => p.replace(/^\/os/, ""),
+        },
         "/mailpit/": {
           target: MAILPIT_URL,
           rewrite: (p: string) => p.replace(/^\/mailpit/, ""),
