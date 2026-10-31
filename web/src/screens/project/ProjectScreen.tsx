@@ -44,6 +44,7 @@ export function ProjectScreen() {
   const [navOpen, setNavOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [selection, clearSelection] = useSelectionIn();
+  const [currentScene, setCurrentScene] = useState<number | null>(null);
 
   // An unknown story is «Не найдено»; any other failure is shown as it is.
   if (pq.isError) {
@@ -102,7 +103,13 @@ export function ProjectScreen() {
       world: trashWorlds.items,
     },
   };
-  const data: ProjectData = { ...base, doc: ref, docSegment: doc };
+  const data: ProjectData = {
+    ...base,
+    doc: ref,
+    docSegment: doc,
+    currentScene,
+    setCurrentScene,
+  };
   const title = docTitle(base, ref);
   const navigator = <Navigator onNavigate={() => setNavOpen(false)} />;
 

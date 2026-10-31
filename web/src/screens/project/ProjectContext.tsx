@@ -23,6 +23,9 @@ export type ProjectData = {
   trash: Record<EntityKind, Entity[]>;
   doc: DocRef;
   docSegment: string;
+  /** Scene with the caret in «Текст сценария», for the scene list of the navigator. */
+  currentScene: number | null;
+  setCurrentScene: (scene: number | null) => void;
 };
 
 export const ProjectContext = createContext<ProjectData | null>(null);

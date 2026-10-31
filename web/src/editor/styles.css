@@ -219,6 +219,20 @@
   box-decoration-break: clone;
 }
 
+/* --- Hidden paragraphs and find matches (screenplay-text-tools) --------- */
+
+.pw-editor .ProseMirror > .pw-hidden {
+  display: none !important;
+}
+.pw-find {
+  background: var(--deco-comment-subtle);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--deco-comment-subtle);
+}
+.pw-find-current {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
 /* --- Scene numbers ------------------------------------------------------- */
 
 .pw-scene-number {

@@ -7,11 +7,13 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
+import { history, undo } from "prosemirror-history";
 import { EditorState, TextSelection, type Command } from "prosemirror-state";
 
 import {
   paragraphs,
   plainDoc,
+  scenes,
   toJSON,
   toNode,
   type ScreenplayDoc,
@@ -30,6 +32,18 @@ import {
   tab,
 } from "../src/editor/keymaps/index.ts";
 import { clearColour, setColour } from "../src/editor/commands.ts";
+import {
+  findKey,
+  findPlugin,
+  replaceAll,
+  setFind,
+} from "../src/editor/plugins/find.ts";
+import { suggestions } from "../src/editor/plugins/suggest.ts";
+import {
+  hiddenBlocks,
+  visibilityKey,
+  visibilityPlugin,
+} from "../src/editor/plugins/visibility.ts";
 import { SCENE_HEADING_START } from "../src/editor/plugins/inputRules.ts";
 import { schema } from "../src/editor/schema/index.ts";
 
@@ -277,6 +291,121 @@ try {
   }
 }
 
+// 7. Scenes, hidden paragraphs, find and replace, suggestions (screenplay-text-tools).
+{
+  const story = plainDoc([
+    ["action", "До первой сцены"],
+    ["act", "Акт первый"],
+    ["sceneHeading", "НАТ. ОЗЕРО — РАССВЕТ"],
+    ["beat", "Миша уходит"],
+    ["action", "Туман над водой."],
+    ["sequence", "Кухня"],
+    ["sceneHeading", "ИНТ. КУХНЯ — УТРО"],
+    ["character", "Вера"],
+    ["dialogue", "Мам, я приеду. Мама рада."],
+    ["parenthetical", "мамина интонация"],
+    ["sceneHeading", "НАТ. ПРИСТАНЬ — ДЕНЬ"],
+    ["action", "Вера идёт по пристани."],
+  ]);
+  const list = scenes(story)
+    .map((s) =>
+      s.kind === "scene"
+        ? `${s.number}:${s.index}-${s.end}:${s.text}`
+        : `${s.kind}:${s.name}`,
+    )
+    .join(" | ");
+  const wantList =
+    "act:Акт первый | 1:2-5:Туман над водой. | sequence:Кухня | 2:6-10:Вера | 3:10-12:Вера идёт по пристани.";
+  if (list !== wantList) fail(`scenes(): «${list}», нужно «${wantList}»`);
+
+  const node = toNode(story);
+  const hidden = (cursor: number, showBeats: boolean, isolate: boolean) =>
+    [...hiddenBlocks(node, cursor, { showBeats, isolate })].join(",");
+  const cases: [number, boolean, boolean, string][] = [
+    [4, false, false, "3"],
+    [3, false, false, ""],
+    [4, true, false, ""],
+    [8, true, true, "0,1,2,3,4,5,10,11"],
+    [0, true, true, "1,5,6,7,8,9,10,11"],
+    [4, false, true, "0,1,3,5,6,7,8,9,10,11"],
+  ];
+  for (const [cursor, beats, isolate, want] of cases) {
+    const got = hidden(cursor, beats, isolate);
+    if (got !== want)
+      fail(
+        `скрытые абзацы (курсор ${cursor}, биты ${beats}, сцена ${isolate}): «${got}», нужно «${want}»`,
+      );
+  }
+
+  const kitchen = node.child(0).nodeSize + node.child(1).nodeSize;
+  let s = EditorState.create({
+    doc: node,
+    plugins: [history(), visibilityPlugin, findPlugin],
+    selection: TextSelection.create(node, kitchen + 1),
+  });
+  const count = (
+    query: string,
+    scope: Parameters<typeof setFind>[0]["scope"],
+  ) => {
+    s = run(setFind({ query, scope, current: 0 }), s);
+    return findKey.getState(s)!.matches.length;
+  };
+  if (count("МАМ", "all") !== 3)
+    fail(
+      `поиск «МАМ» во всём тексте: ${findKey.getState(s)!.matches.length}, нужно 3`,
+    );
+  if (count("мам", "dialogue") !== 3)
+    fail("поиск в репликах должен находить и ремарки");
+  if (count("мам", "action") !== 0)
+    fail("поиск в описании действия нашёл реплики");
+  if (count("вера", "all") !== 2)
+    fail(`поиск «вера»: ${findKey.getState(s)!.matches.length}, нужно 2`);
+  s = s.apply(s.tr.setMeta(visibilityKey, { isolate: true }));
+  if (count("вера", "all") !== 1)
+    fail("в «Только текущая сцена» поиск нашёл текст других сцен");
+  s = s.apply(s.tr.setMeta(visibilityKey, { isolate: false }));
+  if (count("Миша", "all") !== 0) fail("поиск нашёл текст скрытого бита");
+  count("мам", "all");
+  s = run(replaceAll("Надя"), s);
+  const after = paragraphs(toJSON(s.doc))
+    .map((p) => p.text)
+    .join(" / ");
+  if (
+    !after.includes("Надя, я приеду. Надяа рада.") ||
+    !after.includes("Надяина интонация")
+  ) {
+    fail(`«Заменить все»: ${after}`);
+  }
+  if (findKey.getState(s)!.matches.length !== 0)
+    fail("после «Заменить все» остались совпадения");
+  s = run(undo, s);
+  if (JSON.stringify(toJSON(s.doc)) !== JSON.stringify(toJSON(node)))
+    fail("одна отмена не вернула все замены");
+
+  const data = {
+    characters: ["Вера", "Аня", "Дядя Коля"],
+    locations: ["Озеро", "Кухня Веры"],
+  };
+  const labels = (type: string, text: string) =>
+    (suggestions(type, text, data)?.items ?? [])
+      .map((i) => i.insert)
+      .join(" | ");
+  const sug: [string, string, string][] = [
+    ["character", "ве", "Вера"],
+    ["character", "Вера", ""],
+    ["character", "", ""],
+    ["sceneHeading", "ин", "ИНТ.  | ИНТ./НАТ. "],
+    ["sceneHeading", "ИНТ. ку", "ИНТ. КУХНЯ ВЕРЫ — "],
+    ["sceneHeading", "ИНТ. КУХНЯ — у", "ИНТ. КУХНЯ — УТРО"],
+    ["action", "ве", ""],
+  ];
+  for (const [type, text, want] of sug) {
+    const got = labels(type, text);
+    if (got !== want)
+      fail(`подсказки (${type}, «${text}»): «${got}», нужно «${want}»`);
+  }
+}
+
 if (failures.length > 0) {
   console.error(
     "check-editor: редактор сценария расходится с openspec/specs/web/screenplay-editor:",
@@ -285,5 +414,5 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log(
-  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, круг Fountain и метки цвета — без расхождений`,
+  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, круг Fountain, метки цвета, сцены, скрытие, поиск и подсказки — без расхождений`,
 );

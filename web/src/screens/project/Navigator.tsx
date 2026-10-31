@@ -1,5 +1,7 @@
 import {
   AlignLeft,
+  ArrowLeft,
+  ListTree,
   BookOpen,
   ChevronRight,
   Clapperboard,
@@ -23,6 +25,7 @@ import {
   type EntityKind,
   type ScriptPart,
 } from "@/data/model";
+import { scenes, screenTime } from "@/editor/document.ts";
 import { ConfirmDialog } from "@/screens/shared/ConfirmDialog";
 
 import { AddDocumentDialog } from "./AddDocumentDialog";
@@ -61,6 +64,8 @@ type Row = {
   count?: number;
   menu?: MenuEntry[];
   kids?: Row[];
+  /** The row has a scene list (screenplay-text-tools, decision 9). */
+  drill?: boolean;
 };
 
 /** Navigator of a story (openspec/specs/web/workspace, «Навигатор»). */
@@ -77,6 +82,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
   });
   const [adding, setAdding] = useState<EntityKind | null>(null);
   const [emptying, setEmptying] = useState(false);
+  const [mode, setMode] = useState<"tree" | "scenes">("tree");
 
   const path = (ref: DocRef) => docPath(project.id, ref);
   const trashed = Object.entries(data.trash).flatMap(([kind, list]) =>
@@ -156,6 +162,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
         to: path({ kind: "part", part: p }),
         icon: PART_ICON[p],
         label: SCRIPT_PARTS[p],
+        drill: p === "text",
       })),
     },
     {
@@ -218,6 +225,16 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
             <span className="text-xs text-muted-foreground">{row.count}</span>
           )}
         </Link>
+        {row.drill === true && (
+          <button
+            type="button"
+            className="absolute right-1 grid size-7 place-items-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground"
+            aria-label={`Сцены: ${row.label}`}
+            onClick={() => setMode("scenes")}
+          >
+            <ListTree className="size-4" />
+          </button>
+        )}
       </>
     );
     return (
@@ -259,9 +276,17 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
           </small>
         </span>
       </Link>
-      <ul className="min-h-0 flex-1 overflow-auto px-2 pb-2">
-        {rows.map((r) => node(r, 0))}
-      </ul>
+      {mode === "tree" ? (
+        <ul className="min-h-0 flex-1 overflow-auto px-2 pb-2">
+          {rows.map((r) => node(r, 0))}
+        </ul>
+      ) : (
+        <SceneList
+          onBack={() => setMode("tree")}
+          onNavigate={onNavigate}
+          textPath={path({ kind: "part", part: "text" })}
+        />
+      )}
       <button
         type="button"
         onClick={() => setAdding("char")}
@@ -294,5 +319,83 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
         }}
       />
     </nav>
+  );
+}
+
+/** Scenes of the screenplay in the navigator: acts and groups as dividers, scenes as links. */
+function SceneList({
+  onBack,
+  onNavigate,
+  textPath,
+}: {
+  onBack: () => void;
+  onNavigate: () => void;
+  textPath: string;
+}) {
+  const { script, docSegment, currentScene } = useProjectData();
+  const list = scenes(script.text);
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex items-center gap-1 px-2 pb-1">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 font-semibold hover:bg-accent"
+        >
+          <ArrowLeft className="size-4" />
+          {SCRIPT_PARTS.text}
+        </button>
+      </div>
+      <ol
+        aria-label="Сцены"
+        className="grid min-h-0 flex-1 content-start gap-0.5 overflow-auto px-2 pb-2"
+      >
+        {list.length === 0 && (
+          <li className="px-3 py-2 text-caption text-muted-foreground">
+            Сцен пока нет: начните абзац с «ИНТ.» или «НАТ.».
+          </li>
+        )}
+        {list.map((s) =>
+          s.kind !== "scene" ? (
+            <li
+              key={`${s.kind}-${s.index}`}
+              className="px-3 pt-3 pb-1 text-caption font-semibold tracking-wide text-muted-foreground uppercase"
+            >
+              {s.name.trim() === ""
+                ? s.kind === "act"
+                  ? "Акт"
+                  : "Группа"
+                : s.name}
+            </li>
+          ) : (
+            <li key={`scene-${s.index}`}>
+              <Link
+                to={`${textPath}?scene=${s.number}`}
+                onClick={onNavigate}
+                className="tree-item grid! grid-cols-[minmax(0,1fr)] gap-0.5 px-3 py-2"
+                aria-current={
+                  docSegment === "text" && currentScene === s.number
+                    ? "location"
+                    : undefined
+                }
+              >
+                <span className="flex items-baseline gap-2">
+                  <span className="min-w-0 flex-1 truncate font-medium">
+                    {s.number}.{" "}
+                    {s.heading.trim() === "" ? "Без заголовка" : s.heading}
+                  </span>
+                  <time className="text-xs text-muted-foreground tabular-nums">
+                    {screenTime(s.chars)}
+                  </time>
+                </span>
+                <span className="truncate text-caption text-muted-foreground">
+                  {s.text === "" ? "—" : s.text}
+                </span>
+              </Link>
+            </li>
+          ),
+        )}
+      </ol>
+    </div>
   );
 }

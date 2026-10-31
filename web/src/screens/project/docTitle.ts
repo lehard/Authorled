@@ -5,7 +5,10 @@ import type { ProjectData } from "./ProjectContext";
 
 /** Name of the open document, for the mobile header and «Видит: …» of the chat. */
 export function docTitle(
-  data: Omit<ProjectData, "doc" | "docSegment">,
+  data: Omit<
+    ProjectData,
+    "doc" | "docSegment" | "currentScene" | "setCurrentScene"
+  >,
   ref: DocRef,
 ): string {
   switch (ref.kind) {

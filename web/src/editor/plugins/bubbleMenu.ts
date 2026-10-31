@@ -146,7 +146,11 @@ export function createBubbleMenuPlugin(): Plugin {
 
       return {
         update(view) {
-          if (view.state.selection.empty || !view.editable) {
+          if (
+            view.state.selection.empty ||
+            !view.editable ||
+            !view.hasFocus()
+          ) {
             menu.style.display = "none";
             return;
           }

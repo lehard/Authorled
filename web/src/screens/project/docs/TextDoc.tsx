@@ -1,12 +1,12 @@
 import { Download, FileUp, Printer } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router";
 
-import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Script } from "@/data/model";
 import { ImportError, parseScreenplayFile, PrintError } from "@/editor";
@@ -33,7 +33,7 @@ function download(name: string, type: string, text: string) {
 
 /** «Текст сценария»: the screenplay editor with autosave, import, export and print. */
 export function TextDoc() {
-  const { script } = useProjectData();
+  const { script, chars, locs, setCurrentScene } = useProjectData();
   const { save, status } = useAutosave<Script>("scripts", script.id);
   const editor = useRef<ScreenplayEditorHandle>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -42,6 +42,25 @@ export function TextDoc() {
     null,
   );
   const base = script.name.trim() === "" ? "Сценарий" : script.name.trim();
+  const suggestData = useMemo(
+    () => ({
+      characters: chars.map((c) => c.name),
+      locations: locs.map((l) => l.name),
+    }),
+    [chars, locs],
+  );
+
+  // «?scene=N» from the scene list of the navigator: the caret goes to that scene once.
+  const [params, setParams] = useSearchParams();
+  const sceneParam = params.get("scene");
+  useEffect(() => {
+    if (sceneParam === null) return;
+    const number = Number(sceneParam);
+    const found = Number.isInteger(number) && editor.current!.goToScene(number);
+    setParams({}, { replace: true });
+    if (!found) setError(`Сцены ${sceneParam} нет в тексте.`);
+  }, [sceneParam, setParams]);
+  useEffect(() => () => setCurrentScene(null), [setCurrentScene]);
 
   function act(action: () => void) {
     setError(null);
@@ -84,24 +103,20 @@ export function TextDoc() {
         ref={editor}
         doc={script.text}
         onChange={(text) => save({ text })}
-        toolbar={
+        suggestData={suggestData}
+        onScene={setCurrentScene}
+        menu={
           <>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => fileInput.current?.click()}
-            >
+            <DropdownMenuItem onSelect={() => fileInput.current?.click()}>
               <FileUp />
-              Импорт
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <Download />
-                  Экспорт
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              Импорт…
+            </DropdownMenuItem>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <Download />
+                Экспорт
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
                 <DropdownMenuItem
                   onSelect={() =>
                     download(
@@ -124,16 +139,16 @@ export function TextDoc() {
                 >
                   Final Draft (.fdx)
                 </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => act(() => editor.current!.print(script.titlePage))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuItem
+              onSelect={() =>
+                act(() => editor.current!.print(script.titlePage))
+              }
             >
               <Printer />
-              Печать
-            </Button>
+              Печать…
+            </DropdownMenuItem>
           </>
         }
       />
