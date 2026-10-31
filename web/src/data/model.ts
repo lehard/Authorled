@@ -104,6 +104,21 @@ export type Suggestion = {
   decidedAt: string | null;
 };
 
+/**
+ * A draft of the screenplay text (screenplay-drafts, decision 1): a copy of the text at one
+ * stage of work, without comments and suggestions. A locked draft opens read-only.
+ */
+export type Draft = {
+  id: string;
+  projectId: string;
+  name: string;
+  locked: boolean;
+  /** ISO time. */
+  createdAt: string;
+  text: ScreenplayDoc;
+  deletedAt: string | null;
+};
+
 /** Refine resource of each entity kind. */
 export const ENTITY_RESOURCE = {
   char: "characters",

@@ -510,3 +510,15 @@
     flex-wrap: wrap;
   }
 }
+
+/* --- Comparison of drafts: removed paragraphs struck, added ones underlined (screenplay-drafts) --- */
+
+.pw-diff-del {
+  text-decoration: line-through 2px var(--deco-delete);
+  background: color-mix(in oklch, var(--deco-delete) 10%, transparent);
+}
+.pw-diff-add {
+  text-decoration: underline 2px var(--deco-insert);
+  text-underline-offset: 0.2em;
+  background: color-mix(in oklch, var(--deco-insert) 12%, transparent);
+}

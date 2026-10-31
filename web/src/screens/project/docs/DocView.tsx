@@ -1,5 +1,7 @@
 import { useProjectData } from "../ProjectContext";
 import { BinDoc } from "./BinDoc";
+import { CompareDoc } from "./CompareDoc";
+import { DraftDoc } from "./DraftDoc";
 import { EntityDoc } from "./EntityDoc";
 import { GroupDoc } from "./GroupDoc";
 import { InfoDoc } from "./InfoDoc";
@@ -28,6 +30,8 @@ export function DocView() {
       {doc.kind === "part" && doc.part === "text" && <TextDoc mode="text" />}
       {doc.kind === "group" && <GroupDoc kind={doc.entity} />}
       {doc.kind === "entity" && <EntityDoc kind={doc.entity} id={doc.id} />}
+      {doc.kind === "draft" && <DraftDoc id={doc.id} />}
+      {doc.kind === "compare" && <CompareDoc a={doc.a} b={doc.b} />}
       {doc.kind === "trash" && <BinDoc />}
     </div>
   );

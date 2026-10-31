@@ -2,6 +2,7 @@ import { createContext, useContext } from "react";
 
 import type {
   Character,
+  Draft,
   Entity,
   EntityKind,
   Location,
@@ -22,8 +23,10 @@ export type ProjectData = {
   chars: Character[];
   locs: Location[];
   worlds: World[];
+  /** Drafts of the screenplay, oldest first (screenplay-drafts, decision 1). */
+  drafts: Draft[];
   /** Documents in the story trash, by kind. */
-  trash: Record<EntityKind, Entity[]>;
+  trash: Record<EntityKind, Entity[]> & { draft: Draft[] };
   doc: DocRef;
   docSegment: string;
   /**

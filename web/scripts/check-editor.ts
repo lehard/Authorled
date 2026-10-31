@@ -10,10 +10,12 @@ import { fileURLToPath } from "node:url";
 import { history, undo, undoDepth } from "prosemirror-history";
 import { EditorState, TextSelection, type Command } from "prosemirror-state";
 
+import { compareDocs } from "../src/editor/compare.ts";
 import {
   paragraphs,
   plainDoc,
   scenes,
+  stripMarks,
   toJSON,
   toNode,
   type ScreenplayDoc,
@@ -797,6 +799,97 @@ try {
     fail("«Отклонить» попало в историю отмены");
 }
 
+// 11. Drafts: a copy without comment and suggestion marks, paragraph comparison (screenplay-drafts).
+{
+  const marked: ScreenplayDoc = {
+    type: "doc",
+    content: [
+      {
+        type: "action",
+        content: [
+          { type: "text", text: "Свет. ", marks: [{ type: "bold" }] },
+          {
+            type: "text",
+            text: "Чашка",
+            marks: [
+              { type: "bold" },
+              { type: "textColor", attrs: { color: "2" } },
+              { type: "comment", attrs: { id: "c1" } },
+            ],
+          },
+          {
+            type: "text",
+            text: " чистая.",
+            marks: [{ type: "suggestion", attrs: { id: "s1" } }],
+          },
+        ],
+      },
+    ],
+  };
+  const copy = JSON.stringify(stripMarks(marked, ["comment", "suggestion"]));
+  if (copy.includes('"comment"') || copy.includes('"suggestion"'))
+    fail("копия для драфта сохранила метки комментариев или предложений");
+  if (!copy.includes('"bold"') || !copy.includes('"textColor"'))
+    fail("копия для драфта потеряла жирный или цвет");
+  if (
+    paragraphs(JSON.parse(copy) as ScreenplayDoc)[0].text !==
+    "Свет. Чашка чистая."
+  )
+    fail("копия для драфта изменила текст");
+
+  const base = plainDoc([
+    ["sceneHeading", "ИНТ. КУХНЯ — НОЧЬ"],
+    ["action", "Вера моет чашку."],
+    ["character", "АНЯ"],
+    ["dialogue", "Выросла."],
+    ["sceneHeading", "НАТ. ОЗЕРО — УТРО"],
+    ["action", "Туман."],
+  ]);
+  const changed = (side: { changed: boolean; text: string }[]) =>
+    side.filter((p) => p.changed).map((p) => p.text);
+  const same = compareDocs(base, base);
+  if (changed(same.before).length + changed(same.after).length !== 0)
+    fail("сравнение одинаковых текстов дало пометки");
+
+  const edited = structuredClone(base);
+  edited.content[3] = {
+    type: "dialogue",
+    content: [{ type: "text", text: "Выросла ты." }],
+  };
+  const line = compareDocs(base, edited);
+  if (
+    changed(line.before).join("|") !== "Выросла." ||
+    changed(line.after).join("|") !== "Выросла ты."
+  )
+    fail(
+      `замена реплики: было ${changed(line.before).join("|")}, стало ${changed(line.after).join("|")}`,
+    );
+
+  const longer = plainDoc([
+    ...paragraphs(base).map((p) => [p.type, p.text] as [ElementName, string]),
+    ["action", "Тишина."],
+  ]);
+  const added = compareDocs(base, longer);
+  if (
+    changed(added.before).length !== 0 ||
+    changed(added.after).join("|") !== "Тишина."
+  )
+    fail("добавленный абзац помечен неверно");
+
+  const moved = {
+    type: "doc" as const,
+    content: [...base.content.slice(4), ...base.content.slice(0, 4)],
+  };
+  const swap = compareDocs(base, moved);
+  if (
+    changed(swap.before).join("|") !== "НАТ. ОЗЕРО — УТРО|Туман." ||
+    changed(swap.after).join("|") !== "НАТ. ОЗЕРО — УТРО|Туман."
+  )
+    fail(
+      `перестановка сцены: было ${changed(swap.before).join("|")}, стало ${changed(swap.after).join("|")}`,
+    );
+}
+
 if (failures.length > 0) {
   console.error(
     "check-editor: редактор сценария расходится с openspec/specs/web/screenplay-editor:",
@@ -805,5 +898,5 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log(
-  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, круг Fountain, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник, правки сцен, комментарии и предложения соавтора — без расхождений`,
+  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, круг Fountain, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник, правки сцен, комментарии, предложения соавтора, копия и сравнение драфтов — без расхождений`,
 );

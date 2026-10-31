@@ -1,9 +1,11 @@
 import { SCRIPT_PARTS, type Entity, type EntityKind } from "@/data/model";
 import { PROFILE, ROLES } from "@/data/profiles";
-import { paragraphs } from "@/editor/document.ts";
+import { compareDocs } from "@/editor/compare.ts";
+import { paragraphs, type ScreenplayDoc } from "@/editor/document.ts";
 import { ELEMENTS, OUTLINE_TYPES } from "@/editor/elements.ts";
 
-import { ENTITY_WORDS } from "../docRef";
+import { CURRENT, ENTITY_WORDS } from "../docRef";
+import { draftOf, sideName } from "../docTitle";
 import type { ProjectData } from "../ProjectContext";
 
 // What the co-author sees (openspec/specs/web/workspace, «Контекст соавтора»): the story, the
@@ -31,6 +33,13 @@ function entityText(kind: EntityKind, x: Entity): string {
     }
   }
   return lines.join("\n");
+}
+
+function scriptText(doc: ScreenplayDoc): string {
+  return paragraphs(doc)
+    .filter((p) => p.text.trim() !== "")
+    .map((p) => `[${ELEMENTS[p.type].label}] ${p.text}`)
+    .join("\n");
 }
 
 function documentText(data: ProjectData): { title: string; text: string } {
@@ -90,6 +99,28 @@ function documentText(data: ProjectData): { title: string; text: string } {
       if (x === undefined)
         throw new Error(`Нет документа ${doc.entity}:${doc.id}.`);
       return { title: x.name, text: entityText(doc.entity, x) };
+    }
+    case "draft": {
+      const d = draftOf(data.drafts, doc.id);
+      return { title: `Драфт «${d.name}»`, text: scriptText(d.text) };
+    }
+    case "compare": {
+      const side = (id: string) =>
+        id === CURRENT ? data.text : draftOf(data.drafts, id).text;
+      const { before, after } = compareDocs(side(doc.a), side(doc.b));
+      const lines = (list: typeof before) =>
+        list
+          .filter((p) => p.changed && p.text.trim() !== "")
+          .map((p) => `[${ELEMENTS[p.type].label}] ${p.text}`);
+      return {
+        title: "Сравнение драфтов",
+        text: [
+          `Было: ${sideName(data.drafts, doc.a)}. Убранные абзацы:`,
+          ...lines(before),
+          `Стало: ${sideName(data.drafts, doc.b)}. Добавленные абзацы:`,
+          ...lines(after),
+        ].join("\n"),
+      };
     }
     case "trash":
       return {

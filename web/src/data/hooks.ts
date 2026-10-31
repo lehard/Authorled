@@ -3,6 +3,7 @@ import { useList, useOne, type CrudFilter } from "@refinedev/core";
 import {
   ENTITY_RESOURCE,
   type CommentThread,
+  type Draft,
   type Entity,
   type EntityKind,
   type Project,
@@ -76,4 +77,18 @@ export function useSuggestions(projectId: string) {
     pagination: { mode: "off" },
   });
   return { suggestions: result.data, query };
+}
+
+/** Drafts of the screenplay, oldest first; `inTrash` lists the deleted ones. */
+export function useDrafts(projectId: string, inTrash = false) {
+  const { result, query } = useList<Draft>({
+    resource: "drafts",
+    filters: [
+      { field: "projectId", operator: "eq", value: projectId },
+      deleted(inTrash),
+    ],
+    sorters: [{ field: "createdAt", order: "asc" }],
+    pagination: { mode: "off" },
+  });
+  return { drafts: result.data, query };
 }

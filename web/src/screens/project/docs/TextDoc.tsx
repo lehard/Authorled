@@ -1,13 +1,8 @@
-import { AlignLeft, Download, FileUp, LayoutGrid, Printer } from "lucide-react";
+import { AlignLeft, Copy, FileUp, LayoutGrid } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 
-import {
-  DropdownMenuItem,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { SCRIPT_PARTS } from "@/data/model";
 import {
@@ -24,26 +19,22 @@ import { ConfirmDialog } from "@/screens/shared/ConfirmDialog";
 
 import type { Node } from "prosemirror-model";
 
+import { docPath } from "../docRef";
+import { useDraftActions } from "../draftActions";
+import { CreateDraftDialog } from "../DraftDialogs";
 import { useProjectData } from "../ProjectContext";
+import { ActionError, ExportItems } from "./ExportItems";
 import { useEditorComments } from "./useEditorComments";
 import { useEditorSuggestions } from "./useEditorSuggestions";
 import { DocHead } from "./DocHead";
 import { SceneBoard } from "./SceneBoard";
-
-function download(name: string, type: string, text: string) {
-  const url = URL.createObjectURL(new Blob([text], { type }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  a.click();
-  URL.revokeObjectURL(url);
-}
 
 /**
  * «Текст сценария» and «Поэпизодник»: the editor over the shared text of the story, or its
  * scene cards (`?view=cards`, scene-outline-and-cards, decision 5).
  */
 export function TextDoc({ mode }: { mode: EditorMode }) {
+  const data = useProjectData();
   const {
     project,
     script,
@@ -54,7 +45,10 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
     textStatus,
     setCurrentScene,
     openChat,
-  } = useProjectData();
+  } = data;
+  const navigate = useNavigate();
+  const draftActions = useDraftActions(data);
+  const [drafting, setDrafting] = useState(false);
   const editor = useRef<ScreenplayEditorHandle>(null);
   // One card at a time: a comment thread or a co-author suggestion.
   const closeSuggestion = useRef<(() => void) | null>(null);
@@ -213,65 +207,32 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
                   <FileUp />
                   Импорт…
                 </DropdownMenuItem>
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <Download />
-                    Экспорт
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent>
-                    <DropdownMenuItem
-                      onSelect={() =>
-                        download(
-                          `${base}.fountain`,
-                          "text/plain;charset=utf-8",
-                          editor.current!.toFountain(),
-                        )
-                      }
-                    >
-                      Fountain (.fountain)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() =>
-                        download(
-                          `${base}.fdx`,
-                          "application/xml;charset=utf-8",
-                          editor.current!.toFDX(),
-                        )
-                      }
-                    >
-                      Final Draft (.fdx)
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-                <DropdownMenuItem
-                  onSelect={() =>
-                    act(() => editor.current!.print(script.titlePage))
-                  }
-                >
-                  <Printer />
-                  Печать…
+                <DropdownMenuItem onSelect={() => setDrafting(true)}>
+                  <Copy />
+                  Создать драфт…
                 </DropdownMenuItem>
+                <ExportItems
+                  name={base}
+                  editor={editor}
+                  titlePage={script.titlePage}
+                  act={act}
+                />
               </>
             )
           }
         />
       )}
-      {error !== null && (
-        <p
-          role="alert"
-          className="fixed bottom-6 left-1/2 z-20 w-[min(560px,calc(100%-32px))] -translate-x-1/2 rounded-2xl bg-paper px-4 py-3 text-caption text-destructive shadow-paper"
-        >
-          {error}{" "}
-          <button
-            type="button"
-            className="text-primary hover:underline"
-            onClick={() => setError(null)}
-          >
-            Закрыть
-          </button>
-        </p>
-      )}
+      <ActionError error={error} onClose={() => setError(null)} />
       {comments.dialog}
+      <CreateDraftDialog
+        open={drafting}
+        onOpenChange={setDrafting}
+        drafts={data.drafts}
+        onSubmit={async (name, from, locked) => {
+          const id = await draftActions.create(name, from, locked);
+          navigate(docPath(project.id, { kind: "draft", id }));
+        }}
+      />
       <ConfirmDialog
         open={pending !== null}
         onOpenChange={(open) => {

@@ -5,6 +5,7 @@ import { plainDoc, type ScreenplayDoc } from "@/editor/document.ts";
 import type {
   Character,
   CommentThread,
+  Draft,
   Location,
   Project,
   Script,
@@ -52,6 +53,7 @@ export const FIXTURES: {
   worlds: World[];
   comments: CommentThread[];
   suggestions: Suggestion[];
+  drafts: Draft[];
 } = {
   projects: [
     {
@@ -449,4 +451,6 @@ export const FIXTURES: {
       decidedAt: null,
     },
   ],
+  // Mockup v2 has no drafts: the first one is the author's.
+  drafts: [],
 };

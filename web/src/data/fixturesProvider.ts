@@ -22,6 +22,7 @@ const RESOURCES = [
   "worlds",
   "comments",
   "suggestions",
+  "drafts",
 ] as const;
 type Resource = (typeof RESOURCES)[number];
 
@@ -136,6 +137,7 @@ export const fixturesProvider: DataProvider = {
         "worlds",
         "comments",
         "suggestions",
+        "drafts",
       ] as const) {
         store[name] = store[name].filter((r) => r.projectId !== row.id);
       }

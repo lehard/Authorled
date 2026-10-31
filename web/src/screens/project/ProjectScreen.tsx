@@ -9,7 +9,7 @@ import {
   SheetDescription,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useEntities, useProject, useScript } from "@/data/hooks";
+import { useDrafts, useEntities, useProject, useScript } from "@/data/hooks";
 import type { Character, Location, Script, World } from "@/data/model";
 import type { ScreenplayDoc } from "@/editor/document.ts";
 import { useAutosave } from "@/screens/shared/useAutosave";
@@ -23,7 +23,7 @@ import { CoauthorChat } from "./chat/CoauthorChat";
 import { CoauthorProvider } from "./chat/CoauthorProvider";
 import { useSelectionIn } from "./chat/useSelectionIn";
 import { DocView } from "./docs/DocView";
-import { parseDoc } from "./docRef";
+import { CURRENT, parseDoc } from "./docRef";
 import { docTitle } from "./docTitle";
 import { Navigator } from "./Navigator";
 import { ProjectContext, type ProjectData } from "./ProjectContext";
@@ -42,6 +42,8 @@ export function ProjectScreen() {
   const trashChars = useEntities("char", projectId, true);
   const trashLocs = useEntities("loc", projectId, true);
   const trashWorlds = useEntities("world", projectId, true);
+  const drafts = useDrafts(projectId);
+  const trashDrafts = useDrafts(projectId, true);
   const narrow = useMediaQuery("(max-width: 900px)");
   const [navOpen, setNavOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -72,6 +74,8 @@ export function ProjectScreen() {
     trashChars.query,
     trashLocs.query,
     trashWorlds.query,
+    drafts.query,
+    trashDrafts.query,
   ];
   const failed = lists.find((q) => q.isError);
   if (failed?.error)
@@ -101,6 +105,18 @@ export function ProjectScreen() {
       return <NotFoundScreen />;
     }
   }
+  // A draft or a side of a comparison: the same rule as a document just added.
+  const draftIds = [
+    ...(ref.kind === "draft" ? [ref.id] : []),
+    ...(ref.kind === "compare"
+      ? [ref.a, ref.b].filter((x) => x !== CURRENT)
+      : []),
+  ];
+  if (!draftIds.every((id) => drafts.drafts.some((d) => d.id === id))) {
+    if (drafts.query.isFetching)
+      return <MessageScreen loading title="Открываем документ…" />;
+    return <NotFoundScreen />;
+  }
 
   const base = {
     project,
@@ -108,10 +124,12 @@ export function ProjectScreen() {
     chars: chars.items,
     locs: locs.items,
     worlds: worlds.items,
+    drafts: drafts.drafts,
     trash: {
       char: trashChars.items,
       loc: trashLocs.items,
       world: trashWorlds.items,
+      draft: trashDrafts.drafts,
     },
   };
   const data: ProjectData = {

@@ -1,5 +1,6 @@
 // JSON of a screenplay document: what the app stores and the backend will keep.
 import { Node } from "prosemirror-model";
+import { Transform } from "prosemirror-transform";
 
 import type { ElementName, MarkColor } from "./elements.ts";
 import { schema } from "./schema/index.ts";
@@ -53,6 +54,21 @@ export function plainDoc(rows: [ElementName, string][]): ScreenplayDoc {
       text === "" ? { type } : { type, content: [{ type: "text", text }] },
     ),
   };
+}
+
+/**
+ * The document without marks of `types`: a draft copies the text without the comments and
+ * suggestions of the current one (screenplay-drafts, decision 2).
+ */
+export function stripMarks(
+  doc: ScreenplayDoc,
+  types: ("comment" | "suggestion")[],
+): ScreenplayDoc {
+  const node = toNode(doc);
+  const tr = new Transform(node);
+  for (const type of types)
+    tr.removeMark(0, node.content.size, schema.marks[type]);
+  return toJSON(tr.doc);
 }
 
 export type Paragraph = { type: ElementName; text: string };

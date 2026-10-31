@@ -8,7 +8,13 @@ export type DocRef =
   | { kind: "part"; part: ScriptPart }
   | { kind: "group"; entity: EntityKind }
   | { kind: "entity"; entity: EntityKind; id: string }
+  | { kind: "draft"; id: string }
+  /** `a` («было») and `b` («стало»): "current" or a draft id, never the same. */
+  | { kind: "compare"; a: string; b: string }
   | { kind: "trash" };
+
+/** The current text of the screenplay on either side of a comparison. */
+export const CURRENT = "current";
 
 export const GROUPS = {
   chars: "char",
@@ -60,6 +66,10 @@ export function parseDoc(doc: string): DocRef | null {
   const m = /^(char|loc|world):(.+)$/.exec(doc);
   if (m !== null)
     return { kind: "entity", entity: m[1] as EntityKind, id: m[2] };
+  const d = /^draft:(.+)$/.exec(doc);
+  if (d !== null) return { kind: "draft", id: d[1] };
+  const c = /^compare:([^:]+):([^:]+)$/.exec(doc);
+  if (c !== null && c[1] !== c[2]) return { kind: "compare", a: c[1], b: c[2] };
   return null;
 }
 
@@ -71,6 +81,10 @@ export function docPath(projectId: string, ref: DocRef): string {
         ? GROUP_OF[ref.entity]
         : ref.kind === "entity"
           ? `${ref.entity}:${ref.id}`
-          : ref.kind;
+          : ref.kind === "draft"
+            ? `draft:${ref.id}`
+            : ref.kind === "compare"
+              ? `compare:${ref.a}:${ref.b}`
+              : ref.kind;
   return `/p/${projectId}/${seg}`;
 }
