@@ -36,6 +36,14 @@ export function useEntityActions(projectId: string) {
       });
       return String(data.id);
     },
+    /** A character or a location found in the text: added as an episodic one. */
+    async addFromText(kind: "char" | "loc", name: string): Promise<void> {
+      await create({
+        resource: ENTITY_RESOURCE[kind],
+        values: { ...blank(kind, projectId, name), role: "episodic" },
+        ...quiet,
+      });
+    },
     async trash(kind: EntityKind, id: string, inTrash: boolean) {
       const values = { deletedAt: inTrash ? new Date().toISOString() : null };
       await update({ resource: ENTITY_RESOURCE[kind], id, values, ...quiet });

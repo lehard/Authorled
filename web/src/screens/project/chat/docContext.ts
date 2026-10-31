@@ -1,7 +1,7 @@
 import { SCRIPT_PARTS, type Entity, type EntityKind } from "@/data/model";
 import { PROFILE, ROLES } from "@/data/profiles";
 import { paragraphs } from "@/editor/document.ts";
-import { ELEMENTS } from "@/editor/elements.ts";
+import { ELEMENTS, OUTLINE_TYPES } from "@/editor/elements.ts";
 
 import { ENTITY_WORDS } from "../docRef";
 import type { ProjectData } from "../ProjectContext";
@@ -59,8 +59,10 @@ function documentText(data: ProjectData): { title: string; text: string } {
       if (doc.part === "synopsis")
         return { title: SCRIPT_PARTS.synopsis, text: script.synopsis };
       return {
-        title: SCRIPT_PARTS.text,
-        text: paragraphs(script.text)
+        title: SCRIPT_PARTS[doc.part],
+        text: paragraphs(data.text)
+          // The treatment shows the co-author what the author sees: headings, beats, groups, acts.
+          .filter((p) => doc.part === "text" || OUTLINE_TYPES.includes(p.type))
           .filter((p) => p.text.trim() !== "")
           .map((p) => `[${ELEMENTS[p.type].label}] ${p.text}`)
           .join("\n"),

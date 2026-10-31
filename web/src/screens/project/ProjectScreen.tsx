@@ -10,7 +10,9 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useEntities, useProject, useScript } from "@/data/hooks";
-import type { Character, Location, World } from "@/data/model";
+import type { Character, Location, Script, World } from "@/data/model";
+import type { ScreenplayDoc } from "@/editor/document.ts";
+import { useAutosave } from "@/screens/shared/useAutosave";
 import { useMediaQuery } from "@/screens/shared/useMediaQuery";
 import { UserMenu } from "@/screens/shared/UserMenu";
 import { MessageScreen } from "@/screens/system/MessageScreen";
@@ -45,6 +47,15 @@ export function ProjectScreen() {
   const [chatOpen, setChatOpen] = useState(false);
   const [selection, clearSelection] = useSelectionIn();
   const [currentScene, setCurrentScene] = useState<number | null>(null);
+  // The working copy of the text belongs to one story; another story starts from its data.
+  const [draft, setDraft] = useState<{
+    id: string;
+    text: ScreenplayDoc;
+  } | null>(null);
+  const { save: saveText, status: textStatus } = useAutosave<Script>(
+    "scripts",
+    projectId,
+  );
 
   // An unknown story is «Не найдено»; any other failure is shown as it is.
   if (pq.isError) {
@@ -107,6 +118,12 @@ export function ProjectScreen() {
     ...base,
     doc: ref,
     docSegment: doc,
+    text: draft?.id === script.id ? draft.text : script.text,
+    setText: (text) => {
+      setDraft({ id: script.id, text });
+      saveText({ text });
+    },
+    textStatus,
     currentScene,
     setCurrentScene,
   };

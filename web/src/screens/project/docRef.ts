@@ -49,7 +49,12 @@ export const ENTITY_WORDS: Record<
 /** Parses the segment; null means «Не найдено». */
 export function parseDoc(doc: string): DocRef | null {
   if (doc === "info" || doc === "sp" || doc === "trash") return { kind: doc };
-  if (doc === "title" || doc === "synopsis" || doc === "text")
+  if (
+    doc === "title" ||
+    doc === "synopsis" ||
+    doc === "treatment" ||
+    doc === "text"
+  )
     return { kind: "part", part: doc };
   if (doc in GROUPS) return { kind: "group", entity: GROUPS[doc as GroupKey] };
   const m = /^(char|loc|world):(.+)$/.exec(doc);

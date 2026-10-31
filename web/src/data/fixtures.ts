@@ -48,6 +48,7 @@ export const FIXTURES: {
       show: {
         title: true,
         synopsis: true,
+        treatment: true,
         text: true,
       },
       titlePage: {
@@ -155,6 +156,7 @@ export const FIXTURES: {
       show: {
         title: true,
         synopsis: true,
+        treatment: true,
         text: true,
       },
       titlePage: {
@@ -179,6 +181,7 @@ export const FIXTURES: {
       show: {
         title: true,
         synopsis: true,
+        treatment: true,
         text: true,
       },
       titlePage: {

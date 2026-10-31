@@ -8,9 +8,31 @@ import {
   type ElementName,
 } from "../elements.ts";
 
+// Parameters of a scene live on its heading and move with it (scene-outline-and-cards, decision 2).
+const SCENE_ATTRS: NodeSpec["attrs"] = {
+  alt: { default: "", validate: "string" },
+  day: { default: "", validate: "string" },
+  color: {
+    default: null,
+    validate: (v) => {
+      if (v !== null) validColour(v);
+    },
+  },
+  tags: {
+    default: [],
+    validate: (v) => {
+      if (!Array.isArray(v) || v.some((t) => typeof t !== "string"))
+        throw new RangeError(
+          `Теги сцены — список строк, а не ${JSON.stringify(v)}`,
+        );
+    },
+  },
+};
+
 function paragraph(name: ElementName): NodeSpec {
   const type = elementClass(name).slice(3);
   return {
+    ...(name === "sceneHeading" ? { attrs: SCENE_ATTRS } : {}),
     group: "block",
     content: "text*",
     defining: true,

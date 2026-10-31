@@ -7,7 +7,11 @@ import type { Node } from "prosemirror-model";
 import { EditorState, TextSelection, type Plugin } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 
-import { isElementName, type ElementName } from "./elements.ts";
+import {
+  isElementName,
+  type EditorMode,
+  type ElementName,
+} from "./elements.ts";
 import { toJSON, toNode, type ScreenplayDoc } from "./document.ts";
 import { docToFDX } from "./exporters/fdx.ts";
 import { docToFountain } from "./exporters/fountain.ts";
@@ -39,6 +43,9 @@ import {
 } from "./plugins/suggest.ts";
 import {
   blockIndex,
+  outlineCaret,
+  outlineGuardKey,
+  outlineGuardPlugin,
   sceneRange,
   visibilityKey,
   visibilityPlugin,
@@ -67,6 +74,8 @@ export type EditorSnapshot = {
 export type ScreenplayEditorOptions = {
   container: HTMLElement;
   doc: ScreenplayDoc;
+  /** The text, or the treatment (scene headings, beats, groups and acts) of the same document. */
+  mode: EditorMode;
   onChange?: (doc: ScreenplayDoc) => void;
   /** The state of the editor, after every change of state. */
   onState?: (snapshot: EditorSnapshot) => void;
@@ -105,12 +114,13 @@ export class ScreenplayEditorView {
           return options.onFindRequest !== undefined;
         },
       }),
-      screenplayKeymap,
+      screenplayKeymap(options.mode),
       keymap({ "Mod-z": undo, "Mod-y": redo, "Shift-Mod-z": redo }),
       keymap(baseKeymap),
       history(),
       // Visibility before find: find skips the paragraphs it hides.
-      visibilityPlugin,
+      visibilityPlugin(options.mode === "outline"),
+      ...(options.mode === "outline" ? [outlineGuardPlugin] : []),
       findPlugin,
       paginationPlugin,
       sceneNumbersPlugin,
@@ -118,7 +128,14 @@ export class ScreenplayEditorView {
       createBubbleMenuPlugin(),
       ...(options.extraPlugins ?? []),
     ];
-    const state = EditorState.create({ doc: toNode(options.doc), plugins });
+    const doc = toNode(options.doc);
+    // The treatment opens with the caret in its first shown paragraph.
+    const at = options.mode === "outline" ? outlineCaret(doc, 1) : null;
+    const state = EditorState.create({
+      doc,
+      plugins,
+      selection: at === null ? undefined : TextSelection.create(doc, at),
+    });
     const report = (s: EditorState) => options.onState?.(this.snapshot(s));
 
     this.view = new EditorView(options.container, {
@@ -260,18 +277,18 @@ export class ScreenplayEditorView {
   replace(doc: Node): void {
     const { state } = this.view;
     this.view.dispatch(
-      state.tr.replaceWith(0, state.doc.content.size, doc.content),
+      state.tr
+        .replaceWith(0, state.doc.content.size, doc.content)
+        .setMeta(outlineGuardKey, true),
     );
   }
 
   /** Puts a document from outside (another tab, a reload) without an undo step. */
   load(doc: ScreenplayDoc): void {
     const { state } = this.view;
-    const tr = state.tr.replaceWith(
-      0,
-      state.doc.content.size,
-      toNode(doc).content,
-    );
+    const tr = state.tr
+      .replaceWith(0, state.doc.content.size, toNode(doc).content)
+      .setMeta(outlineGuardKey, true);
     this.view.dispatch(tr.setMeta("addToHistory", false));
   }
 
@@ -303,7 +320,8 @@ export class ScreenplayEditorView {
 }
 
 export { ELEMENT_NAMES, ELEMENTS, MARK_COLORS } from "./elements.ts";
-export type { ElementName, MarkColor } from "./elements.ts";
+export type { EditorMode, ElementName, MarkColor } from "./elements.ts";
+export { elementsOf } from "./keymaps/index.ts";
 export { paragraphs, plainDoc, scenes, screenTime } from "./document.ts";
 export type { Paragraph, SceneEntry, ScreenplayDoc } from "./document.ts";
 export { ImportError } from "./importers/ImportError.ts";

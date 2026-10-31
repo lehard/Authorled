@@ -28,9 +28,23 @@ import { fountainToDoc } from "../src/editor/importers/fountain.ts";
 import {
   ELEMENT_KEYS,
   enter,
+  outlineEnter,
+  outlineTab,
   shiftTab,
   tab,
 } from "../src/editor/keymaps/index.ts";
+import {
+  addAct,
+  addScene,
+  castFromText,
+  deleteScene,
+  moveScene,
+  placesFromText,
+  sceneStep,
+  setSceneBeats,
+  setSceneHeading,
+  setSceneParams,
+} from "../src/editor/scenes.ts";
 import { clearColour, setColour } from "../src/editor/commands.ts";
 import {
   findKey,
@@ -41,6 +55,8 @@ import {
 import { suggestions } from "../src/editor/plugins/suggest.ts";
 import {
   hiddenBlocks,
+  outlineCaret,
+  outlineGuardPlugin,
   visibilityKey,
   visibilityPlugin,
 } from "../src/editor/plugins/visibility.ts";
@@ -89,6 +105,10 @@ const HOTKEYS = literal(source, "HOTKEYS") as Record<string, string>;
 const SHIFT_HOTKEYS = literal(source, "SHIFT_HOTKEYS") as Record<
   string,
   string
+>;
+const TREAT = literal(source, "TREAT") as Record<
+  string,
+  Record<"jt" | "je" | "ct" | "ce", string>
 >;
 
 /** State with one paragraph of `type` and `text`, the caret at `at` (default: the end). */
@@ -320,7 +340,9 @@ try {
 
   const node = toNode(story);
   const hidden = (cursor: number, showBeats: boolean, isolate: boolean) =>
-    [...hiddenBlocks(node, cursor, { showBeats, isolate })].join(",");
+    [
+      ...hiddenBlocks(node, cursor, { showBeats, isolate, outline: false }),
+    ].join(",");
   const cases: [number, boolean, boolean, string][] = [
     [4, false, false, "3"],
     [3, false, false, ""],
@@ -340,7 +362,7 @@ try {
   const kitchen = node.child(0).nodeSize + node.child(1).nodeSize;
   let s = EditorState.create({
     doc: node,
-    plugins: [history(), visibilityPlugin, findPlugin],
+    plugins: [history(), visibilityPlugin(false), findPlugin],
     selection: TextSelection.create(node, kitchen + 1),
   });
   const count = (
@@ -406,6 +428,201 @@ try {
   }
 }
 
+// 8. Treatment, scene functions, cast and places (scene-outline-and-cards).
+{
+  const story = plainDoc([
+    ["action", "До первой сцены"],
+    ["act", "Акт первый"],
+    ["sceneHeading", "НАТ. ОЗЕРО — РАССВЕТ"],
+    ["beat", "Миша уходит"],
+    ["action", "Туман."],
+    ["sceneHeading", "ИНТ. КУХНЯ ВЕРЫ — УТРО"],
+    ["character", "ВЕРА"],
+    ["dialogue", "Да."],
+    ["act", "Акт второй"],
+    ["sceneHeading", "НАТ. ПРИСТАНЬ — ДЕНЬ"],
+    ["character", "Паромщик (З.К.)"],
+    ["dialogue", "Отходим!"],
+  ]);
+  const outline = (d: ScreenplayDoc) =>
+    scenes(d)
+      .map((s) =>
+        s.kind === "scene"
+          ? `${s.number}:${s.heading}[${s.beats.join(";")}]`
+          : `#${s.name}`,
+      )
+      .join(" | ");
+  const texts = (d: ScreenplayDoc) =>
+    paragraphs(d)
+      .map((p) => p.text)
+      .join(" / ");
+
+  // Scene parameters: defaults for old documents, checked colour, kept with the heading.
+  const params = scenes(story).find((s) => s.kind === "scene");
+  if (
+    params?.kind !== "scene" ||
+    JSON.stringify(params.params) !==
+      JSON.stringify({ alt: "", day: "", color: null, tags: [] })
+  ) {
+    fail(`параметры сцены по умолчанию: ${JSON.stringify(params)}`);
+  }
+  try {
+    setSceneParams(story, 1, { color: "9" as "1" });
+    fail("цвет сцены вне палитры принят");
+  } catch (e) {
+    if (!(e instanceof RangeError)) throw e;
+  }
+
+  const moved = moveScene(story, 3, 2);
+  const wantMoved =
+    "#Акт первый | 1:НАТ. ПРИСТАНЬ — ДЕНЬ[] | 2:НАТ. ОЗЕРО — РАССВЕТ[Миша уходит] | 3:ИНТ. КУХНЯ ВЕРЫ — УТРО[] | #Акт второй";
+  if (outline(moved) !== wantMoved)
+    fail(`moveScene 3 → перед 1: «${outline(moved)}»`);
+  if (
+    !texts(moved).includes(
+      "НАТ. ПРИСТАНЬ — ДЕНЬ / Паромщик (З.К.) / Отходим! / НАТ. ОЗЕРО",
+    )
+  )
+    fail(`сцена переехала без текста: ${texts(moved)}`);
+  const toAct = moveScene(story, 1, 9);
+  if (
+    outline(toAct) !==
+    "#Акт первый | 1:ИНТ. КУХНЯ ВЕРЫ — УТРО[] | #Акт второй | 2:НАТ. ОЗЕРО — РАССВЕТ[Миша уходит] | 3:НАТ. ПРИСТАНЬ — ДЕНЬ[]"
+  ) {
+    fail(`moveScene в начало акта: «${outline(toAct)}»`);
+  }
+  if (JSON.stringify(moveScene(story, 2, 6)) !== JSON.stringify(story))
+    fail("moveScene на своё место изменил текст");
+  const down = sceneStep(story, 2, 1);
+  const up = sceneStep(story, 3, -1);
+  if (
+    down !== 9 ||
+    up !== 8 ||
+    sceneStep(story, 1, -1) !== 1 ||
+    sceneStep(story, 3, 1) !== null
+  ) {
+    fail(`sceneStep: вниз ${down}, вверх ${up}`);
+  }
+  if (
+    outline(deleteScene(story, 2)) !==
+    "#Акт первый | 1:НАТ. ОЗЕРО — РАССВЕТ[Миша уходит] | #Акт второй | 2:НАТ. ПРИСТАНЬ — ДЕНЬ[]"
+  )
+    fail("deleteScene");
+  if (texts(deleteScene(story, 2)).includes("Да."))
+    fail("deleteScene оставил текст сцены");
+  const beats = setSceneBeats(
+    setSceneBeats(story, 1, ["Первый", "Второй"]),
+    1,
+    ["Один"],
+  );
+  if (outline(beats).split(" | ")[1] !== "1:НАТ. ОЗЕРО — РАССВЕТ[Один]")
+    fail(`setSceneBeats: ${outline(beats)}`);
+  const twoBeats = setSceneBeats(story, 1, ["Первый", "Второй"]);
+  if (!texts(twoBeats).includes("Первый / Туман. / Второй / ИНТ."))
+    fail(`новый бит не в конце сцены: ${texts(twoBeats)}`);
+  const named = setSceneHeading(
+    setSceneParams(story, 3, {
+      alt: "Отплытие",
+      color: "2",
+      tags: ["пристань"],
+      day: "3-й день",
+    }),
+    3,
+    "НАТ. ПРИСТАНЬ — НОЧЬ",
+  );
+  const third = scenes(moveScene(named, 3, 2)).find((s) => s.kind === "scene");
+  if (
+    third?.kind !== "scene" ||
+    third.heading !== "НАТ. ПРИСТАНЬ — НОЧЬ" ||
+    third.params.alt !== "Отплытие" ||
+    third.params.tags[0] !== "пристань"
+  ) {
+    fail(`параметры не переехали со сценой: ${JSON.stringify(third)}`);
+  }
+  if (
+    !outline(addAct(addScene(story))).endsWith(
+      "4:НАТ. НОВАЯ СЦЕНА — ДЕНЬ[] | #Новый акт",
+    )
+  )
+    fail("addScene и addAct");
+  try {
+    deleteScene(story, 9);
+    fail("deleteScene несуществующей сцены прошёл без ошибки");
+  } catch (e) {
+    if (!(e instanceof RangeError)) throw e;
+  }
+  if (castFromText(story).join(",") !== "ВЕРА,Паромщик")
+    fail(`castFromText: ${castFromText(story).join(",")}`);
+  if (placesFromText(story).join(",") !== "ОЗЕРО,КУХНЯ ВЕРЫ,ПРИСТАНЬ")
+    fail(`placesFromText: ${placesFromText(story).join(",")}`);
+
+  // Treatment: Tab/Enter after TREAT, hidden text kept, the caret out of hidden paragraphs.
+  for (const [code, rule] of Object.entries(TREAT)) {
+    const name = CODE[code];
+    for (const [key, cmd] of [
+      ["Enter", outlineEnter],
+      ["Tab", outlineTab],
+    ] as const) {
+      const empty = types(run(cmd, state(name, "")));
+      if (empty !== CODE[rule[key === "Enter" ? "ce" : "ct"]])
+        fail(
+          `поэпизодник, ${ELEMENTS[name].label}: ${key} в пустом — «${empty}»`,
+        );
+      const full = types(run(cmd, state(name, "Текст")));
+      if (full !== `${name}, ${CODE[rule[key === "Enter" ? "je" : "jt"]]}`)
+        fail(
+          `поэпизодник, ${ELEMENTS[name].label}: ${key} в конце — «${full}»`,
+        );
+    }
+  }
+  const node = toNode(story);
+  const hiddenOutline = [
+    ...hiddenBlocks(node, 4, {
+      showBeats: false,
+      isolate: false,
+      outline: true,
+    }),
+  ].join(",");
+  if (hiddenOutline !== "0,4,6,7,10,11")
+    fail(`поэпизодник скрывает «${hiddenOutline}»`);
+  const sceneStart = (n: number) => {
+    let k = 0;
+    let found = -1;
+    node.forEach((c, offset) => {
+      if (c.type.name === "sceneHeading" && ++k === n) found = offset;
+    });
+    return found;
+  };
+  let g = EditorState.create({
+    doc: node,
+    plugins: [visibilityPlugin(true), outlineGuardPlugin],
+  });
+  const from = sceneStart(2) + 1;
+  const to = sceneStart(3) + 5;
+  g = g.apply(g.tr.setSelection(TextSelection.create(node, from, to)));
+  const deleted = g.apply(g.tr.deleteSelection());
+  if (JSON.stringify(toJSON(deleted.doc)) !== JSON.stringify(toJSON(node)))
+    fail("в поэпизоднике удаление через сцены задело скрытый текст");
+  const inside = g.apply(
+    g.tr.setSelection(TextSelection.create(node, from + 2)).insertText("x"),
+  );
+  if (
+    !paragraphs(toJSON(inside.doc)).some(
+      (p) => p.text === "ИНxТ. КУХНЯ ВЕРЫ — УТРО",
+    )
+  )
+    fail("в поэпизоднике не печатается в заголовке");
+  const actionPos =
+    node.child(0).nodeSize +
+    node.child(1).nodeSize +
+    node.child(2).nodeSize +
+    node.child(3).nodeSize +
+    2;
+  const caret = outlineCaret(node, actionPos);
+  if (caret === null || node.resolve(caret).parent.type.name !== "beat")
+    fail(`курсор из скрытого абзаца ушёл в ${caret}`);
+}
+
 if (failures.length > 0) {
   console.error(
     "check-editor: редактор сценария расходится с openspec/specs/web/screenplay-editor:",
@@ -414,5 +631,5 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log(
-  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, круг Fountain, метки цвета, сцены, скрытие, поиск и подсказки — без расхождений`,
+  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, круг Fountain, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник и правки сцен — без расхождений`,
 );

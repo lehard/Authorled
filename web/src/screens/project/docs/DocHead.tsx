@@ -19,7 +19,7 @@ export function DocHead({
     <div
       className={`mx-auto mb-4 flex flex-wrap items-center gap-2.5 ${wide ? "max-w-[1000px]" : "max-w-[900px]"}`}
     >
-      <h1 className="min-w-0 flex-1 truncate text-heading-1 font-medium">
+      <h1 className="min-w-[min(100%,14rem)] flex-1 truncate text-heading-1 font-medium">
         {title}
       </h1>
       {status !== undefined && <SaveStatus status={status} />}

@@ -12,7 +12,7 @@ import { scriptFacts } from "./scriptFacts";
 
 /** «Сценарий»: name, tagline, logline and which parts the navigator shows. */
 export function ScriptDoc() {
-  const { script } = useProjectData();
+  const { script, text } = useProjectData();
   const { save, status } = useAutosave<Script>("scripts", script.id);
   const [form, setForm] = useState({
     name: script.name,
@@ -21,7 +21,7 @@ export function ScriptDoc() {
     show: script.show,
   });
   const id = useId();
-  const facts = scriptFacts(script.text);
+  const facts = scriptFacts(text);
 
   // An empty name stays on screen but is not saved: the navigator always needs a name.
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {

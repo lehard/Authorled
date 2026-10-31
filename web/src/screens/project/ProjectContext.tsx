@@ -10,6 +10,9 @@ import type {
   World,
 } from "@/data/model";
 
+import type { ScreenplayDoc } from "@/editor/document.ts";
+import type { SaveStatus } from "@/screens/shared/useAutosave";
+
 import type { DocRef } from "./docRef";
 
 /** Everything the window of one story has loaded; documents read it instead of refetching. */
@@ -23,6 +26,13 @@ export type ProjectData = {
   trash: Record<EntityKind, Entity[]>;
   doc: DocRef;
   docSegment: string;
+  /**
+   * The working copy of the screenplay text: the editor, the cards and the navigator read and
+   * change it; it is saved with a delay (scene-outline-and-cards, decision 1).
+   */
+  text: ScreenplayDoc;
+  setText: (text: ScreenplayDoc) => void;
+  textStatus: SaveStatus;
   /** Scene with the caret in «Текст сценария», for the scene list of the navigator. */
   currentScene: number | null;
   setCurrentScene: (scene: number | null) => void;

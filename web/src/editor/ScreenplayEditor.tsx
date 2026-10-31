@@ -49,10 +49,11 @@ import type { Node } from "prosemirror-model";
 
 import { toJSON, toNode } from "./document.ts";
 import {
-  ELEMENT_NAMES,
+  elementsOf,
   ELEMENTS,
   FIND_SCOPES,
   ScreenplayEditorView,
+  type EditorMode,
   type EditorSnapshot,
   type FindScope,
   type ScreenplayDoc,
@@ -79,6 +80,7 @@ export type ScreenplayEditorHandle = {
  * Above the page, the text toolbar of mockup v2 (screenplay-text-tools, decision 10).
  */
 export function ScreenplayEditor({
+  mode,
   doc,
   onChange,
   readOnly = false,
@@ -87,6 +89,8 @@ export function ScreenplayEditor({
   menu,
   ref,
 }: {
+  /** Fixed for the life of the component: give the component a new `key` to switch. */
+  mode: EditorMode;
   doc: ScreenplayDoc;
   onChange?: (doc: ScreenplayDoc) => void;
   readOnly?: boolean;
@@ -104,12 +108,12 @@ export function ScreenplayEditor({
   const [snap, setSnap] = useState<EditorSnapshot | null>(null);
   const [findOpen, setFindOpen] = useState(false);
   // The latest props, read by the editor's callbacks and the first mount.
-  const latest = useRef({ doc, onChange, onScene });
+  const latest = useRef({ mode, doc, onChange, onScene });
   // Texts this editor has reported: a saved copy coming back is an echo, not a change from
   // outside, even when the author has typed on since (an older echo must not undo typing).
   const reported = useRef<string[]>([]);
   useEffect(() => {
-    latest.current = { doc, onChange, onScene };
+    latest.current = { mode, doc, onChange, onScene };
   });
 
   useEffect(() => {
@@ -117,6 +121,7 @@ export function ScreenplayEditor({
       throw new Error("ScreenplayEditor: нет контейнера");
     const view = new ScreenplayEditorView({
       container: host.current,
+      mode: latest.current.mode,
       doc: latest.current.doc,
       onChange: (next) => {
         reported.current = [
@@ -241,7 +246,7 @@ export function ScreenplayEditor({
                   editor.current?.focus();
                 }}
               >
-                {ELEMENT_NAMES.map((name) => (
+                {elementsOf(mode).map((name) => (
                   <DropdownMenuItem
                     key={name}
                     aria-current={name === element ? "true" : undefined}
@@ -257,16 +262,18 @@ export function ScreenplayEditor({
               </DropdownMenuContent>
             </DropdownMenu>
             <Divider />
-            <Tool
-              icon={Layers}
-              label="Показать биты"
-              pressed={snap?.view.showBeats ?? false}
-              onClick={() =>
-                editor.current?.setView({
-                  showBeats: !(snap?.view.showBeats ?? false),
-                })
-              }
-            />
+            {mode === "text" && (
+              <Tool
+                icon={Layers}
+                label="Показать биты"
+                pressed={snap?.view.showBeats ?? false}
+                onClick={() =>
+                  editor.current?.setView({
+                    showBeats: !(snap?.view.showBeats ?? false),
+                  })
+                }
+              />
+            )}
             <Tool
               icon={Search}
               label="Найти и заменить"

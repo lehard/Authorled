@@ -1,4 +1,4 @@
-import { Download, FileUp, Printer } from "lucide-react";
+import { AlignLeft, Download, FileUp, LayoutGrid, Printer } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 
@@ -8,19 +8,25 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { Script } from "@/data/model";
-import { ImportError, parseScreenplayFile, PrintError } from "@/editor";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { SCRIPT_PARTS } from "@/data/model";
+import {
+  ImportError,
+  parseScreenplayFile,
+  PrintError,
+  type EditorMode,
+} from "@/editor";
 import {
   ScreenplayEditor,
   type ScreenplayEditorHandle,
 } from "@/editor/ScreenplayEditor";
 import { ConfirmDialog } from "@/screens/shared/ConfirmDialog";
-import { useAutosave } from "@/screens/shared/useAutosave";
 
 import type { Node } from "prosemirror-model";
 
 import { useProjectData } from "../ProjectContext";
 import { DocHead } from "./DocHead";
+import { SceneBoard } from "./SceneBoard";
 
 function download(name: string, type: string, text: string) {
   const url = URL.createObjectURL(new Blob([text], { type }));
@@ -31,10 +37,13 @@ function download(name: string, type: string, text: string) {
   URL.revokeObjectURL(url);
 }
 
-/** «Текст сценария»: the screenplay editor with autosave, import, export and print. */
-export function TextDoc() {
-  const { script, chars, locs, setCurrentScene } = useProjectData();
-  const { save, status } = useAutosave<Script>("scripts", script.id);
+/**
+ * «Текст сценария» and «Поэпизодник»: the editor over the shared text of the story, or its
+ * scene cards (`?view=cards`, scene-outline-and-cards, decision 5).
+ */
+export function TextDoc({ mode }: { mode: EditorMode }) {
+  const { script, chars, locs, text, setText, textStatus, setCurrentScene } =
+    useProjectData();
   const editor = useRef<ScreenplayEditorHandle>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,16 +59,30 @@ export function TextDoc() {
     [chars, locs],
   );
 
-  // «?scene=N» from the scene list of the navigator: the caret goes to that scene once.
   const [params, setParams] = useSearchParams();
-  const sceneParam = params.get("scene");
+  const view = params.get("view") === "cards" ? "cards" : "text";
+  // «?scene=N» from the scene list or a card: the caret goes to that scene once.
+  const sceneParam = view === "text" ? params.get("scene") : null;
   useEffect(() => {
     if (sceneParam === null) return;
     const number = Number(sceneParam);
     const found = Number.isInteger(number) && editor.current!.goToScene(number);
-    setParams({}, { replace: true });
+    setParams(
+      (p) => {
+        p.delete("scene");
+        return p;
+      },
+      { replace: true },
+    );
     if (!found) setError(`Сцены ${sceneParam} нет в тексте.`);
   }, [sceneParam, setParams]);
+
+  function show(next: "text" | "cards", scene?: number) {
+    const p = new URLSearchParams();
+    if (next === "cards") p.set("view", "cards");
+    if (scene !== undefined) p.set("scene", String(scene));
+    setParams(p);
+  }
   useEffect(() => () => setCurrentScene(null), [setCurrentScene]);
 
   function act(action: () => void) {
@@ -87,7 +110,39 @@ export function TextDoc() {
 
   return (
     <>
-      <DocHead title="Текст сценария" status={status} wide />
+      <DocHead
+        title={SCRIPT_PARTS[mode === "text" ? "text" : "treatment"]}
+        status={textStatus}
+        wide
+      >
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="sm"
+          value={view}
+          onValueChange={(v) => {
+            if (v === "text" || v === "cards") show(v);
+          }}
+          aria-label="Вид"
+        >
+          <ToggleGroupItem
+            value="text"
+            aria-label="Текст"
+            className="gap-1.5 px-2.5"
+          >
+            <AlignLeft />
+            <span className="max-sm:sr-only">Текст</span>
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="cards"
+            aria-label="Карточки"
+            className="gap-1.5 px-2.5"
+          >
+            <LayoutGrid />
+            <span className="max-sm:sr-only">Карточки</span>
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </DocHead>
       <input
         ref={fileInput}
         type="file"
@@ -99,59 +154,67 @@ export function TextDoc() {
           if (file !== undefined) void chooseFile(file);
         }}
       />
-      <ScreenplayEditor
-        ref={editor}
-        doc={script.text}
-        onChange={(text) => save({ text })}
-        suggestData={suggestData}
-        onScene={setCurrentScene}
-        menu={
-          <>
-            <DropdownMenuItem onSelect={() => fileInput.current?.click()}>
-              <FileUp />
-              Импорт…
-            </DropdownMenuItem>
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <Download />
-                Экспорт
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
+      {view === "cards" ? (
+        <SceneBoard mode={mode} onOpen={(n) => show("text", n)} />
+      ) : (
+        <ScreenplayEditor
+          key={mode}
+          ref={editor}
+          mode={mode}
+          doc={text}
+          onChange={setText}
+          suggestData={suggestData}
+          onScene={setCurrentScene}
+          menu={
+            mode === "outline" ? undefined : (
+              <>
+                <DropdownMenuItem onSelect={() => fileInput.current?.click()}>
+                  <FileUp />
+                  Импорт…
+                </DropdownMenuItem>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Download />
+                    Экспорт
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        download(
+                          `${base}.fountain`,
+                          "text/plain;charset=utf-8",
+                          editor.current!.toFountain(),
+                        )
+                      }
+                    >
+                      Fountain (.fountain)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        download(
+                          `${base}.fdx`,
+                          "application/xml;charset=utf-8",
+                          editor.current!.toFDX(),
+                        )
+                      }
+                    >
+                      Final Draft (.fdx)
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
                 <DropdownMenuItem
                   onSelect={() =>
-                    download(
-                      `${base}.fountain`,
-                      "text/plain;charset=utf-8",
-                      editor.current!.toFountain(),
-                    )
+                    act(() => editor.current!.print(script.titlePage))
                   }
                 >
-                  Fountain (.fountain)
+                  <Printer />
+                  Печать…
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() =>
-                    download(
-                      `${base}.fdx`,
-                      "application/xml;charset=utf-8",
-                      editor.current!.toFDX(),
-                    )
-                  }
-                >
-                  Final Draft (.fdx)
-                </DropdownMenuItem>
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-            <DropdownMenuItem
-              onSelect={() =>
-                act(() => editor.current!.print(script.titlePage))
-              }
-            >
-              <Printer />
-              Печать…
-            </DropdownMenuItem>
-          </>
-        }
-      />
+              </>
+            )
+          }
+        />
+      )}
       {error !== null && (
         <p
           role="alert"

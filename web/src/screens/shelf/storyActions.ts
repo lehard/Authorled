@@ -34,7 +34,7 @@ export function useStoryActions() {
       name: title,
       tagline: "",
       logline: "",
-      show: { title: true, synopsis: true, text: true },
+      show: { title: true, synopsis: true, treatment: true, text: true },
       titlePage: {
         title,
         genre: "Полнометражный сценарий",

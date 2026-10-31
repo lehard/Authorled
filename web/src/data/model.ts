@@ -17,6 +17,7 @@ export type Project = {
 export const SCRIPT_PARTS = {
   title: "Титульная страница",
   synopsis: "Синопсис",
+  treatment: "Поэпизодник",
   text: "Текст сценария",
 } as const;
 export type ScriptPart = keyof typeof SCRIPT_PARTS;

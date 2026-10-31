@@ -11,6 +11,9 @@ import {
   ELEMENT_NAMES,
   ELEMENTS,
   isElementName,
+  OUTLINE_RULES,
+  OUTLINE_TYPES,
+  type EditorMode,
   type ElementName,
 } from "../elements.ts";
 import { schema } from "../schema/index.ts";
@@ -39,14 +42,22 @@ export function setElement(name: ElementName): Command {
   };
 }
 
-function step(key: "Enter" | "Tab"): Command {
+function rules(type: ElementName, mode: EditorMode) {
+  if (mode === "text") return ELEMENTS[type];
+  const rule = OUTLINE_RULES[type];
+  if (rule === undefined)
+    throw new Error(`В поэпизоднике нет правил Tab/Enter для «${type}»`);
+  return rule;
+}
+
+function step(key: "Enter" | "Tab", mode: EditorMode = "text"): Command {
   return (state, dispatch) => {
     const { $from, empty } = state.selection;
     // A range selection: let the default commands replace it.
     if (!empty) return false;
     const type = current(state);
     if (type === null) return false;
-    const rule = ELEMENTS[type];
+    const rule = rules(type, mode);
     const parent = $from.parent;
 
     if (parent.content.size === 0) {
@@ -83,16 +94,29 @@ function step(key: "Enter" | "Tab"): Command {
 
 export const enter = step("Enter");
 export const tab = step("Tab");
+export const outlineEnter = step("Enter", "outline");
+export const outlineTab = step("Tab", "outline");
+
+/** The types of the list in a mode. */
+export function elementsOf(mode: EditorMode): ElementName[] {
+  return mode === "text" ? ELEMENT_NAMES : OUTLINE_TYPES;
+}
 
 /** Shift+Tab: the previous type of the list. */
-export const shiftTab: Command = (state, dispatch) => {
-  const type = current(state);
-  if (type === null) return false;
-  const i = ELEMENT_NAMES.indexOf(type);
-  const prev =
-    ELEMENT_NAMES[(i - 1 + ELEMENT_NAMES.length) % ELEMENT_NAMES.length];
-  return setElement(prev)(state, dispatch);
-};
+function shiftTabIn(mode: EditorMode): Command {
+  return (state, dispatch) => {
+    const type = current(state);
+    if (type === null) return false;
+    const list = elementsOf(mode);
+    const i = list.indexOf(type);
+    if (i < 0) return true;
+    return setElement(list[(i - 1 + list.length) % list.length])(
+      state,
+      dispatch,
+    );
+  };
+}
+export const shiftTab = shiftTabIn("text");
 
 // Backspace at the start of a paragraph keeps its type instead of joining it into the previous one.
 const backspace: Command = (state, dispatch) => {
@@ -137,15 +161,20 @@ export const ELEMENT_KEYS: Record<string, ElementName> = Object.fromEntries(
   ELEMENT_NAMES.map((name) => [ELEMENTS[name].key, name]),
 );
 
-export const screenplayKeymap = keymap({
-  Enter: enter,
-  Tab: tab,
-  "Shift-Tab": shiftTab,
-  Backspace: backspace,
-  "Mod-b": toggleMark(schema.marks.bold),
-  "Mod-i": toggleMark(schema.marks.italic),
-  "Mod-u": toggleMark(schema.marks.underline),
-  ...Object.fromEntries(
-    Object.entries(ELEMENT_KEYS).map(([key, name]) => [key, setElement(name)]),
-  ),
-});
+/** Keys of the editor in a mode; the treatment binds only its four types. */
+export function screenplayKeymap(mode: EditorMode) {
+  return keymap({
+    Enter: step("Enter", mode),
+    Tab: step("Tab", mode),
+    "Shift-Tab": shiftTabIn(mode),
+    Backspace: backspace,
+    "Mod-b": toggleMark(schema.marks.bold),
+    "Mod-i": toggleMark(schema.marks.italic),
+    "Mod-u": toggleMark(schema.marks.underline),
+    ...Object.fromEntries(
+      Object.entries(ELEMENT_KEYS)
+        .filter(([, name]) => elementsOf(mode).includes(name))
+        .map(([key, name]) => [key, setElement(name)]),
+    ),
+  });
+}

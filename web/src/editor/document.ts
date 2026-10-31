@@ -10,8 +10,26 @@ export type MarkJSON =
 
 export type TextJSON = { type: "text"; text: string; marks?: MarkJSON[] };
 
+export type SceneParams = {
+  /** Meaningful name of the scene, shown on the card and in the navigator, not in the text. */
+  alt: string;
+  /** Day of the story. */
+  day: string;
+  color: MarkColor | null;
+  tags: string[];
+};
+
+export const NO_PARAMS: SceneParams = {
+  alt: "",
+  day: "",
+  color: null,
+  tags: [],
+};
+
 export type BlockJSON =
-  { type: ElementName; content?: TextJSON[] } | { type: "pageBreak" };
+  | { type: "sceneHeading"; attrs?: Partial<SceneParams>; content?: TextJSON[] }
+  | { type: Exclude<ElementName, "sceneHeading">; content?: TextJSON[] }
+  | { type: "pageBreak" };
 
 export type ScreenplayDoc = { type: "doc"; content: BlockJSON[] };
 
@@ -59,6 +77,8 @@ export type SceneEntry =
       heading: string;
       /** First line of text after the heading, beats and notes left out. */
       text: string;
+      beats: string[];
+      params: SceneParams;
       /** Characters that count for screen time (heading and text, without beats and notes). */
       chars: number;
       /** Index of the heading paragraph; the scene runs to `end` (exclusive). */
@@ -72,19 +92,26 @@ const UNTIMED = new Set<string>(["act", "sequence", "beat", "inlineNote"]);
 export function scenes(doc: ScreenplayDoc): SceneEntry[] {
   const out: SceneEntry[] = [];
   let current: Extract<SceneEntry, { kind: "scene" }> | null = null;
-  paragraphs(doc).forEach((p, i) => {
-    if (p.type === "act" || p.type === "sequence") {
+  let number = 0;
+  toNode(doc).forEach((node, _offset, i) => {
+    const type = node.type.name;
+    const text = node.textContent;
+    if (type === "pageBreak") return;
+    if (type === "act" || type === "sequence") {
       current = null;
-      out.push({ kind: p.type, name: p.text, index: i });
+      out.push({ kind: type, name: text, index: i });
       return;
     }
-    if (p.type === "sceneHeading") {
+    if (type === "sceneHeading") {
+      number += 1;
       current = {
         kind: "scene",
-        number: out.filter((s) => s.kind === "scene").length + 1,
-        heading: p.text,
+        number,
+        heading: text,
         text: "",
-        chars: p.text.length,
+        beats: [],
+        params: node.attrs as SceneParams,
+        chars: text.length,
         index: i,
         end: i + 1,
       };
@@ -93,10 +120,10 @@ export function scenes(doc: ScreenplayDoc): SceneEntry[] {
     }
     if (current === null) return;
     current.end = i + 1;
-    if (UNTIMED.has(p.type)) return;
-    if (current.text === "" && p.text.trim() !== "")
-      current.text = p.text.trim();
-    current.chars += p.text.length;
+    if (type === "beat") current.beats.push(text);
+    if (UNTIMED.has(type)) return;
+    if (current.text === "" && text.trim() !== "") current.text = text.trim();
+    current.chars += text.length;
   });
   return out;
 }

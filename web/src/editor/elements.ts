@@ -206,3 +206,29 @@ export function elementClass(name: ElementName): string {
 /** Colours of the author's text marks (design-system tokens --mark-1…4). */
 export const MARK_COLORS = ["1", "2", "3", "4"] as const;
 export type MarkColor = (typeof MARK_COLORS)[number];
+
+/** Types the treatment shows (mockup v2, OUTLINE). */
+export const OUTLINE_TYPES: ElementName[] = [
+  "sceneHeading",
+  "beat",
+  "sequence",
+  "act",
+];
+
+type Rules = Pick<Element, "jt" | "je" | "ct" | "ce">;
+
+/** Tab and Enter in the treatment (mockup v2, TREAT). */
+export const OUTLINE_RULES: Partial<Record<ElementName, Rules>> = {
+  sceneHeading: { jt: "beat", je: "beat", ct: "beat", ce: "sceneHeading" },
+  beat: { jt: "beat", je: "beat", ct: "sceneHeading", ce: "sceneHeading" },
+  sequence: {
+    jt: "sceneHeading",
+    je: "sceneHeading",
+    ct: "sceneHeading",
+    ce: "act",
+  },
+  act: { jt: "sequence", je: "sceneHeading", ct: "sequence", ce: "act" },
+};
+
+/** The text editor or the treatment over the same document. */
+export type EditorMode = "text" | "outline";

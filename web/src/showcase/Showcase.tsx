@@ -307,7 +307,7 @@ export function Showcase() {
           страниц.
         </p>
         <div className="desk overflow-hidden rounded-panel p-4 sm:p-6">
-          <ScreenplayEditor doc={SCRIPT_SAMPLE} />
+          <ScreenplayEditor mode="text" doc={SCRIPT_SAMPLE} />
         </div>
       </Section>
 

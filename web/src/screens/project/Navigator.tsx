@@ -1,6 +1,8 @@
 import {
   AlignLeft,
   ArrowLeft,
+  ListOrdered,
+  ScanSearch,
   ListTree,
   BookOpen,
   ChevronRight,
@@ -16,7 +18,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useState, type DragEvent, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router";
 
 import {
@@ -26,6 +28,12 @@ import {
   type ScriptPart,
 } from "@/data/model";
 import { scenes, screenTime } from "@/editor/document.ts";
+import {
+  castFromText,
+  moveScene,
+  placesFromText,
+  titleCase,
+} from "@/editor/scenes.ts";
 import { ConfirmDialog } from "@/screens/shared/ConfirmDialog";
 
 import { AddDocumentDialog } from "./AddDocumentDialog";
@@ -53,6 +61,7 @@ const ITEM_ICON: Record<EntityKind, LucideIcon> = {
 const PART_ICON: Record<ScriptPart, LucideIcon> = {
   title: BookOpen,
   synopsis: AlignLeft,
+  treatment: ListOrdered,
   text: FileText,
 };
 
@@ -82,7 +91,28 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
   });
   const [adding, setAdding] = useState<EntityKind | null>(null);
   const [emptying, setEmptying] = useState(false);
-  const [mode, setMode] = useState<"tree" | "scenes">("tree");
+  // The tree, or the scene list of «Текст сценария» or «Поэпизодник».
+  const [mode, setMode] = useState<"tree" | "text" | "treatment">("tree");
+  const [notice, setNotice] = useState<string | null>(null);
+
+  /** «Найти всех персонажей / все локации в тексте» (scene-outline-and-cards, decision 7). */
+  async function harvest(kind: "char" | "loc") {
+    const have = new Set(
+      (kind === "char" ? data.chars : data.locs).map((x) =>
+        x.name.toUpperCase(),
+      ),
+    );
+    const found = (kind === "char" ? castFromText : placesFromText)(data.text)
+      .map(titleCase)
+      .filter((name) => !have.has(name.toUpperCase()));
+    for (const name of found) await actions.addFromText(kind, name);
+    if (found.length > 0) setOpen((s) => new Set(s).add(GROUP_OF[kind]));
+    setNotice(
+      found.length === 0
+        ? "Новых нет: все уже в истории."
+        : `Добавлено из текста: ${found.join(", ")}.`,
+    );
+  }
 
   const path = (ref: DocRef) => docPath(project.id, ref);
   const trashed = Object.entries(data.trash).flatMap(([kind, list]) =>
@@ -111,6 +141,18 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
           icon: Plus,
           run: () => setAdding(kind),
         },
+        ...(kind === "world"
+          ? []
+          : [
+              {
+                label:
+                  kind === "char"
+                    ? "Найти всех персонажей в тексте"
+                    : "Найти все локации в тексте",
+                icon: ScanSearch,
+                run: () => void harvest(kind),
+              },
+            ]),
         {
           label: "Сортировать по алфавиту",
           icon: SortAsc,
@@ -162,7 +204,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
         to: path({ kind: "part", part: p }),
         icon: PART_ICON[p],
         label: SCRIPT_PARTS[p],
-        drill: p === "text",
+        drill: p === "text" || p === "treatment",
       })),
     },
     {
@@ -230,7 +272,9 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
             type="button"
             className="absolute right-1 grid size-7 place-items-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground"
             aria-label={`Сцены: ${row.label}`}
-            onClick={() => setMode("scenes")}
+            onClick={() =>
+              setMode(row.key === "treatment" ? "treatment" : "text")
+            }
           >
             <ListTree className="size-4" />
           </button>
@@ -276,15 +320,31 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
           </small>
         </span>
       </Link>
+      {notice !== null && (
+        <p
+          role="status"
+          className="mx-2 mb-1 flex items-start gap-2 rounded-xl bg-paper px-3 py-2 text-caption text-paper-foreground shadow-panel"
+        >
+          <span className="flex-1">{notice}</span>
+          <button
+            type="button"
+            className="text-primary hover:underline"
+            onClick={() => setNotice(null)}
+          >
+            Закрыть
+          </button>
+        </p>
+      )}
       {mode === "tree" ? (
         <ul className="min-h-0 flex-1 overflow-auto px-2 pb-2">
           {rows.map((r) => node(r, 0))}
         </ul>
       ) : (
         <SceneList
+          part={mode}
           onBack={() => setMode("tree")}
           onNavigate={onNavigate}
-          textPath={path({ kind: "part", part: "text" })}
+          partPath={path({ kind: "part", part: mode })}
         />
       )}
       <button
@@ -322,18 +382,40 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
   );
 }
 
-/** Scenes of the screenplay in the navigator: acts and groups as dividers, scenes as links. */
+const DRAG_TYPE = "application/x-authorled-scene";
+
+/**
+ * Scenes of the screenplay in the navigator: acts and groups as dividers, scenes as links that
+ * can be dragged to another place (scene-outline-and-cards, decisions 6 and 8).
+ */
 function SceneList({
+  part,
   onBack,
   onNavigate,
-  textPath,
+  partPath,
 }: {
+  part: "text" | "treatment";
   onBack: () => void;
   onNavigate: () => void;
-  textPath: string;
+  partPath: string;
 }) {
-  const { script, docSegment, currentScene } = useProjectData();
-  const list = scenes(script.text);
+  const { text, setText, docSegment, currentScene } = useProjectData();
+  const [dropAt, setDropAt] = useState<number | null>(null);
+  const list = scenes(text);
+  const target = (at: number) => ({
+    onDragOver: (e: DragEvent) => {
+      if (!e.dataTransfer.types.includes(DRAG_TYPE)) return;
+      e.preventDefault();
+      setDropAt(at);
+    },
+    onDragLeave: () => setDropAt((d) => (d === at ? null : d)),
+    onDrop: (e: DragEvent) => {
+      e.preventDefault();
+      setDropAt(null);
+      const n = Number(e.dataTransfer.getData(DRAG_TYPE));
+      if (Number.isInteger(n) && n > 0) setText(moveScene(text, n, at));
+    },
+  });
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-1 px-2 pb-1">
@@ -343,7 +425,7 @@ function SceneList({
           className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 font-semibold hover:bg-accent"
         >
           <ArrowLeft className="size-4" />
-          {SCRIPT_PARTS.text}
+          {SCRIPT_PARTS[part]}
         </button>
       </div>
       <ol
@@ -359,7 +441,8 @@ function SceneList({
           s.kind !== "scene" ? (
             <li
               key={`${s.kind}-${s.index}`}
-              className="px-3 pt-3 pb-1 text-caption font-semibold tracking-wide text-muted-foreground uppercase"
+              {...target(s.index + 1)}
+              className={`rounded-lg px-3 pt-3 pb-1 text-caption font-semibold tracking-wide text-muted-foreground uppercase ${dropAt === s.index + 1 ? "ring-2 ring-ring" : ""}`}
             >
               {s.name.trim() === ""
                 ? s.kind === "act"
@@ -368,29 +451,67 @@ function SceneList({
                 : s.name}
             </li>
           ) : (
-            <li key={`scene-${s.index}`}>
+            <li
+              key={`scene-${s.index}`}
+              {...target(s.index)}
+              className="relative"
+            >
+              {dropAt === s.index && (
+                <span
+                  aria-hidden
+                  className="absolute inset-x-2 -top-px h-0.5 rounded bg-primary"
+                />
+              )}
               <Link
-                to={`${textPath}?scene=${s.number}`}
+                to={`${partPath}?scene=${s.number}`}
                 onClick={onNavigate}
-                className="tree-item grid! grid-cols-[minmax(0,1fr)] gap-0.5 px-3 py-2"
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData(DRAG_TYPE, String(s.number));
+                  e.dataTransfer.effectAllowed = "move";
+                }}
+                onDragEnd={() => setDropAt(null)}
+                className="tree-item relative grid! grid-cols-[minmax(0,1fr)] gap-0.5 overflow-hidden px-3 py-2"
                 aria-current={
-                  docSegment === "text" && currentScene === s.number
+                  docSegment === part && currentScene === s.number
                     ? "location"
                     : undefined
                 }
               >
+                {s.params.color !== null && (
+                  <span
+                    aria-hidden
+                    className="absolute inset-y-1.5 left-0.5 w-1 rounded"
+                    style={{ background: `var(--mark-${s.params.color})` }}
+                  />
+                )}
                 <span className="flex items-baseline gap-2">
                   <span className="min-w-0 flex-1 truncate font-medium">
                     {s.number}.{" "}
-                    {s.heading.trim() === "" ? "Без заголовка" : s.heading}
+                    {s.params.alt !== ""
+                      ? s.params.alt
+                      : s.heading.trim() === ""
+                        ? "Без заголовка"
+                        : s.heading}
                   </span>
                   <time className="text-xs text-muted-foreground tabular-nums">
                     {screenTime(s.chars)}
                   </time>
                 </span>
-                <span className="truncate text-caption text-muted-foreground">
-                  {s.text === "" ? "—" : s.text}
-                </span>
+                {part === "treatment" ? (
+                  s.beats.map((b, i) => (
+                    <span
+                      key={i}
+                      className="truncate text-caption text-muted-foreground"
+                    >
+                      · {b}
+                    </span>
+                  ))
+                ) : (
+                  <span className="truncate text-caption text-muted-foreground">
+                    {s.text === "" ? "—" : s.text}
+                  </span>
+                )}
               </Link>
             </li>
           ),

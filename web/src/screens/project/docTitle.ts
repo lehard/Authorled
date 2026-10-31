@@ -7,7 +7,13 @@ import type { ProjectData } from "./ProjectContext";
 export function docTitle(
   data: Omit<
     ProjectData,
-    "doc" | "docSegment" | "currentScene" | "setCurrentScene"
+    | "doc"
+    | "docSegment"
+    | "currentScene"
+    | "setCurrentScene"
+    | "text"
+    | "setText"
+    | "textStatus"
   >,
   ref: DocRef,
 ): string {

@@ -22,7 +22,10 @@ export function DocView() {
       {doc.kind === "sp" && <ScriptDoc />}
       {doc.kind === "part" && doc.part === "title" && <TitleDoc />}
       {doc.kind === "part" && doc.part === "synopsis" && <SynopsisDoc />}
-      {doc.kind === "part" && doc.part === "text" && <TextDoc />}
+      {doc.kind === "part" && doc.part === "treatment" && (
+        <TextDoc mode="outline" />
+      )}
+      {doc.kind === "part" && doc.part === "text" && <TextDoc mode="text" />}
       {doc.kind === "group" && <GroupDoc kind={doc.entity} />}
       {doc.kind === "entity" && <EntityDoc kind={doc.entity} id={doc.id} />}
       {doc.kind === "trash" && <BinDoc />}
