@@ -109,5 +109,26 @@ export const schema = new Schema({
     underline: { toDOM: () => ["u", 0], parseDOM: [{ tag: "u" }] },
     textColor: colourMark("data-mark-color"),
     highlight: colourMark("data-mark-fill"),
+    // Place of a comment thread; the threads live outside the text (screenplay-comments, decision 1).
+    // Several comments may cover the same words; text typed at the edge stays outside.
+    comment: {
+      attrs: { id: { validate: "string" } },
+      excludes: "",
+      inclusive: false,
+      toDOM: (mark) => [
+        "span",
+        { class: "pw-comment", "data-comment-id": mark.attrs.id as string },
+        0,
+      ],
+      parseDOM: [
+        {
+          tag: "span[data-comment-id]",
+          getAttrs: (dom) => {
+            const id = dom.getAttribute("data-comment-id");
+            return id === null || id === "" ? false : { id };
+          },
+        },
+      ],
+    },
   },
 });

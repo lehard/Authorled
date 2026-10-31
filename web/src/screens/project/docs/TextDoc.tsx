@@ -25,6 +25,7 @@ import { ConfirmDialog } from "@/screens/shared/ConfirmDialog";
 import type { Node } from "prosemirror-model";
 
 import { useProjectData } from "../ProjectContext";
+import { useEditorComments } from "./useEditorComments";
 import { DocHead } from "./DocHead";
 import { SceneBoard } from "./SceneBoard";
 
@@ -42,9 +43,18 @@ function download(name: string, type: string, text: string) {
  * scene cards (`?view=cards`, scene-outline-and-cards, decision 5).
  */
 export function TextDoc({ mode }: { mode: EditorMode }) {
-  const { script, chars, locs, text, setText, textStatus, setCurrentScene } =
-    useProjectData();
+  const {
+    project,
+    script,
+    chars,
+    locs,
+    text,
+    setText,
+    textStatus,
+    setCurrentScene,
+  } = useProjectData();
   const editor = useRef<ScreenplayEditorHandle>(null);
+  const comments = useEditorComments(project.id, editor);
   const fileInput = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<{ name: string; doc: Node } | null>(
@@ -165,6 +175,9 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
           onChange={setText}
           suggestData={suggestData}
           onScene={setCurrentScene}
+          comments={comments.comments}
+          tools={comments.tools}
+          overlay={comments.overlay}
           menu={
             mode === "outline" ? undefined : (
               <>
@@ -230,6 +243,7 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
           </button>
         </p>
       )}
+      {comments.dialog}
       <ConfirmDialog
         open={pending !== null}
         onOpenChange={(open) => {

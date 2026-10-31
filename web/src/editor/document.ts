@@ -6,7 +6,8 @@ import { schema } from "./schema/index.ts";
 
 export type MarkJSON =
   | { type: "bold" | "italic" | "underline" }
-  | { type: "textColor" | "highlight"; attrs: { color: MarkColor } };
+  | { type: "textColor" | "highlight"; attrs: { color: MarkColor } }
+  | { type: "comment"; attrs: { id: string } };
 
 export type TextJSON = { type: "text"; text: string; marks?: MarkJSON[] };
 

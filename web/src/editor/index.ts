@@ -21,6 +21,15 @@ import { fountainToDoc } from "./importers/fountain.ts";
 import { ImportError } from "./importers/ImportError.ts";
 import { screenplayKeymap, setElement } from "./keymaps/index.ts";
 import { createBubbleMenuPlugin } from "./plugins/bubbleMenu.ts";
+import {
+  addComment,
+  commentRanges,
+  commentsKey,
+  removeComment,
+  setComments,
+  type CommentsMeta,
+} from "./plugins/comments.ts";
+import { commentsPlugin } from "./plugins/commentsPlugin.ts";
 import { createFadeInAlignPlugin } from "./plugins/fadeInAlign.ts";
 import {
   findKey,
@@ -69,6 +78,18 @@ export type EditorSnapshot = {
   } | null;
   /** Number of the scene with the caret, or null without scenes. */
   scene: number | null;
+  /** Commented words by thread id; threads without a place in the text are absent. */
+  comments: ReadonlyMap<string, string>;
+};
+
+/** Where a comment's place is, relative to the editor container (screenplay-comments, decision 6). */
+export type CommentAnchor = {
+  top: number;
+  bottom: number;
+  /** Right edge of the page. */
+  pageRight: number;
+  /** Width of the container. */
+  width: number;
 };
 
 export type ScreenplayEditorOptions = {
@@ -81,6 +102,10 @@ export type ScreenplayEditorOptions = {
   onState?: (snapshot: EditorSnapshot) => void;
   /** ⌘F or Ctrl+F in the text. */
   onFindRequest?: () => void;
+  /** «Комментировать» in the selection menu; without it the menu has no such button. */
+  onCommentRequest?: () => void;
+  /** A click on an open comment's place. */
+  onCommentOpen?: (id: string) => void;
   readOnly?: boolean;
   /** Additional ProseMirror plugins, after ours. */
   extraPlugins?: Plugin[];
@@ -125,7 +150,8 @@ export class ScreenplayEditorView {
       paginationPlugin,
       sceneNumbersPlugin,
       createFadeInAlignPlugin(),
-      createBubbleMenuPlugin(),
+      commentsPlugin((id) => options.onCommentOpen?.(id)),
+      createBubbleMenuPlugin(options.onCommentRequest),
       ...(options.extraPlugins ?? []),
     ];
     const doc = toNode(options.doc);
@@ -171,7 +197,13 @@ export class ScreenplayEditorView {
     const find = findKey.getState(s);
     const view = visibilityKey.getState(s);
     const suggest = suggestKey.getState(s);
-    if (find === undefined || view === undefined || suggest === undefined) {
+    const comments = commentsKey.getState(s);
+    if (
+      find === undefined ||
+      view === undefined ||
+      suggest === undefined ||
+      comments === undefined
+    ) {
       throw new Error("Плагины редактора не подключены");
     }
     const range = sceneRange(s.doc, blockIndex(s.doc, s.selection.head));
@@ -207,6 +239,7 @@ export class ScreenplayEditorView {
       },
       suggest: list,
       scene,
+      comments: comments.quotes,
     };
   }
 
@@ -269,6 +302,52 @@ export class ScreenplayEditorView {
     this.view.focus();
   }
 
+  /** Marks the selection as the place of thread `id`; false when nothing shown is selected. */
+  addComment(id: string): boolean {
+    return addComment(id)(this.view.state, this.view.dispatch);
+  }
+
+  removeComment(id: string): void {
+    removeComment(id)(this.view.state, this.view.dispatch);
+  }
+
+  /** Which threads are highlighted (open and the one being written) and whose card is open. */
+  setComments(meta: CommentsMeta): void {
+    setComments(meta)(this.view.state, this.view.dispatch);
+  }
+
+  /** The first shown place of thread `id`, or null when it is not in the text or hidden. */
+  commentAnchor(id: string): CommentAnchor | null {
+    const dom = this.firstPlace(id);
+    if (dom === null) return null;
+    const at = dom.getBoundingClientRect();
+    const box = this.container.getBoundingClientRect();
+    const page = this.view.dom.getBoundingClientRect();
+    return {
+      top: at.top - box.top,
+      bottom: at.bottom - box.top,
+      pageRight: page.right - box.left,
+      width: box.width,
+    };
+  }
+
+  /** Scrolls the first shown place of thread `id` into view; false when there is none. */
+  scrollToComment(id: string): boolean {
+    const dom = this.firstPlace(id);
+    dom?.scrollIntoView({ block: "center" });
+    return dom !== null;
+  }
+
+  private firstPlace(id: string): HTMLElement | null {
+    for (const r of commentRanges(this.view.state.doc, id)) {
+      const { node } = this.view.domAtPos(r.from + 1);
+      const el = node instanceof HTMLElement ? node : node.parentElement;
+      // A paragraph hidden by the treatment or by «only this scene» has no box.
+      if (el !== null && el.getClientRects().length > 0) return el;
+    }
+    return null;
+  }
+
   get json(): ScreenplayDoc {
     return toJSON(this.view.state.doc);
   }
@@ -327,5 +406,6 @@ export type { Paragraph, SceneEntry, ScreenplayDoc } from "./document.ts";
 export { ImportError } from "./importers/ImportError.ts";
 export { FIND_SCOPES, type FindScope } from "./plugins/find.ts";
 export type { SuggestData } from "./plugins/suggest.ts";
+export type { CommentsMeta } from "./plugins/comments.ts";
 export { PrintError } from "./exporters/print.ts";
 export type { TitlePage } from "./exporters/print.ts";

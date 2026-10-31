@@ -1,8 +1,47 @@
 // Sample data of mockup v2 (openspec/context/_raw/design/kabinet-starc/data.js), converted
-// once by a script: comments, AI suggestions and chats are left out until their stages.
-import { plainDoc } from "@/editor/document.ts";
+// once by a script: AI suggestions and chats are left out until their stages.
+import { plainDoc, type ScreenplayDoc } from "@/editor/document.ts";
 
-import type { Character, Location, Project, Script, World } from "./model";
+import type {
+  Character,
+  CommentThread,
+  Location,
+  Project,
+  Script,
+  World,
+} from "./model";
+
+/** Puts the mark of thread `id` on the first `quote` in the text. */
+function commented(
+  doc: ScreenplayDoc,
+  marks: [id: string, quote: string][],
+): ScreenplayDoc {
+  for (const [id, quote] of marks) {
+    const block = doc.content.find(
+      (b) =>
+        "content" in b &&
+        b.content?.length === 1 &&
+        b.content[0].text.includes(quote),
+    );
+    if (block === undefined || !("content" in block) || !block.content)
+      throw new Error(`В примере нет текста «${quote}» для комментария ${id}.`);
+    const text = block.content[0].text;
+    const at = text.indexOf(quote);
+    block.content = [
+      { type: "text" as const, text: text.slice(0, at) },
+      {
+        type: "text" as const,
+        text: quote,
+        marks: [{ type: "comment" as const, attrs: { id } }],
+      },
+      { type: "text" as const, text: text.slice(at + quote.length) },
+    ].filter((t) => t.text !== "");
+  }
+  return doc;
+}
+
+const local = (day: number, h: number, m: number) =>
+  new Date(2026, 9, day, h, m).toISOString();
 
 export const FIXTURES: {
   projects: Project[];
@@ -10,6 +49,7 @@ export const FIXTURES: {
   characters: Character[];
   locations: Location[];
   worlds: World[];
+  comments: CommentThread[];
 } = {
   projects: [
     {
@@ -60,92 +100,101 @@ export const FIXTURES: {
       },
       synopsis:
         "Аня, двадцать четыре года, впервые за долгое время приезжает к матери, Вере, в посёлок у озера. Двадцать лет назад здесь утонул Миша, младший брат Веры. С тех пор в семье об этом не говорят.\n\nДядя Коля, который в тот день был на озере, проговаривается: Миша утонул не случайно. Аня приносит эти слова домой, и Вера впервые не может промолчать.",
-      text: plainDoc([
-        ["act", "Акт первый"],
-        ["sceneHeading", "НАТ. ОЗЕРО, МОСТКИ — РАССВЕТ"],
-        ["beat", "Миша уходит на озеро один"],
+      text: commented(
+        plainDoc([
+          ["act", "Акт первый"],
+          ["sceneHeading", "НАТ. ОЗЕРО, МОСТКИ — РАССВЕТ"],
+          ["beat", "Миша уходит на озеро один"],
+          [
+            "action",
+            "1998 год. Туман над водой. МИША (17) идёт по мосткам босиком, в руке удочка. Доски скрипят.",
+          ],
+          [
+            "action",
+            "Он оглядывается на дом за деревьями. В окне кухни горит свет.",
+          ],
+          ["transition", "Склейка:"],
+          ["sceneHeading", "ИНТ. ДОМ ВЕРЫ, КУХНЯ — УТРО"],
+          ["beat", "Аня звонит и говорит, что приедет"],
+          [
+            "action",
+            "Наши дни. ВЕРА (52) режет хлеб. Радио бормочет новости. Телефон на столе вибрирует: «Аня».",
+          ],
+          ["character", "Вера"],
+          ["dialogue", "Да, Анечка."],
+          ["character", "Аня (З.К.)"],
+          ["dialogue", "Мам, я приеду в пятницу. Надолго."],
+          ["action", "Вера кладёт нож."],
+          ["character", "Вера"],
+          ["parenthetical", "тихо"],
+          ["dialogue", "Приезжай."],
+          ["sceneHeading", "НАТ. ПРИСТАНЬ ПОСЁЛКА — ДЕНЬ"],
+          [
+            "action",
+            "Паром причаливает. АНЯ (24) спрыгивает на берег с рюкзаком. ДЯДЯ КОЛЯ (60) курит у будки кассы.",
+          ],
+          ["character", "Дядя Коля"],
+          ["dialogue", "Выросла."],
+          ["character", "Аня"],
+          ["dialogue", "Двадцать лет прошло, дядь Коль."],
+          ["action", "Коля отводит глаза к воде."],
+          ["act", "Акт второй"],
+          ["sceneHeading", "НАТ. ОЗЕРО, МОСТКИ — ДЕНЬ"],
+          ["beat", "Аня выходит на мостки"],
+          [
+            "action",
+            "Доски потемнели и прогнулись. АНЯ стоит на самом краю, смотрит в воду.",
+          ],
+          ["beat", "Не берёт трубку матери"],
+          [
+            "action",
+            "Звонит телефон. На экране: «Мама». Аня смотрит, пока звонок не обрывается.",
+          ],
+          ["sceneHeading", "ИНТ. ГАРАЖ ДЯДИ КОЛИ — ВЕЧЕР"],
+          [
+            "action",
+            "Разобранный мотор на верстаке. КОЛЯ протирает ключ ветошью. Аня садится на перевёрнутый ящик.",
+          ],
+          ["character", "Аня"],
+          ["dialogue", "Расскажи, как это было."],
+          ["character", "Дядя Коля"],
+          ["parenthetical", "не поднимая головы"],
+          ["dialogue", "Он утонул. Всё."],
+          ["character", "Аня"],
+          ["dialogue", "Мама говорит то же самое. Теми же словами."],
+          ["sceneHeading", "ИНТ. ДОМ ВЕРЫ, КУХНЯ — НОЧЬ"],
+          ["beat", "Вера не спит и ждёт"],
+          [
+            "action",
+            "Свет только над раковиной. ВЕРА моет чашку. Чашка давно чистая. Она всё равно трёт её губкой.",
+          ],
+          ["character", "Аня (З.К.)"],
+          ["dialogue", "Мам, ты опять не спишь?"],
+          ["beat", "Аня приносит слова дяди"],
+          [
+            "action",
+            "Входит АНЯ, в куртке, с рюкзаком. Ставит рюкзак на стул.",
+          ],
+          ["character", "Вера"],
+          ["parenthetical", "не оборачиваясь"],
+          ["dialogue", "Я же просила звонить, когда едешь так поздно."],
+          ["character", "Аня"],
+          [
+            "dialogue",
+            "Я была у дяди Коли. Он сказал, что Миша утонул не случайно.",
+          ],
+          ["action", "Вода продолжает течь. Вера закрывает кран."],
+          ["sceneHeading", "НАТ. ПРИСТАНЬ — РАССВЕТ"],
+          [
+            "action",
+            "Вера идёт по пустой пристани. Здесь она не была двадцать лет.",
+          ],
+        ]),
         [
-          "action",
-          "1998 год. Туман над водой. МИША (17) идёт по мосткам босиком, в руке удочка. Доски скрипят.",
+          ["c1", "Я же просила звонить, когда едешь так поздно."],
+          ["c2", "Он сказал, что Миша утонул не случайно."],
         ],
-        [
-          "action",
-          "Он оглядывается на дом за деревьями. В окне кухни горит свет.",
-        ],
-        ["transition", "Склейка:"],
-        ["sceneHeading", "ИНТ. ДОМ ВЕРЫ, КУХНЯ — УТРО"],
-        ["beat", "Аня звонит и говорит, что приедет"],
-        [
-          "action",
-          "Наши дни. ВЕРА (52) режет хлеб. Радио бормочет новости. Телефон на столе вибрирует: «Аня».",
-        ],
-        ["character", "Вера"],
-        ["dialogue", "Да, Анечка."],
-        ["character", "Аня (З.К.)"],
-        ["dialogue", "Мам, я приеду в пятницу. Надолго."],
-        ["action", "Вера кладёт нож."],
-        ["character", "Вера"],
-        ["parenthetical", "тихо"],
-        ["dialogue", "Приезжай."],
-        ["sceneHeading", "НАТ. ПРИСТАНЬ ПОСЁЛКА — ДЕНЬ"],
-        [
-          "action",
-          "Паром причаливает. АНЯ (24) спрыгивает на берег с рюкзаком. ДЯДЯ КОЛЯ (60) курит у будки кассы.",
-        ],
-        ["character", "Дядя Коля"],
-        ["dialogue", "Выросла."],
-        ["character", "Аня"],
-        ["dialogue", "Двадцать лет прошло, дядь Коль."],
-        ["action", "Коля отводит глаза к воде."],
-        ["act", "Акт второй"],
-        ["sceneHeading", "НАТ. ОЗЕРО, МОСТКИ — ДЕНЬ"],
-        ["beat", "Аня выходит на мостки"],
-        [
-          "action",
-          "Доски потемнели и прогнулись. АНЯ стоит на самом краю, смотрит в воду.",
-        ],
-        ["beat", "Не берёт трубку матери"],
-        [
-          "action",
-          "Звонит телефон. На экране: «Мама». Аня смотрит, пока звонок не обрывается.",
-        ],
-        ["sceneHeading", "ИНТ. ГАРАЖ ДЯДИ КОЛИ — ВЕЧЕР"],
-        [
-          "action",
-          "Разобранный мотор на верстаке. КОЛЯ протирает ключ ветошью. Аня садится на перевёрнутый ящик.",
-        ],
-        ["character", "Аня"],
-        ["dialogue", "Расскажи, как это было."],
-        ["character", "Дядя Коля"],
-        ["parenthetical", "не поднимая головы"],
-        ["dialogue", "Он утонул. Всё."],
-        ["character", "Аня"],
-        ["dialogue", "Мама говорит то же самое. Теми же словами."],
-        ["sceneHeading", "ИНТ. ДОМ ВЕРЫ, КУХНЯ — НОЧЬ"],
-        ["beat", "Вера не спит и ждёт"],
-        [
-          "action",
-          "Свет только над раковиной. ВЕРА моет чашку. Чашка давно чистая. Она всё равно трёт её губкой.",
-        ],
-        ["character", "Аня (З.К.)"],
-        ["dialogue", "Мам, ты опять не спишь?"],
-        ["beat", "Аня приносит слова дяди"],
-        ["action", "Входит АНЯ, в куртке, с рюкзаком. Ставит рюкзак на стул."],
-        ["character", "Вера"],
-        ["parenthetical", "не оборачиваясь"],
-        ["dialogue", "Я же просила звонить, когда едешь так поздно."],
-        ["character", "Аня"],
-        [
-          "dialogue",
-          "Я была у дяди Коли. Он сказал, что Миша утонул не случайно.",
-        ],
-        ["action", "Вода продолжает течь. Вера закрывает кран."],
-        ["sceneHeading", "НАТ. ПРИСТАНЬ — РАССВЕТ"],
-        [
-          "action",
-          "Вера идёт по пустой пристани. Здесь она не была двадцать лет.",
-        ],
-      ]),
+      ),
     },
     {
       id: "ferry",
@@ -344,6 +393,31 @@ export const FIXTURES: {
       ext: {},
       deletedAt: null,
       overview: "",
+    },
+  ],
+  // Threads of the editor of mockup v2; the author's reply «Вы» stays out: samples know no user.
+  comments: [
+    {
+      id: "c1",
+      projectId: "water",
+      author: "Ирина Белова",
+      email: "irina@example.com",
+      role: "редактор",
+      at: local(30, 18, 40),
+      text: "Для первой ночи Вера слишком резкая. Может, она сначала спросит, ела ли Аня?",
+      replies: [],
+      resolved: false,
+    },
+    {
+      id: "c2",
+      projectId: "water",
+      author: "Ирина Белова",
+      email: "irina@example.com",
+      role: "редактор",
+      at: local(31, 8, 15),
+      text: "Сильная реплика. Не слишком ли рано раскрываем — это же середина второго акта?",
+      replies: [],
+      resolved: false,
     },
   ],
 };

@@ -219,6 +219,19 @@
   box-decoration-break: clone;
 }
 
+/* --- Comments: open threads are highlighted, resolved ones are plain text --- */
+
+.pw-comment-open {
+  background: var(--deco-comment-subtle);
+  box-shadow: inset 0 -2px 0 var(--deco-comment);
+  border-radius: 2px;
+  box-decoration-break: clone;
+  cursor: pointer;
+}
+.pw-comment-active {
+  background: color-mix(in oklch, var(--deco-comment) 40%, transparent);
+}
+
 /* --- Hidden paragraphs and find matches (screenplay-text-tools) --------- */
 
 .pw-editor .ProseMirror > .pw-hidden {

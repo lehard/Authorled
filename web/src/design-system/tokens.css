@@ -424,6 +424,7 @@
   --color-ai: var(--ai);
   --color-ai-subtle: var(--ai-subtle);
   --color-ai-border: var(--ai-border);
+  --color-deco-comment: var(--deco-comment);
 
   --font-sans: var(--font-ui);
   --font-serif: var(--font-prose);

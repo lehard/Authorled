@@ -2,6 +2,7 @@ import { useList, useOne, type CrudFilter } from "@refinedev/core";
 
 import {
   ENTITY_RESOURCE,
+  type CommentThread,
   type Entity,
   type EntityKind,
   type Project,
@@ -53,4 +54,15 @@ export function useEntities<T extends Entity = Entity>(
     pagination: { mode: "off" },
   });
   return { items: result.data, query };
+}
+
+/** Comment threads of the story, oldest first. */
+export function useComments(projectId: string) {
+  const { result, query } = useList<CommentThread>({
+    resource: "comments",
+    filters: [{ field: "projectId", operator: "eq", value: projectId }],
+    sorters: [{ field: "at", order: "asc" }],
+    pagination: { mode: "off" },
+  });
+  return { threads: result.data, query };
 }

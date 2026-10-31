@@ -14,6 +14,10 @@ import { schema } from "../schema/index.ts";
 
 export const bubbleMenuKey = new PluginKey("bubbleMenu");
 
+// lucide «message-square-plus», the icon of comments in the toolbar.
+const COMMENT_ICON =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/><path d="M12 8v6"/><path d="M9 11h6"/></svg>';
+
 function activeColour(state: EditorState, type: MarkType): string | null {
   const { from, to, empty, $from } = state.selection;
   if (empty)
@@ -98,7 +102,25 @@ const ITEMS: (Item | "sep")[] = [
   },
 ];
 
-export function createBubbleMenuPlugin(): Plugin {
+/** `onComment` adds «Комментировать» at the end of the menu. */
+export function createBubbleMenuPlugin(onComment?: () => void): Plugin {
+  const items: (Item | "sep")[] =
+    onComment === undefined
+      ? ITEMS
+      : [
+          ...ITEMS,
+          "sep",
+          {
+            label: "Комментировать",
+            className: "pw-comment-button",
+            html: COMMENT_ICON,
+            run: () => {
+              onComment();
+              return true;
+            },
+            active: () => false,
+          },
+        ];
   return new Plugin({
     key: bubbleMenuKey,
     view(editorView) {
@@ -108,7 +130,7 @@ export function createBubbleMenuPlugin(): Plugin {
       menu.setAttribute("aria-label", "Оформление выделенного текста");
       menu.style.display = "none";
       const buttons: [HTMLButtonElement, Item][] = [];
-      for (const item of ITEMS) {
+      for (const item of items) {
         if (item === "sep") {
           const sep = document.createElement("span");
           sep.className = "pw-separator";
@@ -123,7 +145,8 @@ export function createBubbleMenuPlugin(): Plugin {
         btn.addEventListener("mousedown", (e) => {
           e.preventDefault();
           item.run(editorView.state, editorView.dispatch);
-          editorView.focus();
+          // The comment card takes the focus itself.
+          if (item.className !== "pw-comment-button") editorView.focus();
         });
         menu.appendChild(btn);
         buttons.push([btn, item]);

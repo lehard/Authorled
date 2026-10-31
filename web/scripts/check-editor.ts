@@ -1,6 +1,6 @@
 // Deterministic check of the screenplay editor without a browser (openspec/specs/web/screenplay-editor,
 // design of fork-screenplay-editor, decision 12): Tab/Enter against the TYPES table of mockup v2,
-// the type keys, scene-heading autoreplace, the Fountain round trip, paragraphs() and colour marks.
+// the type keys, scene-heading autoreplace, the Fountain round trip, paragraphs(), colour and comment marks.
 // FDX import and printing need DOMParser and a window; they are checked by hand.
 //
 // Usage: npm run check:editor --prefix web
@@ -23,6 +23,7 @@ import {
   ELEMENTS,
   type ElementName,
 } from "../src/editor/elements.ts";
+import { docToFDX } from "../src/editor/exporters/fdx.ts";
 import { docToFountain } from "../src/editor/exporters/fountain.ts";
 import { fountainToDoc } from "../src/editor/importers/fountain.ts";
 import {
@@ -53,6 +54,12 @@ import {
   setFind,
 } from "../src/editor/plugins/find.ts";
 import { suggestions } from "../src/editor/plugins/suggest.ts";
+import {
+  addComment,
+  commentQuotes,
+  commentRanges,
+  removeComment,
+} from "../src/editor/plugins/comments.ts";
 import {
   hiddenBlocks,
   outlineCaret,
@@ -623,6 +630,73 @@ try {
     fail(`курсор из скрытого абзаца ушёл в ${caret}`);
 }
 
+// 9. Comments: marks in the JSON, two on one word, outside undo, not exported (screenplay-comments).
+{
+  const doc = toNode(
+    plainDoc([
+      ["sceneHeading", "ИНТ. КУХНЯ — УТРО"],
+      ["action", "Склейка. Вера молчит."],
+      ["sceneHeading", "НАТ. ОЗЕРО — ДЕНЬ"],
+      ["action", "Вода."],
+    ]),
+  );
+  const start = doc.child(0).nodeSize + 1;
+  let s = EditorState.create({
+    doc,
+    plugins: [history(), visibilityPlugin(false)],
+    selection: TextSelection.create(doc, start, start + 7),
+  });
+  s = run(addComment("c1"), s);
+  s = run(addComment("c2"), s);
+  const quotes = commentQuotes(s.doc);
+  if (quotes.get("c1") !== "Склейка" || quotes.get("c2") !== "Склейка")
+    fail(`два комментария на одном слове: ${JSON.stringify([...quotes])}`);
+  const json = JSON.stringify(toJSON(s.doc));
+  if (!json.includes('{"type":"comment","attrs":{"id":"c1"}}'))
+    fail(`метки комментария нет в JSON: ${json}`);
+  if (JSON.stringify(toJSON(toNode(toJSON(s.doc)))) !== json)
+    fail("метка комментария не пережила JSON");
+  if (undo(s)) fail("комментарий попал в историю отмены");
+
+  // Typed at the edge of the place, the text stays outside it; undo takes only the typing.
+  s = s.apply(
+    s.tr.setSelection(TextSelection.create(s.doc, start + 7)).insertText("!"),
+  );
+  if (commentQuotes(s.doc).get("c1") !== "Склейка")
+    fail(
+      `напечатанное на границе вошло в комментарий: ${commentQuotes(s.doc).get("c1")}`,
+    );
+  s = run(undo, s);
+  if (paragraphs(toJSON(s.doc))[1].text !== "Склейка. Вера молчит.")
+    fail(`отмена не убрала напечатанное: ${paragraphs(toJSON(s.doc))[1].text}`);
+  if (commentRanges(s.doc, "c1").length !== 1)
+    fail("отмена правки текста сняла комментарий");
+
+  const exported = docToFountain(s.doc) + docToFDX(s.doc);
+  if (exported.includes("c1") || exported.includes("comment"))
+    fail("комментарий попал в Fountain или FDX");
+
+  const moved = moveScene(toJSON(s.doc), 1, 4);
+  if (
+    paragraphs(moved)[3].text !== "Склейка. Вера молчит." ||
+    commentQuotes(toNode(moved)).get("c2") !== "Склейка"
+  )
+    fail("комментарий не переехал вместе со сценой");
+
+  s = run(removeComment("c1"), s);
+  if (commentQuotes(s.doc).has("c1") || !commentQuotes(s.doc).has("c2"))
+    fail("снятие одного комментария задело другой");
+  try {
+    run(
+      addComment("c3"),
+      s.apply(s.tr.setSelection(TextSelection.create(s.doc, start))),
+    );
+    fail("комментарий без выделения принят");
+  } catch (e) {
+    if (!(e instanceof Error) || !e.message.includes("выделенный")) throw e;
+  }
+}
+
 if (failures.length > 0) {
   console.error(
     "check-editor: редактор сценария расходится с openspec/specs/web/screenplay-editor:",
@@ -631,5 +705,5 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log(
-  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, круг Fountain, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник и правки сцен — без расхождений`,
+  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, круг Fountain, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник, правки сцен и комментарии — без расхождений`,
 );

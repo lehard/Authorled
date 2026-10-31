@@ -64,6 +64,28 @@ export type Location = EntityBase & { role: Role };
 export type World = EntityBase & { overview: string };
 export type Entity = Character | Location | World;
 
+/** A message of a comment thread; `email` tells the author's own messages. */
+export type CommentMessage = {
+  id: string;
+  author: string;
+  email: string;
+  /** Role in the story team, «редактор»; empty when the token has none. */
+  role: string;
+  /** ISO time. */
+  at: string;
+  text: string;
+};
+
+/**
+ * A comment thread on a fragment of the screenplay (screenplay-comments, decision 3). Its id is
+ * the id of the `comment` mark in the text; the first message is the thread itself.
+ */
+export type CommentThread = CommentMessage & {
+  projectId: string;
+  replies: CommentMessage[];
+  resolved: boolean;
+};
+
 /** Refine resource of each entity kind. */
 export const ENTITY_RESOURCE = {
   char: "characters",

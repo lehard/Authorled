@@ -53,6 +53,7 @@ import {
   ELEMENTS,
   FIND_SCOPES,
   ScreenplayEditorView,
+  type CommentAnchor,
   type EditorMode,
   type EditorSnapshot,
   type FindScope,
@@ -72,6 +73,24 @@ export type ScreenplayEditorHandle = {
   focus(): void;
   /** Puts the caret at scene `number`; false when there is no such scene. */
   goToScene(number: number): boolean;
+  /** Removes every place of a comment thread from the text, outside undo. */
+  removeComment(id: string): void;
+  commentAnchor(id: string): CommentAnchor | null;
+  scrollToComment(id: string): boolean;
+};
+
+/** Comment threads of the text (screenplay-comments, decisions 4 and 5). */
+export type EditorComments = {
+  /** Highlighted threads: open ones and the one being written. */
+  open: string[];
+  /** The thread whose card is open. */
+  active: string | null;
+  /** «Комментировать»: the selection already carries the mark of new thread `id`. */
+  onNew: (id: string) => void;
+  /** A click on an open thread's place. */
+  onOpen: (id: string) => void;
+  /** Commented words by thread, after every change of the text. */
+  onQuotes: (quotes: ReadonlyMap<string, string>) => void;
 };
 
 /**
@@ -86,7 +105,10 @@ export function ScreenplayEditor({
   readOnly = false,
   suggestData,
   onScene,
+  comments,
+  tools,
   menu,
+  overlay,
   ref,
 }: {
   /** Fixed for the life of the component: give the component a new `key` to switch. */
@@ -98,8 +120,14 @@ export function ScreenplayEditor({
   suggestData?: SuggestData;
   /** Number of the scene with the caret. */
   onScene?: (scene: number | null) => void;
+  /** Comments; fixed for the life of the component whether they are given. */
+  comments?: EditorComments;
+  /** Buttons at the end of the toolbar, before «⋯». */
+  tools?: ReactNode;
   /** Items of the «⋯» menu at the end of the toolbar. */
   menu?: ReactNode;
+  /** Drawn over the page area, positioned against it (comment cards). */
+  overlay?: ReactNode;
   ref?: Ref<ScreenplayEditorHandle>;
 }) {
   const host = useRef<HTMLDivElement>(null);
@@ -108,12 +136,12 @@ export function ScreenplayEditor({
   const [snap, setSnap] = useState<EditorSnapshot | null>(null);
   const [findOpen, setFindOpen] = useState(false);
   // The latest props, read by the editor's callbacks and the first mount.
-  const latest = useRef({ mode, doc, onChange, onScene });
+  const latest = useRef({ mode, doc, onChange, onScene, comments });
   // Texts this editor has reported: a saved copy coming back is an echo, not a change from
   // outside, even when the author has typed on since (an older echo must not undo typing).
   const reported = useRef<string[]>([]);
   useEffect(() => {
-    latest.current = { mode, doc, onChange, onScene };
+    latest.current = { mode, doc, onChange, onScene, comments };
   });
 
   useEffect(() => {
@@ -131,6 +159,14 @@ export function ScreenplayEditor({
         latest.current.onChange?.(next);
       },
       onState: setSnap,
+      onCommentRequest:
+        latest.current.comments === undefined
+          ? undefined
+          : () => {
+              const id = crypto.randomUUID();
+              if (view.addComment(id)) latest.current.comments?.onNew(id);
+            },
+      onCommentOpen: (id) => latest.current.comments?.onOpen(id),
       onFindRequest: () => {
         setFindOpen(true);
         // The bar may be open already: focus its field either way.
@@ -162,6 +198,21 @@ export function ScreenplayEditor({
     if (suggestData !== undefined) editor.current?.setSuggestData(suggestData);
   }, [suggestData]);
 
+  const openKey = comments?.open.join("\n");
+  const active = comments?.active;
+  useEffect(() => {
+    if (openKey === undefined || active === undefined) return;
+    editor.current?.setComments({
+      open: openKey === "" ? [] : openKey.split("\n"),
+      active,
+    });
+  }, [openKey, active]);
+
+  const quotes = snap?.comments;
+  useEffect(() => {
+    if (quotes !== undefined) latest.current.comments?.onQuotes(quotes);
+  }, [quotes]);
+
   const scene = snap?.scene ?? null;
   useEffect(() => {
     latest.current.onScene?.(scene);
@@ -180,6 +231,9 @@ export function ScreenplayEditor({
       replace: (next) => view().replace(next),
       focus: () => view().focus(),
       goToScene: (number) => view().goToScene(number),
+      removeComment: (id) => view().removeComment(id),
+      commentAnchor: (id) => view().commentAnchor(id),
+      scrollToComment: (id) => view().scrollToComment(id),
     };
   }, []);
 
@@ -297,9 +351,12 @@ export function ScreenplayEditor({
                 })
               }
             />
+            {(tools !== undefined || menu !== undefined) && (
+              <span className="flex-1" />
+            )}
+            {tools}
             {menu !== undefined && (
               <>
-                <span className="flex-1" />
                 <DropdownMenu>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -333,6 +390,7 @@ export function ScreenplayEditor({
         </div>
         <div className="relative">
           <div ref={host} className="pw-editor" />
+          {overlay}
           {snap?.suggest != null && (
             <SuggestList
               list={snap.suggest}
