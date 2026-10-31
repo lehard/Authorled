@@ -11,6 +11,8 @@
 #      ./scripts/dev.sh stop            Stop the services, keep the data
 #      ./scripts/dev.sh reset-db --yes  Delete the agentos-db container and volume
 #      ./scripts/dev.sh psql            Open psql inside agentos-db
+#      ./scripts/dev.sh auth-users      Create the development users writer@authorled.test and
+#                                       editor@authorled.test in the local Authentik
 #
 #    Needs Docker with Compose and a filled .env (compose.yaml requires the
 #    LiteLLM, DeepSeek, GigaChat and Authentik settings for every service). `api` also needs uv.
@@ -21,12 +23,13 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 usage() {
-    echo 'Usage: ./scripts/dev.sh db | api | stop | reset-db --yes | psql'
+    echo 'Usage: ./scripts/dev.sh db | api | stop | reset-db --yes | psql | auth-users'
     echo '  db            start agentos-db and wait until healthy'
     echo '  api           start agentos-db, litellm and Authentik, export the Authentik keys, run the API on the host (--reload)'
     echo '  stop          stop agentos-api, litellm, Authentik and agentos-db; data is kept'
     echo '  reset-db      delete the agentos-db container and its volume, with the Authentik data (requires --yes)'
     echo '  psql          open psql inside agentos-db'
+    echo '  auth-users    create or update the development users of the local Authentik (password AUTH_DEV_USER_PASSWORD)'
 }
 
 fail() {
@@ -37,7 +40,7 @@ fail() {
 command="${1:-}"
 case "${command}" in
     -h|--help) usage; exit 0 ;;
-    db|api|stop|psql)
+    db|api|stop|psql|auth-users)
         [[ $# -eq 1 ]] || { usage >&2; exit 2; }
         ;;
     reset-db)
@@ -97,5 +100,34 @@ case "${command}" in
         ;;
     psql)
         exec docker compose exec agentos-db psql -U ai -d ai
+        ;;
+    auth-users)
+        # Local stand only (openspec/specs/auth, «Пользователи для разработки»): refuse a non-dev
+        # RUNTIME_ENV and a stand without the development mailbox, which production never runs.
+        runtime_env="${RUNTIME_ENV:-$(sed -n 's/^RUNTIME_ENV=//p' .env | tail -n 1)}"
+        if [[ -n "${runtime_env}" && "${runtime_env}" != "dev" ]]; then
+            fail "auth-users is for the local stand only; RUNTIME_ENV is ${runtime_env}."
+        fi
+        dev_password="$(sed -n 's/^AUTH_DEV_USER_PASSWORD=//p' .env | tail -n 1)"
+        [[ -n "${dev_password}" && "${dev_password}" != "***" ]] \
+            || fail "AUTH_DEV_USER_PASSWORD is not set in .env (password of the development users)."
+        [[ -n "$(docker compose ps -q --status running mailpit)" ]] \
+            || fail "mailpit is not running: auth-users needs the local stand (docker compose up -d)."
+        docker compose exec -T -e AUTH_DEV_USER_PASSWORD="${dev_password}" authentik-worker \
+            ak apply_blueprint /blueprints-dev/dev-users.yaml
+        # A confirmed e-mail device per user: without it the first sign-in sets one up, and an
+        # unfinished setup leaves an unconfirmed device that blocks the next sign-in.
+        docker compose exec -T authentik-worker ak shell -c '
+from authentik.core.models import User
+from authentik.stages.authenticator_email.models import AuthenticatorEmailStage, EmailDevice
+stage = AuthenticatorEmailStage.objects.get(name="authorled-authenticator-email-setup")
+for username in ("writer", "editor"):
+    user = User.objects.get(username=username)
+    EmailDevice.objects.update_or_create(
+        user=user, defaults={"email": user.email, "name": "Почта", "confirmed": True, "stage": stage}
+    )
+' > /dev/null
+        echo "Development users: writer@authorled.test (screenwriters), editor@authorled.test (editors)."
+        echo "Sign-in codes arrive at http://localhost:8025."
         ;;
 esac

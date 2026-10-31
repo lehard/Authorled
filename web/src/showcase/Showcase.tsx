@@ -1,15 +1,14 @@
 import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import {
   AiLabel,
-  DOCUMENT_STATUSES,
+  InkLoader,
   Paper,
-  StatusBadge,
   THEMES,
   ThemeSwitcher,
-  type DocumentStatus,
 } from "@/design-system";
 
 // Design-system showcase (openspec/specs/web/design-system, requirement «Витрина»).
@@ -85,16 +84,6 @@ function Swatch({ token }: { token: string }) {
   );
 }
 
-function StatusRow() {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {(Object.keys(DOCUMENT_STATUSES) as DocumentStatus[]).map((status) => (
-        <StatusBadge key={status} status={status} />
-      ))}
-    </div>
-  );
-}
-
 export function Showcase() {
   const [grayscale, setGrayscale] = useState(false);
 
@@ -144,7 +133,6 @@ export function Showcase() {
               <Paper className="rounded-md p-4 text-body-prose shadow-paper">
                 {PANGRAM}
               </Paper>
-              <StatusRow />
               <div className="flex gap-2">
                 <Button>Утвердить</Button>
                 <Button variant="outline">Отложить</Button>
@@ -217,21 +205,50 @@ export function Showcase() {
         </Paper>
       </Section>
 
-      <Section title="Статусы документа">
-        <label className="flex items-center gap-2 text-body">
-          <input
-            type="checkbox"
-            checked={grayscale}
-            onChange={(event) => setGrayscale(event.target.checked)}
-          />
-          Оттенки серого: статус различим без цвета
-        </label>
-        <div className={grayscale ? "grayscale" : undefined}>
-          <StatusRow />
+      <Section title="Ожидание">
+        <div className="flex flex-wrap items-center gap-8">
+          <div className="grid justify-items-center gap-3 text-muted-foreground">
+            <InkLoader />
+            Входим…
+          </div>
+          <p className="max-w-md text-body text-muted-foreground">
+            Линия пишется чернилами и стирается. При «уменьшить движение» в
+            системе она стоит написанной.
+          </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <StatusBadge status="stale" label="Устарел после правки Д4" />
-          <StatusBadge status="conflict" label="Противоречит Д7" />
+      </Section>
+
+      <Section title="Прокрутка, выделение, фокус">
+        <p className="max-w-2xl text-body text-muted-foreground">
+          Полосы прокрутки, выделение текста, курсор, кольцо фокуса и
+          автозаполнение полей рисует дизайн-система, а не браузер. Выделите
+          текст, пройдите по кнопкам клавишей Tab, прокрутите список.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {THEMES.map((theme) => (
+            <div
+              key={theme}
+              data-theme={theme}
+              className="desk grid gap-3 rounded-panel p-4 text-foreground"
+            >
+              <div className="h-32 overflow-y-auto rounded-xl bg-paper p-3 text-paper-foreground shadow-panel">
+                {Array.from({ length: 12 }, (_, i) => (
+                  <p key={i}>
+                    Строка {i + 1}: {PANGRAM}
+                  </p>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="rounded-full bg-panel px-3 py-1 shadow-panel"
+                >
+                  Своя кнопка
+                </button>
+                <Button size="sm">Кнопка shadcn</Button>
+              </div>
+            </div>
+          ))}
         </div>
       </Section>
 
@@ -258,6 +275,16 @@ export function Showcase() {
       </Section>
 
       <Section title="Пометки в тексте">
+        <div className="flex items-center gap-2 text-body">
+          <Checkbox
+            id="showcase-grayscale"
+            checked={grayscale}
+            onCheckedChange={(checked) => setGrayscale(checked === true)}
+          />
+          <label htmlFor="showcase-grayscale">
+            Оттенки серого: пометка различима без цвета
+          </label>
+        </div>
         <div className={grayscale ? "grayscale" : undefined}>
           <Paper className="flex flex-col gap-4 rounded-lg border p-8 pl-12">
             <p>

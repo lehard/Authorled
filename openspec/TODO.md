@@ -13,6 +13,11 @@
 | `auth-module` | архивирован 2026-10-26; остаток — в разделе «Расхождения с контекст-паком» | авторизация: модуль `auth` с полным Authentik, JWT, изоляция |
 | `prepare-auth-module-extraction` | архивирован 2026-10-28; prod не проверялся | подготовка модуля `auth` к выносу: compose-фрагмент, контракт токена, роль `agentos` без доступа к `authentik` |
 | `restructure-monorepo-modules` | архивирован 2026-10-30; prod не проверялся | три модуля верхнего уровня `agno/`, `web/`, `auth/`, общий корень |
+| `kabinet-palette-tokens` | архивирован 2026-10-31 | палитра «Кабинета» в токенах дизайн-системы |
+| `web-app-shell` | архивирован 2026-10-31; «Выйти» и продление входа проверяются в `sign-in-screens` | каркас фронта на React по макету v2; данные примера в памяти (`VITE_DATA_SOURCE=fixtures`) — провайдер API появится вместе с маршрутами ядра `core-*` |
+| `sign-in-screens` | в работе | свои экраны входа по v1 через API шагов Authentik, код на почту вместо TOTP, Mailpit и пользователи для разработки, бренд с портом |
+| `no-system-chrome` | реализован, не архивирован | прокрутка, фокус, выделение, автозаполнение, подсказки и поля выбора в стиле дизайн-системы |
+| `fork-screenplay-editor` | план готов, ждёт этапа 3 | форк `@plotwell/editor` с типами и клавишами STARC; перед apply встроить в экран «Текст сценария» (`/opsx:update`) |
 
 > Внимание: compose требует ключи LiteLLM, DeepSeek, GigaChat, Sber500 (`SBER500_API_BASE`, `SBER500_API_KEY`) и файл `agno/litellm/certs/ca-bundle.pem`; без них `docker compose up` не стартует.
 
@@ -46,12 +51,16 @@
 - [x] Модели: DeepSeek (`deepseek-fast` / `deepseek-thinking`) через LiteLLM-прокси; `claude-engineer` — Claude Code на DeepSeek через прокси; `codex-engineer` снимается. → `switch-models-to-deepseek-litellm`.
 - [x] Эмбеддинги: у DeepSeek эмбеддингов в официальном API нет → GigaChat `Embeddings-2` (1024 изм.) через прокси. → `switch-models-to-deepseek-litellm`.
 - [x] Авторизация: Authentik как модуль `auth` в этом репозитории (не отдельный `authorled-auth`), проверка JWT, схема `authentik` в общей БД; ADR-001 и `03-architecture.md` обновлены. → `auth-module` (архив `changes/archive/2026-10-26-auth-module`, проверки в `tmp/VERIFY.md`).
-- [ ] Остаток после `auth-module`: обратный прокси, домен и TLS для Authentik (hosted-проверка), доступ AgentOS UI с токеном Authentik, интерактивная проверка второго фактора и входа Authorization Code с PKCE, срок жизни токенов сервисных учётных записей плагинов, соотношение `/users*` и `/service-accounts` Agno с Authentik, роли в проекте (`can_access_project` ждёт источник от ядра). Следующий этап — собрать компоненты вместе, продуктовая логика поверх (решение владельца 2026-10-26).
+- [ ] Остаток после `auth-module`: обратный прокси, домен и TLS для Authentik (hosted-проверка), доступ AgentOS UI с токеном Authentik,  срок жизни токенов сервисных учётных записей плагинов, соотношение `/users*` и `/service-accounts` Agno с Authentik, роли в проекте (`can_access_project` ждёт источник от ядра). Следующий этап — собрать компоненты вместе, продуктовая логика поверх (решение владельца 2026-10-26).
 - [ ] Мелкие замечания `/opsx:verify auth-module` (не блокировали архив): (1) проверки просроченного токена и токена чужой аудитории в `scripts/auth_check.sh` и вживую; (2) в `openspec/specs/overview` сценарий «Значения по умолчанию окружения» (`RUNTIME_ENV=prd` и `AGENTOS_URL` по умолчанию) противоречит коду, который падает без этих переменных (`app/main.py`) — решить, спека или код верны, → `remove-config-fallbacks`; (3) строка документации в `app/auth/authorization.py` называет `AUTH_AUDIENCE`, код читает `AUTH_FRONTEND_CLIENT_ID`; (4) в интенте `business-intents/authentik-identity-and-isolation.md` три группы, в коде четыре (`plugins`); (5) базовые сценарии `GET /config`, `/teams`, `/registry`, `/company/sources` (`architecture`, `api/core`, `integrations`) не упоминают, что теперь нужен токен; (6) без токена в `dev` отвечают `/docs`, `/openapi.json`, `/mcp/server-card` — решить, закрывать ли.
 - [x] Shell и правка файлов: в `05-security-and-compliance.md` и `07-anti-patterns.md` разграничены инструменты разработки и продуктовый агент.
 - [ ] Телеметрия: в коде `AgentOS(telemetry=False)` и `AGNO_TELEMETRY=false` в compose (рабочее дерево); спеки и документация не обновлены. → `remove-config-fallbacks`.
 - [ ] ClamAV и фронтенд (Refine, CopilotKit, AG-UI) — дорожная карта, не расхождение: появятся вместе с загрузками и фронтендом в `web/`.
 - [ ] Redis — закладывается в change первой рассылки продуктовых событий; при одной инстанции API не нужен.
+
+## Вход
+- [ ] Незавершённая настройка почтового кода блокирует вход: если при первом входе не ввести код, Authentik оставляет неподтверждённое устройство и дальше отвечает «The user already has an email address registered for MFA». Пользователей для разработки `auth-users` создаёт с подтверждённым устройством; для настоящих — решить в change регистрации (устройство при регистрации или очистка неподтверждённых), замечено 2026-10-31.
+- [ ] Старый бренд `localhost` (без порта) остаётся в базе Authentik после смены `AUTH_BRAND_DOMAIN`; не мешает, удалить при пересоздании базы.
 
 ## Расхождения кода и документации
 - [x] Ключи моделей в `README.md`, `AGENTS.md`, `example.env`, `docs/sandboxes.md`, скиллах `setup-platform`/`deploy-platform`, критерии `manager_explains_application`: нужны только DeepSeek, GigaChat и ключи прокси; `OPENAI_API_KEY`/`ANTHROPIC_API_KEY` не нужны; в `example.env` — комментарий, кто использует каждый ключ. → `switch-models-to-deepseek-litellm` (tasks 4.x).

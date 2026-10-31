@@ -1,16 +1,27 @@
 # Authorled web
 
-Frontend of Authorled: React + TypeScript on Vite, shadcn/ui on Tailwind CSS (ADR-001, ADR-004).
-For now it holds the design system and its showcase.
+Frontend of Authorled: React + TypeScript on Vite, Refine with React Router, shadcn/ui on
+Tailwind CSS (ADR-001, ADR-004). The writer's workspace follows mockup v2
+(`openspec/context/_raw/design/kabinet-starc/`); rules: `openspec/specs/web/workspace`.
 
 ```sh
 npm ci            # Node.js from .nvmrc
-npm run dev       # showcase at http://127.0.0.1:5173
+npm run dev       # open http://localhost:5173 (not 127.0.0.1: sign-in returns to localhost)
 ```
 
+Settings come from the repository `.env` (see `example.env`): `AUTH_ISSUER`,
+`AUTH_FRONTEND_CLIENT_ID` and `AUTH_FRONTEND_REDIRECT_URI` for sign-in with Authentik
+(`docker compose up -d`), and `VITE_DATA_SOURCE`. The only data source for now is `fixtures`:
+sample data in page memory, reset on reload, until the backend has project routes. A missing
+setting stops the app with its name. The design-system showcase is at `/showcase`.
+
+- `src/app/` — settings, Refine root, routes. `src/auth/` — OIDC sign-in (oidc-client-ts).
+- `src/data/` — model, data provider (`fixtures`), sample data, profile fields.
+- `src/screens/` — shelf, story trash, story window (navigator, documents, chat column).
 - `src/design-system/` — tokens (`tokens.css`), fonts, type scale, paper, decorations and base
   components. Screens import from `@/design-system`. Rules: `openspec/specs/web/design-system`.
-- `src/components/ui/` — shadcn/ui components, added with `npx shadcn@4.22.2 add <name>`.
+- `src/components/ui/` — shadcn/ui components, added with `npx shadcn@4.22.2 add <name>`; the
+  overlays of dialog, alert-dialog and sheet use `bg-background/60` instead of a raw colour.
 - `scripts/check-contrast.ts` — WCAG contrast of token pairs in every theme.
 
 Checks run from the repository root with `./scripts/validate.sh`.

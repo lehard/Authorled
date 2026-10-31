@@ -374,7 +374,7 @@ reader and 5000-character chunks, which exceed that limit.
 ## Module auth
 
 Authentication and authorization are a module of this repository: [Authentik](https://goauthentik.io)
-(sign-in, 2FA, profile, password reset, groups, service accounts, admin interface) runs next to
+(sign-in with a code by e-mail, profile, password reset, groups, service accounts, admin interface) runs next to
 the API, in the same database (schema `authentik`, own role; the API's role `agentos` has no
 access to it). Its configuration is code in `auth/` (services in
 `auth/compose.yaml`, included by `compose.yaml`; blueprints, database init, key export);
@@ -386,6 +386,22 @@ on are the token contract in `openspec/specs/auth`. The API accepts only tokens 
   `auth/jwks/jwks.json` and only then starts the API. Authentik is on
   [http://localhost:9000](http://localhost:9000); the first administrator is `akadmin` with
   `AUTHENTIK_BOOTSTRAP_PASSWORD`.
+- **Sign-in.** The web frontend has its own sign-in screens (`/login`): e-mail → password, only
+  when the account has one → a 6-digit code by e-mail → OIDC tokens without Authentik pages.
+  The screens walk the Authentik flow `authorled-authentication` through its flow executor API
+  on the frontend's origin; «Выйти» runs the flow `authorled-invalidation` (ends the Authentik
+  session) and returns to `AUTH_FRONTEND_LOGOUT_URI`. Locally the Vite dev server proxies
+  `/api/v3/flows/executor/` and `/flows/-/cancel/` to Authentik. In production the reverse proxy
+  of the frontend must forward the same two paths to Authentik, and `AUTHENTIK_COOKIE_DOMAIN`
+  (the parent domain, e.g. `.example.com`) lets that session reach the Authentik domain.
+- **Mail.** Authentik sends the codes over SMTP (`AUTHENTIK_EMAIL__*`). Locally that is the
+  `mailpit` container: every e-mail shows at [http://localhost:8025](http://localhost:8025).
+  Production does not run Mailpit; put a real SMTP server in `.env`.
+- **Development users.** `./scripts/dev.sh auth-users` creates `writer@authorled.test`
+  (`screenwriters`) and `editor@authorled.test` (`editors`) with the password
+  `AUTH_DEV_USER_PASSWORD` and a confirmed e-mail code device. In the dev server the sign-in
+  screen has «Войти как Сценарист» and «Войти как Редактор»: they walk the same flow and take
+  the code from Mailpit. Production builds do not contain these buttons.
 - **Groups.** `screenwriters` and `editors` (authors), `admins` (superusers, the only ones in the
   Authentik admin interface and with full API access), `plugins` (service accounts). What each
   group may call is in `agno/app/auth/authorization.py`.
@@ -426,9 +442,13 @@ add the others when you need them. Docker Compose reads `.env` for both local an
 | `EMBEDDINGS_MODEL` | Active embedding alias for the API (required, no default); see [Models](#models). |
 | `PARALLEL_API_KEY` | Optional web search key. Without it, search uses Parallel's MCP server without an API key. |
 | `AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`, `AUTHENTIK_BOOTSTRAP_EMAIL`, `AUTHENTIK_BOOTSTRAP_PASSWORD` | Authentik server secret, password of its database role, first administrator (required, see [Module auth](#module-auth)). |
-| `AUTH_FRONTEND_CLIENT_ID`, `AUTH_FRONTEND_REDIRECT_URI` | Client ID of the Authentik application (also the expected token audience) and the frontend's redirect URI (required). |
+| `AUTH_FRONTEND_CLIENT_ID`, `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_FRONTEND_LOGOUT_URI` | Client ID of the Authentik application (also the expected token audience), the frontend's redirect URI after sign-in and its sign-in screen after sign-out (required). |
 | `AUTH_DEV_SERVICE_TOKEN` | Secret of the development service account `sa-dev` (required). |
-| `AUTH_BRAND_DOMAIN` | Host name of Authentik as users open it (no port); sign-in on this host requires a second factor (required). |
+| `AUTH_BRAND_DOMAIN` | Host of Authentik as users open it, with the port if the address has one (locally `localhost:9000`); the product sign-in flow applies to this host (required). |
+| `AUTHENTIK_EMAIL__HOST`, `__PORT`, `__USERNAME`, `__PASSWORD`, `__USE_TLS`, `__USE_SSL`, `__FROM` | Outgoing mail of Authentik (sign-in codes); locally Mailpit (required; `USERNAME` and `PASSWORD` may be empty). |
+| `AUTHENTIK_COOKIE_DOMAIN` | Production only: parent domain of the product, so the session set through the frontend reaches Authentik (required by `compose.prod.yaml`). |
+| `AUTH_DEV_USER_PASSWORD` | Development only: password of the development users and the quick sign-in (`./scripts/dev.sh auth-users`). |
+| `VITE_DATA_SOURCE` | Data source of the web frontend; now only `fixtures` (required by the frontend). |
 | `AUTH_ISSUER` | Issuer of the tokens: the address clients use to reach Authentik plus `/application/o/authorled/` (required). |
 | `JWT_JWKS_FILE` | Public keys of Authentik, the only source of token verification keys. Compose writes the file at start and sets the path; set it yourself when the API or `python -m evals` runs on the host (`dev.sh api` does for the API). |
 | `AGENTOS_URL` | Public URL used by scheduled jobs and MCP. Set it to your public HTTPS URL. |

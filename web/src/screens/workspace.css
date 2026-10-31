@@ -1,0 +1,249 @@
+/*
+ * Surfaces of the workspace after mockup v2 (openspec/context/_raw/design/kabinet-starc/app.css):
+ * story covers as books, navigator items, screenplay paragraphs, the title page. Tokens only.
+ */
+@layer components {
+  .book {
+    position: relative;
+    display: block;
+    aspect-ratio: 3 / 4;
+    padding: 22px 24px;
+    border-radius: 4px 10px 10px 4px;
+    background: var(--panel);
+    color: var(--foreground);
+    font-family: var(--font-heading);
+    font-size: 22px;
+    line-height: 1.2;
+    box-shadow:
+      inset 4px 0 0 color-mix(in oklch, var(--foreground) 8%, transparent),
+      var(--shadow-panel);
+    transition:
+      transform 0.15s,
+      box-shadow 0.15s;
+  }
+  .book.art {
+    overflow: hidden;
+    background: linear-gradient(
+      170deg,
+      color-mix(in oklch, var(--primary) 62%, var(--paper)),
+      color-mix(in oklch, var(--primary) 82%, var(--foreground))
+    );
+    color: var(--primary-foreground);
+  }
+  .book.art::before,
+  .book.art::after {
+    content: "";
+    position: absolute;
+    left: -10%;
+    right: -10%;
+    height: 40px;
+    border-radius: 50%;
+    border-top: 1.5px solid color-mix(in oklch, var(--paper) 45%, transparent);
+  }
+  .book.art::before {
+    bottom: 54px;
+  }
+  .book.art::after {
+    bottom: 30px;
+    border-top-color: color-mix(in oklch, var(--paper) 28%, transparent);
+  }
+  .group\/card:hover .book {
+    transform: translateY(-3px);
+    box-shadow:
+      inset 4px 0 0 color-mix(in oklch, var(--foreground) 8%, transparent),
+      var(--shadow-paper);
+  }
+  .book-mini {
+    width: 40px;
+    height: 52px;
+    flex: none;
+    border-radius: 3px 7px 7px 3px;
+    background: var(--paper);
+    box-shadow:
+      inset 3px 0 0 color-mix(in oklch, var(--foreground) 10%, transparent),
+      var(--shadow-panel);
+  }
+  .book-mini.art {
+    background: linear-gradient(
+      170deg,
+      color-mix(in oklch, var(--primary) 62%, var(--paper)),
+      color-mix(in oklch, var(--primary) 82%, var(--foreground))
+    );
+  }
+
+  /* Navigator item; the open document is a sheet of paper on the panel. */
+  .tree-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 32px;
+    padding: 4px 8px;
+    border-radius: 10px;
+    color: var(--muted-foreground);
+    font-size: 13.5px;
+    text-align: left;
+  }
+  .tree-item:hover {
+    background: var(--accent);
+    color: var(--foreground);
+  }
+  .tree-item[aria-current="page"] {
+    background: var(--paper);
+    color: var(--foreground);
+    font-weight: 600;
+    box-shadow: var(--shadow-panel);
+  }
+  .tree-item[aria-current="page"] > svg {
+    color: var(--primary);
+  }
+
+  /* Screenplay paragraphs (mockup v2, .ed .b-*). */
+  .script {
+    font-family: var(--font-script);
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  .script p {
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+  }
+  .script .b-sh {
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-top: 1.6em;
+  }
+  .script .b-sh:first-child,
+  .script .b-act + .b-sh,
+  .script .b-seq + .b-sh {
+    margin-top: 0.6em;
+  }
+  .script .b-cast {
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  .script .b-ac,
+  .script .b-un,
+  .script .b-shot {
+    margin-top: 0.9em;
+  }
+  .script .b-shot {
+    text-transform: uppercase;
+  }
+  .script .b-ch {
+    text-transform: uppercase;
+    margin: 0.9em 0 0 38%;
+  }
+  .script .b-pa {
+    margin-left: 30%;
+    max-width: 46%;
+  }
+  .script .b-dl {
+    margin-left: 22%;
+    max-width: 58%;
+  }
+  .script .b-ly {
+    margin-left: 22%;
+    max-width: 58%;
+    font-style: italic;
+  }
+  .script .b-tr {
+    text-transform: uppercase;
+    text-align: right;
+    margin-top: 0.9em;
+  }
+  .script .b-note {
+    margin-top: 0.9em;
+    color: var(--muted-foreground);
+    font-style: italic;
+  }
+  .script .b-beat {
+    margin-top: 0.9em;
+    padding-left: 12px;
+    border-left: 3px solid var(--ai-border);
+    color: var(--muted-foreground);
+    font-family: var(--font-ui);
+    font-size: 14px;
+  }
+  .script .b-act {
+    text-align: center;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin: 2em 0 0.4em;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .script .b-act:first-child {
+    margin-top: 0;
+  }
+  .script .b-seq {
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+    margin: 1.4em 0 0.2em;
+    letter-spacing: 0.04em;
+  }
+  @media (max-width: 900px) {
+    .script {
+      font-size: 13.5px;
+    }
+    .script .b-ch {
+      margin-left: 30%;
+    }
+    .script .b-dl {
+      margin-left: 12%;
+      max-width: 76%;
+    }
+    .script .b-pa {
+      margin-left: 20%;
+      max-width: 60%;
+    }
+  }
+
+  /* Pages on the desk: screenplay, prose, title page. */
+  .sheet {
+    position: relative;
+    margin: 0 auto;
+    background: var(--paper);
+    color: var(--paper-foreground);
+    border-radius: 6px;
+    box-shadow: var(--shadow-paper);
+  }
+  .sheet-script {
+    width: min(100%, 760px);
+    padding: 72px 72px 96px 96px;
+  }
+  .sheet-prose {
+    width: min(100%, 760px);
+    padding: 64px 72px 80px;
+    font-family: var(--font-prose);
+    font-size: var(--text-body-prose);
+    line-height: var(--text-body-prose--line-height);
+  }
+  .sheet-title {
+    width: min(100%, 640px);
+    aspect-ratio: 210 / 297;
+    padding: 64px 64px 56px;
+    font-family: var(--font-script);
+    font-size: 15px;
+    display: flex;
+    flex-direction: column;
+  }
+  @media (max-width: 1240px) {
+    .sheet-script {
+      padding: 56px 40px 72px 56px;
+    }
+  }
+  @media (max-width: 900px) {
+    .sheet-script {
+      padding: 36px 20px 56px;
+    }
+    .sheet-prose {
+      padding: 32px 20px 48px;
+    }
+    .sheet-title {
+      padding: 32px 24px;
+    }
+  }
+}

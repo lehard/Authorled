@@ -58,6 +58,18 @@ services:
   authentik-server:
     ports: !override
       - "127.0.0.1:9000:9000"
+    environment:
+      # Parent domain of the product, so the session set through the frontend's proxy of the
+      # sign-in API is also sent to the Authentik domain (openspec/specs/auth, «Вход фронтенда»).
+      AUTHENTIK_COOKIE_DOMAIN: ${AUTHENTIK_COOKIE_DOMAIN:?AUTHENTIK_COOKIE_DOMAIN must be set in .env}
+
+  authentik-worker:
+    environment:
+      AUTHENTIK_COOKIE_DOMAIN: ${AUTHENTIK_COOKIE_DOMAIN:?AUTHENTIK_COOKIE_DOMAIN must be set in .env}
+
+  # The development mailbox never runs in production: mail goes to the SMTP server in .env.
+  mailpit:
+    profiles: ["never"]
 
   # The LiteLLM proxy is reached only over the compose network in production;
   # its keys and the CA bundle mount come from compose.yaml unchanged.

@@ -47,6 +47,7 @@ const ICONS = {
   book: '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
   msg: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
   send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  clip: '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
   history: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5M12 7v5l4 2"/>',
   x: '<path d="M18 6 6 18M6 6l12 12"/>',
   check: '<path d="M20 6 9 17l-5-5"/>',
@@ -81,7 +82,7 @@ const S = {
   ptrash: clone(DATA.projectTrash),
   chats: clone(DATA.chats),
   pid: null,
-  ui: { tree: new Set(["chars", "sp", "text"]), navMode: "tree", view: { text: "text", treatment: "text" }, review: false, beats: false, isolate: false, find: null, thread: null, markCol: 0, curScene: null, card: null, binSel: 0, selText: "", lastBlock: null, chatCur: null, chatView: "msgs", typing: false },
+  ui: { tree: new Set(["chars", "sp", "text"]), navMode: "tree", view: { text: "text", treatment: "text" }, review: false, beats: false, isolate: false, find: null, thread: null, markCol: 0, curScene: null, card: null, sug: null, binSel: 0, selText: "", lastBlock: null, chatCur: null, chatView: "msgs", typing: false, att: [], attErr: "" },
 };
 for (const p of S.projects) for (const bl of p.sp.blocks) bl.id = uid("b");
 const P = () => S.projects.find((p) => p.id === S.pid);
@@ -237,7 +238,7 @@ function blankProject(title) {
   return {
     id, title, desc: "", cover: false, updated: "только что", lastDoc: "text",
     sp: { name: title, tagline: "", logline: "", show: { title: true, synopsis: true, treatment: true, text: true }, titlePage: { title, genre: "Полнометражный сценарий", author: S.user.name, contacts: S.user.email, place: "" }, synopsis: "", params: {}, drafts: [], blocks: [{ id: uid("b"), t: "sh", h: "" }] },
-    chars: [], locs: [], worlds: [], comments: {}, trash: [],
+    chars: [], locs: [], worlds: [], suggestions: {}, comments: {}, trash: [],
   };
 }
 function importedBlocks() {
@@ -391,7 +392,7 @@ function edBar(mode, locked = false) {
     <button class="ibtn ${S.ui.find ? "on" : ""}" data-act="find" title="Найти и заменить (⌘F)" aria-label="Найти">${ico("search")}</button>
     ${editable ? `<button class="ibtn ${S.ui.review ? "on" : ""}" data-act="review" title="Режим рецензирования" aria-label="Режим рецензирования" aria-pressed="${S.ui.review}">${ico("marker")}</button>` : ""}
     ${mode === "text" || mode === "treatment" ? `<button class="ibtn ${S.ui.isolate ? "on" : ""}" data-act="isolate" title="Только текущая сцена" aria-label="Только текущая сцена" aria-pressed="${S.ui.isolate}">${ico("focus")}</button>` : ""}
-    <span class="sep"></span><button class="cbtn" data-act="clist" title="Комментарии">${ico("msg", "sm")}<b>${n}</b></button>${saveSt()}</div>`;
+    <span class="sep"></span>${mode === "text" ? `<button class="cbtn sgbtn" data-act="sg-next" title="Предложения соавтора — к следующему">${ico("spark", "sm")}<b>${sgOpen(p).length}</b></button>` : ""}<button class="cbtn" data-act="clist" title="Комментарии">${ico("msg", "sm")}<b>${n}</b></button>${saveSt()}</div>`;
 }
 function cardsBar() {
   return `<div class="tbar" role="toolbar" aria-label="Инструменты карточек"><button class="cbtn" data-act="card-add" data-t="sh">${ico("plus", "sm")}Сцена</button><button class="cbtn" data-act="card-add" data-t="act">${ico("plus", "sm")}Акт</button><span class="sep"></span>${saveSt()}</div>`;
@@ -422,6 +423,7 @@ function mountEditor(mode, blocks, editable, draftId = "") {
   ed.addEventListener("paste", onPaste);
   if (S.ui.isolate) applyIso();
   if (S.ui.thread) renderThread();
+  if (S.ui.sug && mode === "text") renderSug();
   if (S.ui.curScene && mode !== "prose") {
     const el = ed.querySelector(`[data-id="${S.ui.curScene}"]`);
     if (el) requestAnimationFrame(() => el.scrollIntoView({ block: "center" }));
@@ -884,6 +886,57 @@ function unwrapMark(id) {
   refreshCcount();
 }
 
+// ——— Предложения правок соавтора (ADR-004: видны в тексте и в чате, текст меняет только «Принять») ———
+const sgInText = (p, id) => p.sp.blocks.some((bl) => bl.h.includes(`data-s="${id}"`));
+const sgOpen = (p) => Object.keys(p.suggestions).filter((id) => p.suggestions[id].status === "open" && sgInText(p, id));
+function sgScene(p, id) {
+  const i = p.sp.blocks.findIndex((bl) => bl.h.includes(`data-s="${id}"`));
+  return i < 0 ? null : scenesOf(p.sp.blocks).find((sc) => sc.kind === "scene" && sc.i <= i && i < sc.end) || null;
+}
+function closeSug() { S.ui.sug = null; $(".sgcard")?.remove(); $$(".sg.active").forEach((x) => x.classList.remove("active")); }
+function renderSug() {
+  $(".sgcard")?.remove();
+  $$(".sg.active").forEach((x) => x.classList.remove("active"));
+  const id = S.ui.sug, p = P(), sg = p && p.suggestions[id], span = $(`#ed [data-s="${id}"]`);
+  if (!sg || !span) return;
+  span.classList.add("active");
+  span.scrollIntoView({ block: "center" });
+  const page = span.closest(".page"), box = relRect(span), pr = relRect(page), wsW = $("#wsin").clientWidth;
+  const el = document.createElement("div");
+  el.className = "cthread sgcard";
+  el.style.setProperty("--mk", "var(--ai)");
+  el.innerHTML = `<div class="ch-head">${ico("spark", "sm")}<span>Предложение соавтора · ${esc(sg.at)}</span><span class="sp"></span><button class="ibtn" data-act="sg-ask" title="Обсудить в чате" aria-label="Обсудить в чате">${ico("msg")}</button><button class="ibtn" data-act="sg-close" aria-label="Закрыть">${ico("x")}</button></div>
+    <div class="sgdiff">${span.innerHTML}</div><p class="sgwhy">${esc(sg.why)}</p>
+    <div class="row-acts"><span class="sp"></span><button class="btn ghost" data-act="sg-no">Отклонить</button><button class="btn primary" data-act="sg-yes">Принять</button></div>`;
+  const w = Math.min(300, wsW - 24);
+  let left = pr.right + 16;
+  if (left + w > wsW - 8) left = wsW - w - 12;
+  el.style.left = `${left}px`;
+  el.style.top = `${Math.max(8, box.top - 10)}px`;
+  $("#wsin").append(el);
+}
+function decideSug(accept) {
+  const id = S.ui.sug, p = P(), span = $(`#ed [data-s="${id}"]`);
+  p.suggestions[id].scene = sgScene(p, id)?.num;
+  span.replaceWith(document.createTextNode(span.querySelector(accept ? "ins" : "del").textContent));
+  p.suggestions[id].status = accept ? "accepted" : "rejected";
+  closeSug();
+  changed(true);
+  flushEditor();
+  const b2 = $('[data-act="sg-next"] b');
+  if (b2) b2.textContent = sgOpen(p).length;
+  renderChat();
+  toast(accept ? "Правка принята — в тексте новая версия фрагмента." : "Правка отклонена — текст остался прежним.");
+}
+function showSug(id) {
+  const p = P(), sc = sgScene(p, id);
+  S.ui.sug = id;
+  if (sc) S.ui.curScene = sc.id;
+  $("#app")?.classList.remove("chat-open");
+  if (doc() === "text" && $("#ed")) renderSug();
+  else location.hash = `#p/${p.id}/text`;
+}
+
 // ——— Карточки сцен (вид сценария и поэпизодника) ———
 function cardsHTML(k) {
   const p = P(), items = scenesOf(p.sp.blocks);
@@ -1038,18 +1091,27 @@ function renderChat() {
       <div class="sugg">${["Что можно сократить в этой сцене?", "Проверь, не противоречит ли сцена профилям персонажей", "Предложи название для сцены"].map((s) => `<button data-act="chat-sugg">${s}</button>`).join("")}</div></div></div>`;
   } else {
     body = `<div class="msgs" id="msgs">${cur.msgs.map((m) => m.who === "me"
-      ? `<div class="msg me">${m.ctx ? `<span class="ctxq">«${esc(m.ctx)}»</span>` : ""}${esc(m.text)}</div>`
-      : `<div class="msg ai"><div class="who">${ico("spark", "sm")}Соавтор</div>${esc(m.text)}<div class="macts"><button data-act="chat-copy">Скопировать</button></div></div>`).join("")}${S.ui.typing ? `<div class="typing">Соавтор пишет…</div>` : ""}</div>`;
+      ? `<div class="msg me">${m.ctx ? `<span class="ctxq">«${esc(m.ctx)}»</span>` : ""}${m.files?.length ? `<span class="mfiles">${m.files.map((f) => `<span class="att">${ico("file", "sm")}<span class="an">${esc(f.name)}</span><small>${fmtSize(f.size)}</small></span>`).join("")}</span>` : ""}${esc(m.text)}</div>`
+      : `<div class="msg ai"><div class="who">${ico("spark", "sm")}Соавтор</div>${esc(m.text)}${m.sugs ? sugRefs(m.sugs) : ""}<div class="macts"><button data-act="chat-copy">Скопировать</button></div></div>`).join("")}${S.ui.typing ? `<div class="typing">Соавтор пишет…</div>` : ""}</div>`;
   }
   $("#chat").innerHTML = `<div class="chat-head" data-act="chat-toggle"><div class="t"><b>${ico("spark", "sm")}Соавтор</b><small id="chatctx"></small></div>
     <button class="ibtn ${S.ui.chatView === "hist" ? "on" : ""}" data-act="chat-hist" title="История бесед" aria-label="История бесед">${ico("history")}</button>
     <button class="ibtn" data-act="chat-new" title="Новая беседа" aria-label="Новая беседа">${ico("plus")}</button></div>
     ${body}
-    <div class="composer"><div id="chip"></div><div class="box"><textarea id="chatin" rows="1" placeholder="Напишите соавтору" aria-label="Сообщение соавтору"></textarea><button class="send" data-act="chat-send" aria-label="Отправить">${ico("send", "sm")}</button></div></div>`;
+    <div class="composer"><div id="chip"></div><div id="atts"></div><div class="box"><button class="ibtn attach" data-act="chat-attach" title="Прикрепить файл" aria-label="Прикрепить файл">${ico("clip")}</button><input type="file" id="chatfile" multiple accept="${ATT_EXT.join(",")}" hidden><textarea id="chatin" rows="1" placeholder="Напишите соавтору" aria-label="Сообщение соавтору"></textarea><button class="send" data-act="chat-send" aria-label="Отправить">${ico("send", "sm")}</button></div></div>`;
   const m = $("#msgs");
   if (m) m.scrollTop = m.scrollHeight;
   updateChatCtx();
   drawChip();
+  drawAtts();
+}
+function sugRefs(ids) {
+  const p = P();
+  return `<div class="sgrefs">${ids.map((id) => {
+    const sg = p.suggestions[id], num = sgScene(p, id)?.num ?? sg.scene;
+    const st = sg.status === "accepted" ? "Принята" : sg.status === "rejected" ? "Отклонена" : sgInText(p, id) ? "Ждёт решения" : "Текст изменён";
+    return `<button class="sgref ${sg.status}" data-act="sg-show" data-id="${id}" ${sg.status === "open" && sgInText(p, id) ? "" : "disabled"}><span>Правка${num ? ` в сцене ${num}` : ""}<small>${st}</small></span>${sg.status === "open" && sgInText(p, id) ? `<b>Показать</b>` : ""}</button>`;
+  }).join("")}</div>`;
 }
 function updateChatCtx() {
   const el = $("#chatctx"), p = P();
@@ -1062,21 +1124,53 @@ function drawChip() {
   if (!c) return;
   c.innerHTML = S.ui.selText ? `<span class="chip"><span>Выделено: «${esc(S.ui.selText.slice(0, 60))}${S.ui.selText.length > 60 ? "…" : ""}»</span><button data-act="chip-x" aria-label="Убрать выделенное">${ico("x", "sm")}</button></span>` : "";
 }
+// Вложения в чат — как в CopilotKit v2 (useAttachments): скрепка, перетаскивание и вставка,
+// фильтр типов и размера, статус «загружается → готово». В продукте файл уходит на наш
+// маршрут загрузки (проверка ClamAV) и попадает к агенту частью сообщения AG-UI.
+const ATT_EXT = [".docx", ".pdf", ".txt", ".md", ".fountain", ".fdx", ".starc"];
+const ATT_MAX = 20 * 1024 * 1024, ATT_COUNT = 5;
+function fmtSize(n) { return n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} КБ` : `${(n / 1024 / 1024).toFixed(1).replace(".", ",")} МБ`; }
+function addFiles(files) {
+  const errs = [];
+  for (const f of files) {
+    const ext = (f.name.match(/\.[^.]+$/) || [""])[0].toLowerCase();
+    if (!ATT_EXT.includes(ext)) { errs.push(`«${f.name}»: такой тип не поддерживается`); continue; }
+    if (f.size > ATT_MAX) { errs.push(`«${f.name}»: больше 20 МБ`); continue; }
+    if (S.ui.att.length >= ATT_COUNT) { errs.push(`не больше ${ATT_COUNT} файлов в одном сообщении`); break; }
+    const a = { id: uid("f"), name: f.name, size: f.size, status: "uploading" };
+    S.ui.att.push(a);
+    setTimeout(() => { a.status = "ready"; drawAtts(); }, 700 + Math.random() * 600);
+  }
+  S.ui.attErr = errs.join("; ");
+  drawAtts();
+}
+function drawAtts() {
+  const c = $("#atts");
+  if (!c) return;
+  c.innerHTML = (S.ui.att.length ? `<div class="atts">${S.ui.att.map((a) => `<span class="att ${a.status}">${ico("file", "sm")}<span class="an">${esc(a.name)}</span><small>${a.status === "uploading" ? "Проверяем…" : fmtSize(a.size)}</small><button data-act="att-x" data-id="${a.id}" aria-label="Убрать ${esc(a.name)}">${ico("x", "sm")}</button></span>`).join("")}</div>` : "")
+    + (S.ui.attErr ? `<div class="att-err" role="alert">Не прикреплено: ${esc(S.ui.attErr)}. Можно: DOCX, PDF, TXT, MD, Fountain, FDX, STARC.</div>` : "");
+}
 function chatSend(text) {
   text = text.trim();
-  if (!text) return;
+  if (S.ui.att.some((a) => a.status === "uploading")) { toast("Дождитесь, пока файлы загрузятся."); return; }
+  const files = S.ui.att.map(({ name, size }) => ({ name, size }));
+  if (!text && !files.length) return;
   const list = chatList();
   let cur = list.find((c) => c.id === S.ui.chatCur);
-  if (!cur) { cur = { id: uid("h"), title: text.slice(0, 48), when: "сегодня", msgs: [] }; list.push(cur); S.ui.chatCur = cur.id; }
+  if (!cur) { cur = { id: uid("h"), title: (text || files[0].name).slice(0, 48), when: "сегодня", msgs: [] }; list.push(cur); S.ui.chatCur = cur.id; }
   const ctx = S.ui.selText;
-  cur.msgs.push({ who: "me", text, ctx });
+  cur.msgs.push({ who: "me", text, ctx, files });
   S.ui.selText = "";
+  S.ui.att = [];
+  S.ui.attErr = "";
   S.ui.chatView = "msgs";
   S.ui.typing = true;
   renderChat();
   setTimeout(() => {
     const p = P(), d = doc();
-    const reply = ctx
+    const reply = files.length
+      ? `Прочитал ${files.length === 1 ? `«${files[0].name}»` : `файлы (${files.length})`}. Могу пересказать, сравнить с историей или вытащить персонажей и сцены — в историю ничего не добавлю, пока вы не скажете. В макете ответ заготовлен.`
+      : ctx
       ? `Про «${ctx.slice(0, 40)}${ctx.length > 40 ? "…" : ""}»: могу предложить три варианта, сократить или проверить, как это звучит в голосе персонажа. В макете ответы заготовлены — в продукте здесь будет ответ модели по тексту.`
       : `Смотрю на «${docTitle(p, d)}». В макете ответ заготовлен: в продукте соавтор ответит по открытому документу и всей истории — сценам, персонажам и локациям.`;
     cur.msgs.push({ who: "ai", text: reply });
@@ -1445,6 +1539,26 @@ const ACT = {
   "chat-hist"() { S.ui.chatView = S.ui.chatView === "hist" ? "msgs" : "hist"; renderChat(); },
   "chat-new"() { S.ui.chatCur = null; S.ui.chatView = "msgs"; renderChat(); $("#chatin").focus(); },
   "chat-open"(el) { S.ui.chatCur = el.dataset.id; S.ui.chatView = "msgs"; renderChat(); },
+  "sg-next"() {
+    const ids = $$("#ed .sg").map((x) => x.dataset.s);
+    if (!ids.length) { toast("Открытых предложений соавтора нет."); return; }
+    S.ui.sug = ids[(ids.indexOf(S.ui.sug) + 1) % ids.length];
+    renderSug();
+  },
+  "sg-show"(el) { showSug(el.dataset.id); },
+  "sg-close"() { closeSug(); },
+  "sg-yes"() { decideSug(true); },
+  "sg-no"() { decideSug(false); },
+  "sg-ask"() {
+    const span = $(`#ed [data-s="${S.ui.sug}"]`);
+    S.ui.selText = span.querySelector("del").textContent;
+    closeSug();
+    drawChip();
+    $("#app")?.classList.add("chat-open");
+    $("#chatin").focus();
+  },
+  "chat-attach"() { $("#chatfile").click(); },
+  "att-x"(el) { S.ui.att = S.ui.att.filter((a) => a.id !== el.dataset.id); S.ui.attErr = ""; drawAtts(); },
   "chat-send"() { const t = $("#chatin"); chatSend(t.value); },
   "chat-sugg"(el) { chatSend(el.textContent); },
   "chat-copy"(el) { navigator.clipboard.writeText(el.closest(".msg").firstChild.nextSibling.textContent).then(() => toast("Скопировано.")); },
@@ -1459,6 +1573,9 @@ document.addEventListener("click", (e) => {
   if ($("#app.nav-open") && !e.target.closest(".nav")) { closeNavMob(); if (!el) return; }
   if (!e.target.closest(".menu") && !e.target.closest(".scrim") && $(".menu")) closeLayers();
   // клик по пометке в тексте открывает её ветку
+  const sgEl = e.target.closest('#ed[data-mode="text"] .sg');
+  if (sgEl) { S.ui.sug = sgEl.dataset.s; renderSug(); return; }
+  if (!el && S.ui.sug && !e.target.closest(".sgcard")) closeSug();
   const mk = e.target.closest("#ed .mk:not(.resolved)");
   if (mk) { S.ui.thread = mk.dataset.c; renderThread(); return; }
   if (!el && S.ui.thread && !e.target.closest(".cthread")) ACT["c-close"]();
@@ -1536,6 +1653,7 @@ document.addEventListener("input", (e) => {
   }
 });
 document.addEventListener("change", (e) => {
+  if (e.target.id === "chatfile") { addFiles([...e.target.files]); e.target.value = ""; return; }
   if (e.target.id === "tsel") {
     const el = S.ui.lastBlock && $(`#ed [data-id="${S.ui.lastBlock}"]`);
     if (!el) return;
@@ -1579,14 +1697,18 @@ document.addEventListener("dragstart", (e) => {
   e.dataTransfer.effectAllowed = "move";
   e.dataTransfer.setData("text/plain", DRAG.id);
 });
+const fileDrag = (e) => !DRAG && e.dataTransfer?.types.includes("Files");
 document.addEventListener("dragover", (e) => {
+  if (fileDrag(e)) { const c = e.target.closest?.("#chat"); $("#chat")?.classList.toggle("dragover", !!c); if (c) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } return; }
   if (!DRAG) return;
   $$(".drop-before, .ti.drop").forEach((x) => x.classList.remove("drop-before", "drop"));
   if (DRAG.kind === "doc") { const t = e.target.closest?.('.ti[data-doc="trash"]'); if (t) { e.preventDefault(); t.classList.add("drop"); } return; }
   const t = e.target.closest?.("[data-dk]");
   if (t && t.dataset.drop !== DRAG.id) { e.preventDefault(); t.classList.add("drop-before"); }
 });
+document.addEventListener("dragleave", (e) => { if (fileDrag(e) && !e.relatedTarget?.closest?.("#chat")) $("#chat")?.classList.remove("dragover"); });
 document.addEventListener("drop", (e) => {
+  if (fileDrag(e)) { $("#chat")?.classList.remove("dragover"); if (e.target.closest?.("#chat")) { e.preventDefault(); addFiles([...e.dataTransfer.files]); } return; }
   if (!DRAG) return;
   e.preventDefault();
   const d = DRAG;
@@ -1603,6 +1725,11 @@ document.addEventListener("drop", (e) => {
   toast("Сцена переставлена — текст переехал вместе с ней.");
 });
 document.addEventListener("dragend", () => { DRAG = null; $$(".dragging, .drop-before, .ti.drop").forEach((x) => x.classList.remove("dragging", "drop-before", "drop")); });
+document.addEventListener("paste", (e) => {
+  if (e.target.id !== "chatin" || !e.clipboardData?.files.length) return;
+  e.preventDefault();
+  addFiles([...e.clipboardData.files]);
+});
 addEventListener("resize", () => { if (S.ui.thread && $("#ed")) renderThread(); $(".rvbar") && showRvbar(); });
 
 if (!location.hash) location.replace("#auth");
