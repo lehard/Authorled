@@ -16,9 +16,11 @@ import {
 // It is the only screen allowed to show layer-1 primitives, because documenting them is its job.
 
 const PANGRAM = "Съешь же ещё этих мягких французских булок, да выпей чаю.";
-const SCALES = ["neutral", "blue", "violet", "teal", "amber", "crimson"];
+const SCALES = ["neutral", "blue", "plum", "teal", "amber", "crimson"];
 const STEPS = Array.from({ length: 12 }, (_, i) => i + 1);
 const SEMANTIC = [
+  "desk",
+  "panel",
   "background",
   "foreground",
   "muted",
@@ -29,6 +31,7 @@ const SEMANTIC = [
   "accent",
   "destructive",
   "border",
+  "border-strong",
   "input",
   "ring",
   "paper",
@@ -133,12 +136,14 @@ export function Showcase() {
             <div
               key={theme}
               data-theme={theme}
-              className="flex flex-col gap-3 rounded-lg border bg-background p-4 text-foreground"
+              className="desk flex flex-col gap-3 overflow-hidden rounded-panel p-4 text-foreground"
             >
               <p className="text-heading-3 font-semibold">
                 {THEME_LABELS[theme]}
               </p>
-              <Paper className="text-body-prose">{PANGRAM}</Paper>
+              <Paper className="rounded-md p-4 text-body-prose shadow-paper">
+                {PANGRAM}
+              </Paper>
               <StatusRow />
               <div className="flex gap-2">
                 <Button>Утвердить</Button>
@@ -149,12 +154,43 @@ export function Showcase() {
         </div>
       </Section>
 
+      <Section title="Поверхности «Кабинета»">
+        <div className="desk flex flex-col gap-6 overflow-hidden rounded-panel p-6 md:flex-row md:items-start">
+          <div className="flex w-full flex-col gap-3 rounded-panel bg-panel p-5 shadow-panel md:w-72">
+            <p className="text-heading-3 font-semibold">Панель на столе</p>
+            <p className="text-body text-muted-foreground">
+              --panel, --shadow-panel, --radius-panel
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button>Утвердить</Button>
+              <Button variant="outline">Отложить</Button>
+              <AiLabel
+                action="Предложил название сцены"
+                sources={[{ code: "Д20", title: "Черновик сцены" }]}
+              />
+            </div>
+          </div>
+          <Paper className="flex-1 rounded-md p-8 shadow-paper">
+            <p className="text-heading-1">Лист бумаги</p>
+            <p>
+              Стол — фон страницы с мягким светом лампы сверху и лёгким зерном.
+              На нём лежат панели, а сверху — лист документа с более глубокой
+              тенью: --desk, --desk-glow, --grain-image, --paper,
+              --shadow-paper.
+            </p>
+          </Paper>
+        </div>
+      </Section>
+
       <Section title="Шрифты">
         <p className="font-sans text-heading-3">
           Golos Text — интерфейс. {PANGRAM}
         </p>
         <p className="font-serif text-heading-3">
           Literata — документы и проза. {PANGRAM}
+        </p>
+        <p className="text-heading-1">
+          Literata — заголовки (--font-heading). {PANGRAM}
         </p>
         <p className="font-mono text-heading-3">
           Cousine — сценарий. {PANGRAM}
