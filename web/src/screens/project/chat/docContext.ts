@@ -1,10 +1,7 @@
-import {
-  BLOCK_TYPES,
-  SCRIPT_PARTS,
-  type Entity,
-  type EntityKind,
-} from "@/data/model";
+import { SCRIPT_PARTS, type Entity, type EntityKind } from "@/data/model";
 import { PROFILE, ROLES } from "@/data/profiles";
+import { paragraphs } from "@/editor/document.ts";
+import { ELEMENTS } from "@/editor/elements.ts";
 
 import { ENTITY_WORDS } from "../docRef";
 import type { ProjectData } from "../ProjectContext";
@@ -63,9 +60,9 @@ function documentText(data: ProjectData): { title: string; text: string } {
         return { title: SCRIPT_PARTS.synopsis, text: script.synopsis };
       return {
         title: SCRIPT_PARTS.text,
-        text: script.blocks
-          .filter((b) => b.text.trim() !== "")
-          .map((b) => `[${BLOCK_TYPES[b.t]}] ${b.text}`)
+        text: paragraphs(script.text)
+          .filter((p) => p.text.trim() !== "")
+          .map((p) => `[${ELEMENTS[p.type].label}] ${p.text}`)
           .join("\n"),
       };
     case "group": {

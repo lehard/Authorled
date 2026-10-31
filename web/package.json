@@ -15,7 +15,8 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc -b",
     "check:contrast": "node scripts/check-contrast.ts",
-    "check:native-ui": "node scripts/check-native-ui.ts"
+    "check:native-ui": "node scripts/check-native-ui.ts",
+    "check:editor": "node scripts/check-editor.ts"
   },
   "dependencies": {
     "@ag-ui/client": "1.0.2",
@@ -31,6 +32,14 @@
     "cn": "0.5.0",
     "lucide-react": "1.62.0",
     "oidc-client-ts": "3.5.0",
+    "prosemirror-commands": "1.7.2",
+    "prosemirror-history": "1.5.1",
+    "prosemirror-inputrules": "1.5.1",
+    "prosemirror-keymap": "1.2.3",
+    "prosemirror-model": "1.25.12",
+    "prosemirror-state": "1.4.4",
+    "prosemirror-transform": "1.12.2",
+    "prosemirror-view": "1.42.6",
     "radix-ui": "1.8.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",

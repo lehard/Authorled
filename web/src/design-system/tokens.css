@@ -306,6 +306,21 @@
   --ai-subtle: var(--plum-3);
   --ai-border: var(--plum-7);
 
+  /* Layer 3: the author's marks in the screenplay (text colour and fill) — never plum, the AI colour */
+  --mark-1: var(--crimson-11);
+  --mark-2: var(--amber-11);
+  --mark-3: var(--teal-11);
+  --mark-4: var(--blue-11);
+  --mark-1-fill: var(--crimson-4);
+  --mark-2-fill: var(--amber-4);
+  --mark-3-fill: var(--teal-4);
+  --mark-4-fill: var(--blue-4);
+
+  /* Layer 3: the printed manuscript, black on white in every theme */
+  --print-ink: oklch(0 0 0);
+  --print-paper: oklch(1 0 0);
+  --print-desk: oklch(0.92 0 0);
+
   /* Layer 3: font roles (families are loaded in fonts.css) */
   --font-ui: "Golos Text Variable", system-ui, sans-serif;
   --font-prose: "Literata Variable", Georgia, serif;

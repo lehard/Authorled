@@ -33,6 +33,9 @@ const DECORATIONS = [
   "stale",
 ];
 
+// The author's marks in the screenplay (text colour and fill).
+const MARKS = ["1", "2", "3", "4"];
+
 // [foreground, background, minimum ratio]
 const PAIRS: [string, string, number][] = [
   ["foreground", "background", TEXT],
@@ -69,6 +72,11 @@ const PAIRS: [string, string, number][] = [
     "paper",
     NON_TEXT,
   ]),
+  ...MARKS.flatMap((n): [string, string, number][] => [
+    [`mark-${n}`, "paper", TEXT],
+    ["paper-foreground", `mark-${n}-fill`, TEXT],
+  ]),
+  ["print-ink", "print-paper", TEXT],
 ];
 
 // Kabinet surfaces (ADR-006): shadcn tokens must point at the same values as the surfaces
@@ -174,7 +182,11 @@ for (const theme of THEMES) {
     failures.push(
       `${theme}: --ai hue ${ai.toFixed(0)}°, needs ${AI_HUE.from}–${AI_HUE.to}° (plum)`,
     );
-  for (const other of ["primary", ...STATUSES.map((s) => `status-${s}`)]) {
+  for (const other of [
+    "primary",
+    ...STATUSES.map((s) => `status-${s}`),
+    ...MARKS.map((n) => `mark-${n}`),
+  ]) {
     const gap = hueGap(ai, hue(tokens, other));
     if (gap < AI_HUE.minGap)
       failures.push(

@@ -1,5 +1,6 @@
 // Records of the workspace as the data provider returns them. Kept close to the future
 // core API: separate entities with projectId and soft delete (deletedAt).
+import type { ScreenplayDoc } from "@/editor/document.ts";
 
 export type Role = "main" | "secondary" | "episodic";
 export type EntityKind = "char" | "loc" | "world";
@@ -12,27 +13,6 @@ export type Project = {
   updatedAt: string;
   deletedAt: string | null;
 };
-
-/** Paragraph types of the screenplay, after STARC (mockup v2, data.js TYPES). */
-export const BLOCK_TYPES = {
-  sh: "Заголовок сцены",
-  cast: "Участники сцены",
-  ac: "Описание действия",
-  ch: "Персонаж",
-  pa: "Ремарка",
-  dl: "Реплика",
-  ly: "Лирика",
-  shot: "Кадр",
-  tr: "Переход",
-  un: "Простой текст",
-  note: "Заметка по тексту",
-  beat: "Бит",
-  seq: "Группа",
-  act: "Акт",
-} as const;
-export type BlockType = keyof typeof BLOCK_TYPES;
-
-export type Block = { id: string; t: BlockType; text: string };
 
 export const SCRIPT_PARTS = {
   title: "Титульная страница",
@@ -59,7 +39,8 @@ export type Script = {
   show: Record<ScriptPart, boolean>;
   titlePage: TitlePage;
   synopsis: string;
-  blocks: Block[];
+  /** Text of the screenplay: the editor document (web/src/editor, design decision 13). */
+  text: ScreenplayDoc;
 };
 
 type EntityBase = {

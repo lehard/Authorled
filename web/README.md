@@ -30,7 +30,12 @@ third-party fonts and assets.
   components. Screens import from `@/design-system`. Rules: `openspec/specs/web/design-system`.
 - `src/components/ui/` — shadcn/ui components, added with `npx shadcn@4.22.2 add <name>`; the
   overlays of dialog, alert-dialog and sheet use `bg-background/60` instead of a raw colour.
+- `src/editor/` — the screenplay editor: a fork of `@plotwell/editor` on ProseMirror with the
+  paragraph types and keys of STARC (`ORIGIN.md`, `openspec/specs/web/screenplay-editor`);
+  `ScreenplayEditor.tsx` is its React wrapper.
 - `scripts/check-contrast.ts` — WCAG contrast of token pairs in every theme.
+- `scripts/check-editor.ts` — Tab/Enter, type keys, Fountain round trip and colour marks of the editor.
+- `scripts/check-native-ui.ts` — no native tooltips, checkboxes, radio buttons or selects.
 
 Checks run from the repository root with `./scripts/validate.sh`.
 

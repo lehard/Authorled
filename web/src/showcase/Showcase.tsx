@@ -10,6 +10,8 @@ import {
   THEMES,
   ThemeSwitcher,
 } from "@/design-system";
+import { plainDoc, type ScreenplayDoc } from "@/editor/document.ts";
+import { ScreenplayEditor } from "@/editor/ScreenplayEditor";
 
 // Design-system showcase (openspec/specs/web/design-system, requirement «Витрина»).
 // It is the only screen allowed to show layer-1 primitives, because documenting them is its job.
@@ -62,6 +64,51 @@ const TYPE_SCALE = [
   ["text-caption", "caption"],
   ["text-code font-mono", "code"],
 ] as const;
+
+// «Тихая вода» from mockup v2 with every paragraph type and the author's colour marks.
+const SCRIPT_SAMPLE: ScreenplayDoc = {
+  type: "doc",
+  content: [
+    ...plainDoc([
+      ["act", "Акт первый"],
+      ["sequence", "Утро у озера"],
+      ["sceneHeading", "НАТ. ОЗЕРО, МОСТКИ — РАССВЕТ"],
+      ["sceneCharacters", "Миша"],
+      ["beat", "Миша уходит на озеро один"],
+    ]).content,
+    {
+      type: "action",
+      content: [
+        { type: "text", text: "1998 год. " },
+        {
+          type: "text",
+          text: "Туман над водой.",
+          marks: [{ type: "highlight", attrs: { color: "2" } }],
+        },
+        { type: "text", text: " МИША (17) идёт по мосткам босиком, в руке " },
+        {
+          type: "text",
+          text: "удочка",
+          marks: [{ type: "textColor", attrs: { color: "4" } }],
+        },
+        { type: "text", text: "." },
+      ],
+    },
+    ...plainDoc([
+      ["shot", "Крупно: поплавок"],
+      ["transition", "Склейка:"],
+      ["sceneHeading", "ИНТ. ДОМ ВЕРЫ, КУХНЯ — УТРО"],
+      ["character", "Вера"],
+      ["dialogue", "Да, Анечка."],
+      ["character", "Аня (З.К.)"],
+      ["parenthetical", "тихо"],
+      ["dialogue", "Мам, я приеду в пятницу. Надолго."],
+      ["lyrics", "Ой, то не вечер, то не вечер"],
+      ["unformatted", "Простой текст без оформления."],
+      ["inlineNote", "Проверить: в 1998 году мостки ещё были деревянные?"],
+    ]).content,
+  ],
+};
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -249,6 +296,18 @@ export function Showcase() {
               </div>
             </div>
           ))}
+        </div>
+      </Section>
+
+      <Section title="Редактор сценария">
+        <p className="max-w-2xl text-body text-muted-foreground">
+          Четырнадцать типов абзацев STARC: Tab и Enter ведут к следующему типу,
+          Ctrl+цифра задаёт тип. Выделите слово, чтобы дать ему цвет или
+          заливку. В колонке уже 840 пикселей лист идёт сплошным, без разрывов
+          страниц.
+        </p>
+        <div className="desk overflow-hidden rounded-panel p-4 sm:p-6">
+          <ScreenplayEditor doc={SCRIPT_SAMPLE} />
         </div>
       </Section>
 

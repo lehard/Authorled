@@ -16,6 +16,8 @@ type Props = {
   text: string;
   actionLabel: string;
   onConfirm: () => void;
+  /** Where focus goes when the dialog closes (default: back to what opened it). */
+  onCloseAutoFocus?: (event: Event) => void;
 };
 
 /** Confirmation of an action that cannot be undone. */
@@ -26,10 +28,14 @@ export function ConfirmDialog({
   text,
   actionLabel,
   onConfirm,
+  onCloseAutoFocus,
 }: Props) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="rounded-panel bg-paper shadow-paper">
+      <AlertDialogContent
+        className="rounded-panel bg-paper shadow-paper"
+        onCloseAutoFocus={onCloseAutoFocus}
+      >
         <AlertDialogHeader>
           <AlertDialogTitle className="text-heading-2">
             {title}

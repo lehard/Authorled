@@ -2,6 +2,7 @@ import { useCreate, useGetIdentity, useUpdate } from "@refinedev/core";
 
 import type { Identity } from "@/auth/authProvider";
 import type { Project, Script } from "@/data/model";
+import { plainDoc } from "@/editor/document.ts";
 
 const quiet = { successNotification: false, errorNotification: false } as const;
 
@@ -42,7 +43,7 @@ export function useStoryActions() {
         place: "",
       },
       synopsis: "",
-      blocks: [{ id: crypto.randomUUID(), t: "sh", text: "" }],
+      text: plainDoc([["sceneHeading", ""]]),
     };
     await create({ resource: "scripts", values: script, ...quiet });
     return id;

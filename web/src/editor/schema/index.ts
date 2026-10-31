@@ -1,0 +1,91 @@
+import { Schema, type MarkSpec, type NodeSpec } from "prosemirror-model";
+
+import {
+  ELEMENT_NAMES,
+  ELEMENTS,
+  elementClass,
+  MARK_COLORS,
+  type ElementName,
+} from "../elements.ts";
+
+function paragraph(name: ElementName): NodeSpec {
+  const type = elementClass(name).slice(3);
+  return {
+    group: "block",
+    content: "text*",
+    defining: true,
+    toDOM: () => [
+      "p",
+      {
+        class: elementClass(name),
+        "data-type": type,
+        "data-placeholder": ELEMENTS[name].placeholder,
+      },
+      0,
+    ],
+    parseDOM: [{ tag: `p[data-type="${type}"]` }],
+  };
+}
+
+// Text colour and fill keep the palette number, not a colour: the theme paints it.
+function colourMark(attr: "data-mark-color" | "data-mark-fill"): MarkSpec {
+  return {
+    attrs: { color: { validate: (v) => validColour(v) } },
+    toDOM: (mark) => [
+      "span",
+      {
+        class: attr === "data-mark-color" ? "pw-color" : "pw-fill",
+        [attr]: mark.attrs.color as string,
+      },
+      0,
+    ],
+    parseDOM: [
+      {
+        tag: `span[${attr}]`,
+        getAttrs: (dom) => {
+          const color = dom.getAttribute(attr);
+          return color !== null && MARK_COLORS.includes(color as never)
+            ? { color }
+            : false;
+        },
+      },
+    ],
+  };
+}
+
+function validColour(value: unknown) {
+  if (!MARK_COLORS.includes(value as never))
+    throw new RangeError(`Неизвестный цвет метки: ${String(value)}`);
+}
+
+const nodes: Record<string, NodeSpec> = { doc: { content: "block+" } };
+for (const name of ELEMENT_NAMES) nodes[name] = paragraph(name);
+// A forced page break of imported Fountain (===); the editor itself does not insert it.
+nodes.pageBreak = {
+  group: "block",
+  atom: true,
+  toDOM: () => [
+    "div",
+    {
+      class: "pm-page-break",
+      "data-type": "page-break",
+      contenteditable: "false",
+    },
+  ],
+  parseDOM: [{ tag: 'div[data-type="page-break"]' }],
+};
+nodes.text = { group: "inline" };
+
+export const schema = new Schema({
+  nodes,
+  marks: {
+    bold: {
+      toDOM: () => ["strong", 0],
+      parseDOM: [{ tag: "strong" }, { tag: "b" }],
+    },
+    italic: { toDOM: () => ["em", 0], parseDOM: [{ tag: "em" }, { tag: "i" }] },
+    underline: { toDOM: () => ["u", 0], parseDOM: [{ tag: "u" }] },
+    textColor: colourMark("data-mark-color"),
+    highlight: colourMark("data-mark-fill"),
+  },
+});
