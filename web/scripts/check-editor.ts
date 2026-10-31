@@ -7,7 +7,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { history, undo } from "prosemirror-history";
+import { history, undo, undoDepth } from "prosemirror-history";
 import { EditorState, TextSelection, type Command } from "prosemirror-state";
 
 import {
@@ -60,6 +60,13 @@ import {
   commentRanges,
   removeComment,
 } from "../src/editor/plugins/comments.ts";
+import {
+  acceptSuggestion,
+  rejectSuggestion,
+  setSuggestions,
+  suggestionRanges,
+  suggestionsStatePlugin,
+} from "../src/editor/plugins/suggestions.ts";
 import {
   hiddenBlocks,
   outlineCaret,
@@ -369,7 +376,12 @@ try {
   const kitchen = node.child(0).nodeSize + node.child(1).nodeSize;
   let s = EditorState.create({
     doc: node,
-    plugins: [history(), visibilityPlugin(false), findPlugin],
+    plugins: [
+      history(),
+      visibilityPlugin(false),
+      suggestionsStatePlugin,
+      findPlugin,
+    ],
     selection: TextSelection.create(node, kitchen + 1),
   });
   const count = (
@@ -697,6 +709,94 @@ try {
   }
 }
 
+// 10. Co-author suggestions: kept whole, accepted as an edit, rejected outside undo (coauthor-suggestions).
+{
+  const old = "Чашка давно чистая.";
+  const doc = toNode({
+    type: "doc",
+    content: [
+      {
+        type: "action",
+        content: [
+          { type: "text", text: "Свет. " },
+          {
+            type: "text",
+            text: old,
+            marks: [
+              { type: "bold" },
+              { type: "suggestion", attrs: { id: "s1" } },
+            ],
+          },
+          { type: "text", text: " Вера трёт её." },
+        ],
+      },
+      { type: "action", content: [{ type: "text", text: "Чашка у окна." }] },
+    ],
+  });
+  let s = EditorState.create({
+    doc,
+    plugins: [
+      history(),
+      visibilityPlugin(false),
+      suggestionsStatePlugin,
+      findPlugin,
+    ],
+  });
+  s = run(setSuggestions({ open: { s1: "Чашка чистая." } }), s);
+  const r = suggestionRanges(s.doc, "s1")[0];
+  const text = (st: EditorState) => paragraphs(toJSON(st.doc))[0].text;
+  if (
+    !JSON.stringify(toJSON(s.doc)).includes(
+      '{"type":"suggestion","attrs":{"id":"s1"}}',
+    )
+  )
+    fail("метки предложения нет в JSON");
+
+  if (text(s.apply(s.tr.insertText("x", r.from + 3))) !== text(s))
+    fail("правка внутри предложения прошла");
+  if (text(s.apply(s.tr.delete(r.to - 1, r.to))) !== text(s))
+    fail("удаление последней буквы предложения прошло");
+  const edge = s.apply(s.tr.insertText("!", r.to));
+  if (text(edge) !== `Свет. ${old}! Вера трёт её.`)
+    fail(`набор на границе предложения: ${text(edge)}`);
+  if (suggestionRanges(edge.doc, "s1")[0].to !== r.to)
+    fail("набор на границе вошёл в предложение");
+  const whole = s.apply(s.tr.delete(0, s.doc.child(0).nodeSize));
+  if (whole.doc.childCount !== 1)
+    fail("удаление абзаца с предложением не прошло");
+
+  s = run(setFind({ query: "чашка" }), s);
+  const found = findKey.getState(s)?.matches.length;
+  if (found !== 1)
+    fail(`поиск в тексте предложения: ${found} совпадений вместо 1`);
+  s = run(setFind({ query: "" }), s);
+
+  const exported = docToFountain(s.doc) + docToFDX(s.doc);
+  if (!exported.includes(old) || exported.includes("Чашка чистая."))
+    fail("экспорт до решения не равен прежнему тексту");
+
+  const accepted = run(acceptSuggestion("s1", "Чашка чистая."), s);
+  if (text(accepted) !== "Свет. Чашка чистая. Вера трёт её.")
+    fail(`«Принять»: ${text(accepted)}`);
+  if (!JSON.stringify(toJSON(accepted.doc).content[0]).includes('"bold"'))
+    fail("«Принять» потеряло общие метки фрагмента");
+  if (suggestionRanges(accepted.doc, "s1").length !== 0)
+    fail("после «Принять» метка осталась");
+  const back = run(undo, accepted);
+  if (text(back) !== text(s) || suggestionRanges(back.doc, "s1").length !== 1)
+    fail("⌘Z после «Принять» не вернул прежний текст с меткой");
+
+  const depth = undoDepth(s);
+  const rejected = run(rejectSuggestion("s1"), s);
+  if (
+    text(rejected) !== text(s) ||
+    suggestionRanges(rejected.doc, "s1").length !== 0
+  )
+    fail("«Отклонить» изменило текст или оставило метку");
+  if (undoDepth(rejected) !== depth)
+    fail("«Отклонить» попало в историю отмены");
+}
+
 if (failures.length > 0) {
   console.error(
     "check-editor: редактор сценария расходится с openspec/specs/web/screenplay-editor:",
@@ -705,5 +805,5 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log(
-  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, круг Fountain, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник, правки сцен и комментарии — без расхождений`,
+  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, круг Fountain, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник, правки сцен, комментарии и предложения соавтора — без расхождений`,
 );

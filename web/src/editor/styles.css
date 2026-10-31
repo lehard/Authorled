@@ -232,6 +232,35 @@
   background: color-mix(in oklch, var(--deco-comment) 40%, transparent);
 }
 
+/* --- Co-author suggestions: the old text struck, the suggested one after it --- */
+
+.pw-suggestion-del {
+  color: var(--muted-foreground);
+  text-decoration: line-through;
+  text-decoration-color: var(--deco-delete);
+  box-shadow: inset 2px 0 0 var(--ai);
+  padding-left: 3px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.pw-suggestion-ins {
+  /* Not part of the text: selections, copies and the chat take only the old text. */
+  user-select: none;
+  margin-left: 0.4ch;
+  background: var(--ai-subtle);
+  text-decoration: underline;
+  text-decoration-color: var(--ai);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.pw-suggestion-del.pw-suggestion-active,
+.pw-suggestion-ins.pw-suggestion-active {
+  background: var(--ai-subtle);
+  outline: 1px solid var(--ai-border);
+}
+
 /* --- Hidden paragraphs and find matches (screenplay-text-tools) --------- */
 
 .pw-editor .ProseMirror > .pw-hidden {

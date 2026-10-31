@@ -30,6 +30,16 @@ import {
   type CommentsMeta,
 } from "./plugins/comments.ts";
 import { commentsPlugin } from "./plugins/commentsPlugin.ts";
+import {
+  acceptSuggestion,
+  rejectSuggestion,
+  setSuggestions,
+  suggestionRanges,
+  suggestionsKey,
+  suggestionsStatePlugin,
+  type SuggestionsMeta,
+} from "./plugins/suggestions.ts";
+import { suggestionsPlugin } from "./plugins/suggestionsPlugin.ts";
 import { createFadeInAlignPlugin } from "./plugins/fadeInAlign.ts";
 import {
   findKey,
@@ -52,6 +62,7 @@ import {
 } from "./plugins/suggest.ts";
 import {
   blockIndex,
+  hiddenIn,
   outlineCaret,
   outlineGuardKey,
   outlineGuardPlugin,
@@ -80,9 +91,11 @@ export type EditorSnapshot = {
   scene: number | null;
   /** Commented words by thread id; threads without a place in the text are absent. */
   comments: ReadonlyMap<string, string>;
+  /** Suggestions with a shown place and the text they would replace, in text order. */
+  suggestions: [id: string, old: string][];
 };
 
-/** Where a comment's place is, relative to the editor container (screenplay-comments, decision 6). */
+/** Where a comment's or suggestion's place is, relative to the editor container (screenplay-comments, decision 6). */
 export type CommentAnchor = {
   top: number;
   bottom: number;
@@ -106,6 +119,8 @@ export type ScreenplayEditorOptions = {
   onCommentRequest?: () => void;
   /** A click on an open comment's place. */
   onCommentOpen?: (id: string) => void;
+  /** A click on an open co-author suggestion. */
+  onSuggestionOpen?: (id: string) => void;
   readOnly?: boolean;
   /** Additional ProseMirror plugins, after ours. */
   extraPlugins?: Plugin[];
@@ -146,11 +161,14 @@ export class ScreenplayEditorView {
       // Visibility before find: find skips the paragraphs it hides.
       visibilityPlugin(options.mode === "outline"),
       ...(options.mode === "outline" ? [outlineGuardPlugin] : []),
+      // Before find: find skips open suggestions.
+      suggestionsStatePlugin,
       findPlugin,
       paginationPlugin,
       sceneNumbersPlugin,
       createFadeInAlignPlugin(),
       commentsPlugin((id) => options.onCommentOpen?.(id)),
+      suggestionsPlugin((id) => options.onSuggestionOpen?.(id)),
       createBubbleMenuPlugin(options.onCommentRequest),
       ...(options.extraPlugins ?? []),
     ];
@@ -198,11 +216,13 @@ export class ScreenplayEditorView {
     const view = visibilityKey.getState(s);
     const suggest = suggestKey.getState(s);
     const comments = commentsKey.getState(s);
+    const suggestions = suggestionsKey.getState(s);
     if (
       find === undefined ||
       view === undefined ||
       suggest === undefined ||
-      comments === undefined
+      comments === undefined ||
+      suggestions === undefined
     ) {
       throw new Error("Плагины редактора не подключены");
     }
@@ -240,7 +260,24 @@ export class ScreenplayEditorView {
       suggest: list,
       scene,
       comments: comments.quotes,
+      suggestions: this.shownSuggestions(s, suggestions.order),
     };
+  }
+
+  private shownSuggestions(
+    s: EditorState,
+    order: string[],
+  ): [string, string][] {
+    const hidden = hiddenIn(s);
+    return order.flatMap((id): [string, string][] => {
+      const ranges = suggestionRanges(s.doc, id);
+      const first = ranges[0];
+      if (first === undefined || hidden.has(blockIndex(s.doc, first.from)))
+        return [];
+      return [
+        [id, ranges.map((r) => s.doc.textBetween(r.from, r.to)).join(" ")],
+      ];
+    });
   }
 
   undo(): void {
@@ -316,9 +353,62 @@ export class ScreenplayEditorView {
     setComments(meta)(this.view.state, this.view.dispatch);
   }
 
+  /** Which suggestions are shown (open ones with their text) and whose card is open. */
+  setSuggestions(meta: SuggestionsMeta): void {
+    setSuggestions(meta)(this.view.state, this.view.dispatch);
+  }
+
+  /** «Принять»: the old text becomes `text`; false when the suggestion is not in the text. */
+  acceptSuggestion(id: string, text: string): boolean {
+    return acceptSuggestion(id, text)(this.view.state, this.view.dispatch);
+  }
+
+  /** «Отклонить»: the text stays; false when the suggestion is not in the text. */
+  rejectSuggestion(id: string): boolean {
+    return rejectSuggestion(id)(this.view.state, this.view.dispatch);
+  }
+
+  /** Like `commentAnchor`; the bottom also takes the suggested text shown after the place. */
+  suggestionAnchor(id: string): CommentAnchor | null {
+    const anchor = this.anchor(suggestionRanges(this.view.state.doc, id));
+    const ins = this.view.dom.querySelector(
+      `ins[data-suggestion-id="${CSS.escape(id)}"]`,
+    );
+    if (anchor === null || ins === null) return anchor;
+    const box = this.container.getBoundingClientRect();
+    const bottom = ins.getBoundingClientRect().bottom - box.top;
+    return { ...anchor, bottom: Math.max(anchor.bottom, bottom) };
+  }
+
+  scrollToSuggestion(id: string): boolean {
+    const dom = this.firstPlace(suggestionRanges(this.view.state.doc, id));
+    dom?.scrollIntoView({ block: "center" });
+    return dom !== null;
+  }
+
+  /** Selects the old text of the suggestion and focuses the editor, so the chat picks it up. */
+  selectSuggestion(id: string): boolean {
+    const ranges = suggestionRanges(this.view.state.doc, id);
+    const first = ranges[0];
+    const last = ranges.at(-1);
+    if (first === undefined || last === undefined) return false;
+    const { state } = this.view;
+    this.view.dispatch(
+      state.tr.setSelection(
+        TextSelection.create(state.doc, first.from, last.to),
+      ),
+    );
+    this.view.focus();
+    return true;
+  }
+
   /** The first shown place of thread `id`, or null when it is not in the text or hidden. */
   commentAnchor(id: string): CommentAnchor | null {
-    const dom = this.firstPlace(id);
+    return this.anchor(commentRanges(this.view.state.doc, id));
+  }
+
+  private anchor(ranges: { from: number }[]): CommentAnchor | null {
+    const dom = this.firstPlace(ranges);
     if (dom === null) return null;
     const at = dom.getBoundingClientRect();
     const box = this.container.getBoundingClientRect();
@@ -333,13 +423,13 @@ export class ScreenplayEditorView {
 
   /** Scrolls the first shown place of thread `id` into view; false when there is none. */
   scrollToComment(id: string): boolean {
-    const dom = this.firstPlace(id);
+    const dom = this.firstPlace(commentRanges(this.view.state.doc, id));
     dom?.scrollIntoView({ block: "center" });
     return dom !== null;
   }
 
-  private firstPlace(id: string): HTMLElement | null {
-    for (const r of commentRanges(this.view.state.doc, id)) {
+  private firstPlace(ranges: { from: number }[]): HTMLElement | null {
+    for (const r of ranges) {
       const { node } = this.view.domAtPos(r.from + 1);
       const el = node instanceof HTMLElement ? node : node.parentElement;
       // A paragraph hidden by the treatment or by «only this scene» has no box.
@@ -407,5 +497,6 @@ export { ImportError } from "./importers/ImportError.ts";
 export { FIND_SCOPES, type FindScope } from "./plugins/find.ts";
 export type { SuggestData } from "./plugins/suggest.ts";
 export type { CommentsMeta } from "./plugins/comments.ts";
+export type { SuggestionsMeta } from "./plugins/suggestions.ts";
 export { PrintError } from "./exporters/print.ts";
 export type { TitlePage } from "./exporters/print.ts";

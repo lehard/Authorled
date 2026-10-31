@@ -109,6 +109,29 @@ export const schema = new Schema({
     underline: { toDOM: () => ["u", 0], parseDOM: [{ tag: "u" }] },
     textColor: colourMark("data-mark-color"),
     highlight: colourMark("data-mark-fill"),
+    // Text a co-author suggestion would replace; the suggested text lives outside the
+    // document (coauthor-suggestions, decision 1).
+    suggestion: {
+      attrs: { id: { validate: "string" } },
+      inclusive: false,
+      toDOM: (mark) => [
+        "span",
+        {
+          class: "pw-suggestion",
+          "data-suggestion-id": mark.attrs.id as string,
+        },
+        0,
+      ],
+      parseDOM: [
+        {
+          tag: "span[data-suggestion-id]",
+          getAttrs: (dom) => {
+            const id = dom.getAttribute("data-suggestion-id");
+            return id === null || id === "" ? false : { id };
+          },
+        },
+      ],
+    },
     // Place of a comment thread; the threads live outside the text (screenplay-comments, decision 1).
     // Several comments may cover the same words; text typed at the edge stays outside.
     comment: {

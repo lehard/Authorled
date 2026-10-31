@@ -8,15 +8,16 @@ import type {
   Location,
   Project,
   Script,
+  Suggestion,
   World,
 } from "./model";
 
-/** Puts the mark of thread `id` on the first `quote` in the text. */
-function commented(
+/** Puts the comment or suggestion mark `id` on the first `quote` in the text. */
+function marked(
   doc: ScreenplayDoc,
-  marks: [id: string, quote: string][],
+  marks: [type: "comment" | "suggestion", id: string, quote: string][],
 ): ScreenplayDoc {
-  for (const [id, quote] of marks) {
+  for (const [type, id, quote] of marks) {
     const block = doc.content.find(
       (b) =>
         "content" in b &&
@@ -24,7 +25,7 @@ function commented(
         b.content[0].text.includes(quote),
     );
     if (block === undefined || !("content" in block) || !block.content)
-      throw new Error(`В примере нет текста «${quote}» для комментария ${id}.`);
+      throw new Error(`В примере нет текста «${quote}» для метки ${id}.`);
     const text = block.content[0].text;
     const at = text.indexOf(quote);
     block.content = [
@@ -32,7 +33,7 @@ function commented(
       {
         type: "text" as const,
         text: quote,
-        marks: [{ type: "comment" as const, attrs: { id } }],
+        marks: [{ type, attrs: { id } }],
       },
       { type: "text" as const, text: text.slice(at + quote.length) },
     ].filter((t) => t.text !== "");
@@ -50,6 +51,7 @@ export const FIXTURES: {
   locations: Location[];
   worlds: World[];
   comments: CommentThread[];
+  suggestions: Suggestion[];
 } = {
   projects: [
     {
@@ -100,7 +102,7 @@ export const FIXTURES: {
       },
       synopsis:
         "Аня, двадцать четыре года, впервые за долгое время приезжает к матери, Вере, в посёлок у озера. Двадцать лет назад здесь утонул Миша, младший брат Веры. С тех пор в семье об этом не говорят.\n\nДядя Коля, который в тот день был на озере, проговаривается: Миша утонул не случайно. Аня приносит эти слова домой, и Вера впервые не может промолчать.",
-      text: commented(
+      text: marked(
         plainDoc([
           ["act", "Акт первый"],
           ["sceneHeading", "НАТ. ОЗЕРО, МОСТКИ — РАССВЕТ"],
@@ -191,8 +193,14 @@ export const FIXTURES: {
           ],
         ]),
         [
-          ["c1", "Я же просила звонить, когда едешь так поздно."],
-          ["c2", "Он сказал, что Миша утонул не случайно."],
+          ["comment", "c1", "Я же просила звонить, когда едешь так поздно."],
+          ["comment", "c2", "Он сказал, что Миша утонул не случайно."],
+          [
+            "suggestion",
+            "s1",
+            "Чашка давно чистая. Она всё равно трёт её губкой.",
+          ],
+          ["suggestion", "s2", "Он утонул. Всё."],
         ],
       ),
     },
@@ -418,6 +426,27 @@ export const FIXTURES: {
       text: "Сильная реплика. Не слишком ли рано раскрываем — это же середина второго акта?",
       replies: [],
       resolved: false,
+    },
+  ],
+  // Suggestions of the co-author from mockup v2; their places are marks in the text above.
+  suggestions: [
+    {
+      id: "s1",
+      projectId: "water",
+      at: local(31, 9, 12),
+      why: "Короче на строку, а действие остаётся: видно, что Вера тянет время, чтобы не оборачиваться.",
+      text: "Чашка давно чистая — Вера всё равно её трёт.",
+      status: "open",
+      decidedAt: null,
+    },
+    {
+      id: "s2",
+      projectId: "water",
+      at: local(31, 9, 12),
+      why: "Без «Он» Коля говорит так же отрывисто, как Вера, — это подхватывает следующую реплику Ани «Теми же словами».",
+      text: "Утонул. Всё.",
+      status: "open",
+      decidedAt: null,
     },
   ],
 };

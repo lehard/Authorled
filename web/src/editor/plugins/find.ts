@@ -9,6 +9,7 @@ import {
 import { Decoration, DecorationSet } from "prosemirror-view";
 
 import type { ElementName } from "../elements.ts";
+import { openSuggestionRanges, type SuggestionRange } from "./suggestions.ts";
 import { hiddenIn } from "./visibility.ts";
 
 // Find and replace (design of screenplay-text-tools, decisions 3 and 4).
@@ -31,12 +32,16 @@ const SCOPE_TYPES: Record<Exclude<FindScope, "all">, ElementName[]> = {
 
 export type Match = { from: number; to: number };
 
-/** Matches of `query` in the visible paragraphs of `scope`, ignoring case. */
+/**
+ * Matches of `query` in the visible paragraphs of `scope`, ignoring case; matches touching a
+ * range of `skip` (open co-author suggestions, which cannot be edited) are left out.
+ */
 export function findMatches(
   doc: Node,
   query: string,
   scope: FindScope,
   hidden: Set<number>,
+  skip: SuggestionRange[],
 ): Match[] {
   if (query === "") return [];
   const q = query.toLowerCase();
@@ -52,7 +57,8 @@ export function findMatches(
       at >= 0;
       at = text.indexOf(q, at + q.length)
     ) {
-      out.push({ from: offset + 1 + at, to: offset + 1 + at + q.length });
+      const m = { from: offset + 1 + at, to: offset + 1 + at + q.length };
+      if (skip.every((r) => m.to <= r.from || m.from >= r.to)) out.push(m);
     }
   });
   return out;
@@ -78,6 +84,7 @@ function recount(
     value.query,
     value.scope,
     hiddenIn(state),
+    openSuggestionRanges(state),
   );
   const current =
     matches.length === 0

@@ -9,34 +9,19 @@ import { useState, type CSSProperties, type RefObject } from "react";
 import type { Identity } from "@/auth/authProvider";
 import { useComments } from "@/data/hooks";
 import type { CommentMessage, CommentThread } from "@/data/model";
-import type { CommentAnchor } from "@/editor";
 import type {
   EditorComments,
   ScreenplayEditorHandle,
 } from "@/editor/ScreenplayEditor";
 import { ConfirmDialog } from "@/screens/shared/ConfirmDialog";
 
-import { CARD, CommentList, ThreadCard } from "./CommentViews";
+import { cardPlace } from "./cardPlace";
+import { CommentList, ThreadCard } from "./CommentViews";
 
 // Comments on fragments of the screenplay (openspec/specs/web/workspace, «Комментарий к
 // фрагменту» … «Список комментариев»; design of screenplay-comments, decisions 5–8).
 
 const quiet = { successNotification: false, errorNotification: false } as const;
-
-/** Beside the page at the height of the fragment, else over the page's right edge, else full width. */
-function place(a: CommentAnchor | null): CSSProperties {
-  if (a === null)
-    return { top: 8, right: 8, width: `min(${CARD}px, calc(100% - 16px))` };
-  if (a.width - a.pageRight >= CARD + 16)
-    return { top: Math.max(0, a.top - 8), left: a.pageRight + 16, width: CARD };
-  if (a.width >= 560)
-    return {
-      top: a.bottom + 6,
-      right: Math.max(8, a.width - a.pageRight + 8),
-      width: CARD,
-    };
-  return { top: a.bottom + 6, left: 8, right: 8 };
-}
 
 const now = () => new Date().toISOString();
 
@@ -47,6 +32,8 @@ const now = () => new Date().toISOString();
 export function useEditorComments(
   projectId: string,
   editor: RefObject<ScreenplayEditorHandle | null>,
+  /** A thread card opens: another card of the editor closes. */
+  onOpened: () => void,
 ) {
   const { threads } = useComments(projectId);
   const { data: me } = useGetIdentity<Identity>();
@@ -71,9 +58,10 @@ export function useEditorComments(
   const thread = threads.find((t) => t.id === active) ?? null;
 
   function open(id: string) {
+    onOpened();
     setError(null);
     setActive(id);
-    setStyle(place(view().commentAnchor(id)));
+    setStyle(cardPlace(view().commentAnchor(id)));
   }
 
   function close() {
@@ -186,6 +174,7 @@ export function useEditorComments(
     );
 
   return {
+    close,
     comments: editorComments,
     overlay: card,
     tools: (

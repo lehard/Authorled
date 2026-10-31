@@ -86,6 +86,24 @@ export type CommentThread = CommentMessage & {
   resolved: boolean;
 };
 
+/**
+ * A co-author suggestion (coauthor-suggestions, decision 5). Its id is the id of the
+ * `suggestion` mark on the text it would replace; the text changes only on «Принять».
+ */
+export type Suggestion = {
+  id: string;
+  projectId: string;
+  /** ISO time. */
+  at: string;
+  /** Why the co-author suggests it. */
+  why: string;
+  /** The suggested text. */
+  text: string;
+  status: "open" | "accepted" | "rejected";
+  /** ISO time of the author's decision. */
+  decidedAt: string | null;
+};
+
 /** Refine resource of each entity kind. */
 export const ENTITY_RESOURCE = {
   char: "characters",

@@ -7,6 +7,7 @@ import {
   type EntityKind,
   type Project,
   type Script,
+  type Suggestion,
 } from "./model";
 
 // Queries of the workspace. Screens read data only through these and Refine mutations.
@@ -65,4 +66,14 @@ export function useComments(projectId: string) {
     pagination: { mode: "off" },
   });
   return { threads: result.data, query };
+}
+
+/** Co-author suggestions of the story. */
+export function useSuggestions(projectId: string) {
+  const { result, query } = useList<Suggestion>({
+    resource: "suggestions",
+    filters: [{ field: "projectId", operator: "eq", value: projectId }],
+    pagination: { mode: "off" },
+  });
+  return { suggestions: result.data, query };
 }

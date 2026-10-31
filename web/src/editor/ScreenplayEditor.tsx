@@ -77,6 +77,23 @@ export type ScreenplayEditorHandle = {
   removeComment(id: string): void;
   commentAnchor(id: string): CommentAnchor | null;
   scrollToComment(id: string): boolean;
+  acceptSuggestion(id: string, text: string): boolean;
+  rejectSuggestion(id: string): boolean;
+  suggestionAnchor(id: string): CommentAnchor | null;
+  scrollToSuggestion(id: string): boolean;
+  selectSuggestion(id: string): boolean;
+};
+
+/** Co-author suggestions of the text (coauthor-suggestions, decisions 2 and 6). */
+export type EditorSuggestions = {
+  /** Open suggestions: id → suggested text. */
+  open: Record<string, string>;
+  /** The suggestion whose card is open. */
+  active: string | null;
+  /** A click on an open suggestion. */
+  onOpen: (id: string) => void;
+  /** Suggestions with a shown place and their old text, in text order, after every change. */
+  onPlaces: (places: [id: string, old: string][]) => void;
 };
 
 /** Comment threads of the text (screenplay-comments, decisions 4 and 5). */
@@ -106,6 +123,7 @@ export function ScreenplayEditor({
   suggestData,
   onScene,
   comments,
+  suggestions,
   tools,
   menu,
   overlay,
@@ -122,6 +140,7 @@ export function ScreenplayEditor({
   onScene?: (scene: number | null) => void;
   /** Comments; fixed for the life of the component whether they are given. */
   comments?: EditorComments;
+  suggestions?: EditorSuggestions;
   /** Buttons at the end of the toolbar, before «⋯». */
   tools?: ReactNode;
   /** Items of the «⋯» menu at the end of the toolbar. */
@@ -136,12 +155,19 @@ export function ScreenplayEditor({
   const [snap, setSnap] = useState<EditorSnapshot | null>(null);
   const [findOpen, setFindOpen] = useState(false);
   // The latest props, read by the editor's callbacks and the first mount.
-  const latest = useRef({ mode, doc, onChange, onScene, comments });
+  const latest = useRef({
+    mode,
+    doc,
+    onChange,
+    onScene,
+    comments,
+    suggestions,
+  });
   // Texts this editor has reported: a saved copy coming back is an echo, not a change from
   // outside, even when the author has typed on since (an older echo must not undo typing).
   const reported = useRef<string[]>([]);
   useEffect(() => {
-    latest.current = { mode, doc, onChange, onScene, comments };
+    latest.current = { mode, doc, onChange, onScene, comments, suggestions };
   });
 
   useEffect(() => {
@@ -167,6 +193,7 @@ export function ScreenplayEditor({
               if (view.addComment(id)) latest.current.comments?.onNew(id);
             },
       onCommentOpen: (id) => latest.current.comments?.onOpen(id),
+      onSuggestionOpen: (id) => latest.current.suggestions?.onOpen(id),
       onFindRequest: () => {
         setFindOpen(true);
         // The bar may be open already: focus its field either way.
@@ -213,6 +240,26 @@ export function ScreenplayEditor({
     if (quotes !== undefined) latest.current.comments?.onQuotes(quotes);
   }, [quotes]);
 
+  // Compared as JSON: a new object with the same suggestions is not a change.
+  const openSuggestions =
+    suggestions === undefined ? undefined : JSON.stringify(suggestions.open);
+  const activeSuggestion = suggestions?.active;
+  useEffect(() => {
+    if (openSuggestions === undefined || activeSuggestion === undefined) return;
+    editor.current?.setSuggestions({
+      open: JSON.parse(openSuggestions) as Record<string, string>,
+      active: activeSuggestion,
+    });
+  }, [openSuggestions, activeSuggestion]);
+
+  const places = snap === null ? undefined : JSON.stringify(snap.suggestions);
+  useEffect(() => {
+    if (places !== undefined)
+      latest.current.suggestions?.onPlaces(
+        JSON.parse(places) as [string, string][],
+      );
+  }, [places]);
+
   const scene = snap?.scene ?? null;
   useEffect(() => {
     latest.current.onScene?.(scene);
@@ -234,6 +281,11 @@ export function ScreenplayEditor({
       removeComment: (id) => view().removeComment(id),
       commentAnchor: (id) => view().commentAnchor(id),
       scrollToComment: (id) => view().scrollToComment(id),
+      acceptSuggestion: (id, text) => view().acceptSuggestion(id, text),
+      rejectSuggestion: (id) => view().rejectSuggestion(id),
+      suggestionAnchor: (id) => view().suggestionAnchor(id),
+      scrollToSuggestion: (id) => view().scrollToSuggestion(id),
+      selectSuggestion: (id) => view().selectSuggestion(id),
     };
   }, []);
 

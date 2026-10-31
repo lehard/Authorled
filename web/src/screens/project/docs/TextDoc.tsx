@@ -26,6 +26,7 @@ import type { Node } from "prosemirror-model";
 
 import { useProjectData } from "../ProjectContext";
 import { useEditorComments } from "./useEditorComments";
+import { useEditorSuggestions } from "./useEditorSuggestions";
 import { DocHead } from "./DocHead";
 import { SceneBoard } from "./SceneBoard";
 
@@ -52,9 +53,25 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
     setText,
     textStatus,
     setCurrentScene,
+    openChat,
   } = useProjectData();
   const editor = useRef<ScreenplayEditorHandle>(null);
-  const comments = useEditorComments(project.id, editor);
+  // One card at a time: a comment thread or a co-author suggestion.
+  const closeSuggestion = useRef<(() => void) | null>(null);
+  const comments = useEditorComments(project.id, editor, () => {
+    if (closeSuggestion.current === null)
+      throw new Error("Предложения соавтора ещё не подключены");
+    closeSuggestion.current();
+  });
+  const suggestions = useEditorSuggestions(
+    project.id,
+    editor,
+    () => comments.close(),
+    openChat,
+  );
+  useEffect(() => {
+    closeSuggestion.current = suggestions.close;
+  });
   const fileInput = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<{ name: string; doc: Node } | null>(
@@ -176,8 +193,19 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
           suggestData={suggestData}
           onScene={setCurrentScene}
           comments={comments.comments}
-          tools={comments.tools}
-          overlay={comments.overlay}
+          suggestions={suggestions.suggestions}
+          tools={
+            <>
+              {suggestions.tools}
+              {comments.tools}
+            </>
+          }
+          overlay={
+            <>
+              {comments.overlay}
+              {suggestions.overlay}
+            </>
+          }
           menu={
             mode === "outline" ? undefined : (
               <>

@@ -30,11 +30,9 @@ import {
 import type { CommentMessage, CommentThread } from "@/data/model";
 
 import { commentTime } from "./commentTime";
+import { useCardDismiss } from "./useCardDismiss";
 
 // The card of a comment thread and the list of threads (screenplay-comments, decisions 6 and 7).
-
-/** Width of the thread card. */
-export const CARD = 300;
 
 function Avatar({ name }: { name: string }) {
   return (
@@ -208,40 +206,7 @@ export function ThreadCard({
   onResolve: (t: CommentThread, resolved: boolean) => void;
 }) {
   const card = useRef<HTMLElement>(null);
-  const latestClose = useRef(onClose);
-  useEffect(() => {
-    latestClose.current = onClose;
-  });
-
-  // Escape and a press outside the card and outside open places close it; menus and
-  // dialogs of the card live in portals and do not count as outside.
-  useEffect(() => {
-    const inside = (target: EventTarget | null) =>
-      target instanceof Element &&
-      (card.current?.contains(target) === true ||
-        target.closest(
-          ".pw-comment-open, [data-radix-popper-content-wrapper], [role='alertdialog']",
-        ) !== null);
-    const down = (e: MouseEvent) => {
-      if (!inside(e.target)) latestClose.current();
-    };
-    const key = (e: KeyboardEvent) => {
-      if (e.key !== "Escape" || e.defaultPrevented) return;
-      if (
-        document.querySelector("[role='menu'], [role='alertdialog']") !== null
-      )
-        return;
-      latestClose.current();
-    };
-    // Under the fragment the card may start below the fold.
-    card.current?.scrollIntoView({ block: "nearest" });
-    document.addEventListener("mousedown", down, true);
-    document.addEventListener("keydown", key);
-    return () => {
-      document.removeEventListener("mousedown", down, true);
-      document.removeEventListener("keydown", key);
-    };
-  }, []);
+  useCardDismiss(card, onClose);
 
   const messages = thread === null ? [] : [thread, ...thread.replies];
   return (

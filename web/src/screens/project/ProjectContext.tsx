@@ -36,6 +36,8 @@ export type ProjectData = {
   /** Scene with the caret in «Текст сценария», for the scene list of the navigator. */
   currentScene: number | null;
   setCurrentScene: (scene: number | null) => void;
+  /** Shows the chat where it is hidden (narrow screens); on wide screens it is always shown. */
+  openChat: () => void;
 };
 
 export const ProjectContext = createContext<ProjectData | null>(null);

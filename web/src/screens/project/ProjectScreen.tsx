@@ -126,6 +126,9 @@ export function ProjectScreen() {
     textStatus,
     currentScene,
     setCurrentScene,
+    openChat: () => {
+      if (narrow) setChatOpen(true);
+    },
   };
   const title = docTitle(base, ref);
   const navigator = <Navigator onNavigate={() => setNavOpen(false)} />;
