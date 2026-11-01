@@ -45,6 +45,13 @@ services:
         read_only: true
         bind:
           create_host_path: false
+      # Russian template of the sign-in code e-mail (stage authenticator_email).
+      - type: bind
+        source: ./templates
+        target: /templates
+        read_only: true
+        bind:
+          create_host_path: false
     environment: &authentik-env
       AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?AUTHENTIK_SECRET_KEY must be set in .env}
       AUTHENTIK_POSTGRESQL__HOST: agentos-db
@@ -60,8 +67,18 @@ services:
       # Read by the blueprints (!Env).
       AUTH_FRONTEND_CLIENT_ID: ${AUTH_FRONTEND_CLIENT_ID:?AUTH_FRONTEND_CLIENT_ID must be set in .env}
       AUTH_FRONTEND_REDIRECT_URI: ${AUTH_FRONTEND_REDIRECT_URI:?AUTH_FRONTEND_REDIRECT_URI must be set in .env}
+      AUTH_FRONTEND_LOGOUT_URI: ${AUTH_FRONTEND_LOGOUT_URI:?AUTH_FRONTEND_LOGOUT_URI must be set in .env}
       AUTH_DEV_SERVICE_TOKEN: ${AUTH_DEV_SERVICE_TOKEN:?AUTH_DEV_SERVICE_TOKEN must be set in .env}
       AUTH_BRAND_DOMAIN: ${AUTH_BRAND_DOMAIN:?AUTH_BRAND_DOMAIN must be set in .env}
+      # Outgoing mail (sign-in codes). Locally the Mailpit service below; in production a real
+      # SMTP server. Empty USERNAME and PASSWORD must be written explicitly (no login).
+      AUTHENTIK_EMAIL__HOST: ${AUTHENTIK_EMAIL__HOST:?AUTHENTIK_EMAIL__HOST must be set in .env}
+      AUTHENTIK_EMAIL__PORT: ${AUTHENTIK_EMAIL__PORT:?AUTHENTIK_EMAIL__PORT must be set in .env}
+      AUTHENTIK_EMAIL__USERNAME: ${AUTHENTIK_EMAIL__USERNAME?AUTHENTIK_EMAIL__USERNAME must be set in .env (empty for no login)}
+      AUTHENTIK_EMAIL__PASSWORD: ${AUTHENTIK_EMAIL__PASSWORD?AUTHENTIK_EMAIL__PASSWORD must be set in .env (empty for no login)}
+      AUTHENTIK_EMAIL__USE_TLS: ${AUTHENTIK_EMAIL__USE_TLS:?AUTHENTIK_EMAIL__USE_TLS must be set in .env}
+      AUTHENTIK_EMAIL__USE_SSL: ${AUTHENTIK_EMAIL__USE_SSL:?AUTHENTIK_EMAIL__USE_SSL must be set in .env}
+      AUTHENTIK_EMAIL__FROM: ${AUTHENTIK_EMAIL__FROM:?AUTHENTIK_EMAIL__FROM must be set in .env}
     healthcheck:
       test: ["CMD", "ak", "healthcheck"]
       interval: 15s
@@ -83,6 +100,21 @@ services:
       - type: bind
         source: ./blueprints
         target: /blueprints/custom
+        read_only: true
+        bind:
+          create_host_path: false
+      # Russian template of the sign-in code e-mail (stage authenticator_email).
+      - type: bind
+        source: ./templates
+        target: /templates
+        read_only: true
+        bind:
+          create_host_path: false
+      # Development users; outside /blueprints, so Authentik never applies them by itself.
+      # ./scripts/dev.sh auth-users applies them on the local stand only.
+      - type: bind
+        source: ./blueprints-dev
+        target: /blueprints-dev
         read_only: true
         bind:
           create_host_path: false
@@ -129,5 +161,17 @@ services:
     depends_on:
       authentik-server:
         condition: service_healthy
+    networks:
+      - agentos
+
+  # Local mailbox for development: Authentik sends sign-in codes here and they show at
+  # http://localhost:8025. SMTP stays inside the compose network. Not started in production
+  # (compose.prod.yaml). The image tag is pinned.
+  mailpit:
+    image: ghcr.io/axllent/mailpit:v1.31.6
+    container_name: mailpit
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
     networks:
       - agentos

@@ -1,0 +1,29 @@
+# Development users of the local stand (openspec/specs/auth, «Пользователи для разработки»).
+# Not under /blueprints, so Authentik never applies this file by itself; ./scripts/dev.sh
+# auth-users applies it with AUTH_DEV_USER_PASSWORD from .env and then gives each user a
+# confirmed e-mail code device (blueprints cannot set `confirmed`), so sign-in goes straight to
+# the code, which arrives in Mailpit.
+version: 1
+metadata:
+  name: Authorled development users
+entries:
+  - model: authentik_core.user
+    identifiers:
+      username: writer
+    attrs:
+      name: Сценарист
+      email: writer@authorled.test
+      type: internal
+      password: !Env AUTH_DEV_USER_PASSWORD
+      groups:
+        - !Find [authentik_core.group, [name, screenwriters]]
+  - model: authentik_core.user
+    identifiers:
+      username: editor
+    attrs:
+      name: Редактор
+      email: editor@authorled.test
+      type: internal
+      password: !Env AUTH_DEV_USER_PASSWORD
+      groups:
+        - !Find [authentik_core.group, [name, editors]]

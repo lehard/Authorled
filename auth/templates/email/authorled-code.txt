@@ -1,0 +1,3 @@
+{% load humanize %}Код для входа в Authorled: {{ token }}
+
+Код действует {{ expires|timeuntil }}. Если вы не входили в Authorled, просто удалите это письмо.

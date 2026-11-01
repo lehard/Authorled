@@ -1,0 +1,200 @@
+/*
+ * Surfaces of the workspace after mockup v2 (openspec/context/_raw/design/kabinet-starc/app.css):
+ * story covers as books, navigator items, screenplay paragraphs, the title page. Tokens only.
+ */
+@layer components {
+  .book {
+    position: relative;
+    display: block;
+    aspect-ratio: 3 / 4;
+    padding: 22px 24px;
+    border-radius: 4px 10px 10px 4px;
+    background: var(--panel);
+    color: var(--foreground);
+    font-family: var(--font-heading);
+    font-size: 22px;
+    line-height: 1.2;
+    box-shadow:
+      inset 4px 0 0 color-mix(in oklch, var(--foreground) 8%, transparent),
+      var(--shadow-panel);
+    transition:
+      transform 0.15s,
+      box-shadow 0.15s;
+  }
+  .book.art {
+    overflow: hidden;
+    background: linear-gradient(
+      170deg,
+      color-mix(in oklch, var(--primary) 62%, var(--paper)),
+      color-mix(in oklch, var(--primary) 82%, var(--foreground))
+    );
+    color: var(--primary-foreground);
+  }
+  .book.art::before,
+  .book.art::after {
+    content: "";
+    position: absolute;
+    left: -10%;
+    right: -10%;
+    height: 40px;
+    border-radius: 50%;
+    border-top: 1.5px solid color-mix(in oklch, var(--paper) 45%, transparent);
+  }
+  .book.art::before {
+    bottom: 54px;
+  }
+  .book.art::after {
+    bottom: 30px;
+    border-top-color: color-mix(in oklch, var(--paper) 28%, transparent);
+  }
+  .group\/card:hover .book {
+    transform: translateY(-3px);
+    box-shadow:
+      inset 4px 0 0 color-mix(in oklch, var(--foreground) 8%, transparent),
+      var(--shadow-paper);
+  }
+  .book-mini {
+    width: 40px;
+    height: 52px;
+    flex: none;
+    border-radius: 3px 7px 7px 3px;
+    background: var(--paper);
+    box-shadow:
+      inset 3px 0 0 color-mix(in oklch, var(--foreground) 10%, transparent),
+      var(--shadow-panel);
+  }
+  .book-mini.art {
+    background: linear-gradient(
+      170deg,
+      color-mix(in oklch, var(--primary) 62%, var(--paper)),
+      color-mix(in oklch, var(--primary) 82%, var(--foreground))
+    );
+  }
+
+  /* Navigator item; the open document is a sheet of paper on the panel. */
+  .tree-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 32px;
+    padding: 4px 8px;
+    border-radius: 10px;
+    color: var(--muted-foreground);
+    font-size: 13.5px;
+    text-align: left;
+  }
+  .tree-item:hover {
+    background: var(--accent);
+    color: var(--foreground);
+  }
+  .tree-item[aria-current="page"],
+  .tree-item[aria-current="location"] {
+    background: var(--paper);
+    color: var(--foreground);
+    font-weight: 600;
+    box-shadow: var(--shadow-panel);
+  }
+  .tree-item[aria-current="page"] > svg {
+    color: var(--primary);
+  }
+
+  /* Pages on the desk: prose and title page (the screenplay page is the editor's). */
+  .sheet {
+    position: relative;
+    margin: 0 auto;
+    background: var(--paper);
+    color: var(--paper-foreground);
+    border-radius: 6px;
+    box-shadow: var(--shadow-paper);
+  }
+  .sheet-prose {
+    width: min(100%, 760px);
+    padding: 64px 72px 80px;
+    font-family: var(--font-prose);
+    font-size: var(--text-body-prose);
+    line-height: var(--text-body-prose--line-height);
+  }
+  .sheet-title {
+    width: min(100%, 640px);
+    aspect-ratio: 210 / 297;
+    padding: 64px 64px 56px;
+    font-family: var(--font-script);
+    font-size: 15px;
+    display: flex;
+    flex-direction: column;
+  }
+  @media (max-width: 900px) {
+    .sheet-prose {
+      padding: 32px 20px 48px;
+    }
+    .sheet-title {
+      padding: 32px 24px;
+    }
+  }
+
+  /* Answers of the co-author (Markdown). */
+  .chat-md {
+    display: grid;
+    gap: 0.6em;
+    overflow-wrap: break-word;
+  }
+  .chat-md > * {
+    margin: 0;
+  }
+  .chat-md ul,
+  .chat-md ol {
+    display: grid;
+    gap: 0.3em;
+    padding-left: 1.3em;
+  }
+  .chat-md ul {
+    list-style: disc;
+  }
+  .chat-md ol {
+    list-style: decimal;
+  }
+  .chat-md li::marker {
+    color: var(--muted-foreground);
+  }
+  .chat-md strong {
+    font-weight: 600;
+  }
+  .chat-md h1,
+  .chat-md h2,
+  .chat-md h3,
+  .chat-md h4 {
+    font-family: var(--font-heading);
+    font-size: var(--text-heading-3);
+    font-weight: 600;
+  }
+  .chat-md blockquote {
+    padding-left: 10px;
+    border-left: 2px solid var(--ai-border);
+    color: var(--muted-foreground);
+  }
+  .chat-md code {
+    padding: 0.1em 0.35em;
+    border-radius: 6px;
+    background: var(--muted);
+    font-size: var(--text-code);
+  }
+  .chat-md pre {
+    overflow-x: auto;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--muted);
+  }
+  .chat-md pre code {
+    padding: 0;
+    background: none;
+  }
+  .chat-md a {
+    color: var(--primary);
+    text-decoration: underline;
+  }
+  .chat-md hr {
+    border: 0;
+    border-top: 1px solid var(--border);
+  }
+}

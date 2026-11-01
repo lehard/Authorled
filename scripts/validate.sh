@@ -71,7 +71,7 @@ else
     failed=1
   fi
 
-  for step in lint typecheck build check:contrast; do
+  for step in lint typecheck build check:contrast check:editor check:native-ui; do
     echo ""
     echo -e "${DIM}> npm run ${step} --prefix web${NC}"
     if ! npm run --silent "${step}" --prefix "${WEB_DIR}"; then

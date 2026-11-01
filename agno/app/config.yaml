@@ -13,6 +13,12 @@ manifest:
       - "Review the configured Sources for AgentOS. Explain relevant changes and their impact without creating work."
       - "Propose up to three improvements for AgentOS with evidence, expected impact, and acceptance criteria. Check for duplicates first; leave proposals for review without accepting or executing them."
       - "Review existing Projects and Tasks for AgentOS. Identify overlaps, missing evidence, and unclear acceptance criteria without changing them."
+  coauthor:
+    description: "Соавтор писателя: обсуждает открытый документ и выделенный фрагмент, предлагает варианты, не меняет текст сам."
+    quick_prompts:
+      - "О чём эта история?"
+      - "Что можно сократить в этой сцене?"
+      - "Предложи три варианта этой реплики."
   claude-engineer:
     description: "Explain, review, and improve repository code using Claude Code on DeepSeek."
     quick_prompts:

@@ -4,9 +4,11 @@ metadata:
   labels:
     blueprints.goauthentik.io/instantiate: "true"
 entries:
-  # A sign-in flow with its own stages (blueprints are applied in no fixed order, so nothing here
-  # depends on the default blueprints): identification with password, a second factor that a
-  # user without one must set up (the default flow skips the check), and login.
+  # The sign-in flow of the product (openspec/specs/auth, «Конфигурация из blueprints»), with its
+  # own stages (blueprints are applied in no fixed order, so nothing here depends on the default
+  # blueprints): e-mail or username → password, only when the user has one → a code sent by
+  # e-mail as the second factor (the device is set up on the first sign-in) → login. The web
+  # frontend walks these stages through the flow executor API with its own screens.
   - model: authentik_stages_password.passwordstage
     id: stage-password
     identifiers:
@@ -22,28 +24,47 @@ entries:
       name: authorled-authentication-identification
     attrs:
       user_fields:
-        - username
         - email
-      password_stage: !KeyOf stage-password
+        - username
+      # The password is a stage of its own: it is asked only when the account has one.
+      password_stage: null
+      case_insensitive_matching: true
       show_matched_user: true
-  - model: authentik_stages_authenticator_totp.authenticatortotpstage
-    id: stage-totp-setup
+      # An unknown address is reported at once (mockup v1: one e-mail screen for sign-in and
+      # sign-up); attempts are limited by the password stage and the code throttling.
+      pretend_user_exists: false
+  - model: authentik_policies_expression.expressionpolicy
+    id: policy-has-password
     identifiers:
-      name: authorled-authenticator-totp-setup
+      name: authorled-user-has-password
+    attrs:
+      expression: |
+        return request.context["pending_user"].has_usable_password()
+  - model: authentik_stages_authenticator_email.authenticatoremailstage
+    id: stage-email-setup
+    identifiers:
+      name: authorled-authenticator-email-setup
     attrs:
       friendly_name: Authorled
-      digits: 6
+      use_global_settings: true
+      token_expiry: minutes=10
+      subject: Код для входа в Authorled
+      template: email/authorled-code.html
   - model: authentik_stages_authenticator_validate.authenticatorvalidatestage
     id: stage-mfa-validate
     identifiers:
       name: authorled-authentication-mfa-validation
     attrs:
       device_classes:
-        - totp
-        - static
+        - email
       not_configured_action: configure
       configuration_stages:
-        - !KeyOf stage-totp-setup
+        - !KeyOf stage-email-setup
+  # The TOTP second factor of the earlier flow is gone (code by e-mail instead).
+  - model: authentik_stages_authenticator_totp.authenticatortotpstage
+    state: absent
+    identifiers:
+      name: authorled-authenticator-totp-setup
   - model: authentik_stages_user_login.userloginstage
     id: stage-login
     identifiers:
@@ -56,7 +77,7 @@ entries:
       slug: authorled-authentication
     attrs:
       name: Authorled authentication
-      title: Welcome to Authorled
+      title: Вход в Authorled
       designation: authentication
       authentication: require_unauthenticated
   - model: authentik_flows.flowstagebinding
@@ -65,6 +86,22 @@ entries:
       order: 10
     attrs:
       stage: !KeyOf stage-identification
+  - model: authentik_flows.flowstagebinding
+    id: binding-password
+    identifiers:
+      target: !KeyOf flow-authentication
+      order: 20
+    attrs:
+      stage: !KeyOf stage-password
+      # pending_user is known only after identification, so the policy runs when the stage comes.
+      evaluate_on_plan: false
+      re_evaluate_policies: true
+  - model: authentik_policies.policybinding
+    identifiers:
+      target: !KeyOf binding-password
+      policy: !KeyOf policy-has-password
+    attrs:
+      order: 0
   - model: authentik_flows.flowstagebinding
     identifiers:
       target: !KeyOf flow-authentication

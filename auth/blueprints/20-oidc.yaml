@@ -4,13 +4,35 @@ metadata:
   labels:
     blueprints.goauthentik.io/instantiate: "true"
 entries:
+  # Sign-out of the product («Выйти»): the Authentik session ends too, and the provider sends the
+  # user back to the logout redirect URI, without a page of Authentik in between. Declared here,
+  # because blueprints are applied in no fixed order and the provider refers to it.
+  - model: authentik_stages_user_logout.userlogoutstage
+    id: stage-logout
+    identifiers:
+      name: authorled-logout
+  - model: authentik_flows.flow
+    id: flow-invalidation
+    identifiers:
+      slug: authorled-invalidation
+    attrs:
+      name: Authorled sign-out
+      title: Выход из Authorled
+      designation: invalidation
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      target: !KeyOf flow-invalidation
+      order: 10
+    attrs:
+      stage: !KeyOf stage-logout
   - model: authentik_providers_oauth2.oauth2provider
     id: provider-authorled
     identifiers:
       name: authorled
     attrs:
       authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
-      invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+      # Ends the Authentik session and returns to the frontend's sign-in screen (logout URI).
+      invalidation_flow: !KeyOf flow-invalidation
       client_type: public
       # authorization_code + refresh_token: sign-in of the frontends (PKCE); client_credentials: service accounts.
       grant_types:
@@ -21,6 +43,10 @@ entries:
       redirect_uris:
         - matching_mode: strict
           url: !Env AUTH_FRONTEND_REDIRECT_URI
+        # Where «Выйти» returns after the Authentik session ends: the sign-in screen of the frontend.
+        - matching_mode: strict
+          url: !Env AUTH_FRONTEND_LOGOUT_URI
+          redirect_uri_type: logout
       # Tokens are signed with the Authentik key pair (RS256, public keys at /jwks/), not with a client secret.
       signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
       sub_mode: hashed_user_id
@@ -30,6 +56,8 @@ entries:
         - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-openid]]
         - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-email]]
         - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-profile]]
+        # offline_access: refresh tokens, so the web frontend keeps the session past the 10-minute access token.
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-offline_access]]
   - model: authentik_core.application
     id: application-authorled
     identifiers:

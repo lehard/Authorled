@@ -21,10 +21,14 @@ _USER_SCOPES = (
     "memories:write",
     "memories:delete",
 )
+# Authors run only product agents, one scope per agent; never agents:run or agents:*:run, which
+# would open the platform agents (OS Manager, claude-engineer) that run commands on the server.
+_AUTHOR_SCOPES = (*_USER_SCOPES, "agents:coauthor:run")
+
 GROUP_SCOPES: dict[str, tuple[str, ...]] = {
     "admins": ("agent_os:admin",),
-    "editors": _USER_SCOPES,
-    "screenwriters": _USER_SCOPES,
+    "editors": _AUTHOR_SCOPES,
+    "screenwriters": _AUTHOR_SCOPES,
     "plugins": ("config:read", "sessions:read"),
 }
 

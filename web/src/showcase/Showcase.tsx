@@ -1,24 +1,27 @@
 import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import {
   AiLabel,
-  DOCUMENT_STATUSES,
+  InkLoader,
   Paper,
-  StatusBadge,
   THEMES,
   ThemeSwitcher,
-  type DocumentStatus,
 } from "@/design-system";
+import { plainDoc, type ScreenplayDoc } from "@/editor/document.ts";
+import { ScreenplayEditor } from "@/editor/ScreenplayEditor";
 
 // Design-system showcase (openspec/specs/web/design-system, requirement «Витрина»).
 // It is the only screen allowed to show layer-1 primitives, because documenting them is its job.
 
 const PANGRAM = "Съешь же ещё этих мягких французских булок, да выпей чаю.";
-const SCALES = ["neutral", "blue", "violet", "teal", "amber", "crimson"];
+const SCALES = ["neutral", "blue", "plum", "teal", "amber", "crimson"];
 const STEPS = Array.from({ length: 12 }, (_, i) => i + 1);
 const SEMANTIC = [
+  "desk",
+  "panel",
   "background",
   "foreground",
   "muted",
@@ -29,6 +32,7 @@ const SEMANTIC = [
   "accent",
   "destructive",
   "border",
+  "border-strong",
   "input",
   "ring",
   "paper",
@@ -61,6 +65,51 @@ const TYPE_SCALE = [
   ["text-code font-mono", "code"],
 ] as const;
 
+// «Тихая вода» from mockup v2 with every paragraph type and the author's colour marks.
+const SCRIPT_SAMPLE: ScreenplayDoc = {
+  type: "doc",
+  content: [
+    ...plainDoc([
+      ["act", "Акт первый"],
+      ["sequence", "Утро у озера"],
+      ["sceneHeading", "НАТ. ОЗЕРО, МОСТКИ — РАССВЕТ"],
+      ["sceneCharacters", "Миша"],
+      ["beat", "Миша уходит на озеро один"],
+    ]).content,
+    {
+      type: "action",
+      content: [
+        { type: "text", text: "1998 год. " },
+        {
+          type: "text",
+          text: "Туман над водой.",
+          marks: [{ type: "highlight", attrs: { color: "2" } }],
+        },
+        { type: "text", text: " МИША (17) идёт по мосткам босиком, в руке " },
+        {
+          type: "text",
+          text: "удочка",
+          marks: [{ type: "textColor", attrs: { color: "4" } }],
+        },
+        { type: "text", text: "." },
+      ],
+    },
+    ...plainDoc([
+      ["shot", "Крупно: поплавок"],
+      ["transition", "Склейка:"],
+      ["sceneHeading", "ИНТ. ДОМ ВЕРЫ, КУХНЯ — УТРО"],
+      ["character", "Вера"],
+      ["dialogue", "Да, Анечка."],
+      ["character", "Аня (З.К.)"],
+      ["parenthetical", "тихо"],
+      ["dialogue", "Мам, я приеду в пятницу. Надолго."],
+      ["lyrics", "Ой, то не вечер, то не вечер"],
+      ["unformatted", "Простой текст без оформления."],
+      ["inlineNote", "Проверить: в 1998 году мостки ещё были деревянные?"],
+    ]).content,
+  ],
+};
+
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-4">
@@ -78,16 +127,6 @@ function Swatch({ token }: { token: string }) {
         style={{ background: `var(--${token})` }}
       />
       <code className="text-caption text-muted-foreground">--{token}</code>
-    </div>
-  );
-}
-
-function StatusRow() {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {(Object.keys(DOCUMENT_STATUSES) as DocumentStatus[]).map((status) => (
-        <StatusBadge key={status} status={status} />
-      ))}
     </div>
   );
 }
@@ -133,13 +172,14 @@ export function Showcase() {
             <div
               key={theme}
               data-theme={theme}
-              className="flex flex-col gap-3 rounded-lg border bg-background p-4 text-foreground"
+              className="desk flex flex-col gap-3 overflow-hidden rounded-panel p-4 text-foreground"
             >
               <p className="text-heading-3 font-semibold">
                 {THEME_LABELS[theme]}
               </p>
-              <Paper className="text-body-prose">{PANGRAM}</Paper>
-              <StatusRow />
+              <Paper className="rounded-md p-4 text-body-prose shadow-paper">
+                {PANGRAM}
+              </Paper>
               <div className="flex gap-2">
                 <Button>Утвердить</Button>
                 <Button variant="outline">Отложить</Button>
@@ -149,12 +189,43 @@ export function Showcase() {
         </div>
       </Section>
 
+      <Section title="Поверхности «Кабинета»">
+        <div className="desk flex flex-col gap-6 overflow-hidden rounded-panel p-6 md:flex-row md:items-start">
+          <div className="flex w-full flex-col gap-3 rounded-panel bg-panel p-5 shadow-panel md:w-72">
+            <p className="text-heading-3 font-semibold">Панель на столе</p>
+            <p className="text-body text-muted-foreground">
+              --panel, --shadow-panel, --radius-panel
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button>Утвердить</Button>
+              <Button variant="outline">Отложить</Button>
+              <AiLabel
+                action="Предложил название сцены"
+                sources={[{ code: "Д20", title: "Черновик сцены" }]}
+              />
+            </div>
+          </div>
+          <Paper className="flex-1 rounded-md p-8 shadow-paper">
+            <p className="text-heading-1">Лист бумаги</p>
+            <p>
+              Стол — фон страницы с мягким светом лампы сверху и лёгким зерном.
+              На нём лежат панели, а сверху — лист документа с более глубокой
+              тенью: --desk, --desk-glow, --grain-image, --paper,
+              --shadow-paper.
+            </p>
+          </Paper>
+        </div>
+      </Section>
+
       <Section title="Шрифты">
         <p className="font-sans text-heading-3">
           Golos Text — интерфейс. {PANGRAM}
         </p>
         <p className="font-serif text-heading-3">
           Literata — документы и проза. {PANGRAM}
+        </p>
+        <p className="text-heading-1">
+          Literata — заголовки (--font-heading). {PANGRAM}
         </p>
         <p className="font-mono text-heading-3">
           Cousine — сценарий. {PANGRAM}
@@ -181,21 +252,62 @@ export function Showcase() {
         </Paper>
       </Section>
 
-      <Section title="Статусы документа">
-        <label className="flex items-center gap-2 text-body">
-          <input
-            type="checkbox"
-            checked={grayscale}
-            onChange={(event) => setGrayscale(event.target.checked)}
-          />
-          Оттенки серого: статус различим без цвета
-        </label>
-        <div className={grayscale ? "grayscale" : undefined}>
-          <StatusRow />
+      <Section title="Ожидание">
+        <div className="flex flex-wrap items-center gap-8">
+          <div className="grid justify-items-center gap-3 text-muted-foreground">
+            <InkLoader />
+            Входим…
+          </div>
+          <p className="max-w-md text-body text-muted-foreground">
+            Линия пишется чернилами и стирается. При «уменьшить движение» в
+            системе она стоит написанной.
+          </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <StatusBadge status="stale" label="Устарел после правки Д4" />
-          <StatusBadge status="conflict" label="Противоречит Д7" />
+      </Section>
+
+      <Section title="Прокрутка, выделение, фокус">
+        <p className="max-w-2xl text-body text-muted-foreground">
+          Полосы прокрутки, выделение текста, курсор, кольцо фокуса и
+          автозаполнение полей рисует дизайн-система, а не браузер. Выделите
+          текст, пройдите по кнопкам клавишей Tab, прокрутите список.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {THEMES.map((theme) => (
+            <div
+              key={theme}
+              data-theme={theme}
+              className="desk grid gap-3 rounded-panel p-4 text-foreground"
+            >
+              <div className="h-32 overflow-y-auto rounded-xl bg-paper p-3 text-paper-foreground shadow-panel">
+                {Array.from({ length: 12 }, (_, i) => (
+                  <p key={i}>
+                    Строка {i + 1}: {PANGRAM}
+                  </p>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="rounded-full bg-panel px-3 py-1 shadow-panel"
+                >
+                  Своя кнопка
+                </button>
+                <Button size="sm">Кнопка shadcn</Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Редактор сценария">
+        <p className="max-w-2xl text-body text-muted-foreground">
+          Четырнадцать типов абзацев STARC: Tab и Enter ведут к следующему типу,
+          Ctrl+цифра задаёт тип. Выделите слово, чтобы дать ему цвет или
+          заливку. В колонке уже 840 пикселей лист идёт сплошным, без разрывов
+          страниц.
+        </p>
+        <div className="desk overflow-hidden rounded-panel p-4 sm:p-6">
+          <ScreenplayEditor mode="text" doc={SCRIPT_SAMPLE} />
         </div>
       </Section>
 
@@ -222,6 +334,16 @@ export function Showcase() {
       </Section>
 
       <Section title="Пометки в тексте">
+        <div className="flex items-center gap-2 text-body">
+          <Checkbox
+            id="showcase-grayscale"
+            checked={grayscale}
+            onCheckedChange={(checked) => setGrayscale(checked === true)}
+          />
+          <label htmlFor="showcase-grayscale">
+            Оттенки серого: пометка различима без цвета
+          </label>
+        </div>
         <div className={grayscale ? "grayscale" : undefined}>
           <Paper className="flex flex-col gap-4 rounded-lg border p-8 pl-12">
             <p>
