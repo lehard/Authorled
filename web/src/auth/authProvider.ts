@@ -1,5 +1,6 @@
 import type { AuthProvider } from "@refinedev/core";
 
+import { getMe, type Account } from "@/account/meApi";
 import { appConfig } from "@/app/config";
 
 import { SignInFlow } from "./flow/flowClient";
@@ -25,7 +26,7 @@ async function revoke(
     throw new Error(`Authentik не отозвал ${hint}: ответ ${response.status}.`);
 }
 
-export type Identity = { name: string; email: string };
+export type Identity = Account;
 
 export const authProvider: AuthProvider = {
   // Without a session the check itself leaves for Authentik and comes back to this address.
@@ -69,16 +70,7 @@ export const authProvider: AuthProvider = {
     throw error;
   },
 
-  getIdentity: async (): Promise<Identity> => {
-    const user = await activeUser();
-    if (user === null) throw new Error("Нет входа: профиль недоступен.");
-    const { name, preferred_username: username, email } = user.profile;
-    const shown = name ?? username ?? email;
-    if (shown === undefined || email === undefined) {
-      throw new Error(
-        "Authentik не передал имя и email пользователя (scopes profile и email).",
-      );
-    }
-    return { name: shown, email };
-  },
+  // The account of the product, not the ID token: its name is the one the user set in settings
+  // (openspec/specs/web/workspace, «Данные аккаунта из API»).
+  getIdentity: async (): Promise<Identity> => getMe(),
 };

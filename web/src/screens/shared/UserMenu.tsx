@@ -1,5 +1,6 @@
-import { useGetIdentity, useLogout } from "@refinedev/core";
-import { LogOut } from "lucide-react";
+import { useLogout } from "@refinedev/core";
+import { LogOut, RotateCw, Settings } from "lucide-react";
+import { Link } from "react-router";
 
 import {
   DropdownMenu,
@@ -9,14 +10,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAccount } from "@/account/useAccount";
 import { appConfig } from "@/app/config";
-import type { Identity } from "@/auth/authProvider";
 
-/** Avatar button with the user, the data-source label and sign-out. */
+/** Avatar button with the account, settings, the data-source label and sign-out. */
 export function UserMenu({ compact = false }: { compact?: boolean }) {
-  const { data: me } = useGetIdentity<Identity>();
+  const { data: me, error, refetch } = useAccount();
   const { mutate: logout, error: logoutError } = useLogout();
-  const name = me?.name ?? "…";
+  const name = me?.name ?? (error !== null ? "Аккаунт" : "…");
   return (
     <>
       {logoutError !== null && (
@@ -38,12 +39,27 @@ export function UserMenu({ compact = false }: { compact?: boolean }) {
           {!compact && <span className="max-w-40 truncate">{name}</span>}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">
-          <DropdownMenuLabel className="grid gap-0.5">
-            <span className="truncate font-medium">{name}</span>
-            <span className="truncate text-caption font-normal text-muted-foreground">
-              {me?.email}
-            </span>
-          </DropdownMenuLabel>
+          {error !== null ? (
+            <>
+              <DropdownMenuLabel
+                role="alert"
+                className="text-caption font-normal text-destructive"
+              >
+                Аккаунт не загрузился: {error.message}
+              </DropdownMenuLabel>
+              <DropdownMenuItem onSelect={() => void refetch()}>
+                <RotateCw />
+                Повторить
+              </DropdownMenuItem>
+            </>
+          ) : (
+            <DropdownMenuLabel className="grid gap-0.5">
+              <span className="truncate font-medium">{name}</span>
+              <span className="truncate text-caption font-normal text-muted-foreground">
+                {me?.email}
+              </span>
+            </DropdownMenuLabel>
+          )}
           {appConfig().dataSource === "fixtures" && (
             <>
               <DropdownMenuSeparator />
@@ -53,6 +69,12 @@ export function UserMenu({ compact = false }: { compact?: boolean }) {
             </>
           )}
           <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link to="/settings">
+              <Settings />
+              Настройки
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => logout()}>
             <LogOut />
             Выйти

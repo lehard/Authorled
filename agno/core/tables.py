@@ -7,6 +7,7 @@ from sqlalchemy import (
     CheckConstraint,
     Column,
     DateTime,
+    ForeignKey,
     MetaData,
     Table,
     Text,
@@ -48,4 +49,17 @@ users = Table(
     CheckConstraint("auth_subject <> ''", name="auth_subject_not_empty"),
     CheckConstraint("email <> ''", name="email_not_empty"),
     CheckConstraint("display_name <> ''", name="display_name_not_empty"),
+)
+
+# Themes of the design system (web/src/design-system/theme.ts); NULL follows the system setting.
+THEMES = ("light", "sepia", "dark")
+
+# Settings of a user, one row per user. Each new setting is a column added by its own migration.
+user_settings = Table(
+    "user_settings",
+    metadata,
+    Column("user_id", Uuid, ForeignKey(users.c.id, ondelete="RESTRICT"), primary_key=True),
+    Column("theme", Text),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    CheckConstraint("theme IN ('light', 'sepia', 'dark')", name="theme_known"),
 )

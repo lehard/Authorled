@@ -12,8 +12,10 @@ generic manager behavior belongs in Agno. `CLAUDE.md` links to this file.
   Configure `OSManager(root=REPO_ROOT)` in `agno/app/main.py`; do not recreate these components
   or add application-owned queues, lifecycle code or Company state machines.
 - Application-owned HTTP routes are allowed only for product actions that do not call an LLM,
-  mounted through the AgentOS `base_app` (see `openspec/context/ADR/ADR-002-own-routes-via-base-app.md`).
-  Every other API surface stays with Agno; none ship in the template until the product core exists.
+  under `/api/v1/`, added by `attach_api` to the app that `agent_os.get_app()` returns, before the
+  MCP mount at the root (see `openspec/context/ADR/ADR-002-own-routes-via-base-app.md`). Do not pass
+  `base_app`: with it Agno drops its error handlers for its own routes. Every other API surface stays
+  with Agno; today the only own routes are `GET` and `PATCH /api/v1/me`.
 - Check framework behavior against the Agno version pinned in `agno/pyproject.toml`.
   Do not bypass framework rejections or add compatibility adapters to this template.
 - Keep the starter lean. Add abstractions, tests and infrastructure only for a concrete
@@ -58,8 +60,10 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 ## Where changes belong
 
 - `agno/app/main.py`: AgentOS registration, shared database, OS Manager, Company and queue.
+- `agno/app/api/`: own product routes (`/api/v1/me`) and their `application/problem+json` errors,
+  handled only for the product's own exception types.
 - `agno/app/auth/` and `auth/`: the auth module. `agno/app/auth/` is the only code that reads JWT
-  or claims (other code uses `Principal`, `current_principal` and `can_access_project`);
+  or claims (other code uses `Principal`, `current_principal`, `Identity`, `current_identity` and `can_access_project`);
   `auth/` holds the Authentik blueprints, database init, key export and its services in
   `auth/compose.yaml`, which `compose.yaml` includes; Authentik runs as separate
   containers. `./scripts/check_auth_boundary.sh` (part of `validate.sh`) enforces the boundary
@@ -74,7 +78,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   `agno/teams/`: user-defined teams; no Engineering team ships by default.
 - `agno/db/`: cached OS database and distinct knowledge content adapters.
 - `agno/core/`: the product core, independent of Agno: `connection.py` (database URL from `DB_*`),
-  `tables.py` (tables of schema `authorled`). `agno/migrations/` and `agno/alembic.ini`: Alembic for
+  `tables.py` (tables of schema `authorled`: `users`, `user_settings`), `engine.py` (the core's own
+  connection pool), `users.py` (account operations). `agno/migrations/` and `agno/alembic.ini`: Alembic for
   schema `authorled` only, forward-only, one head; never migrate Agno or Authentik schemas there.
   `agno/tests/`: pytest for the core on real PostgreSQL (`./scripts/dev.sh test`).
 - `agno/evals/`: application cases and the Agno eval CLI entrypoint.

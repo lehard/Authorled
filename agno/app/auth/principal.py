@@ -1,4 +1,4 @@
-"""Who is calling: `Principal`, and the access check other modules call for a project."""
+"""Who is calling: `Principal`, the caller's `Identity`, and the access check other modules call for a project."""
 
 from dataclasses import dataclass
 from typing import Protocol
@@ -57,3 +57,36 @@ def current_principal(request: Request) -> Principal:
         raise HTTPException(status_code=401, detail="Token has no valid groups claim")
     scopes = {scope for group in groups for scope in GROUP_SCOPES.get(group, ())}
     return Principal(user_id=str(user_id), groups=tuple(groups), scopes=frozenset(scopes))
+
+
+@dataclass(frozen=True)
+class Identity:
+    """E-mail and name of the caller, for the user record of the product only, never for access."""
+
+    email: str
+    name: str
+
+
+class MissingIdentityClaim(Exception):
+    """The verified token has no non-empty claim `email` or `name` (a service account, for example)."""
+
+    def __init__(self, claim: str) -> None:
+        super().__init__(f"Token has no {claim} claim")
+        self.claim = claim
+
+
+def current_identity(request: Request) -> Identity:
+    """FastAPI dependency: e-mail and name from the claims of the verified token.
+
+    Use together with `current_principal`, which rejects a missing or invalid token first.
+    """
+    claims = getattr(request.state, "claims", None)
+    if not getattr(request.state, "authenticated", False) or not isinstance(claims, dict):
+        raise HTTPException(status_code=401, detail="Authentication required")
+    values = {}
+    for claim in ("email", "name"):
+        value = claims.get(claim)
+        if not isinstance(value, str) or not value.strip():
+            raise MissingIdentityClaim(claim)
+        values[claim] = value.strip()
+    return Identity(email=values["email"], name=values["name"])

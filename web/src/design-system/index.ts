@@ -3,4 +3,10 @@ export { AiLabel, type AiSource } from "./components/AiLabel";
 export { InkLoader } from "./components/InkLoader";
 export { Paper } from "./components/Paper";
 export { ThemeSwitcher } from "./components/ThemeSwitcher";
-export { THEMES, applyTheme, currentTheme, type Theme } from "./theme";
+export {
+  THEMES,
+  applyAccountTheme,
+  applyTheme,
+  currentTheme,
+  type Theme,
+} from "./theme";

@@ -52,7 +52,7 @@ def test_product_tables_stay_in_their_schema(connection: Connection) -> None:
     rows = connection.execute(
         text(
             "SELECT table_schema, table_name FROM information_schema.tables"
-            " WHERE table_name IN ('users', 'alembic_version')"
+            " WHERE table_name IN ('users', 'user_settings', 'alembic_version')"
         )
     ).all()
-    assert sorted(rows) == [(SCHEMA, "alembic_version"), (SCHEMA, "users")]
+    assert sorted(rows) == [(SCHEMA, "alembic_version"), (SCHEMA, "user_settings"), (SCHEMA, "users")]
