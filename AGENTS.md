@@ -24,11 +24,19 @@ generic manager behavior belongs in Agno. `CLAUDE.md` links to this file.
 Every change to code, configuration, agents, prompts, evals or behavior goes through an
 OpenSpec change in `openspec/changes/`, even when the request is a plain "do X".
 
-- No active change covers the request: run `/opsx:propose` first, stop after the
-  artifacts and wait for the user's approval before `/opsx:apply`.
-- An active change covers it: continue it with `/opsx:apply`; revise its plan with
-  `/opsx:update` instead of drifting from `tasks.md`.
-- Finish with `/opsx:verify`, then `/opsx:archive` only on the user's request.
+The flow from discussion to code:
+
+1. Discuss: propose concrete solutions with a recommendation; the user approves or
+   corrects them. Do not edit code during the discussion.
+2. Business intent: once the user approves, write the agreed decisions to
+   `business-intents/<slug>.md` in the format of the existing intents (status line,
+   Why, What Changes, Scope, Non-goals, Constraints, Acceptance criteria, Risks,
+   Open Questions, References), then stop.
+3. OpenSpec: the user runs `/opsx:propose`, `/opsx:update`, `/opsx:apply`, `/opsx:verify`
+   and `/opsx:archive` themselves. Do not start them on your own; when a request
+   needs code and no active change covers it, say so and point to the intent.
+   Inside a command the user started, follow its skill; keep `/opsx:apply` within
+   `tasks.md` and ask the user to run `/opsx:update` when the plan must change.
 - Exempt: typos, formatting, comments, edits under `openspec/` itself, and read-only
   questions or investigation (`/opsx:explore`). If unsure whether a request is exempt, ask.
 
