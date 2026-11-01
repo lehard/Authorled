@@ -9,6 +9,19 @@ entries:
   # blueprints): e-mail or username → password, only when the user has one → a code sent by
   # e-mail as the second factor (the device is set up on the first sign-in) → login. The web
   # frontend walks these stages through the flow executor API with its own screens.
+  # The sign-up flow (openspec/specs/auth, «Регистрация») lives in this file too, so the link from
+  # the e-mail stage does not depend on the order of blueprints: name and e-mail → the user is
+  # created in screenwriters → the e-mail code confirms the address and saves the device → login.
+  # The sign-up flow comes first: the e-mail stage below links to it (!KeyOf needs it above).
+  - model: authentik_flows.flow
+    id: flow-enrollment
+    identifiers:
+      slug: authorled-enrollment
+    attrs:
+      name: Authorled sign-up
+      title: Регистрация в Authorled
+      designation: enrollment
+      authentication: require_unauthenticated
   - model: authentik_stages_password.passwordstage
     id: stage-password
     identifiers:
@@ -33,13 +46,17 @@ entries:
       # An unknown address is reported at once (mockup v1: one e-mail screen for sign-in and
       # sign-up); attempts are limited by the password stage and the code throttling.
       pretend_user_exists: false
+      enrollment_flow: !KeyOf flow-enrollment
   - model: authentik_policies_expression.expressionpolicy
     id: policy-has-password
     identifiers:
       name: authorled-user-has-password
     attrs:
+      # Accounts from the sign-up flow have an empty password, which Django counts as usable:
+      # only a real hash asks for the password step.
       expression: |
-        return request.context["pending_user"].has_usable_password()
+        user = request.context["pending_user"]
+        return bool(user.password) and user.has_usable_password()
   - model: authentik_stages_authenticator_email.authenticatoremailstage
     id: stage-email-setup
     identifiers:
@@ -111,6 +128,111 @@ entries:
   - model: authentik_flows.flowstagebinding
     identifiers:
       target: !KeyOf flow-authentication
+      order: 100
+    attrs:
+      stage: !KeyOf stage-login
+  # Sign-up (openspec/specs/auth, «Регистрация»). The same group as in 10-groups.yaml, by its
+  # identifiers only: new users join it whatever order the blueprints are applied in.
+  - model: authentik_core.group
+    id: group-screenwriters
+    identifiers:
+      name: screenwriters
+  - model: authentik_stages_prompt.prompt
+    id: prompt-email
+    identifiers:
+      name: authorled-enrollment-email
+    attrs:
+      field_key: email
+      label: Почта
+      type: email
+      required: true
+      order: 0
+  # The username is the e-mail; the frontend sends it, the policy below checks it. A text field,
+  # not hidden: Authentik fills hidden fields on the server and ignores what the client sends.
+  - model: authentik_stages_prompt.prompt
+    id: prompt-username
+    identifiers:
+      name: authorled-enrollment-username
+    attrs:
+      field_key: username
+      label: Почта
+      type: text
+      required: true
+      order: 1
+  - model: authentik_stages_prompt.prompt
+    id: prompt-name
+    identifiers:
+      name: authorled-enrollment-name
+    attrs:
+      field_key: name
+      label: Имя и фамилия
+      type: text
+      required: true
+      placeholder: Например, Анна Северова
+      order: 2
+  # A decision only, no side effects: one account per e-mail, the username equals the e-mail,
+  # the name is not blank.
+  - model: authentik_policies_expression.expressionpolicy
+    id: policy-email-not-registered
+    identifiers:
+      name: authorled-email-not-registered
+    attrs:
+      expression: |
+        data = request.context.get("prompt_data", {})
+        email = str(data.get("email", "")).strip()
+        if data.get("username") != data.get("email"):
+            ak_message("Имя пользователя должно совпадать с почтой.")
+            return False
+        if not str(data.get("name", "")).strip():
+            ak_message("Введите имя.")
+            return False
+        if ak_user_by(email__iexact=email) is not None or ak_user_by(username__iexact=email) is not None:
+            ak_message("Аккаунт с такой почтой уже есть.")
+            return False
+        return True
+  - model: authentik_stages_prompt.promptstage
+    id: stage-enrollment-prompt
+    identifiers:
+      name: authorled-enrollment-prompt
+    attrs:
+      fields:
+        - !KeyOf prompt-email
+        - !KeyOf prompt-username
+        - !KeyOf prompt-name
+      validation_policies:
+        - !KeyOf policy-email-not-registered
+  - model: authentik_stages_user_write.userwritestage
+    id: stage-enrollment-write
+    identifiers:
+      name: authorled-enrollment-write
+    attrs:
+      user_creation_mode: always_create
+      create_users_as_inactive: false
+      create_users_group: !KeyOf group-screenwriters
+      user_type: internal
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      target: !KeyOf flow-enrollment
+      order: 10
+    attrs:
+      stage: !KeyOf stage-enrollment-prompt
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      target: !KeyOf flow-enrollment
+      order: 20
+    attrs:
+      stage: !KeyOf stage-enrollment-write
+  # The account exists from here, but there is no token without the code: the device is saved
+  # only after the right code, so an abandoned sign-up leaves no unconfirmed device.
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      target: !KeyOf flow-enrollment
+      order: 30
+    attrs:
+      stage: !KeyOf stage-email-setup
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      target: !KeyOf flow-enrollment
       order: 100
     attrs:
       stage: !KeyOf stage-login

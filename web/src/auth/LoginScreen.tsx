@@ -28,7 +28,9 @@ const DevSignIn = import.meta.env.DEV
 const RESEND_SECONDS = 60;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-type Stage = "email" | "password" | "code" | "finishing";
+// "new-account" and "name" are sign-up (openspec/specs/web/workspace, «Регистрация на экране входа»).
+type Stage =
+  "email" | "password" | "code" | "new-account" | "name" | "finishing";
 
 /** Safe return address: a path of this app, never another origin. */
 function returnPath(value: string | null): string {
@@ -39,7 +41,7 @@ function returnPath(value: string | null): string {
   return value.startsWith("/login") ? "/" : value;
 }
 
-/** Sign-in screens after mockup v1 (openspec/specs/web/workspace, «Вход»). */
+/** Sign-in and sign-up screens after mockup v1 (openspec/specs/web/workspace, «Вход»). */
 export function LoginScreen() {
   const [params] = useSearchParams();
   const returnTo = returnPath(params.get("returnTo"));
@@ -48,13 +50,16 @@ export function LoginScreen() {
   const [stage, setStage] = useState<Stage>("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  // Sign-up after «Создать аккаунт»: the code step confirms the e-mail of a new account.
+  const [signingUp, setSigningUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<SignInError | null>(null);
   const [busy, setBusy] = useState(false);
   const [wait, setWait] = useState(0);
   const [codeKey, setCodeKey] = useState(0);
   const [canResend, setCanResend] = useState(false);
-  const ids = { email: useId(), password: useId() };
+  const ids = { email: useId(), password: useId(), name: useId() };
 
   // Signed in already — in this tab (tokens) or in Authentik (another tab): go straight on.
   const [checking, setChecking] = useState(true);
@@ -146,10 +151,27 @@ export function LoginScreen() {
     void run(async () => go(await flow.current.password(password)));
   }
 
+  function submitName(e: FormEvent) {
+    e.preventDefault();
+    const value = name.trim();
+    if (value === "") {
+      setError(new SignInError("name", "Введите имя."));
+      return;
+    }
+    void run(async () => {
+      const next = await flow.current.register(email.trim(), value);
+      setSigningUp(true);
+      await go(next);
+    });
+  }
+
+  // Back to the e-mail step; the address stays for editing.
   function restart() {
     flow.current = new SignInFlow();
     setStage("email");
     setPassword("");
+    setName("");
+    setSigningUp(false);
     setError(null);
   }
 
@@ -253,10 +275,82 @@ export function LoginScreen() {
         </p>
       </form>
     );
+  } else if (stage === "new-account") {
+    card = (
+      <div className="grid gap-2">
+        <h1 className="text-heading-1 font-medium">Аккаунта ещё нет</h1>
+        <p className="mb-2 text-muted-foreground">
+          Аккаунта с почтой <b className="text-foreground">{email.trim()}</b>{" "}
+          ещё нет. Создадим его — пароль не нужен.
+        </p>
+        <Button
+          type="button"
+          autoFocus
+          onClick={() => {
+            setError(null);
+            setStage("name");
+          }}
+          className="mt-3 h-11 w-full rounded-full text-[15px] font-semibold"
+        >
+          Создать аккаунт
+          <ArrowRight />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={restart}
+          className="h-11 w-full rounded-full text-[15px]"
+        >
+          Другая почта
+        </Button>
+      </div>
+    );
+  } else if (stage === "name") {
+    card = (
+      <form onSubmit={submitName} noValidate className="grid gap-2">
+        <SignUpSteps current={1} />
+        <h1 className="text-heading-1 font-medium">Как вас зовут?</h1>
+        <p className="mb-4 text-muted-foreground">
+          Имя видно в меню и на титульном листе сценария.
+        </p>
+        <Label
+          htmlFor={ids.name}
+          className="text-caption font-normal text-muted-foreground"
+        >
+          Имя и фамилия
+        </Label>
+        <Input
+          id={ids.name}
+          autoComplete="name"
+          autoFocus
+          placeholder="Например, Анна Северова"
+          value={name}
+          aria-invalid={error?.field === "name"}
+          onChange={(e) => {
+            setName(e.target.value);
+            setError(null);
+          }}
+          className="h-11 bg-paper text-[15.5px]"
+        />
+        {fieldError("name")}
+        {fieldError("email")}
+        <Go busy={busy}>Дальше</Go>
+        <button
+          type="button"
+          className="mt-2 justify-self-center text-caption text-primary hover:underline"
+          onClick={restart}
+        >
+          Другая почта
+        </button>
+      </form>
+    );
   } else if (stage === "code") {
     card = (
       <div className="grid gap-3">
-        <h1 className="text-heading-1 font-medium">Код из письма</h1>
+        {signingUp && <SignUpSteps current={2} />}
+        <h1 className="text-heading-1 font-medium">
+          {signingUp ? "Подтвердите почту" : "Код из письма"}
+        </h1>
         <p className="text-muted-foreground">
           Отправили 6 цифр на <b className="text-foreground">{email}</b>. Код
           действует 10 минут.
@@ -354,6 +448,24 @@ export function LoginScreen() {
         )}
       </div>
     </main>
+  );
+}
+
+/** Progress of sign-up: name, then the code (mockup v1, `au-steps`). */
+function SignUpSteps({ current }: { current: 1 | 2 }) {
+  return (
+    <div
+      className="mb-2 flex gap-1.5"
+      role="img"
+      aria-label={`Шаг ${current} из 2`}
+    >
+      {[1, 2].map((i) => (
+        <i
+          key={i}
+          className={`h-1 w-8 rounded-full ${i <= current ? "bg-primary" : "bg-border"}`}
+        />
+      ))}
+    </div>
   );
 }
 

@@ -1,6 +1,6 @@
 # Бизнес-интент: открытая регистрация по почте и коду из письма
 
-Статус: решения согласованы с владельцем 2026-11-01, change ещё не создан (предлагаемое имя — `open-sign-up`). Владелец: lehard. Обновлено: 2026-11-01.
+Статус: решения согласованы с владельцем 2026-11-01, change `open-sign-up` реализован и архивирован 2026-11-01 (`openspec/changes/archive/2026-11-01-open-sign-up/`); production не проверялся. Владелец: lehard. Обновлено: 2026-11-01.
 Рамки: ADR-001, ADR-006, `openspec/context/05-security-and-compliance.md` (ПДн — только почта и имя, 152-ФЗ), `openspec/context/07-anti-patterns.md` (п. 20, 26), мастер-спеки `auth` («Конфигурация из blueprints», «Вход фронтенда», «Почта Authentik», «Права по группам») и `web/app`; макет v1 `openspec/context/_raw/design/kabinet/index.html` (экраны «Вход и регистрация»).
 
 ## Why
