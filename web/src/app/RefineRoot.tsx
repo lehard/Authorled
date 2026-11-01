@@ -4,6 +4,7 @@ import { Navigate, Outlet } from "react-router";
 
 import { Button } from "@/components/ui/button";
 
+import { useAccountTheme } from "@/account/useAccount";
 import { authProvider } from "@/auth/authProvider";
 import { currentPath } from "@/auth/userManager";
 import { fixturesProvider } from "@/data/fixturesProvider";
@@ -78,5 +79,11 @@ export function RequireAuth() {
       />
     );
   }
+  return <SignedIn />;
+}
+
+/** Signed-in screens; the theme of the account replaces the browser copy once it arrives. */
+function SignedIn() {
+  useAccountTheme();
   return <Outlet />;
 }

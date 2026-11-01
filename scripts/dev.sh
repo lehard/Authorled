@@ -6,8 +6,10 @@
 #
 #    Usage:
 #      ./scripts/dev.sh db              Start agentos-db and wait until healthy
-#      ./scripts/dev.sh api             Start agentos-db, litellm and Authentik, export the
-#                                       Authentik keys, run the API on the host with --reload
+#      ./scripts/dev.sh api             Start agentos-db, litellm and Authentik, migrate the core schema,
+#                                       export the Authentik keys, run the API on the host with --reload
+#      ./scripts/dev.sh migrate         Prepare the database and apply the migrations of schema authorled
+#      ./scripts/dev.sh test            Run the core tests (agno/tests) on a fresh database ai_test
 #      ./scripts/dev.sh stop            Stop the services, keep the data
 #      ./scripts/dev.sh reset-db --yes  Delete the agentos-db container and volume
 #      ./scripts/dev.sh psql            Open psql inside agentos-db
@@ -15,7 +17,7 @@
 #                                       editor@authorled.test in the local Authentik
 #
 #    Needs Docker with Compose and a filled .env (compose.yaml requires the
-#    LiteLLM, DeepSeek, GigaChat and Authentik settings for every service). `api` also needs uv.
+#    LiteLLM, DeepSeek, GigaChat and Authentik settings for every service). `api` and `test` also need uv.
 #
 ############################################################################
 
@@ -23,9 +25,11 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 usage() {
-    echo 'Usage: ./scripts/dev.sh db | api | stop | reset-db --yes | psql | auth-users'
+    echo 'Usage: ./scripts/dev.sh db | api | migrate | test | stop | reset-db --yes | psql | auth-users'
     echo '  db            start agentos-db and wait until healthy'
-    echo '  api           start agentos-db, litellm and Authentik, export the Authentik keys, run the API on the host (--reload)'
+    echo '  api           start agentos-db, litellm and Authentik, migrate, export the Authentik keys, run the API on the host (--reload)'
+    echo '  migrate       prepare the database (agentos-db-init) and apply the migrations of schema authorled'
+    echo '  test          recreate the database ai_test, prepare and migrate it, run pytest in agno/tests'
     echo '  stop          stop agentos-api, litellm, Authentik and agentos-db; data is kept'
     echo '  reset-db      delete the agentos-db container and its volume, with the Authentik data (requires --yes)'
     echo '  psql          open psql inside agentos-db'
@@ -40,7 +44,7 @@ fail() {
 command="${1:-}"
 case "${command}" in
     -h|--help) usage; exit 0 ;;
-    db|api|stop|psql|auth-users)
+    db|api|migrate|test|stop|psql|auth-users)
         [[ $# -eq 1 ]] || { usage >&2; exit 2; }
         ;;
     reset-db)
@@ -65,6 +69,8 @@ case "${command}" in
         docker compose up -d --wait agentos-db litellm authentik-server authentik-worker
         # The role the API connects with (agno/db/init.sql); fails loudly like any compose step.
         docker compose run --rm agentos-db-init
+        # The core schema `authorled` (openspec/specs/core/database); a failed migration stops here.
+        docker compose run --rm agentos-migrate
         # Module auth: write the Authentik public keys to auth/jwks/jwks.json (fails loudly).
         docker compose run --rm authentik-jwks-export
         # The container publishes port 8000 too; stop it so the host API can bind.
@@ -82,6 +88,28 @@ case "${command}" in
         exec uv run --no-project --env-file "${env_file}" --with-requirements requirements.txt \
             uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload \
             --reload-dir agents --reload-dir app --reload-dir db --reload-dir evals
+        ;;
+    migrate)
+        docker compose up -d --wait agentos-db
+        docker compose run --rm agentos-db-init
+        docker compose run --rm agentos-migrate
+        ;;
+    test)
+        # Core tests on real PostgreSQL (openspec/specs/core/database, «Тесты хранения на чистой базе»):
+        # the bootstrap user recreates ai_test, agentos-db-init prepares it like ai, then migrations and
+        # pytest run on the host as the role agentos. The database ai is never touched.
+        command -v uv > /dev/null || fail "uv not found. Install: https://docs.astral.sh/uv/"
+        agentos_db_password="$(sed -n 's/^AGENTOS_DB_PASSWORD=//p' .env | tail -n 1)"
+        [[ -n "${agentos_db_password}" ]] || fail "AGENTOS_DB_PASSWORD is not set in .env (password of the database role agentos)."
+        docker compose up -d --wait agentos-db
+        docker compose exec -T agentos-db psql -U ai -d ai -v ON_ERROR_STOP=1 \
+            -c 'DROP DATABASE IF EXISTS ai_test WITH (FORCE)' -c 'CREATE DATABASE ai_test'
+        docker compose run --rm -e PGDATABASE=ai_test agentos-db-init
+        export DB_DRIVER=postgresql+psycopg DB_HOST=127.0.0.1 DB_PORT=5432
+        export DB_USER=agentos DB_PASS="${agentos_db_password}" DB_DATABASE=ai_test
+        cd agno
+        uv run --no-project --with-requirements requirements.txt alembic upgrade head
+        exec uv run --no-project --with-requirements requirements.txt --with pytest pytest tests
         ;;
     stop)
         docker compose stop agentos-api litellm authentik-server authentik-worker agentos-db

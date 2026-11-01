@@ -9,6 +9,7 @@ authors = [{ name = "Agno", email = "hello@agno.com" }]
 
 dependencies = [
   "agno[os,mcp,pgvector,psycopg,csv,excel,docx,pdf,website,claude,agentcore-sandbox,agui]==3.1.10",
+  "alembic",
   "anthropic",
   "cel-python",
   "openai",
@@ -17,15 +18,20 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["mypy", "ruff"]
+dev = ["mypy", "pytest", "ruff"]
 
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["agents*", "app*", "db*", "evals*", "teams*"]
+include = ["agents*", "app*", "core*", "db*", "evals*", "teams*"]
 namespaces = false
+
+[tool.pytest.ini_options]
+# Core tests on real PostgreSQL: run them with ./scripts/dev.sh test (database ai_test).
+testpaths = ["tests"]
+pythonpath = ["."]
 
 [tool.ruff]
 line-length = 120

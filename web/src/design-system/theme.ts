@@ -22,3 +22,22 @@ export function applyTheme(theme: Theme): void {
   window.localStorage.setItem(STORAGE_KEY, theme);
   document.documentElement.dataset.theme = theme;
 }
+
+function systemTheme(): Theme {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+}
+
+/**
+ * Applies the theme of the account (openspec/specs/web/design-system, «Темы») and keeps the
+ * browser copy for the first paint; null follows the system, so the copy is removed.
+ */
+export function applyAccountTheme(theme: Theme | null): void {
+  if (theme === null) {
+    window.localStorage.removeItem(STORAGE_KEY);
+    document.documentElement.dataset.theme = systemTheme();
+  } else {
+    applyTheme(theme);
+  }
+}

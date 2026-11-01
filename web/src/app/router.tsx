@@ -3,6 +3,7 @@ import { createBrowserRouter } from "react-router";
 import { CallbackScreen } from "@/auth/CallbackScreen";
 import { LoginScreen } from "@/auth/LoginScreen";
 import { ProjectScreen } from "@/screens/project/ProjectScreen";
+import { SettingsScreen } from "@/screens/settings/SettingsScreen";
 import { ProjectTrashScreen } from "@/screens/shelf/ProjectTrashScreen";
 import { ShelfScreen } from "@/screens/shelf/ShelfScreen";
 import { NotFoundScreen } from "@/screens/system/NotFoundScreen";
@@ -25,6 +26,7 @@ export function createRouter(dataSource: DataSource) {
           children: [
             { path: "/", element: <ShelfScreen /> },
             { path: "/trash", element: <ProjectTrashScreen /> },
+            { path: "/settings", element: <SettingsScreen /> },
             { path: "/p/:projectId/:doc", element: <ProjectScreen /> },
             { path: "*", element: <NotFoundScreen /> },
           ],

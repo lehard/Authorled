@@ -11,6 +11,7 @@ from agno.os.interfaces.agui import AGUI
 
 from agents.coauthor import COAUTHOR_ID, coauthor
 from agents.engineers import engineers
+from app.api import attach_api
 from app.auth import build_authorization
 from app.company import products
 from app.interfaces import attach_interfaces, mcp_auth
@@ -61,6 +62,9 @@ agent_os = AgentOS(
 )
 attach_interfaces(agent_os)
 app = agent_os.get_app()
+# Product routes go into the app AgentOS returns, not through base_app: with base_app Agno 3.1.10
+# drops its error handlers for its own routes (ADR-002).
+attach_api(app)
 
 if __name__ == "__main__":
     agent_os.serve(app="app.main:app", host="127.0.0.1", port=8000, reload=False)

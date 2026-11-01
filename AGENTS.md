@@ -12,8 +12,10 @@ generic manager behavior belongs in Agno. `CLAUDE.md` links to this file.
   Configure `OSManager(root=REPO_ROOT)` in `agno/app/main.py`; do not recreate these components
   or add application-owned queues, lifecycle code or Company state machines.
 - Application-owned HTTP routes are allowed only for product actions that do not call an LLM,
-  mounted through the AgentOS `base_app` (see `openspec/context/ADR/ADR-002-own-routes-via-base-app.md`).
-  Every other API surface stays with Agno; none ship in the template until the product core exists.
+  under `/api/v1/`, added by `attach_api` to the app that `agent_os.get_app()` returns, before the
+  MCP mount at the root (see `openspec/context/ADR/ADR-002-own-routes-via-base-app.md`). Do not pass
+  `base_app`: with it Agno drops its error handlers for its own routes. Every other API surface stays
+  with Agno; today the only own routes are `GET` and `PATCH /api/v1/me`.
 - Check framework behavior against the Agno version pinned in `agno/pyproject.toml`.
   Do not bypass framework rejections or add compatibility adapters to this template.
 - Keep the starter lean. Add abstractions, tests and infrastructure only for a concrete
@@ -24,11 +26,19 @@ generic manager behavior belongs in Agno. `CLAUDE.md` links to this file.
 Every change to code, configuration, agents, prompts, evals or behavior goes through an
 OpenSpec change in `openspec/changes/`, even when the request is a plain "do X".
 
-- No active change covers the request: run `/opsx:propose` first, stop after the
-  artifacts and wait for the user's approval before `/opsx:apply`.
-- An active change covers it: continue it with `/opsx:apply`; revise its plan with
-  `/opsx:update` instead of drifting from `tasks.md`.
-- Finish with `/opsx:verify`, then `/opsx:archive` only on the user's request.
+The flow from discussion to code:
+
+1. Discuss: propose concrete solutions with a recommendation; the user approves or
+   corrects them. Do not edit code during the discussion.
+2. Business intent: once the user approves, write the agreed decisions to
+   `business-intents/<slug>.md` in the format of the existing intents (status line,
+   Why, What Changes, Scope, Non-goals, Constraints, Acceptance criteria, Risks,
+   Open Questions, References), then stop.
+3. OpenSpec: the user runs `/opsx:propose`, `/opsx:update`, `/opsx:apply`, `/opsx:verify`
+   and `/opsx:archive` themselves. Do not start them on your own; when a request
+   needs code and no active change covers it, say so and point to the intent.
+   Inside a command the user started, follow its skill; keep `/opsx:apply` within
+   `tasks.md` and ask the user to run `/opsx:update` when the plan must change.
 - Exempt: typos, formatting, comments, edits under `openspec/` itself, and read-only
   questions or investigation (`/opsx:explore`). If unsure whether a request is exempt, ask.
 
@@ -50,8 +60,10 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 ## Where changes belong
 
 - `agno/app/main.py`: AgentOS registration, shared database, OS Manager, Company and queue.
+- `agno/app/api/`: own product routes (`/api/v1/me`) and their `application/problem+json` errors,
+  handled only for the product's own exception types.
 - `agno/app/auth/` and `auth/`: the auth module. `agno/app/auth/` is the only code that reads JWT
-  or claims (other code uses `Principal`, `current_principal` and `can_access_project`);
+  or claims (other code uses `Principal`, `current_principal`, `Identity`, `current_identity` and `can_access_project`);
   `auth/` holds the Authentik blueprints, database init, key export and its services in
   `auth/compose.yaml`, which `compose.yaml` includes; Authentik runs as separate
   containers. `./scripts/check_auth_boundary.sh` (part of `validate.sh`) enforces the boundary
@@ -65,6 +77,11 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 - `agno/agents/`: application agents, including the Claude engineer (Claude Code on DeepSeek).
   `agno/teams/`: user-defined teams; no Engineering team ships by default.
 - `agno/db/`: cached OS database and distinct knowledge content adapters.
+- `agno/core/`: the product core, independent of Agno: `connection.py` (database URL from `DB_*`),
+  `tables.py` (tables of schema `authorled`: `users`, `user_settings`), `engine.py` (the core's own
+  connection pool), `users.py` (account operations). `agno/migrations/` and `agno/alembic.ini`: Alembic for
+  schema `authorled` only, forward-only, one head; never migrate Agno or Authentik schemas there.
+  `agno/tests/`: pytest for the core on real PostgreSQL (`./scripts/dev.sh test`).
 - `agno/evals/`: application cases and the Agno eval CLI entrypoint.
 - `scripts/`: local setup, validation and builds. Deployment files: `compose.prod.yaml`.
 - `web/`: the frontend (Vite + React + TypeScript, thin client without its own database, ADR-001/ADR-004).
@@ -73,7 +90,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   shadcn/ui components generated by its CLI.
 - `compose.yaml`: local PostgreSQL, the LiteLLM proxy and development API. The API connects
   as the non-superuser role `agentos` (`AGENTOS_DB_PASSWORD`), prepared by `agentos-db-init`
-  from `agno/db/init.sql`. `agno/litellm/config.yaml`:
+  from `agno/db/init.sql` (schemas `ai` and `authorled`); the one-shot `agentos-migrate` then
+  applies the core migrations, and the API starts only after it succeeds. `agno/litellm/config.yaml`:
   model aliases and provider keys of the proxy. `agno/Dockerfile`: shared API and sandbox dependencies.
 
 ## Local development
@@ -86,7 +104,10 @@ on loopback; token checks are on in `dev` too, so API calls need a token from Au
 (README, "Module auth"; `./scripts/auth_check.sh` checks the chain).
 
 To run the API on the host with `--reload`, use `./scripts/dev.sh api` (Postgres, LiteLLM and
-Authentik in Docker; it exports the Authentik keys before the API starts).
+Authentik in Docker; it migrates the core schema and exports the Authentik keys before the API starts).
+`./scripts/dev.sh migrate` applies the core migrations; `./scripts/dev.sh test` runs the core tests on a
+fresh database `ai_test`, never on `ai`. New migration: `alembic revision --rev-id 0002_<what> -m "..."` from `agno/`,
+written by hand to match `agno/core/tables.py`.
 `./scripts/dev.sh db|stop|reset-db --yes|psql` manage the database (`reset-db` also wipes the
 Authentik data);
 `.env` is required for every command because `compose.yaml` interpolates the whole file.
@@ -201,8 +222,9 @@ historical sessions, notes and Company work; migrate saved references deliberate
 
 ## Verification
 
-`./scripts/validate.sh` checks formatting, lint and types, and for `web/` also builds the app and
-checks design tokens and their contrast; CI uses the same command.
+`./scripts/validate.sh` checks formatting, lint and types, that the core migrations have one head,
+and for `web/` also builds the app and checks design tokens and their contrast; CI uses the same command.
+`./scripts/dev.sh test` runs pytest for the core on real PostgreSQL (not in CI yet).
 Also run `git diff --check`. Keep evals in `agno/evals/__main__.py` and `agno/evals/cases.py`, using
 Agno's `criteria` and `expected_tool_calls`. Do not add a bundled regression suite or
 custom isolation, scorers or cleanup machinery by default.

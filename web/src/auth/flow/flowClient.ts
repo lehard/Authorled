@@ -3,6 +3,8 @@
 // frontend's own origin (dev: Vite proxy), so the Authentik session cookie lands on our host.
 
 const FLOW_URL = "/api/v3/flows/executor/authorled-authentication/?query=";
+// Sign-up flow (openspec/specs/auth, «Регистрация»): name and e-mail → user → code → login.
+const ENROLL_URL = "/api/v3/flows/executor/authorled-enrollment/?query=";
 // Resets the flow plan kept in the session (an unfinished sign-in).
 const CANCEL_URL = "/flows/-/cancel/";
 // Sign-out flow of the product (auth/blueprints/20-oidc.yaml): ends the Authentik session.
@@ -20,6 +22,7 @@ export type DeviceChallenge = {
 type Challenge =
   | { component: "ak-stage-identification"; response_errors?: FieldErrors }
   | { component: "ak-stage-password"; response_errors?: FieldErrors }
+  | { component: "ak-stage-prompt"; response_errors?: FieldErrors }
   | { component: "ak-stage-authenticator-email"; response_errors?: FieldErrors }
   | {
       component: "ak-stage-authenticator-validate";
@@ -30,12 +33,12 @@ type Challenge =
   | { component: "ak-stage-access-denied"; error_message?: string }
   | { component: "ak-stage-flow-error"; error?: string };
 
-/** What the screen shows next. */
-export type Step = "password" | "code" | "done";
+/** What the screen shows next; "new-account": no account has this e-mail, sign-up is offered. */
+export type Step = "password" | "code" | "done" | "new-account";
 
 /** A sign-in failure the screen shows next to a field or as a page message. */
 export class SignInError extends Error {
-  readonly field: "email" | "password" | "code" | "page";
+  readonly field: "email" | "name" | "password" | "code" | "page";
 
   constructor(field: SignInError["field"], message: string) {
     super(message);
@@ -49,11 +52,15 @@ const WRONG_CODE = {
   field: "code",
   text: "Неверный код. Проверьте письмо или запросите новый.",
 } as const;
+// The identification stage's answer for an e-mail without an account: the screen offers sign-up.
+const NO_ACCOUNT = "Failed to authenticate.";
 const KNOWN: Record<string, { field: SignInError["field"]; text: string }> = {
-  "Failed to authenticate.": {
+  // Messages of the sign-up policy (auth/blueprints/30-authentication-flow.yaml).
+  "Аккаунт с такой почтой уже есть.": {
     field: "email",
-    text: "Аккаунта с такой почтой нет.",
+    text: "Аккаунт с такой почтой уже есть: войдите с ней.",
   },
+  "Введите имя.": { field: "name", text: "Введите имя." },
   "Invalid password": { field: "password", text: "Неверный пароль." },
   "Неверный пароль": { field: "password", text: "Неверный пароль." },
   "Code does not match": WRONG_CODE,
@@ -105,6 +112,7 @@ async function send(body?: object, url = FLOW_URL): Promise<Challenge> {
   const known = [
     "ak-stage-identification",
     "ak-stage-password",
+    "ak-stage-prompt",
     "ak-stage-authenticator-email",
     "ak-stage-authenticator-validate",
     "xak-flow-redirect",
@@ -145,6 +153,8 @@ async function cancelUnfinished(): Promise<void> {
 /** One pass through the sign-in flow; a new pass starts with start(). */
 export class SignInFlow {
   private current: Challenge | null = null;
+  // The flow the current steps belong to: sign-in, or sign-up after «Создать аккаунт».
+  private flowUrl = FLOW_URL;
   // Requests of one session must not overlap: Authentik saves the session at the end of each
   // request, so a parallel start (React StrictMode runs effects twice) would restore a
   // cancelled flow. One start per instance, shared by its callers.
@@ -181,6 +191,11 @@ export class SignInFlow {
           firstError(challenge.response_errors) ?? "поток вернулся к почте",
           field,
         );
+      case "ak-stage-prompt":
+        throw new SignInError(
+          "page",
+          "Поток Authentik вернулся к шагу имени: начните заново.",
+        );
     }
   }
 
@@ -194,6 +209,7 @@ export class SignInFlow {
   }
 
   private async begin(): Promise<"email" | "done"> {
+    this.flowUrl = FLOW_URL;
     let first = await send();
     // Authentik keeps an unfinished sign-in in its session (a reload on the code step):
     // cancel it and start from the e-mail again.
@@ -237,10 +253,47 @@ export class SignInFlow {
         "В Authentik уже есть вход: обновите страницу.",
       );
     }
-    return this.advance(
-      await send({ component: "ak-stage-identification", uid_field: email }),
-      "email",
+    const next = await send({
+      component: "ak-stage-identification",
+      uid_field: email,
+    });
+    if (
+      next.component === "ak-stage-identification" &&
+      firstError(next.response_errors)?.trim() === NO_ACCOUNT
+    ) {
+      this.current = next;
+      return "new-account";
+    }
+    return this.advance(next, "email");
+  }
+
+  /**
+   * Sign-up (openspec/specs/auth, «Регистрация»): the sign-in plan is dropped, the sign-up flow
+   * takes the e-mail and the name, creates the account and sends the code to the e-mail.
+   */
+  async register(email: string, name: string): Promise<Step> {
+    await cancelUnfinished();
+    this.flowUrl = ENROLL_URL;
+    const first = await send(undefined, ENROLL_URL);
+    if (first.component !== "ak-stage-prompt") {
+      await this.advance(first, "page");
+      throw new SignInError(
+        "page",
+        `Регистрация началась с шага «${first.component}» вместо имени.`,
+      );
+    }
+    // The username of the account is its e-mail; the sign-up policy checks it.
+    const next = await send(
+      { component: "ak-stage-prompt", email, username: email, name },
+      ENROLL_URL,
     );
+    if (next.component === "ak-stage-prompt") {
+      this.current = next;
+      const errors = next.response_errors ?? {};
+      const field = errors.name?.length ? "name" : "email";
+      throw toError(firstError(errors) ?? "регистрация не принята", field);
+    }
+    return this.advance(next, "name");
   }
 
   async password(password: string): Promise<Step> {
@@ -257,6 +310,19 @@ export class SignInFlow {
   /** Sends a code by e-mail (again). */
   async requestCode(): Promise<void> {
     const c = this.current;
+    // Setting up the e-mail device (first sign-in, sign-up): a reply without a code sends it again.
+    if (c?.component === "ak-stage-authenticator-email") {
+      const next = await send(
+        { component: "ak-stage-authenticator-email" },
+        this.flowUrl,
+      );
+      if (next.component !== "ak-stage-authenticator-email")
+        return void (await this.advance(next, "code"));
+      const error = firstError(next.response_errors);
+      if (error !== null) throw toError(error, "code");
+      this.current = next;
+      return;
+    }
     if (c?.component !== "ak-stage-authenticator-validate") {
       throw new SignInError(
         "code",
@@ -268,10 +334,13 @@ export class SignInFlow {
       throw new SignInError("page", "У аккаунта нет почты для кода.");
     // Selecting the device sends the e-mail; Authentik answers «Empty response» because no code
     // came with it, which is expected here.
-    const next = await send({
-      component: "ak-stage-authenticator-validate",
-      selected_challenge: device,
-    });
+    const next = await send(
+      {
+        component: "ak-stage-authenticator-validate",
+        selected_challenge: device,
+      },
+      this.flowUrl,
+    );
     if (next.component !== "ak-stage-authenticator-validate")
       return void (await this.advance(next, "code"));
     const error = firstError(next.response_errors);
@@ -288,7 +357,7 @@ export class SignInFlow {
     ) {
       throw new SignInError("page", "Сейчас не шаг кода: начните вход заново.");
     }
-    const next = await send({ component: c.component, code });
+    const next = await send({ component: c.component, code }, this.flowUrl);
     if (next.component === c.component) {
       this.current = next;
       throw toError(
@@ -301,6 +370,9 @@ export class SignInFlow {
 
   /** Whether «Отправить ещё раз» can work on the current step. */
   canResend(): boolean {
-    return this.current?.component === "ak-stage-authenticator-validate";
+    return (
+      this.current?.component === "ak-stage-authenticator-validate" ||
+      this.current?.component === "ak-stage-authenticator-email"
+    );
   }
 }

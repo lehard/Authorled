@@ -62,6 +62,11 @@ reverse proxy and set `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS` to the proxy's add
 For an update, follow the README's code and environment update commands. Read the
 scripts to establish their order and whether updating settings also triggers a
 redeploy. Use flags such as `--no-deploy` only when implemented by that script.
+Every `up` runs the one-shot `agentos-migrate` (migrations of schema `authorled`) before the API.
+Migrations only go forward: take a database backup before deploying a version with new files in
+`agno/migrations/versions/`. If `agentos-migrate` exits non-zero the API stays down; read
+`docker compose logs agentos-migrate` and fix the migration in a new revision, never by editing
+an applied one.
 If a command fails, inspect existing resources and any partial settings changes
 before retrying. Do not create a second project to recover from a failed deploy.
 
