@@ -2,6 +2,8 @@
 // полей выбора»): HTML elements must not carry `title` (a native tooltip), and native
 // checkboxes, radio buttons and <select> are replaced by design-system components.
 // shadcn components in src/components/ui are generated code and are skipped.
+// «Без системного вида»: the design system keeps one autofill rule outside any CSS layer that
+// sets the text colour and puts off the browser's background, so no field state brings it back.
 //
 // Usage: npm run check:native-ui --prefix web
 
@@ -73,6 +75,48 @@ for (const file of files(SRC)) {
   }
 }
 
+// The autofill rule: unlayered (it must beat Tailwind utilities such as transition-colors and the
+// focus and error rings), with the text colour and the postponed background.
+const DESIGN_SYSTEM = path.join(SRC, "design-system");
+const AUTOFILL = "input:-webkit-autofill";
+const autofill = readdirSync(DESIGN_SYSTEM)
+  .filter((name) => name.endsWith(".css"))
+  .flatMap((name) => {
+    const css = readFileSync(path.join(DESIGN_SYSTEM, name), "utf8").replace(
+      /\/\*[\s\S]*?\*\//g,
+      "",
+    );
+    const at = css.indexOf(AUTOFILL);
+    if (at === -1) return [];
+    let depth = 0;
+    for (const c of css.slice(0, at)) {
+      if (c === "{") depth++;
+      if (c === "}") depth--;
+    }
+    const open = css.indexOf("{", at);
+    const body = css.slice(open + 1, css.indexOf("}", open));
+    return [{ file: `src/design-system/${name}`, depth, body }];
+  });
+if (autofill.length !== 1) {
+  problems.push(
+    `autofill rule (${AUTOFILL}): expected exactly one in src/design-system/*.css, found ${autofill.length}`,
+  );
+} else {
+  const { file, depth, body } = autofill[0];
+  if (depth !== 0)
+    problems.push(
+      `${file}: autofill rule (${AUTOFILL}) is inside a block such as @layer; move it out`,
+    );
+  if (!/-webkit-text-fill-color:\s*var\(--foreground\)/.test(body))
+    problems.push(
+      `${file}: autofill rule (${AUTOFILL}) does not set -webkit-text-fill-color: var(--foreground)`,
+    );
+  if (!/transition:[^;]*background-color\s+0s\s+\d{6,}s/.test(body))
+    problems.push(
+      `${file}: autofill rule (${AUTOFILL}) does not put off the background-color transition`,
+    );
+}
+
 if (problems.length > 0) {
   console.error(
     "check-native-ui: native browser UI in web/src (openspec/specs/web/design-system):",
@@ -81,5 +125,5 @@ if (problems.length > 0) {
   process.exit(1);
 }
 console.log(
-  "check-native-ui: no native tooltips, checkboxes, radio buttons or selects",
+  "check-native-ui: no native tooltips, checkboxes, radio buttons or selects; autofill rule in place",
 );

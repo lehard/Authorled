@@ -1,6 +1,6 @@
 # Бизнес-интент: схема данных продукта `authorled`, миграции Alembic и таблица пользователей
 
-Статус: решения согласованы с владельцем 2026-11-01; change `core-users-table` предложен 2026-11-01 (`openspec/changes/core-users-table/`), ждёт `/opsx:apply`. Владелец: lehard. Обновлено: 2026-11-01.
+Статус: решения согласованы с владельцем 2026-11-01; change `core-users-table` реализован и архивирован 2026-11-01 (`openspec/changes/archive/2026-11-01-core-users-table/`); production не проверялся. Владелец: lehard. Обновлено: 2026-11-01.
 Рамки: `openspec/context/03-architecture.md` (инварианты 4 и 6), `openspec/context/04-engineering-standards.md` («Миграции», «Запуск проверок»), `openspec/context/05-security-and-compliance.md`, `openspec/context/07-anti-patterns.md` (п. 15, 22, 25, 26), ADR-001, ADR-002, мастер-спеки `architecture` («Подключение к БД») и `auth` («Контракт токена»).
 
 ## Why
