@@ -67,8 +67,11 @@ GigaChat (the Russian Trusted CA) ships in `agno/litellm/certs/ca-bundle.pem` (s
 docker compose up -d --build
 ```
 
-The first build can take a few minutes: Authentik applies its migrations and blueprints before
-the API starts. When it's ready, open [http://localhost:8000/docs](http://localhost:8000/docs)
+The first build can take a few minutes: Authentik applies its migrations and blueprints, and the
+one-shot `agentos-migrate` applies the migrations of the product schema `authorled`, before the API
+starts. If a migration fails, `agentos-migrate` exits non-zero and the API does not start
+(`docker compose logs agentos-migrate`). `./scripts/dev.sh migrate` reruns the migrations alone,
+`./scripts/dev.sh test` runs the core tests on a separate database `ai_test`. When it's ready, open [http://localhost:8000/docs](http://localhost:8000/docs)
 to see the API. Authorization is on in every environment, so API calls need a token from
 Authentik (see [Module auth](#module-auth)); `./scripts/auth_check.sh` checks the chain.
 
@@ -248,7 +251,9 @@ docker compose -f compose.yaml -f compose.prod.yaml up -d --build
 ```
 
 The production override turns on token checks and runs the code built into the
-image. Keep one API container. The API and database ports bind to loopback; your
+image. `agentos-migrate` applies the migrations of the product schema `authorled` before the API
+starts, on every deploy; migrations only go forward, so back up the database before deploying a
+version with new migrations. Keep one API container. The API and database ports bind to loopback; your
 reverse proxy or tunnel must reach the API from the host.
 
 Check `/health` and `/docs` on your public URL. Confirm `/agents` rejects requests

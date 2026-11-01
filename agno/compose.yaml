@@ -1,4 +1,5 @@
-# Backend module (agno/): the role the API connects with, the LiteLLM proxy and the API.
+# Backend module (agno/): the role the API connects with, migrations of the core schema, the LiteLLM
+# proxy and the API.
 # compose.yaml at the repository root includes this file; relative paths resolve from agno/,
 # variables come from the root .env. The services use agentos-db, the agentos network and
 # the services of the auth module declared in the other files.
@@ -82,6 +83,34 @@ services:
     networks:
       - agentos
 
+  # Migrations of the product core schema `authorled` (openspec/specs/core/database): a one-shot step
+  # under the role `agentos` after agentos-db-init; the API starts only after it succeeds and never
+  # migrates by itself. Same build as agentos-api; it needs only the DB_* variables, not .env.
+  agentos-migrate:
+    build:
+      context: ..
+      dockerfile: agno/Dockerfile
+      target: agentos
+    container_name: agentos-migrate
+    restart: "no"
+    working_dir: /app/agno
+    command: ["alembic", "upgrade", "head"]
+    volumes:
+      - ..:/app
+    environment:
+      WAIT_FOR_DB: "True"
+      DB_DRIVER: postgresql+psycopg
+      DB_HOST: agentos-db
+      DB_PORT: "5432"
+      DB_USER: agentos
+      DB_PASS: ${AGENTOS_DB_PASSWORD:?AGENTOS_DB_PASSWORD must be set in .env}
+      DB_DATABASE: ai
+    depends_on:
+      agentos-db-init:
+        condition: service_completed_successfully
+    networks:
+      - agentos
+
   agentos-api:
     build:
       context: ..
@@ -120,7 +149,7 @@ services:
       AUTH_ISSUER: ${AUTH_ISSUER:?AUTH_ISSUER must be set in .env}
       AUTH_FRONTEND_CLIENT_ID: ${AUTH_FRONTEND_CLIENT_ID:?AUTH_FRONTEND_CLIENT_ID must be set in .env}
     depends_on:
-      agentos-db-init:
+      agentos-migrate:
         condition: service_completed_successfully
       litellm:
         condition: service_healthy

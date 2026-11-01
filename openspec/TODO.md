@@ -10,6 +10,7 @@
 | `switch-models-to-deepseek-litellm` | архивирован 2026-10-26; живая проверка перенесена сюда (раздел ниже), ждёт ключей | модели, эмбеддинги, ключи в документации, `available_models`, ADR по моделям |
 | `remove-config-fallbacks` | не создан; код уже в рабочем дереве | fallback-и, телеметрия: спеки и документация |
 | `core-*` (серия) | не создан | продуктовое ядро, Alembic, pytest, свои маршруты |
+| `core-users-table` | предложен 2026-11-01, ждёт `/opsx:apply` | первый из `core-*`: схема `authorled`, Alembic как шаг `agentos-migrate`, таблица `users`, pytest на чистой базе `ai_test` |
 | `auth-module` | архивирован 2026-10-26; остаток — в разделе «Расхождения с контекст-паком» | авторизация: модуль `auth` с полным Authentik, JWT, изоляция |
 | `prepare-auth-module-extraction` | архивирован 2026-10-28; prod не проверялся | подготовка модуля `auth` к выносу: compose-фрагмент, контракт токена, роль `agentos` без доступа к `authentik` |
 | `restructure-monorepo-modules` | архивирован 2026-10-30; prod не проверялся | три модуля верхнего уровня `agno/`, `web/`, `auth/`, общий корень |

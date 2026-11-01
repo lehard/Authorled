@@ -57,6 +57,20 @@ if ! "${CURR_DIR}/check_auth_boundary.sh"; then
   failed=1
 fi
 
+# Migrations of the core schema `authorled` go forward in one line: exactly one head
+# (openspec/specs/core/database). `alembic heads` reads the scripts only, without a database.
+echo ""
+echo -e "${DIM}> (cd agno && alembic heads)${NC}"
+if ! heads="$(cd "${AGNO_DIR}" && alembic heads)"; then
+  failed=1
+elif [[ "$(grep -c . <<< "${heads}")" -ne 1 ]]; then
+  echo -e "${RED}Migrations must have exactly one head, found:${NC}"
+  echo "${heads}"
+  failed=1
+else
+  echo "${heads}"
+fi
+
 # Frontend (web/): checks run only on installed dependencies; a missing install is an error,
 # never a skipped check (openspec/specs/runtime).
 WEB_DIR="${REPO_ROOT}/web"

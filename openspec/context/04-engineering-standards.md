@@ -1,6 +1,6 @@
 ---
 owner: lehard
-updated: 2026-10-30
+updated: 2026-11-01
 ---
 # Engineering Standards
 Стек: Python `>=3.14`, Agno `3.1.10` (FastAPI/uvicorn), PostgreSQL 18 + pgvector, Alembic, pytest, Docker Compose. Линт/типы: ruff (line-length 120, E,F,I,UP), mypy + pydantic plugin.
@@ -15,6 +15,11 @@ updated: 2026-10-30
 - Схема ядра — Alembic. Только вперёд; применённые миграции не редактируются.
 - В проде миграции — отдельный шаг перед деплоем, не при старте сервиса.
 - Таблицы Agno мигрирует Agno, отдельной задачей при обновлении пина. Схемы ядра и Agno не смешивать.
+- Данные ядра — схема `authorled` в общей базе `ai`; владелец — роль `agentos`, схему создаёт `agno/db/init.sql`. Журнал версий Alembic — в схеме `authorled`; миграции не трогают `ai`, `authentik` и `public`.
+- Миграции применяет одноразовый контейнер `agentos-migrate` под ролью `agentos` между `agentos-db-init` и `agentos-api`, в разработке и в проде одинаково. API миграции не запускает; упала миграция — API не стартует.
+- У истории миграций одна голова (проверяет `./scripts/validate.sh`). Описание таблиц в коде совпадает со схемой в базе (проверяет pytest).
+- Удаление записей ядра — мягкое: поле `deleted_at`, как корзина у историй. Жёсткое удаление — только явным действием (например, «Удалить навсегда»).
+- Таблица `users` хранит только основные поля пользователя; настройки — в отдельной таблице профиля, группы и роли — в Authentik и токене.
 
 ## Стиль API (свои маршруты)
 - Префикс `/api/v1/` — не пересекаться с маршрутами Agno.
@@ -30,10 +35,12 @@ updated: 2026-10-30
 
 ## Запуск проверок
 - формат/линт/типы: `./scripts/validate.sh` (тот же гейт в CI), автоформат `./scripts/format.sh`; `git diff --check`
-- тесты: `pytest` (на реальном PostgreSQL в контейнере)
+- тесты: `./scripts/dev.sh test` — создаёт чистую базу `ai_test` в `agentos-db`, готовит её `init.sql`, применяет миграции и запускает `pytest` из `agno/tests/` под ролью `agentos`; моков базы нет
+- миграции в разработке: `./scripts/dev.sh migrate` (контейнер `agentos-migrate`); новая миграция — `alembic revision` из `agno/` с осмысленным именем, проверка на чистой базе через `./scripts/dev.sh test`
 - MCP без модели: `./scripts/mcp_check.sh`; поведение агента — `python -m evals`
 - сборка: `docker compose up -d --build`; sandbox: `docker build --target sandbox --load -t agno-sandbox:local -f agno/Dockerfile .`
-> TODO: точные команды pytest/Alembic и CI-проверки методологии появятся с кодом ядра.
+> Команды Alembic и pytest выше вводит первый change ядра (схема `authorled` и таблица `users`); до него их в коде нет.
+> TODO: CI-проверки методологии появятся с кодом ядра.
 
 ## Готово, когда
 `./scripts/validate.sh`, `git diff --check` и `pytest` проходят; миграции применяются на чистой базе; изменения OpenAPI отражены в контракте для фронтенда; проверки и их ограничения записаны в `tmp/VERIFY.md` (static, deterministic, model, container, hosted — раздельно).
