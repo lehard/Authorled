@@ -1,12 +1,13 @@
 import { Refine, useIsAuthenticated, type DataProvider } from "@refinedev/core";
 import routerProvider from "@refinedev/react-router";
+import { useEffect } from "react";
 import { Navigate, Outlet } from "react-router";
 
 import { Button } from "@/components/ui/button";
 
 import { useAccountTheme } from "@/account/useAccount";
 import { authProvider } from "@/auth/authProvider";
-import { currentPath } from "@/auth/userManager";
+import { currentPath, userManager } from "@/auth/userManager";
 import { fixturesProvider } from "@/data/fixturesProvider";
 import { MessageScreen } from "@/screens/system/MessageScreen";
 
@@ -58,6 +59,14 @@ export function RefineRoot({ dataSource }: { dataSource: DataSource }) {
 /** Screens behind sign-in: without a session the app opens its own sign-in screen. */
 export function RequireAuth() {
   const { data, isPending, refetch } = useIsAuthenticated();
+  // The session may end in any request for a token (menu, chat), not only in this check:
+  // the tokens are then removed, and checking again opens /login («Конец сессии»).
+  useEffect(() => {
+    const events = userManager().events;
+    const recheck = () => void refetch();
+    events.addUserUnloaded(recheck);
+    return () => events.removeUserUnloaded(recheck);
+  }, [refetch]);
   if (isPending) return <MessageScreen loading title="Проверяем вход…" />;
   if (data?.error !== undefined) {
     return (
