@@ -70,11 +70,13 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   and that the blueprint groups match `GROUP_SCOPES` (token contract in `openspec/specs/auth`).
 - `agno/app/interfaces.py`: MCP OAuth, `agno` and built-in MCP tools.
 - `agno/app/company.py`: Product and Source declarations. `agno/app/config.yaml`: component
-  descriptions, prompts and optional additional Products.
+  descriptions, quick prompts and optional additional Products.
 - `agno/app/registry.py`: Studio palette, web tools, shared knowledge, learning and notes.
   `agno/app/settings.py`: application model factories.
 - `agno/app/sandbox.py`: providers, repository URL/branch and checkpoint paths.
 - `agno/agents/`: application agents, including the Claude engineer (Claude Code on DeepSeek).
+  `agno/skills/<agent_id>/SKILL.md`: an agent's prompt as an Anthropic Agent Skill (`name` equals the id,
+  the body is the prompt), loaded by `agents/prompts.py`; restart the API after editing it.
   `agno/teams/`: user-defined teams; no Engineering team ships by default.
 - `agno/db/`: cached OS database and distinct knowledge content adapters.
 - `agno/core/`: the product core, independent of Agno: `connection.py` (database URL from `DB_*`),
@@ -140,8 +142,9 @@ requirements; rebuild both after dependency changes.
 
 Follow the Agent shape in `create-agent`: stable ID, explicit instructions/tools,
 `default_model()`, shared DB, history and datetime. Register code agents and teams in
-`agno/app/main.py` and their descriptions/prompts in `agno/app/config.yaml`. Put new Studio
-capabilities in `agno/app/registry.py`; import shared resources from there.
+`agno/app/main.py`, their prompts in `agno/skills/<agent_id>/SKILL.md` and their descriptions and
+quick prompts in `agno/app/config.yaml`. Put new Studio capabilities in `agno/app/registry.py`;
+import shared resources from there.
 
 OS, Company, queue, agents and teams must reuse `get_postgres_db()` with no arguments.
 Knowledge content adapters need distinct IDs; never create a second adapter with the OS ID.

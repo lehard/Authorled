@@ -39,6 +39,7 @@ graph LR
 - `app/settings.py` — фабрики моделей;
 - `app/sandbox.py` — провайдеры sandbox и `REPOSITORY`;
 - `agents/engineers.py` — инженеры;
+- `skills/<agent_id>/SKILL.md` — промпты агентов в формате Anthropic Agent Skills: имя папки и `name` совпадают с id агента, тело — промпт;
 - `db/` — подключение к PostgreSQL и знания;
 - `evals/` — кейсы и CLI.
 
@@ -60,6 +61,11 @@ graph LR
 - GIVEN в репозитории есть `web/`
 - WHEN собирается образ бэкенда по `agno/Dockerfile`
 - THEN образ MUST NOT зависеть от содержимого `web/`, а код `web/` MUST NOT импортировать модули бэкенда
+
+#### Scenario: Промпт агента в навыке
+- GIVEN у агента есть собственный промпт
+- WHEN проверяется раскладка `agno/`
+- THEN промпт MUST лежать в `skills/<agent_id>/SKILL.md`, а модуль агента в `agents/` MUST NOT содержать текста промпта
 
 ### Requirement: Единая БД
 OS, Company, queue, learning, notes, реестр и инженеры MUST использовать один `PostgresDb` с ID `agentos-db`, возвращаемый кэшированной `get_postgres_db()`. Content-адаптер знаний MUST иметь собственный ID `agentos-db-<table>_contents`.

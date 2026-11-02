@@ -7,7 +7,7 @@ updated: 2026-11-01
 
 ## Общее
 - Зависимости — в `agno/pyproject.toml`; `agno/requirements.txt` генерировать `./agno/scripts/generate_requirements.sh`; `uv.lock` не добавлять. После смены зависимостей пересобрать обе цели `agno/Dockerfile`. Окружение — `agno/.venv` (`./agno/scripts/venv_setup.sh`).
-- Агент: стабильный ID, явные instructions/tools, `default_model()`, общая БД, history и datetime (скилл `create-agent`). Регистрация — `agno/app/main.py`, описания/промпты — `agno/app/config.yaml`.
+- Агент: стабильный ID, явные instructions/tools, `default_model()`, общая БД, history и datetime (скилл `create-agent`). Регистрация — `agno/app/main.py`; промпт — навык `agno/skills/<agent_id>/SKILL.md` по стандарту Anthropic Agent Skills (`name` = id агента, тело — промпт, в коде промпта нет); описания и быстрые подсказки — `agno/app/config.yaml`.
 - Минимум абстракций и инфраструктуры — только под конкретную потребность. Перед правкой — читать исходник и `git status`, держаться scope.
 - Без fallback: отсутствующий/невалидный ввод, конфиг или env — явная ошибка с понятным сообщением.
 

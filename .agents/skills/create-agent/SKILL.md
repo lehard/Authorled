@@ -1,6 +1,6 @@
 ---
 name: create-agent
-description: Add a new agent to this AgentOS. Runs guided discovery or takes a concrete idea, then generates agno/agents/slug.py, registers it in agno/app/main.py, adds its manifest entry (description + quick prompts), reloads the selected development runtime, and smoke-tests it for you. Covers the product agent too — ingest a product's website/docs into the product knowledge base and build a knowledge-only agent over it. Use whenever the user wants to add or create a new agent, or names a product (theirs or one they use) they want an agent for.
+description: Add a new agent to this AgentOS. Runs guided discovery or takes a concrete idea, then generates agno/agents/slug.py with its prompt in agno/skills/slug/SKILL.md, registers it in agno/app/main.py, adds its manifest entry (description + quick prompts), reloads the selected development runtime, and smoke-tests it for you. Covers the product agent too — ingest a product's website/docs into the product knowledge base and build a knowledge-only agent over it. Use whenever the user wants to add or create a new agent, or names a product (theirs or one they use) they want an agent for.
 ---
 
 # Create a New Agent
@@ -87,7 +87,23 @@ web_tools = MCPTools(
 
 ## 3. Generate the agent file
 
-Create `agno/agents/<slug_underscore>.py`:
+The prompt is an Anthropic Agent Skill: create `agno/skills/<slug>/SKILL.md` (folder name and `name` equal the agent id):
+
+```markdown
+---
+name: <slug>
+description: "<what the agent does, one line>"
+---
+You are <DisplayName>: <the agent's job, in one line>.
+
+How you speak:
+- <one rule per line: tone, length, what to confirm>
+
+How you <work>:
+- <one rule per line: which tool for what, what to refuse, what to hand off>
+```
+
+Then create `agno/agents/<slug_underscore>.py`:
 
 ```python
 """
@@ -97,19 +113,10 @@ Create `agno/agents/<slug_underscore>.py`:
 
 from agno.agent import Agent
 
+from agents.prompts import agent_prompt
 from app.registry import shared_learning
 from app.settings import default_model
 from db import get_postgres_db
-
-INSTRUCTIONS = """\
-You are <DisplayName>: <the agent's job, in one line>.
-
-How you speak:
-- <one rule per line: tone, length, what to confirm>
-
-How you <work>:
-- <one rule per line: which tool for what, what to refuse, what to hand off>\
-"""
 
 <slug_underscore> = Agent(
     id="<slug>",
@@ -120,7 +127,7 @@ How you <work>:
     # Identity fallback for unauthenticated runs (dev MCP, evals).
     user_id="anonymous-user",
     tools=[...],
-    instructions=INSTRUCTIONS,
+    instructions=agent_prompt("<slug>"),
     add_datetime_to_context=True,
     add_history_to_context=True,
     num_history_runs=5,
@@ -129,7 +136,9 @@ How you <work>:
 
 - No `offload_tool_results` — that's for the OS Manager and its internal members only.
 - Drop `learning=`/`user_id` only for a stated reason. Company knowledge belongs in Company wiki. For a notebook, import `shared_notes` from `app.registry` and add `shared_notes.tools()` to `tools`. User scoping follows AgentOS user isolation; keep personal profiles in per-user learning.
-- **Every line ≤120 characters, `INSTRUCTIONS` included** — the repo lints `E501` and ruff won't reflow string literals. Wrap long bullets with a two-space hanging indent.
+- The prompt lives only in `SKILL.md`, never as a string in the Python file. `agent_prompt()` loads it with Agno's `LocalSkills` and stops the import when the file is missing or invalid (no `name`/`description`, `name` not equal to the id, empty body).
+- The frontmatter allows only `name`, `description`, `license`, `compatibility`, `allowed-tools` and `metadata`; quote a `description` that contains a colon.
+- **Every Python line ≤120 characters** — the repo lints `E501`. Keep `SKILL.md` lines short too and wrap long bullets with a two-space hanging indent.
 
 ### The product agent
 
@@ -163,7 +172,7 @@ print(asyncio.run(tools.aingest_url(None, "https://docs.example.com", max_pages=
 
 Inspect the returned result and verify content was stored before testing retrieval. Do not promise a page count, cost or runtime without measuring it. For host development run the same code with the configured venv and environment.
 
-**The file:** the structure above with `knowledge=product_knowledge` (from [`agno/app/registry.py`](../../../agno/app/registry.py)), `learning=shared_learning`, and no tools. Write `INSTRUCTIONS` yourself in the product's own terms — its name, how its docs speak, the support channel you saw in the pages — and write them against the failure mode that breaks product agents: **the model remembers the real docs and completes gaps from memory under a real citation** — exact flags, prices, and code that were never in the returned text. A prompt that merely says "answer from the docs, say so if not covered" does not stop it; the following rules make that expectation explicit and testable. Include these rules and verify them with probes:
+**The file:** the structure above with `knowledge=product_knowledge` (from [`agno/app/registry.py`](../../../agno/app/registry.py)), `learning=shared_learning`, and no tools. Write its `SKILL.md` prompt yourself in the product's own terms — its name, how its docs speak, the support channel you saw in the pages — and write them against the failure mode that breaks product agents: **the model remembers the real docs and completes gaps from memory under a real citation** — exact flags, prices, and code that were never in the returned text. A prompt that merely says "answer from the docs, say so if not covered" does not stop it; the following rules make that expectation explicit and testable. Include these rules and verify them with probes:
 
 - a detail counts as documented only when it appears in text the search returned — a page that merely mentions a topic (a name in a list, a link, a heading) does not document it;
 - only returned Source URLs get cited, never one from memory, and none on a refusal;
@@ -190,13 +199,14 @@ For example, adding a new agent when another already exists is an insertion:
 
 ## 5. Manifest entry
 
-In [`agno/app/config.yaml`](../../../agno/app/config.yaml) under `manifest`, keyed by id: one-line description and three quick prompts (the home card and chat page read these; `Agent(description=)` is unused here).
+In [`agno/app/config.yaml`](../../../agno/app/config.yaml) under `manifest`, keyed by id: one-line description and three quick prompts (the home card and chat page read these; `Agent(description=)` is unused here). Keep the description in line with `description` in the agent's `SKILL.md`.
 
 ## 6. Reload the selected runtime
 
 For Compose, restart `agentos-api` when needed; for the host API, use the existing reload
 process or restart that host process with its original environment. YAML/env changes need
-an explicit restart. Do not run `docker compose up` for a host API.
+an explicit restart, and so does a `SKILL.md` change: `--reload` watches only Python files.
+Do not run `docker compose up` for a host API.
 
 After dependency changes, regenerate `agno/requirements.txt`, update the host venv if used
 (deactivate before `agno/scripts/venv_setup.sh`), and rebuild both Dockerfile targets as required
