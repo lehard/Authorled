@@ -49,10 +49,9 @@ def test_schema_belongs_to_agentos(connection: Connection) -> None:
 
 
 def test_product_tables_stay_in_their_schema(connection: Connection) -> None:
+    names = [table.name for table in metadata.sorted_tables] + ["alembic_version"]
     rows = connection.execute(
-        text(
-            "SELECT table_schema, table_name FROM information_schema.tables"
-            " WHERE table_name IN ('users', 'user_settings', 'alembic_version')"
-        )
+        text("SELECT table_schema, table_name FROM information_schema.tables WHERE table_name = ANY(:names)"),
+        {"names": names},
     ).all()
-    assert sorted(rows) == [(SCHEMA, "alembic_version"), (SCHEMA, "user_settings"), (SCHEMA, "users")]
+    assert sorted(rows) == sorted((SCHEMA, name) for name in names)

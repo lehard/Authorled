@@ -75,6 +75,19 @@ starts. If a migration fails, `agentos-migrate` exits non-zero and the API does 
 to see the API. Authorization is on in every environment, so API calls need a token from
 Authentik (see [Module auth](#module-auth)); `./scripts/auth_check.sh` checks the chain.
 
+Uploaded files (chat attachments, manuscript import) are checked by the antivirus ClamAV before
+anything reads them. Compose starts it as `clamav` (image `clamav/clamav-debian`, about 1–1.5 GB of
+memory) and the API waits until it is healthy. The first start downloads the signature databases
+and can take a few minutes; they are kept in the volume `clamav-db` and updated by the container.
+Check that it answers:
+
+```sh
+printf 'zPING\0' | nc -w 3 127.0.0.1 3310
+```
+
+The answer is `PONG`. The API reads its address from `CLAMAV_HOST` and `CLAMAV_PORT` and refuses
+to start without them; Compose and `./scripts/dev.sh` set both.
+
 Check that AI apps can connect through MCP (export `MCP_CHECK_TOKEN` first, see
 [Module auth](#module-auth)):
 
@@ -86,7 +99,7 @@ The check should report `9 tools; required tools available`.
 
 ### Develop with the API on the host
 
-For code changes without rebuilding the image, run PostgreSQL, LiteLLM and Authentik in Docker
+For code changes without rebuilding the image, run PostgreSQL, LiteLLM, ClamAV and Authentik in Docker
 and the API on your computer with `--reload` (needs [uv](https://docs.astral.sh/uv/) and a filled
 `.env`). The command also exports the Authentik keys to `auth/jwks/jwks.json` before
 the API starts:
@@ -457,6 +470,7 @@ add the others when you need them. Docker Compose reads `.env` for both local an
 | `VITE_DATA_SOURCE` | Data source of the web frontend; now only `fixtures` (required by the frontend). |
 | `AUTH_ISSUER` | Issuer of the tokens: the address clients use to reach Authentik plus `/application/o/authorled/` (required). |
 | `JWT_JWKS_FILE` | Public keys of Authentik, the only source of token verification keys. Compose writes the file at start and sets the path; set it yourself when the API or `python -m evals` runs on the host (`dev.sh api` does for the API). |
+| `CLAMAV_HOST`, `CLAMAV_PORT` | Address of the antivirus that checks uploaded files (required by the API). Compose sets `clamav:3310`, `./scripts/dev.sh` sets `127.0.0.1:3310`; set them yourself for other host processes such as `python -m evals`. |
 | `AGENTOS_URL` | Public URL used by scheduled jobs and MCP. Set it to your public HTTPS URL. |
 | `MCP_CONNECT_SECRET` | Connect browser MCP clients. Generate it before deployment. |
 | `AGENTOS_DB_PASSWORD` | Password of the database role `agentos` the API connects with (required; not a superuser, no access to schema `authentik`). |

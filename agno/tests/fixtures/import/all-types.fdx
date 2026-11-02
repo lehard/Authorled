@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FinalDraft DocumentType="Script" Template="No" Version="4">
+  <Content>
+    <Paragraph Type="Act">
+      <Text>Акт первый</Text>
+    </Paragraph>
+    <Paragraph Type="Sequence">
+      <Text>Утро</Text>
+    </Paragraph>
+    <Paragraph Type="Scene Heading">
+      <Text>НАТ. ОЗЕРО, МОСТКИ — РАССВЕТ</Text>
+    </Paragraph>
+    <Paragraph Type="Cast List">
+      <Text>Вера, Миша</Text>
+    </Paragraph>
+    <Paragraph Type="Beat">
+      <Text>Вера приходит к воде</Text>
+    </Paragraph>
+    <Paragraph Type="Action">
+      <Text>Туман над водой. Вера стоит у края мостков.</Text>
+    </Paragraph>
+    <Paragraph Type="Shot">
+      <Text>КРУПНО: её руки</Text>
+    </Paragraph>
+    <Paragraph Type="Character">
+      <Text>ВЕРА</Text>
+    </Paragraph>
+    <Paragraph Type="Parenthetical">
+      <Text>(тихо)</Text>
+    </Paragraph>
+    <Paragraph Type="Dialogue">
+      <Text>Двадцать лет.</Text>
+    </Paragraph>
+    <Paragraph Type="Lyrics">
+      <Text>Ой, вода, вода</Text>
+    </Paragraph>
+    <Paragraph Type="Note">
+      <Text>Проверить время рассвета</Text>
+    </Paragraph>
+    <Paragraph Type="General">
+      <Text>Простой текст</Text>
+    </Paragraph>
+    <Paragraph Type="Transition">
+      <Text>CUT TO:</Text>
+    </Paragraph>
+    <Paragraph Type="Scene Heading">
+      <Text>ИНТ. ДОМ ВЕРЫ — ДЕНЬ</Text>
+    </Paragraph>
+    <Paragraph Type="Character">
+      <Text>МИША (ЗК)</Text>
+    </Paragraph>
+    <Paragraph Type="Dialogue">
+      <Text>Мама, ты где?</Text>
+    </Paragraph>
+  </Content>
+</FinalDraft>

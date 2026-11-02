@@ -12,12 +12,14 @@ from agno.os.interfaces.agui import AGUI
 from agents.coauthor import COAUTHOR_ID, coauthor
 from agents.engineers import engineers
 from app.api import attach_api
-from app.auth import build_authorization
+from app.auth import build_authorization, set_project_access_source
 from app.company import products
 from app.interfaces import attach_interfaces, mcp_auth
 from app.paths import REPO_ROOT
 from app.registry import registry, shared_knowledge, shared_learning
 from app.settings import manager_model
+from core.clamav import scanner_address
+from core.projects import ProjectAccess
 from db import get_postgres_db
 
 
@@ -61,6 +63,10 @@ agent_os = AgentOS(
     config=str(REPO_ROOT / "agno" / "app" / "config.yaml"),
 )
 attach_interfaces(agent_os)
+# Every uploaded file goes through the antivirus: no address, no API (openspec/specs/runtime).
+scanner_address()
+# Who may open a story: the product core answers for the auth module (only the owner).
+set_project_access_source(ProjectAccess())
 app = agent_os.get_app()
 # Product routes go into the app AgentOS returns, not through base_app: with base_app Agno 3.1.10
 # drops its error handlers for its own routes (ADR-002).

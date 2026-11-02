@@ -111,6 +111,28 @@ services:
     networks:
       - agentos
 
+  # Antivirus for uploaded files (openspec/specs/runtime, «Антивирус ClamAV»): clamd over TCP 3310.
+  # The API checks every file here before parsing or storing it. The image ships the signature
+  # databases and updates them with freshclam inside the container; the volume keeps them across
+  # restarts. Port 3310 is published on loopback for the API on the host (./scripts/dev.sh api);
+  # compose.prod.yaml removes it.
+  clamav:
+    image: clamav/clamav-debian:1.5.3
+    container_name: agentos-clamav
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3310:3310"
+    volumes:
+      - clamav-db:/var/lib/clamav
+    healthcheck:
+      test: ["CMD", "clamdcheck.sh"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 120s
+    networks:
+      - agentos
+
   agentos-api:
     build:
       context: ..
@@ -148,6 +170,8 @@ services:
       JWT_JWKS_FILE: /app/auth/jwks/jwks.json
       AUTH_ISSUER: ${AUTH_ISSUER:?AUTH_ISSUER must be set in .env}
       AUTH_FRONTEND_CLIENT_ID: ${AUTH_FRONTEND_CLIENT_ID:?AUTH_FRONTEND_CLIENT_ID must be set in .env}
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: "3310"
     depends_on:
       agentos-migrate:
         condition: service_completed_successfully
@@ -155,7 +179,12 @@ services:
         condition: service_healthy
       authentik-jwks-export:
         condition: service_completed_successfully
+      clamav:
+        condition: service_healthy
     networks:
       - agentos
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+volumes:
+  clamav-db:

@@ -1,13 +1,12 @@
 """The user's own account: GET and PATCH /api/v1/me (openspec/specs/api/me)."""
 
-import json
 import uuid
-from typing import Any
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator, model_validator
 from starlette.concurrency import run_in_threadpool
 
+from app.api.body import read_object
 from app.api.problems import Problem
 from app.auth import Identity, Principal, current_identity, current_principal
 from core.engine import get_engine
@@ -116,12 +115,7 @@ def get_me(
     },
 )
 async def patch_me(request: Request, principal: Principal = Depends(current_principal)) -> Me:
-    try:
-        body: Any = await request.json()
-    except json.JSONDecodeError as error:
-        raise Problem(422, "Unprocessable Content", "Тело запроса — не JSON.") from error
-    if not isinstance(body, dict):
-        raise Problem(422, "Unprocessable Content", "Тело запроса должно быть объектом JSON.")
+    body = await read_object(request)
     try:
         changes = MeChanges.model_validate(body)
     except ValidationError as error:

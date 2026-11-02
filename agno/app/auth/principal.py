@@ -1,7 +1,7 @@
 """Who is calling: `Principal`, the caller's `Identity`, and the access check other modules call for a project."""
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
 from fastapi import HTTPException, Request
 
@@ -43,6 +43,28 @@ def can_access_project(principal: Principal, project_id: str) -> bool:
     if _project_access is None:
         raise ProjectAccessNotConfigured("Project access source is not configured; the product core must register it")
     return _project_access.can_access(principal, project_id)
+
+
+def run_principal(run_context: Any) -> Principal:
+    """The caller of an agent run, for tools: built from the verified token Agno keeps in the run.
+
+    Agno binds the caller of every HTTP request to the runs it starts (RunContext.authorization); a run
+    without it, or with a subject other than the run's user, has no caller and is refused.
+    """
+    authority = getattr(run_context, "authorization", None)
+    context = getattr(authority, "context", None)
+    subject = getattr(context, "principal_id", None)
+    claims = getattr(context, "claims", None)
+    if not subject or not isinstance(claims, dict):
+        raise RuntimeError("The agent run has no verified caller")
+    user_id = getattr(run_context, "user_id", None)
+    if user_id is not None and user_id != subject:
+        raise RuntimeError("The agent run belongs to another user than its verified caller")
+    groups = claims.get("groups")
+    if not isinstance(groups, list) or not all(isinstance(group, str) for group in groups):
+        raise RuntimeError("The token of the agent run has no valid groups claim")
+    scopes = {scope for group in groups for scope in GROUP_SCOPES.get(group, ())}
+    return Principal(user_id=str(subject), groups=tuple(groups), scopes=frozenset(scopes))
 
 
 def current_principal(request: Request) -> Principal:
