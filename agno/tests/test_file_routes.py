@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 from docx import Document as DocxDocument
 
+from tests.starc_sample import SAMPLE as STARC
 from tests.test_clamav import EICAR
 
 IMPORT = Path(__file__).parent / "fixtures" / "import"
@@ -65,6 +66,8 @@ def test_too_large(authors: Any) -> None:
         ("fake.docx", b"not a zip", "chat"),
         ("empty.txt", b"", "chat"),
         ("cp1251.txt", "Вера".encode("cp1251"), "chat"),
+        ("проект.starc", b"just some text", "chat"),
+        ("проект.starc", b"just some text", "import"),
     ],
 )
 def test_refused_files(authors: Any, name: str, data: bytes, purpose: str) -> None:
@@ -108,6 +111,15 @@ def test_import_formats_are_accepted(authors: Any) -> None:
     for name in ("all-types.fountain", "all-types.fdx", "manuscript.txt"):
         response = _upload(author, project_id, name, (IMPORT / name).read_bytes(), "import")
         assert response.status_code == 201, (name, response.text)
+
+
+@pytest.mark.parametrize("purpose", ["chat", "import"])
+def test_starc_is_accepted(authors: Any, purpose: str) -> None:
+    author = authors()
+    project_id = author.story()["project"]["id"]
+    response = _upload(author, project_id, "проект.starc", STARC.read_bytes(), purpose)
+    assert response.status_code == 201, response.text
+    assert response.json()["media_type"] == "application/x-starc"
 
 
 def test_foreign_file(authors: Any) -> None:

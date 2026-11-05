@@ -37,12 +37,12 @@ def test_fountain_matches_the_editor_importer() -> None:
 
 
 def test_round_trip_through_our_fountain() -> None:
-    doc = parse_manuscript(".fountain", (SAMPLES / "all-types.fountain").read_bytes())
+    doc = parse_manuscript(".fountain", (SAMPLES / "all-types.fountain").read_bytes()).doc
     assert set(ELEMENT_NAMES) <= set(_types(doc))
 
 
 def test_fdx_keeps_every_type_and_drops_brackets() -> None:
-    doc = parse_manuscript(".fdx", (SAMPLES / "all-types.fdx").read_bytes())
+    doc = parse_manuscript(".fdx", (SAMPLES / "all-types.fdx").read_bytes()).doc
     assert set(ELEMENT_NAMES) <= set(_types(doc))
     parenthetical = next(b for b in doc["content"] if b["type"] == "parenthetical")
     assert parenthetical["content"][0]["text"] == "тихо"
@@ -72,7 +72,7 @@ def test_broken_fdx(data: bytes, reason: str) -> None:
 
 
 def test_russian_txt() -> None:
-    doc = parse_manuscript(".txt", (SAMPLES / "manuscript.txt").read_bytes())
+    doc = parse_manuscript(".txt", (SAMPLES / "manuscript.txt").read_bytes()).doc
     assert _types(doc)[:5] == ["sceneHeading", "action", "character", "parenthetical", "dialogue"]
     uids = [b["attrs"]["uid"] for b in doc["content"] if b["type"] == "sceneHeading"]
     assert len(uids) == 2 and len(set(uids)) == 2
@@ -85,12 +85,12 @@ def test_docx_reads_like_txt() -> None:
         document.add_paragraph(line)
     out = io.BytesIO()
     document.save(out)
-    doc = parse_manuscript(".docx", out.getvalue())
+    doc = parse_manuscript(".docx", out.getvalue()).doc
     assert _types(doc) == ["sceneHeading", "action", "character", "parenthetical", "dialogue", "action"]
 
 
 def test_names_from_the_text() -> None:
-    doc = parse_manuscript(".fountain", (SAMPLES / "all-types.fountain").read_bytes())
+    doc = parse_manuscript(".fountain", (SAMPLES / "all-types.fountain").read_bytes()).doc
     assert cast_from_text(doc) == ["Вера", "Миша"]
     assert places_from_text(doc) == ["Озеро, Мостки", "Дом Веры"]
 

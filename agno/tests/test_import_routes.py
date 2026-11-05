@@ -3,6 +3,9 @@
 from pathlib import Path
 from typing import Any
 
+from tests.starc_sample import SAMPLE as STARC
+from tests.starc_sample import novel
+
 SAMPLES = Path(__file__).parent / "fixtures" / "import"
 BROKEN_FDX = b'<?xml version="1.0"?><FinalDraft><Content><Paragraph'
 
@@ -21,6 +24,28 @@ def test_story_from_fountain(authors: Any) -> None:
     assert len(uids) == 2 and len(set(uids)) == 2
     tree = author.get(f"/api/v1/projects/{created['project']['id']}/documents").json()
     assert sorted(d["name"] for d in tree if d["kind"] == "character") == ["Вера", "Миша"]
+
+
+def test_story_from_starc(authors: Any) -> None:
+    author = authors()
+    response = author.post(
+        "/api/v1/projects", data={"title": "Тихая вода"}, files={"file": ("проект.starc", STARC.read_bytes())}
+    )
+    assert response.status_code == 201, response.text
+    created = response.json()
+    text = author.get(f"/api/v1/documents/{created['script_id']}/text").json()["content"]
+    assert text["content"][0]["type"] == "sceneHeading"
+    tree = author.get(f"/api/v1/projects/{created['project']['id']}/documents").json()
+    assert [d["name"] for d in tree if d["kind"] == "character"] == ["Вера", "Миша", "Олег", "Почтальон"]
+    assert [d["name"] for d in tree if d["kind"] == "location"] == ["Кухня", "Озеро", "Маяк"]
+
+
+def test_novel_creates_no_story(authors: Any) -> None:
+    author = authors()
+    response = author.post("/api/v1/projects", data={"title": "Роман"}, files={"file": ("роман.starc", novel())})
+    assert response.status_code == 422
+    assert "нет сценария" in response.json()["detail"]
+    assert author.get("/api/v1/projects").json() == []
 
 
 def test_broken_file_creates_no_story(authors: Any) -> None:

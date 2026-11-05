@@ -1,6 +1,6 @@
 ---
 owner: lehard
-updated: 2026-11-01
+updated: 2026-11-05
 ---
 # Engineering Standards
 Стек: Python `>=3.14`, Agno `3.1.10` (FastAPI/uvicorn), PostgreSQL 18 + pgvector, Alembic, pytest, Docker Compose. Линт/типы: ruff (line-length 120, E,F,I,UP), mypy + pydantic plugin.
@@ -39,7 +39,6 @@ updated: 2026-11-01
 - миграции в разработке: `./scripts/dev.sh migrate` (контейнер `agentos-migrate`); новая миграция — `alembic revision` из `agno/` с осмысленным именем, проверка на чистой базе через `./scripts/dev.sh test`
 - MCP без модели: `./scripts/mcp_check.sh`; поведение агента — `python -m evals`
 - сборка: `docker compose up -d --build`; sandbox: `docker build --target sandbox --load -t agno-sandbox:local -f agno/Dockerfile .`
-> Команды Alembic и pytest выше вводит первый change ядра (схема `authorled` и таблица `users`); до него их в коде нет.
 > TODO: CI-проверки методологии появятся с кодом ядра.
 
 ## Готово, когда

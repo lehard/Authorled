@@ -22,6 +22,7 @@ from core.importers.fdx import parse_fdx
 from core.importers.fountain import parse_fountain
 from core.importers.plain import text_of_docx, text_of_txt
 from core.importers.screenplay import Paragraph
+from core.importers.starc import parse_starc
 from core.tables import MAX_FILE_BYTES, file_contents, files
 
 
@@ -41,11 +42,12 @@ FORMATS = {
         Format(".md", "text/markdown; charset=utf-8", "Markdown"),
         Format(".fountain", "text/x-fountain; charset=utf-8", "Fountain"),
         Format(".fdx", "application/xml", "Final Draft"),
+        Format(".starc", "application/x-starc", "STARC"),
     )
 }
 ALLOWED = {
-    "chat": (".docx", ".pdf", ".txt", ".md", ".fountain", ".fdx"),
-    "import": (".fountain", ".fdx", ".docx", ".txt"),
+    "chat": (".docx", ".pdf", ".txt", ".md", ".fountain", ".fdx", ".starc"),
+    "import": (".fountain", ".fdx", ".starc", ".docx", ".txt"),
 }
 
 
@@ -77,6 +79,7 @@ def file_format(name: str, purpose: str, data: bytes) -> Format:
         ".docx": data.startswith(b"PK\x03\x04"),
         ".pdf": data.startswith(b"%PDF-"),
         ".fdx": data.lstrip(b"\xef\xbb\xbf \t\r\n").startswith((b"<?xml", b"<FinalDraft")),
+        ".starc": data.startswith(b"SQLite format 3\0"),
     }
     if not signatures.get(extension, True):
         raise Invalid(f"Содержимое файла не похоже на {FORMATS[extension].label}.", "file")
@@ -112,6 +115,8 @@ def extract_text(format: Format, data: bytes) -> str:
             return _text_of_paragraphs(parse_fountain(text_of_txt(data)))
         case ".fdx":
             return _text_of_paragraphs(parse_fdx(data))
+        case ".starc":
+            return _text_of_paragraphs(parse_starc(data).paragraphs)
     raise AssertionError(f"No text extraction for {format.extension}")
 
 
