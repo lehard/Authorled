@@ -12,12 +12,13 @@ import { TitleDoc } from "./TitleDoc";
 
 /** The workspace: the open document on the desk. */
 export function DocView() {
-  const { doc, docSegment } = useProjectData();
-  // key: switching documents resets local form state and saves pending edits of the previous one.
+  const { doc, docSegment, generation } = useProjectData();
+  // key: switching documents resets local form state and saves pending edits of the previous one;
+  // a fresh version after a conflict opens the document anew from the saved data.
   return (
     <div
       data-chat-source
-      key={docSegment}
+      key={`${docSegment}:${generation}`}
       className="min-h-full px-3 pt-16 pb-20 min-[901px]:px-5 min-[1241px]:px-8"
     >
       {doc.kind === "info" && <InfoDoc />}

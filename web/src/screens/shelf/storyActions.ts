@@ -1,8 +1,8 @@
 import { useCreate, useGetIdentity, useUpdate } from "@refinedev/core";
 
 import type { Identity } from "@/auth/authProvider";
+import { useStoryFiles } from "@/data/files";
 import type { Project, Script } from "@/data/model";
-import { plainDoc } from "@/editor/document.ts";
 
 const quiet = { successNotification: false, errorNotification: false } as const;
 
@@ -11,29 +11,30 @@ export function useStoryActions() {
   const { mutateAsync: create } = useCreate();
   const { mutateAsync: update } = useUpdate();
   const { data: me } = useGetIdentity<Identity>();
+  const files = useStoryFiles();
 
-  // Only a feature film for now (decision 2026-10-31); it opens on an empty scene heading.
-  async function createStory(title: string): Promise<string> {
+  // Only a feature film for now (decision 2026-10-31); the data source creates the screenplay
+  // with one empty scene heading, as the core does, or from a manuscript (import of the core),
+  // and the title page is filled here.
+  async function createStory(
+    title: string,
+    file: File | null,
+  ): Promise<string> {
     if (me === undefined)
       throw new Error("Профиль пользователя ещё не загружен.");
-    const project: Omit<Project, "id" | "updatedAt"> = {
-      title,
-      desc: "",
-      cover: false,
-      deletedAt: null,
-    };
-    const { data } = await create({
-      resource: "projects",
-      values: project,
-      ...quiet,
-    });
-    const id = String(data.id);
-    const script: Script = {
-      id,
-      projectId: id,
-      name: title,
-      tagline: "",
-      logline: "",
+    let id: string;
+    if (file === null) {
+      const project: Pick<Project, "title" | "desc"> = { title, desc: "" };
+      const { data } = await create({
+        resource: "projects",
+        values: project,
+        ...quiet,
+      });
+      id = String(data.id);
+    } else {
+      id = (await files.createFromFile(title, file)).id;
+    }
+    const script: Pick<Script, "show" | "titlePage"> = {
       show: { title: true, synopsis: true, treatment: true, text: true },
       titlePage: {
         title,
@@ -42,10 +43,8 @@ export function useStoryActions() {
         contacts: me.email,
         place: "",
       },
-      synopsis: "",
-      text: plainDoc([["sceneHeading", ""]]),
     };
-    await create({ resource: "scripts", values: script, ...quiet });
+    await update({ resource: "scripts", id, values: script, ...quiet });
     return id;
   }
 

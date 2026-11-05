@@ -16,7 +16,8 @@
     "typecheck": "tsc -b",
     "check:contrast": "node scripts/check-contrast.ts",
     "check:native-ui": "node scripts/check-native-ui.ts",
-    "check:editor": "node scripts/check-editor.ts"
+    "check:editor": "node scripts/check-editor.ts",
+    "samples:export": "node scripts/samples.ts"
   },
   "dependencies": {
     "@ag-ui/client": "1.0.2",

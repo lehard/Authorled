@@ -1,5 +1,6 @@
-// Records of the workspace as the data provider returns them. Kept close to the future
-// core API: separate entities with projectId and soft delete (deletedAt).
+// Records of the workspace as the data provider returns them: separate entities with projectId
+// and soft delete (deletedAt). The `api` source translates the core records into these
+// (design of story-data-web, decision 1); revisions stay inside the provider.
 import type { ScreenplayDoc } from "@/editor/document.ts";
 
 export type Role = "main" | "secondary" | "episodic";
@@ -64,11 +65,11 @@ export type Location = EntityBase & { role: Role };
 export type World = EntityBase & { overview: string };
 export type Entity = Character | Location | World;
 
-/** A message of a comment thread; `email` tells the author's own messages. */
+/** A message of a comment thread; `own`: written by the signed-in user (the data source decides). */
 export type CommentMessage = {
   id: string;
   author: string;
-  email: string;
+  own: boolean;
   /** Role in the story team, «редактор»; empty when the token has none. */
   role: string;
   /** ISO time. */
@@ -82,9 +83,22 @@ export type CommentMessage = {
  */
 export type CommentThread = CommentMessage & {
   projectId: string;
+  /** The commented words when the thread was opened. */
+  quote: string;
   replies: CommentMessage[];
   resolved: boolean;
 };
+
+/** A new thread: `id` is the id of its `comment` mark in the text. */
+export type NewThread = {
+  id: string;
+  projectId: string;
+  quote: string;
+  text: string;
+};
+
+/** A new reply of resource `comment-replies`; `meta.threadId` names its thread. */
+export type NewReply = { text: string };
 
 /**
  * A co-author suggestion (coauthor-suggestions, decision 5). Its id is the id of the
@@ -93,6 +107,12 @@ export type CommentThread = CommentMessage & {
 export type Suggestion = {
   id: string;
   projectId: string;
+  /**
+   * Anchor of the co-author: the scene and the exact words to replace. The text screen puts the
+   * mark on the first match inside one paragraph of that scene (design of story-data-web, decision 5).
+   */
+  sceneUid: string;
+  quote: string;
   /** ISO time. */
   at: string;
   /** Why the co-author suggests it. */
@@ -117,6 +137,17 @@ export type Draft = {
   createdAt: string;
   text: ScreenplayDoc;
   deletedAt: string | null;
+};
+
+/**
+ * A new draft: a copy of the current text (`baseId` null) or of a draft, without comments and
+ * suggestions; the data source makes the copy, as the core does.
+ */
+export type NewDraft = {
+  projectId: string;
+  name: string;
+  locked: boolean;
+  baseId: string | null;
 };
 
 /** Refine resource of each entity kind. */

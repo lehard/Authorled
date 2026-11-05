@@ -59,6 +59,7 @@ import {
   type FindScope,
   type ScreenplayDoc,
   type SuggestData,
+  type SuggestionAnchor,
   type TitlePage,
 } from "./index.ts";
 import "./styles.css";
@@ -77,6 +78,8 @@ export type ScreenplayEditorHandle = {
   removeComment(id: string): void;
   commentAnchor(id: string): CommentAnchor | null;
   scrollToComment(id: string): boolean;
+  /** Marks open suggestions without a place by their anchors (web/workspace, «Предложение по якорю»). */
+  placeSuggestions(anchors: SuggestionAnchor[]): void;
   acceptSuggestion(id: string, text: string): boolean;
   rejectSuggestion(id: string): boolean;
   suggestionAnchor(id: string): CommentAnchor | null;
@@ -94,6 +97,8 @@ export type EditorSuggestions = {
   onOpen: (id: string) => void;
   /** Suggestions with a shown place and their old text, in text order, after every change. */
   onPlaces: (places: [id: string, old: string][]) => void;
+  /** Ids of every suggestion with a mark in the text, after every change. */
+  onMarked: (ids: string[]) => void;
 };
 
 /** Comment threads of the text (screenplay-comments, decisions 4 and 5). */
@@ -252,6 +257,14 @@ export function ScreenplayEditor({
     });
   }, [openSuggestions, activeSuggestion]);
 
+  const marked = snap === null ? undefined : snap.marked.join("\n");
+  useEffect(() => {
+    if (marked !== undefined)
+      latest.current.suggestions?.onMarked(
+        marked === "" ? [] : marked.split("\n"),
+      );
+  }, [marked]);
+
   const places = snap === null ? undefined : JSON.stringify(snap.suggestions);
   useEffect(() => {
     if (places !== undefined)
@@ -281,6 +294,7 @@ export function ScreenplayEditor({
       removeComment: (id) => view().removeComment(id),
       commentAnchor: (id) => view().commentAnchor(id),
       scrollToComment: (id) => view().scrollToComment(id),
+      placeSuggestions: (anchors) => view().placeSuggestions(anchors),
       acceptSuggestion: (id, text) => view().acceptSuggestion(id, text),
       rejectSuggestion: (id) => view().rejectSuggestion(id),
       suggestionAnchor: (id) => view().suggestionAnchor(id),

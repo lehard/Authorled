@@ -1,7 +1,6 @@
 import { useCreate, useDelete, useUpdate } from "@refinedev/core";
 
-import type { Draft, Entity, EntityKind } from "@/data/model";
-import { stripMarks } from "@/editor/document.ts";
+import type { Draft, Entity, EntityKind, NewDraft } from "@/data/model";
 
 import { CURRENT } from "./docRef";
 import { draftOf } from "./docTitle";
@@ -19,19 +18,16 @@ export function useDraftActions(data: ProjectData) {
     update({ resource: "drafts", id, values, ...quiet });
 
   return {
-    /** A copy of the current text without comments and suggestions, or of another draft. */
+    /**
+     * A copy of the saved current text without comments and suggestions, or of another draft;
+     * the data source makes it.
+     */
     async create(name: string, base: string, locked: boolean): Promise<string> {
-      const text =
-        base === CURRENT
-          ? stripMarks(data.text, ["comment", "suggestion"])
-          : draftOf(data.drafts, base).text;
-      const values: Omit<Draft, "id"> = {
+      const values: NewDraft = {
         projectId: data.project.id,
         name,
         locked,
-        createdAt: new Date().toISOString(),
-        text,
-        deletedAt: null,
+        baseId: base === CURRENT ? null : draftOf(data.drafts, base).id,
       };
       const { data: row } = await create({
         resource: "drafts",

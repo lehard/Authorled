@@ -1,4 +1,4 @@
-"""Final Draft (FDX) to paragraphs: the rules of web/src/editor/importers/fdx.ts (fdxToDoc).
+"""Final Draft (FDX) to paragraphs: ported from the former browser fdxToDoc, removed by story-data-web.
 
 Paragraph types map by the Final Draft names of web/src/editor/elements.ts; bold, italic and underline stay.
 The standard XML parser fetches no external entities; its expat limits entity expansion.

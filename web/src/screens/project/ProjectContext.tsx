@@ -41,6 +41,13 @@ export type ProjectData = {
   setCurrentScene: (scene: number | null) => void;
   /** Shows the chat where it is hidden (narrow screens); on wide screens it is always shown. */
   openChat: () => void;
+  /**
+   * «Открыть свежую версию» after a conflict: reads the story again and opens the document anew
+   * from the saved data; unsaved edits of the window are dropped.
+   */
+  openFresh: () => void;
+  /** Grows with every fresh opening; the open document is remounted by it. */
+  generation: number;
 };
 
 export const ProjectContext = createContext<ProjectData | null>(null);

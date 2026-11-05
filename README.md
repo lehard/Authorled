@@ -467,7 +467,7 @@ add the others when you need them. Docker Compose reads `.env` for both local an
 | `AUTHENTIK_EMAIL__HOST`, `__PORT`, `__USERNAME`, `__PASSWORD`, `__USE_TLS`, `__USE_SSL`, `__FROM` | Outgoing mail of Authentik (sign-in codes); locally Mailpit (required; `USERNAME` and `PASSWORD` may be empty). |
 | `AUTHENTIK_COOKIE_DOMAIN` | Production only: parent domain of the product, so the session set through the frontend reaches Authentik (required by `compose.prod.yaml`). |
 | `AUTH_DEV_USER_PASSWORD` | Development only: password of the development users and the quick sign-in (`./scripts/dev.sh auth-users`). |
-| `VITE_DATA_SOURCE` | Data source of the web frontend; now only `fixtures` (required by the frontend). |
+| `VITE_DATA_SOURCE` | Data source of the web frontend: `api` (stories in the core) or `fixtures` (sample data in page memory); required by the frontend. |
 | `AUTH_ISSUER` | Issuer of the tokens: the address clients use to reach Authentik plus `/application/o/authorled/` (required). |
 | `JWT_JWKS_FILE` | Public keys of Authentik, the only source of token verification keys. Compose writes the file at start and sets the path; set it yourself when the API or `python -m evals` runs on the host (`dev.sh api` does for the API). |
 | `CLAMAV_HOST`, `CLAMAV_PORT` | Address of the antivirus that checks uploaded files (required by the API). Compose sets `clamav:3310`, `./scripts/dev.sh` sets `127.0.0.1:3310`; set them yourself for other host processes such as `python -m evals`. |

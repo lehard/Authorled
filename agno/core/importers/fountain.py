@@ -1,4 +1,4 @@
-"""Fountain (fountain.io) to paragraphs: the rules of web/src/editor/importers/fountain.ts (parseFountain).
+"""Fountain (fountain.io) to paragraphs: ported from the former browser parseFountain, removed by story-data-web.
 
 Types Fountain has no syntax for come back from the notes `[[@tag text]]` our export writes.
 """

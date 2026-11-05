@@ -3,6 +3,7 @@
 import type { Node } from "prosemirror-model";
 
 import {
+  ensureSceneUids,
   scenes,
   toJSON,
   toNode,
@@ -26,7 +27,7 @@ function build(kids: Node[]): ScreenplayDoc {
     kids.length === 0 ? [schema.nodes.sceneHeading.create()] : kids,
   );
   node.check();
-  return toJSON(node);
+  return ensureSceneUids(toJSON(node));
 }
 
 function scene(doc: ScreenplayDoc, n: number): Scene {

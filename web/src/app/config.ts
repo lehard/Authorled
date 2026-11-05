@@ -1,7 +1,7 @@
 // Required settings of the app (openspec/specs/web/workspace, «Обязательные настройки»).
 // Every value is checked at start; a missing or wrong one stops the app with its name.
 
-export const DATA_SOURCES = ["fixtures"] as const;
+export const DATA_SOURCES = ["api", "fixtures"] as const;
 export type DataSource = (typeof DATA_SOURCES)[number];
 
 export type AppConfig = {

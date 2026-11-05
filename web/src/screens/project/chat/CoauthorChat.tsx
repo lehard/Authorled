@@ -5,12 +5,29 @@ import {
   useCopilotKit,
   UseAgentUpdate,
 } from "@copilotkit/react-core/v2";
-import { ArrowUp, Copy, History, Plus, Sparkles, X } from "lucide-react";
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useInvalidate } from "@refinedev/core";
+import {
+  ArrowUp,
+  Copy,
+  History,
+  Paperclip,
+  Plus,
+  Sparkles,
+  X,
+} from "lucide-react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ClipboardEvent,
+  type DragEvent,
+  type KeyboardEvent,
+} from "react";
 import Markdown from "react-markdown";
 import { useNavigate } from "react-router";
 
 import { Button } from "@/components/ui/button";
+import { useStoryFiles } from "@/data/files";
 import { InkLoader } from "@/design-system";
 
 import { useProjectData } from "../ProjectContext";
@@ -32,6 +49,22 @@ const SUGGESTIONS = [
   "Проверь, нет ли противоречий в этом документе",
 ];
 const TITLE_LENGTH = 48;
+// Files in a message (openspec/specs/web/workspace, «Файлы в чат»): what the core reads for the
+// co-author, its size limit and how many go in one message.
+const CHAT_TYPES = [
+  ".docx",
+  ".pdf",
+  ".txt",
+  ".md",
+  ".fountain",
+  ".fdx",
+  ".starc",
+];
+const MAX_FILE_BYTES = 20 * 1024 * 1024;
+const MAX_FILES = 5;
+
+/** A file of the message being written; `id` is null while the core checks it. */
+type Attachment = { key: string; name: string; id: string | null };
 const when = new Intl.DateTimeFormat("ru", {
   day: "numeric",
   month: "long",
@@ -61,6 +94,7 @@ export function CoauthorChat({
   const data = useProjectData();
   const navigate = useNavigate();
   const { copilotkit } = useCopilotKit();
+  const invalidate = useInvalidate();
   const { agent } = useAgent({
     agentId: COAUTHOR_ID,
     updates: [
@@ -73,7 +107,12 @@ export function CoauthorChat({
   const [view, setView] = useState<"messages" | "history">("messages");
   const [history, setHistory] = useState<Conversation[] | null>(null);
   const feed = useRef<HTMLDivElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
   const projectId = data.project.id;
+  const storyFiles = useStoryFiles();
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [fileErrors, setFileErrors] = useState<string[]>([]);
+  const checking = attachments.some((a) => a.id === null);
 
   useAgentContext({
     description: "Что сейчас открыто у автора в Authorled",
@@ -114,25 +153,99 @@ export function CoauthorChat({
       await copilotkit.runAgent({ agent });
     } finally {
       subscription.unsubscribe();
+      // The co-author may have suggested edits during its turn: the text shows them without a
+      // reload (openspec/specs/web/workspace, «Предложение по якорю»).
+      void invalidate({ resource: "suggestions", invalidates: ["list"] });
     }
     if (failure !== null) throw failure;
   }
 
+  // Each file goes to the core at once, to this conversation; a refusal is shown under the
+  // field and the file is not attached.
+  function attach(list: FileList | File[]) {
+    const errors: string[] = [];
+    let room = MAX_FILES - attachments.length;
+    for (const file of Array.from(list)) {
+      const dot = file.name.lastIndexOf(".");
+      const ext = dot < 0 ? "" : file.name.slice(dot).toLowerCase();
+      if (!CHAT_TYPES.includes(ext)) {
+        errors.push(
+          `«${file.name}»: соавтор читает только DOCX, PDF, TXT, MD, Fountain и FDX.`,
+        );
+        continue;
+      }
+      if (file.size > MAX_FILE_BYTES) {
+        errors.push(`«${file.name}»: файл больше 20 МБ.`);
+        continue;
+      }
+      if (room <= 0) {
+        errors.push(
+          `«${file.name}»: в сообщении не больше ${MAX_FILES} файлов.`,
+        );
+        continue;
+      }
+      room -= 1;
+      const key = crypto.randomUUID();
+      setAttachments((a) => [...a, { key, name: file.name, id: null }]);
+      storyFiles
+        .upload({ projectId, file, purpose: "chat", sessionId: agent.threadId })
+        .then(
+          (uploaded) =>
+            setAttachments((a) =>
+              a.map((x) => (x.key === key ? { ...x, id: uploaded.id } : x)),
+            ),
+          (e: unknown) => {
+            setAttachments((a) => a.filter((x) => x.key !== key));
+            setFileErrors((es) => [
+              ...es,
+              `«${file.name}»: ${e instanceof Error ? e.message : String(e)}`,
+            ]);
+          },
+        );
+    }
+    setFileErrors(errors);
+  }
+
+  function clearFiles() {
+    setAttachments([]);
+    setFileErrors([]);
+  }
+
   async function send(text: string) {
     const question = text.trim();
-    if (question === "" || agent.isRunning) return;
+    // While a file is being checked the message waits (web/workspace, «Файлы в сообщении»).
+    if (agent.isRunning || checking) return;
+    const sent = attachments.filter(
+      (a): a is Attachment & { id: string } => a.id !== null,
+    );
+    if (question === "" && sent.length === 0) return;
+    const names = sent.map((a) => a.name).join(", ");
+    const content = [question, sent.length === 0 ? "" : `Файлы: ${names}`]
+      .filter((part) => part !== "")
+      .join("\n\n");
     const first = messages.length === 0;
     setError(null);
     setDraft("");
+    clearFiles();
     setView("messages");
     const id = crypto.randomUUID();
-    agent.addMessage({ id, role: "user", content: question });
+    agent.addMessage({ id, role: "user", content });
+    // The ids reach the co-author with this turn only; it reads the files with read_chat_file.
+    const files =
+      sent.length === 0
+        ? null
+        : copilotkit.addContext({
+            description: "Файлы этого сообщения (id и имя)",
+            value: JSON.stringify(
+              sent.map((a) => ({ id: a.id, name: a.name })),
+            ),
+          });
     try {
       await runOrThrow();
       if (first)
         await renameConversation(
           agent.threadId,
-          question.slice(0, TITLE_LENGTH),
+          (question === "" ? names : question).slice(0, TITLE_LENGTH),
         );
     } catch (e) {
       if (e instanceof ChatError && e.status === 401) {
@@ -142,13 +255,29 @@ export function CoauthorChat({
         return;
       }
       setError(e instanceof Error ? e.message : String(e));
-      // The question stays in the field, so it can be sent again.
+      // The question and its files stay in the field, so they can be sent again.
       agent.setMessages(agent.messages.filter((m) => m.id !== id));
       setDraft(question);
+      setAttachments(sent);
+    } finally {
+      if (files !== null) copilotkit.removeContext(files);
     }
   }
 
+  function onDrop(e: DragEvent) {
+    if (e.dataTransfer.files.length === 0) return;
+    e.preventDefault();
+    attach(e.dataTransfer.files);
+  }
+
+  function onPaste(e: ClipboardEvent<HTMLTextAreaElement>) {
+    if (e.clipboardData.files.length === 0) return;
+    e.preventDefault();
+    attach(e.clipboardData.files);
+  }
+
   function startNew() {
+    clearFiles();
     switchThread(agent, newThreadId(projectId), []);
     setError(null);
     setView("messages");
@@ -173,6 +302,7 @@ export function CoauthorChat({
     setError(null);
     try {
       const loaded = await loadConversation(c.id);
+      clearFiles();
       switchThread(agent, c.id, loaded);
       setView("messages");
     } catch (e) {
@@ -193,7 +323,14 @@ export function CoauthorChat({
     (last === undefined || last.role === "user" || textOf(last) === "");
 
   return (
-    <section aria-label="Соавтор" className="flex h-full min-h-0 flex-col">
+    <section
+      aria-label="Соавтор"
+      className="flex h-full min-h-0 flex-col"
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes("Files")) e.preventDefault();
+      }}
+      onDrop={onDrop}
+    >
       <header className="flex min-h-13 items-center gap-1 border-b border-border py-2 pr-2 pl-4">
         <div className="min-w-0 flex-1">
           <b className="flex items-center gap-1.5 font-semibold">
@@ -360,7 +497,58 @@ export function CoauthorChat({
             </button>
           </span>
         )}
-        <div className="flex items-end gap-1.5 rounded-3xl bg-paper py-1.5 pr-1.5 pl-3 shadow-panel focus-within:ring-2 focus-within:ring-ring/50">
+        {attachments.length > 0 && (
+          <ul aria-label="Файлы сообщения" className="flex flex-wrap gap-1.5">
+            {attachments.map((a) => (
+              <li
+                key={a.key}
+                className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-paper py-1 pr-1.5 pl-2.5 text-caption shadow-panel"
+              >
+                <Paperclip className="size-3.5 shrink-0 text-muted-foreground" />
+                <span className="min-w-0 truncate">{a.name}</span>
+                {a.id === null ? (
+                  <span role="status" className="text-muted-foreground">
+                    проверяется…
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    aria-label={`Убрать файл «${a.name}»`}
+                    onClick={() =>
+                      setAttachments((list) =>
+                        list.filter((x) => x.key !== a.key),
+                      )
+                    }
+                    className="grid size-5 place-items-center rounded-full hover:bg-accent"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="flex items-end gap-1.5 rounded-3xl bg-paper py-1.5 pr-1.5 pl-1.5 shadow-panel focus-within:ring-2 focus-within:ring-ring/50">
+          <input
+            ref={fileInput}
+            type="file"
+            multiple
+            accept={CHAT_TYPES.join(",")}
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files !== null) attach(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full text-muted-foreground"
+            aria-label="Прикрепить файл"
+            onClick={() => fileInput.current?.click()}
+          >
+            <Paperclip />
+          </Button>
           <textarea
             rows={1}
             value={draft}
@@ -368,18 +556,34 @@ export function CoauthorChat({
             aria-label="Сообщение соавтору"
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={onKeyDown}
+            onPaste={onPaste}
             className="field-sizing-content max-h-40 min-h-6 flex-1 bg-transparent py-1.5 outline-none placeholder:text-muted-foreground"
           />
           <Button
             size="icon"
             className="rounded-full"
             aria-label="Отправить"
-            disabled={draft.trim() === "" || agent.isRunning}
+            disabled={
+              (draft.trim() === "" &&
+                !attachments.some((a) => a.id !== null)) ||
+              checking ||
+              agent.isRunning
+            }
             onClick={() => void send(draft)}
           >
             <ArrowUp />
           </Button>
         </div>
+        {fileErrors.length > 0 && (
+          <ul
+            role="alert"
+            className="grid gap-0.5 text-caption text-destructive"
+          >
+            {fileErrors.map((e) => (
+              <li key={e}>{e}</li>
+            ))}
+          </ul>
+        )}
       </div>
     </section>
   );

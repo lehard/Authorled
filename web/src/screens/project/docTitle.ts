@@ -15,6 +15,8 @@ export function docTitle(
     | "setText"
     | "textStatus"
     | "openChat"
+    | "openFresh"
+    | "generation"
   >,
   ref: DocRef,
 ): string {

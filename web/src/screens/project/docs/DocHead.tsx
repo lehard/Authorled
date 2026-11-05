@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { SaveStatus } from "@/screens/shared/SaveStatus";
 import type { SaveStatus as Status } from "@/screens/shared/useAutosave";
 
+import { useProjectData } from "../ProjectContext";
+
 /** Heading row of a document: title, save status, actions. */
 export function DocHead({
   title,
@@ -15,6 +17,7 @@ export function DocHead({
   children?: ReactNode;
   wide?: boolean;
 }) {
+  const { openFresh } = useProjectData();
   return (
     <div
       className={`mx-auto mb-4 flex flex-wrap items-center gap-2.5 ${wide ? "max-w-[1000px]" : "max-w-[900px]"}`}
@@ -22,7 +25,9 @@ export function DocHead({
       <h1 className="min-w-[min(100%,14rem)] flex-1 truncate text-heading-1 font-medium">
         {title}
       </h1>
-      {status !== undefined && <SaveStatus status={status} />}
+      {status !== undefined && (
+        <SaveStatus status={status} onFresh={openFresh} />
+      )}
       {children}
     </div>
   );

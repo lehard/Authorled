@@ -7,7 +7,6 @@ import {
   type ReactNode,
 } from "react";
 
-import type { Identity } from "@/auth/authProvider";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -119,7 +118,6 @@ function Compose({
   submit,
   autoFocus,
   className,
-  disabled,
   onSubmit,
   onCancel,
 }: {
@@ -128,7 +126,6 @@ function Compose({
   submit: string;
   autoFocus?: boolean;
   className?: string;
-  disabled?: boolean;
   onSubmit: (text: string) => void;
   onCancel?: () => void;
 }) {
@@ -142,7 +139,7 @@ function Compose({
   }, [autoFocus]);
   const empty = text.trim() === "";
   const send = () => {
-    if (empty || disabled) return;
+    if (empty) return;
     onSubmit(text.trim());
     setText("");
   };
@@ -169,7 +166,7 @@ function Compose({
             Отмена
           </Button>
         )}
-        <Button size="sm" disabled={empty || disabled} onClick={send}>
+        <Button size="sm" disabled={empty} onClick={send}>
           {submit}
         </Button>
       </div>
@@ -181,7 +178,6 @@ export function ThreadCard({
   style,
   thread,
   quote,
-  me,
   error,
   onClose,
   onSave,
@@ -195,7 +191,6 @@ export function ThreadCard({
   /** Null for a new comment that is not saved yet. */
   thread: CommentThread | null;
   quote: string | undefined;
-  me: Identity | undefined;
   error: string | null;
   onClose: () => void;
   onSave: (text: string) => void;
@@ -242,7 +237,7 @@ export function ThreadCard({
               key={m.id}
               m={m}
               first={i === 0}
-              own={me !== undefined && m.email === me.email}
+              own={m.own}
               onEdit={(text) => onEdit(thread!, m.id, text)}
               onDelete={() =>
                 i === 0 ? onDeleteThread(thread!) : onDeleteReply(thread!, m.id)
@@ -256,7 +251,6 @@ export function ThreadCard({
           label="Комментарий"
           submit="Сохранить"
           autoFocus
-          disabled={me === undefined}
           onSubmit={onSave}
           onCancel={onClose}
         />
@@ -265,7 +259,6 @@ export function ThreadCard({
           <Compose
             label="Ответить"
             submit="Ответить"
-            disabled={me === undefined}
             onSubmit={(text) => onReply(thread, text)}
           />
           <div className="flex flex-wrap gap-1.5 border-t border-border pt-2.5">

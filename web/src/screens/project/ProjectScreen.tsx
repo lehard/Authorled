@@ -1,4 +1,5 @@
 import { Menu, Sparkles } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useParams } from "react-router";
 
@@ -15,6 +16,7 @@ import type { ScreenplayDoc } from "@/editor/document.ts";
 import { useAutosave } from "@/screens/shared/useAutosave";
 import { useMediaQuery } from "@/screens/shared/useMediaQuery";
 import { UserMenu } from "@/screens/shared/UserMenu";
+import { DataErrorScreen } from "@/screens/system/DataErrorScreen";
 import { MessageScreen } from "@/screens/system/MessageScreen";
 import { NotFoundScreen } from "@/screens/system/NotFoundScreen";
 import "@/screens/workspace.css";
@@ -54,18 +56,16 @@ export function ProjectScreen() {
     id: string;
     text: ScreenplayDoc;
   } | null>(null);
-  const { save: saveText, status: textStatus } = useAutosave<Script>(
-    "scripts",
-    projectId,
-  );
+  const {
+    save: saveText,
+    status: textStatus,
+    discard: discardText,
+  } = useAutosave<Script>("scripts", projectId);
+  const queryClient = useQueryClient();
+  const [generation, setGeneration] = useState(0);
 
-  // An unknown story is «Не найдено»; any other failure is shown as it is.
-  if (pq.isError) {
-    if (pq.error.statusCode === 404) return <NotFoundScreen />;
-    return (
-      <MessageScreen title="История не загрузилась" text={pq.error.message} />
-    );
-  }
+  // An unknown story is «Не найдено»; any other failure is shown with «Повторить» for all.
+  if (pq.isError && pq.error.statusCode === 404) return <NotFoundScreen />;
   const lists = [
     sq,
     chars.query,
@@ -77,12 +77,15 @@ export function ProjectScreen() {
     drafts.query,
     trashDrafts.query,
   ];
-  const failed = lists.find((q) => q.isError);
+  const failed = [pq, ...lists].find((q) => q.isError);
   if (failed?.error)
     return (
-      <MessageScreen
+      <DataErrorScreen
         title="История не загрузилась"
-        text={failed.error.message}
+        error={failed.error}
+        onRetry={() => {
+          for (const q of [pq, ...lists]) if (q.isError) void q.refetch();
+        }}
       />
     );
   // Refine keeps the previous story's data while the next one loads; never show it as this one.
@@ -147,6 +150,16 @@ export function ProjectScreen() {
     openChat: () => {
       if (narrow) setChatOpen(true);
     },
+    openFresh: () => {
+      // Every query of the window is read again before the document opens anew; a failed read
+      // shows the error screen of the window.
+      void queryClient.invalidateQueries().then(() => {
+        discardText();
+        setDraft(null);
+        setGeneration((g) => g + 1);
+      });
+    },
+    generation,
   };
   const title = docTitle(base, ref);
   const navigator = <Navigator onNavigate={() => setNavOpen(false)} />;

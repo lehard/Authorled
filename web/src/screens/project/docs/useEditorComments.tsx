@@ -1,14 +1,13 @@
 import {
   useCreate,
   useDelete,
-  useGetIdentity,
+  useInvalidate,
   useUpdate,
 } from "@refinedev/core";
 import { useState, type CSSProperties, type RefObject } from "react";
 
-import type { Identity } from "@/auth/authProvider";
 import { useComments } from "@/data/hooks";
-import type { CommentMessage, CommentThread } from "@/data/model";
+import type { CommentThread, NewReply } from "@/data/model";
 import type {
   EditorComments,
   ScreenplayEditorHandle,
@@ -19,11 +18,11 @@ import { cardPlace } from "./cardPlace";
 import { CommentList, ThreadCard } from "./CommentViews";
 
 // Comments on fragments of the screenplay (openspec/specs/web/workspace, «Комментарий к
-// фрагменту» … «Список комментариев»; design of screenplay-comments, decisions 5–8).
+// фрагменту» … «Список комментариев»; design of screenplay-comments, decisions 5–8). Messages
+// change one at a time through resource `comment-replies`; the data source tells whose they are
+// (design of story-data-web, decision 4).
 
 const quiet = { successNotification: false, errorNotification: false } as const;
-
-const now = () => new Date().toISOString();
 
 /**
  * State and actions of the comments of one editor: what the editor highlights, the card of the
@@ -36,7 +35,7 @@ export function useEditorComments(
   onOpened: () => void,
 ) {
   const { threads } = useComments(projectId);
-  const { data: me } = useGetIdentity<Identity>();
+  const invalidate = useInvalidate();
   const { mutateAsync: create } = useCreate();
   const { mutateAsync: update } = useUpdate();
   const { mutateAsync: remove } = useDelete();
@@ -76,45 +75,65 @@ export function useEditorComments(
     setError(e instanceof Error ? e.message : String(e));
   }
 
-  function identity(): Identity {
-    if (me === undefined)
-      throw new Error("Профиль пользователя ещё не загружен.");
-    return me;
-  }
-
-  const message = (text: string): CommentMessage => {
-    const { name, email } = identity();
-    return {
-      id: crypto.randomUUID(),
-      author: name,
-      email,
-      role: "",
-      at: now(),
-      text,
-    };
-  };
-
   async function save(text: string) {
     if (unsavedDraft === null)
       throw new Error("Нет нового комментария для сохранения.");
-    const thread: CommentThread = {
-      ...message(text),
-      id: unsavedDraft,
-      projectId,
-      replies: [],
-      resolved: false,
-    };
-    await create({ resource: "comments", values: thread, ...quiet });
+    const quote = quotes.get(unsavedDraft);
+    if (quote === undefined)
+      throw new Error("Пометки нового комментария нет в тексте.");
+    await create({
+      resource: "comments",
+      values: { id: unsavedDraft, projectId, quote, text },
+      ...quiet,
+    });
   }
 
-  async function patch(t: CommentThread, values: Partial<CommentThread>) {
-    await update({ resource: "comments", id: t.id, values, ...quiet });
+  async function resolve(t: CommentThread, resolved: boolean) {
+    await update({
+      resource: "comments",
+      id: t.id,
+      values: { resolved },
+      ...quiet,
+    });
   }
 
+  // A message of the thread; the first one has the id of the thread.
+  const replies = async (change: Promise<unknown>) => {
+    await change;
+    await invalidate({ resource: "comments", invalidates: ["list"] });
+  };
+  const meta = (t: CommentThread) => ({ threadId: t.id });
+
+  async function reply(t: CommentThread, text: string) {
+    const values: NewReply = { text };
+    await replies(
+      create({ resource: "comment-replies", values, meta: meta(t), ...quiet }),
+    );
+  }
+
+  async function edit(t: CommentThread, id: string, text: string) {
+    await replies(
+      update({
+        resource: "comment-replies",
+        id,
+        values: { text },
+        meta: meta(t),
+        ...quiet,
+      }),
+    );
+  }
+
+  async function deleteMessage(t: CommentThread, id: string) {
+    await replies(
+      remove({ resource: "comment-replies", id, meta: meta(t), ...quiet }),
+    );
+  }
+
+  /** Deleting the first message deletes the thread, as in the core. */
   async function purge(t: CommentThread) {
     if (editor.current !== null) editor.current.removeComment(t.id);
     setActive(null);
-    await remove({ resource: "comments", id: t.id, ...quiet });
+    await deleteMessage(t, t.id);
   }
 
   const editorComments: EditorComments = {
@@ -144,30 +163,15 @@ export function useEditorComments(
         style={style}
         thread={thread}
         quote={quotes.get(active)}
-        me={me}
         error={error}
         onClose={close}
         onSave={(text) => run(save(text))}
-        onReply={(t, text) =>
-          run(patch(t, { replies: [...t.replies, message(text)] }))
-        }
-        onEdit={(t, id, text) =>
-          run(
-            id === t.id
-              ? patch(t, { text })
-              : patch(t, {
-                  replies: t.replies.map((r) =>
-                    r.id === id ? { ...r, text } : r,
-                  ),
-                }),
-          )
-        }
-        onDeleteReply={(t, id) =>
-          run(patch(t, { replies: t.replies.filter((r) => r.id !== id) }))
-        }
+        onReply={(t, text) => run(reply(t, text))}
+        onEdit={(t, id, text) => run(edit(t, id, text))}
+        onDeleteReply={(t, id) => run(deleteMessage(t, id))}
         onDeleteThread={setDeleting}
         onResolve={(t, resolved) => {
-          run(patch(t, { resolved }));
+          run(resolve(t, resolved));
           if (resolved) setActive(null);
         }}
       />

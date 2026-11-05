@@ -1,23 +1,19 @@
+import { useInvalidate } from "@refinedev/core";
 import { AlignLeft, Copy, FileUp, LayoutGrid } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { MANUSCRIPT_TYPES, useStoryFiles } from "@/data/files";
 import { SCRIPT_PARTS } from "@/data/model";
-import {
-  ImportError,
-  parseScreenplayFile,
-  PrintError,
-  type EditorMode,
-} from "@/editor";
+import { PrintError, type EditorMode } from "@/editor";
+import { toNode } from "@/editor/document.ts";
 import {
   ScreenplayEditor,
   type ScreenplayEditorHandle,
 } from "@/editor/ScreenplayEditor";
 import { ConfirmDialog } from "@/screens/shared/ConfirmDialog";
-
-import type { Node } from "prosemirror-model";
 
 import { docPath } from "../docRef";
 import { useDraftActions } from "../draftActions";
@@ -66,11 +62,13 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
   useEffect(() => {
     closeSuggestion.current = suggestions.close;
   });
-  const fileInput = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState<{ name: string; doc: Node } | null>(
-    null,
-  );
+  // Import through the core (web/workspace, «Импорт, экспорт и печать на экране»).
+  const files = useStoryFiles();
+  const invalidate = useInvalidate();
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [pending, setPending] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
   const base = script.name.trim() === "" ? "Сценарий" : script.name.trim();
   const suggestData = useMemo(
     () => ({
@@ -98,6 +96,34 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
     if (!found) setError(`Сцены ${sceneParam} нет в тексте.`);
   }, [sceneParam, setParams]);
 
+  // The core reads the file and replaces the text with its revision; the editor takes the new
+  // text as an ordinary edit, so undo brings the previous one back. A refusal leaves the text.
+  async function importFile(file: File) {
+    setError(null);
+    setImporting(true);
+    try {
+      const uploaded = await files.upload({
+        projectId: project.id,
+        file,
+        purpose: "import",
+      });
+      const { text: imported } = await files.importInto(
+        project.id,
+        uploaded.id,
+      );
+      // The cards may be open by now: then the text of the window takes it.
+      if (editor.current === null) setText(imported);
+      else editor.current.replace(toNode(imported));
+      // New characters and locations of the manuscript.
+      for (const resource of ["characters", "locations", "scripts"])
+        void invalidate({ resource, invalidates: ["list", "detail"] });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setImporting(false);
+    }
+  }
+
   function show(next: "text" | "cards", scene?: number) {
     const p = new URLSearchParams();
     if (next === "cards") p.set("view", "cards");
@@ -111,22 +137,12 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
     try {
       action();
     } catch (e) {
-      if (e instanceof ImportError || e instanceof PrintError) {
+      if (e instanceof PrintError) {
         setError(e.message);
         return;
       }
       throw e;
     }
-  }
-
-  async function chooseFile(file: File) {
-    const text = await file.text();
-    act(() =>
-      setPending({
-        name: file.name,
-        doc: parseScreenplayFile(file.name, text),
-      }),
-    );
   }
 
   return (
@@ -167,12 +183,12 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
       <input
         ref={fileInput}
         type="file"
-        accept=".fountain,.spmd,.fdx"
+        accept={MANUSCRIPT_TYPES}
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
           e.target.value = "";
-          if (file !== undefined) void chooseFile(file);
+          if (file !== undefined) setPending(file);
         }}
       />
       {view === "cards" ? (
@@ -203,9 +219,12 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
           menu={
             mode === "outline" ? undefined : (
               <>
-                <DropdownMenuItem onSelect={() => fileInput.current?.click()}>
+                <DropdownMenuItem
+                  disabled={importing}
+                  onSelect={() => fileInput.current?.click()}
+                >
                   <FileUp />
-                  Импорт…
+                  {importing ? "Импортируем…" : "Импорт…"}
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setDrafting(true)}>
                   <Copy />
@@ -247,7 +266,7 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
           editor.current!.focus();
         }}
         onConfirm={() => {
-          if (pending !== null) editor.current!.replace(pending.doc);
+          if (pending !== null) void importFile(pending);
           setPending(null);
         }}
       />

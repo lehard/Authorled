@@ -7,23 +7,13 @@ import { Button } from "@/components/ui/button";
 import { useProjects } from "@/data/hooks";
 import type { Project } from "@/data/model";
 import { ConfirmDialog } from "@/screens/shared/ConfirmDialog";
+import { DataErrorScreen } from "@/screens/system/DataErrorScreen";
 import { MessageScreen } from "@/screens/system/MessageScreen";
 
 import { TopBar } from "./TopBar";
 import { useStoryActions } from "./storyActions";
 
-const KEEP_DAYS = 30;
-const DAY_MS = 24 * 60 * 60 * 1000;
 const date = new Intl.DateTimeFormat("ru", { day: "numeric", month: "long" });
-
-function daysLeft(deletedAt: string): number {
-  return Math.max(
-    0,
-    Math.ceil(
-      KEEP_DAYS - (Date.now() - new Date(deletedAt).getTime()) / DAY_MS,
-    ),
-  );
-}
 
 /** Trash of stories (openspec/specs/web/workspace, «Корзина историй»). */
 export function ProjectTrashScreen() {
@@ -34,11 +24,14 @@ export function ProjectTrashScreen() {
 
   if (query.isError)
     return (
-      <MessageScreen
+      <DataErrorScreen
         title="Корзина не загрузилась"
-        text={query.error.message}
+        error={query.error}
+        onRetry={() => void query.refetch()}
       />
     );
+  if (query.isPending)
+    return <MessageScreen loading title="Открываем корзину…" />;
 
   const purge = (p: Project) =>
     remove({
@@ -83,7 +76,7 @@ export function ProjectTrashScreen() {
         ) : (
           <>
             <p className="mb-4 text-muted-foreground">
-              Удалённые истории хранятся {KEEP_DAYS} дней, потом удаляются
+              Истории лежат здесь, пока вы не восстановите их или не удалите
               навсегда.
             </p>
             <ul className="grid gap-2.5">
@@ -100,8 +93,7 @@ export function ProjectTrashScreen() {
                     <span className="grid min-w-0 flex-1 gap-0.5">
                       <b className="truncate font-semibold">{p.title}</b>
                       <small className="text-caption text-muted-foreground">
-                        Удалена {date.format(new Date(p.deletedAt))} · удалится
-                        навсегда через {daysLeft(p.deletedAt)} дн.
+                        Удалена {date.format(new Date(p.deletedAt))}
                       </small>
                     </span>
                     <Button
