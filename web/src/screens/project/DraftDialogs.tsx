@@ -1,7 +1,6 @@
-import { useId, useState, type FormEvent, type ReactNode } from "react";
+import { useId, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -20,258 +19,231 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Draft } from "@/data/model";
+import { usePoints } from "@/data/hooks";
+import type { Draft, Point } from "@/data/model";
+import { useSaveActions } from "@/data/saves";
+import { ConfirmDialog } from "@/screens/shared/ConfirmDialog";
 
-import { CURRENT } from "./docRef";
+import { useProjectData } from "./ProjectContext";
 
-// Dialogs of the drafts (screenplay-drafts, decision 6). Content unmounts on close, so every
-// opening starts from the defaults.
+// Dialogs of the drafts. Content unmounts on close, so every opening starts from the defaults.
 
 type Open = { open: boolean; onOpenChange: (open: boolean) => void };
 
-function Shell({
-  open,
+/** The next free number: «Драфт 3» after two drafts. */
+function nextName(drafts: Draft[]): string {
+  const names = new Set(drafts.map((d) => d.name));
+  let n = drafts.length + 1;
+  while (names.has(`Драфт ${n}`)) n += 1;
+  return `Драфт ${n}`;
+}
+
+function NewDraftForm({
   onOpenChange,
-  children,
-}: Open & { children: ReactNode }) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="rounded-panel bg-paper shadow-paper sm:max-w-md">
-        {children}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function TextSelect({
-  id,
-  value,
   drafts,
-  onChange,
-}: {
-  id: string;
-  value: string;
-  drafts: Draft[];
-  onChange: (value: string) => void;
-}) {
-  return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger id={id} className="w-full bg-paper">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={CURRENT}>Текущий текст</SelectItem>
-        {drafts.map((d) => (
-          <SelectItem key={d.id} value={d.id}>
-            {d.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
-
-function Failure({ id, error }: { id?: string; error: string | null }) {
-  if (error === null) return null;
-  return (
-    <p id={id} role="alert" className="text-caption text-destructive">
-      {error}
-    </p>
-  );
-}
-
-function Actions({ submit, busy }: { submit: string; busy?: boolean }) {
-  return (
-    <DialogFooter>
-      <DialogClose asChild>
-        <Button type="button" variant="ghost" className="rounded-full">
-          Отмена
-        </Button>
-      </DialogClose>
-      <Button type="submit" className="rounded-full" disabled={busy}>
-        {submit}
-      </Button>
-    </DialogFooter>
-  );
-}
-
-/** «Создать драфт»: name, «На основе», «Запретить правку текста драфта». */
-export function CreateDraftDialog({
-  drafts,
+  base,
   onSubmit,
-  ...open
-}: Open & {
+}: Pick<Open, "onOpenChange"> & {
   drafts: Draft[];
-  onSubmit: (name: string, base: string, locked: boolean) => Promise<void>;
+  base: string;
+  onSubmit: (name: string, baseId: string) => Promise<void>;
 }) {
-  return (
-    <Shell {...open}>
-      <CreateDraftForm
-        drafts={drafts}
-        onSubmit={onSubmit}
-        onDone={() => open.onOpenChange(false)}
-      />
-    </Shell>
-  );
-}
-
-function CreateDraftForm({
-  drafts,
-  onSubmit,
-  onDone,
-}: {
-  drafts: Draft[];
-  onSubmit: (name: string, base: string, locked: boolean) => Promise<void>;
-  onDone: () => void;
-}) {
-  const id = useId();
-  const [name, setName] = useState("");
-  const [base, setBase] = useState(CURRENT);
-  const [locked, setLocked] = useState(true);
+  const nameId = useId();
+  const baseId = useId();
+  const [name, setName] = useState(nextName(drafts));
+  const [from, setFrom] = useState(base);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    const value = name.trim();
-    if (value === "") {
+    if (name.trim() === "") {
       setError("Назовите драфт.");
       return;
     }
     setBusy(true);
+    setError(null);
     try {
-      await onSubmit(value, base, locked);
-      onDone();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
+      await onSubmit(name.trim(), from);
+      onOpenChange(false);
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : String(failure));
       setBusy(false);
     }
   }
 
   return (
-    <form onSubmit={(e) => void submit(e)} className="grid gap-4" noValidate>
+    <form onSubmit={(e) => void submit(e)} className="grid gap-4">
       <DialogHeader>
-        <DialogTitle className="text-heading-2">Создать драфт</DialogTitle>
+        <DialogTitle className="text-heading-2">Новый драфт</DialogTitle>
         <DialogDescription>
-          Сохраните текст отдельным драфтом, чтобы не потерять этап работы.
+          Отдельная версия истории: копия сценария и карточек. Дальше драфты
+          развиваются независимо.
         </DialogDescription>
       </DialogHeader>
-      <div className="grid gap-2">
-        <Label htmlFor={`${id}-name`}>Название драфта</Label>
+      <div className="grid gap-1.5">
+        <Label htmlFor={nameId}>Название</Label>
         <Input
-          id={`${id}-name`}
-          value={name}
+          id={nameId}
           autoFocus
-          placeholder="Например, После читки"
+          value={name}
           aria-invalid={error !== null}
-          aria-describedby={error !== null ? `${id}-error` : undefined}
-          onChange={(e) => {
-            setName(e.target.value);
-            setError(null);
-          }}
+          onChange={(e) => setName(e.target.value)}
+          className="bg-paper"
         />
-        <Failure id={`${id}-error`} error={error} />
+        {error !== null && (
+          <p role="alert" className="text-caption text-destructive">
+            {error}
+          </p>
+        )}
       </div>
-      <div className="grid gap-2">
-        <Label htmlFor={`${id}-base`}>На основе</Label>
-        <TextSelect
-          id={`${id}-base`}
-          value={base}
-          drafts={drafts}
-          onChange={setBase}
-        />
+      <div className="grid gap-1.5">
+        <Label htmlFor={baseId}>На основе</Label>
+        <Select value={from} onValueChange={setFrom}>
+          <SelectTrigger id={baseId} className="w-full bg-paper">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {drafts.map((d) => (
+              <SelectItem key={d.id} value={d.id}>
+                {d.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-      <div className="flex items-center gap-2">
-        <Checkbox
-          id={`${id}-lock`}
-          checked={locked}
-          onCheckedChange={(c) => setLocked(c === true)}
-        />
-        <Label htmlFor={`${id}-lock`} className="font-normal">
-          Запретить правку текста драфта
-        </Label>
-      </div>
-      <Actions submit="Создать" busy={busy} />
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button type="button" variant="ghost" className="rounded-full">
+            Отмена
+          </Button>
+        </DialogClose>
+        <Button type="submit" className="rounded-full" disabled={busy}>
+          Создать
+        </Button>
+      </DialogFooter>
     </form>
   );
 }
 
-/** «Сравнить драфты»: two different texts, «Было» and «Стало». */
-export function CompareDialog({
+export function NewDraftDialog({
+  open,
+  onOpenChange,
   drafts,
+  base,
   onSubmit,
-  ...open
 }: Open & {
   drafts: Draft[];
-  onSubmit: (a: string, b: string) => void;
+  base: string;
+  onSubmit: (name: string, baseId: string) => Promise<void>;
 }) {
   return (
-    <Shell {...open}>
-      <CompareForm drafts={drafts} onSubmit={onSubmit} />
-    </Shell>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="rounded-panel bg-paper shadow-paper sm:max-w-md">
+        <NewDraftForm
+          onOpenChange={onOpenChange}
+          drafts={drafts}
+          base={base}
+          onSubmit={onSubmit}
+        />
+      </DialogContent>
+    </Dialog>
   );
 }
 
-function CompareForm({
-  drafts,
-  onSubmit,
-}: {
-  drafts: Draft[];
-  onSubmit: (a: string, b: string) => void;
-}) {
-  const id = useId();
-  const [a, setA] = useState(() => {
-    if (drafts.length === 0)
-      throw new Error("«Сравнить драфты» открыт без драфтов.");
-    return drafts[0].id;
-  });
-  const [b, setB] = useState(CURRENT);
+const when = new Intl.DateTimeFormat("ru", {
+  day: "numeric",
+  month: "long",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+function PointList({ onOpenChange }: Pick<Open, "onOpenChange">) {
+  const { draft, openFresh } = useProjectData();
+  const { points, query } = usePoints(draft.id);
+  const { restorePoint } = useSaveActions();
+  const [asking, setAsking] = useState<Point | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  function submit(e: FormEvent) {
-    e.preventDefault();
-    if (a === b) {
-      setError("Выберите два разных текста.");
-      return;
+  async function restore(point: Point) {
+    setError(null);
+    try {
+      await restorePoint(point.id);
+      openFresh();
+      onOpenChange(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
     }
-    onSubmit(a, b);
   }
 
-  const pick = (set: (v: string) => void) => (v: string) => {
-    set(v);
-    setError(null);
-  };
-
   return (
-    <form onSubmit={submit} className="grid gap-4" noValidate>
+    <div className="grid gap-4">
       <DialogHeader>
-        <DialogTitle className="text-heading-2">Сравнить драфты</DialogTitle>
+        <DialogTitle className="text-heading-2">Точки драфта</DialogTitle>
         <DialogDescription>
-          Абзацы, которых нет в другом тексте, будут зачёркнуты слева и
-          подчёркнуты справа.
+          Точка хранит весь драфт: сценарий и все карточки.
         </DialogDescription>
       </DialogHeader>
-      <div className="grid gap-2">
-        <Label htmlFor={`${id}-a`}>Было</Label>
-        <TextSelect
-          id={`${id}-a`}
-          value={a}
-          drafts={drafts}
-          onChange={pick(setA)}
-        />
-      </div>
-      <div className="grid gap-2">
-        <Label htmlFor={`${id}-b`}>Стало</Label>
-        <TextSelect
-          id={`${id}-b`}
-          value={b}
-          drafts={drafts}
-          onChange={pick(setB)}
-        />
-      </div>
-      <Failure error={error} />
-      <Actions submit="Сравнить" />
-    </form>
+      {query.isError && (
+        <p role="alert" className="text-destructive">
+          {query.error.message}
+        </p>
+      )}
+      {query.isSuccess && points.length === 0 && (
+        <p className="text-muted-foreground">
+          Точек пока нет. Сохраните точку перед большой правкой.
+        </p>
+      )}
+      <ul className="grid max-h-[50vh] gap-1.5 overflow-auto">
+        {points.map((p) => (
+          <li
+            key={p.id}
+            className="flex items-center gap-2 rounded-2xl bg-panel px-4 py-2.5"
+          >
+            <span className="grid min-w-0 flex-1 gap-0.5">
+              <b className="truncate">{p.name}</b>
+              <small className="text-caption text-muted-foreground">
+                {p.createdByName} · {when.format(new Date(p.createdAt))}
+              </small>
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              disabled={draft.locked}
+              onClick={() => setAsking(p)}
+            >
+              Вернуться
+            </Button>
+          </li>
+        ))}
+      </ul>
+      {error !== null && (
+        <p role="alert" className="text-destructive">
+          {error}
+        </p>
+      )}
+      <ConfirmDialog
+        open={asking !== null}
+        onOpenChange={(o) => !o && setAsking(null)}
+        title={`Вернуться к точке «${asking?.name ?? ""}»?`}
+        text="Откатится весь драфт: сценарий и все карточки. Нынешнее состояние сохранится отдельной точкой, поэтому откат можно отменить."
+        actionLabel="Вернуться"
+        onConfirm={() => {
+          if (asking !== null) void restore(asking);
+          setAsking(null);
+        }}
+      />
+    </div>
+  );
+}
+
+export function PointsDialog({ open, onOpenChange }: Open) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="rounded-panel bg-paper shadow-paper sm:max-w-md">
+        <PointList onOpenChange={onOpenChange} />
+      </DialogContent>
+    </Dialog>
   );
 }

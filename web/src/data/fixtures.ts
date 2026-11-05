@@ -67,7 +67,7 @@ const local = (day: number, h: number, m: number) =>
   new Date(2026, 9, day, h, m).toISOString();
 
 export const FIXTURES: {
-  projects: Project[];
+  projects: Omit<Project, "draftsCount" | "openDraftId">[];
   scripts: Script[];
   characters: Character[];
   locations: Location[];
@@ -104,8 +104,8 @@ export const FIXTURES: {
   ],
   scripts: [
     {
-      id: "water",
-      projectId: "water",
+      id: "water-1",
+      draftId: "water-1",
       name: "Тихая вода",
       tagline: "Двадцать лет никто не подходил к воде.",
       logline:
@@ -231,8 +231,8 @@ export const FIXTURES: {
       ),
     },
     {
-      id: "ferry",
-      projectId: "ferry",
+      id: "ferry-1",
+      draftId: "ferry-1",
       name: "Последний паром",
       tagline: "",
       logline: "Паромщик везёт последних пассажиров перед закрытием переправы.",
@@ -259,8 +259,8 @@ export const FIXTURES: {
       ),
     },
     {
-      id: "untitled",
-      projectId: "untitled",
+      id: "untitled-1",
+      draftId: "untitled-1",
       name: "Без названия",
       tagline: "",
       logline: "",
@@ -284,7 +284,7 @@ export const FIXTURES: {
   characters: [
     {
       id: "vera",
-      projectId: "water",
+      draftId: "water-1",
       name: "Вера",
       one: "Мать Ани; двадцать лет молчит о гибели брата.",
       long: "Держит дом в порядке, будто порядок может что-то исправить. Говорит коротко, о прошлом — никогда.",
@@ -299,7 +299,7 @@ export const FIXTURES: {
     },
     {
       id: "anya",
-      projectId: "water",
+      draftId: "water-1",
       name: "Аня",
       one: "Дочь Веры; приехала надолго и не знает зачем.",
       long: "Живёт в городе, работает звукорежиссёром. Привыкла задавать вопросы, на которые дома не отвечают.",
@@ -311,7 +311,7 @@ export const FIXTURES: {
     },
     {
       id: "kolya",
-      projectId: "water",
+      draftId: "water-1",
       name: "Дядя Коля",
       one: "Деверь Веры; был на озере в тот день.",
       long: "",
@@ -323,7 +323,7 @@ export const FIXTURES: {
     },
     {
       id: "misha",
-      projectId: "water",
+      draftId: "water-1",
       name: "Миша",
       one: "Младший брат Веры, утонул в 1998 году.",
       long: "",
@@ -335,7 +335,7 @@ export const FIXTURES: {
     },
     {
       id: "nina",
-      projectId: "water",
+      draftId: "water-1",
       name: "Нина",
       one: "Соседка Веры.",
       long: "",
@@ -347,7 +347,7 @@ export const FIXTURES: {
     },
     {
       id: "pavel",
-      projectId: "ferry",
+      draftId: "ferry-1",
       name: "Павел",
       one: "Паромщик.",
       long: "",
@@ -361,7 +361,7 @@ export const FIXTURES: {
   locations: [
     {
       id: "lake",
-      projectId: "water",
+      draftId: "water-1",
       name: "Озеро, мостки",
       one: "Тёмная вода и доски, на которых Миша стоял в последний раз.",
       long: "",
@@ -371,7 +371,7 @@ export const FIXTURES: {
     },
     {
       id: "kitchen",
-      projectId: "water",
+      draftId: "water-1",
       name: "Дом Веры, кухня",
       one: "Кухня со светом над раковиной.",
       long: "",
@@ -381,7 +381,7 @@ export const FIXTURES: {
     },
     {
       id: "pier",
-      projectId: "water",
+      draftId: "water-1",
       name: "Пристань посёлка",
       one: "Сюда приходит паром, отсюда уезжают.",
       long: "",
@@ -391,7 +391,7 @@ export const FIXTURES: {
     },
     {
       id: "garage",
-      projectId: "water",
+      draftId: "water-1",
       name: "Гараж дяди Коли",
       one: "Всё разобрано, ничего не собрано.",
       long: "",
@@ -401,7 +401,7 @@ export const FIXTURES: {
     },
     {
       id: "pier2",
-      projectId: "water",
+      draftId: "water-1",
       name: "Пристань",
       one: "",
       long: "",
@@ -411,7 +411,7 @@ export const FIXTURES: {
     },
     {
       id: "cross",
-      projectId: "ferry",
+      draftId: "ferry-1",
       name: "Переправа",
       one: "",
       long: "",
@@ -423,7 +423,7 @@ export const FIXTURES: {
   worlds: [
     {
       id: "village",
-      projectId: "water",
+      draftId: "water-1",
       name: "Посёлок у озера",
       one: "Все всё помнят, но вслух не говорят.",
       long: "На озеро не ходят отдыхать — только по делу или по горю. Новости приходят через магазин и пристань.",
@@ -436,7 +436,7 @@ export const FIXTURES: {
   comments: [
     {
       id: "c1",
-      projectId: "water",
+      draftId: "water-1",
       author: "Ирина Белова",
       email: "irina@example.com",
       role: "редактор",
@@ -448,7 +448,7 @@ export const FIXTURES: {
     },
     {
       id: "c2",
-      projectId: "water",
+      draftId: "water-1",
       author: "Ирина Белова",
       email: "irina@example.com",
       role: "редактор",
@@ -463,7 +463,7 @@ export const FIXTURES: {
   suggestions: [
     {
       id: "s1",
-      projectId: "water",
+      draftId: "water-1",
       sceneUid: "water-6",
       quote: "Чашка давно чистая. Она всё равно трёт её губкой.",
       at: local(31, 9, 12),
@@ -474,7 +474,7 @@ export const FIXTURES: {
     },
     {
       id: "s2",
-      projectId: "water",
+      draftId: "water-1",
       sceneUid: "water-5",
       quote: "Он утонул. Всё.",
       at: local(31, 9, 12),
@@ -484,6 +484,33 @@ export const FIXTURES: {
       decidedAt: null,
     },
   ],
-  // Mockup v2 has no drafts: the first one is the author's.
-  drafts: [],
+  drafts: [
+    {
+      id: "water-1",
+      projectId: "water",
+      name: "Драфт 1",
+      locked: false,
+      forkedFromName: null,
+      createdAt: "2026-10-01T09:00:00.000Z",
+      deletedAt: null,
+    },
+    {
+      id: "ferry-1",
+      projectId: "ferry",
+      name: "Драфт 1",
+      locked: false,
+      forkedFromName: null,
+      createdAt: "2026-10-01T09:00:00.000Z",
+      deletedAt: null,
+    },
+    {
+      id: "untitled-1",
+      projectId: "untitled",
+      name: "Драфт 1",
+      locked: false,
+      forkedFromName: null,
+      createdAt: "2026-10-01T09:00:00.000Z",
+      deletedAt: null,
+    },
+  ],
 };

@@ -5,6 +5,7 @@ import { useAutosave } from "@/screens/shared/useAutosave";
 
 import { useProjectData } from "../ProjectContext";
 import { DocHead } from "./DocHead";
+import { SaveHistory } from "./SaveHistory";
 
 const FIELDS: {
   key: keyof TitlePage;
@@ -26,7 +27,7 @@ const FIELDS: {
 
 /** «Титульная страница» as a sheet of paper. */
 export function TitleDoc() {
-  const { script } = useProjectData();
+  const { draft, script } = useProjectData();
   const { save, status } = useAutosave<Script>("scripts", script.id);
   const [page, setPage] = useState(script.titlePage);
 
@@ -36,6 +37,7 @@ export function TitleDoc() {
         key={f.key}
         aria-label={f.label}
         placeholder={f.label}
+        readOnly={draft.locked}
         value={page[f.key]}
         onChange={(e) => {
           const next = { ...page, [f.key]: e.target.value };
@@ -49,7 +51,9 @@ export function TitleDoc() {
 
   return (
     <>
-      <DocHead title="Титульная страница" status={status} />
+      <DocHead title="Титульная страница" status={status}>
+        <SaveHistory target={{ draftId: draft.id, part: "fields" }} />
+      </DocHead>
       <div className="sheet sheet-title">
         <div className="my-auto grid gap-3.5">
           {FIELDS.filter((f) => f.place === "mid").map(input)}

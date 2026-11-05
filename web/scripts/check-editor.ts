@@ -10,7 +10,6 @@ import { fileURLToPath } from "node:url";
 import { history, undo, undoDepth } from "prosemirror-history";
 import { EditorState, TextSelection, type Command } from "prosemirror-state";
 
-import { compareDocs } from "../src/editor/compare.ts";
 import {
   ensureSceneUids,
   paragraphs,
@@ -775,7 +774,7 @@ try {
     fail("«Отклонить» попало в историю отмены");
 }
 
-// 11. Drafts: a copy without comment and suggestion marks, paragraph comparison (screenplay-drafts).
+// 11. Drafts: a copy without comment and suggestion marks.
 {
   const marked: ScreenplayDoc = {
     type: "doc",
@@ -812,58 +811,6 @@ try {
     "Свет. Чашка чистая."
   )
     fail("копия для драфта изменила текст");
-
-  const base = plainDoc([
-    ["sceneHeading", "ИНТ. КУХНЯ — НОЧЬ"],
-    ["action", "Вера моет чашку."],
-    ["character", "АНЯ"],
-    ["dialogue", "Выросла."],
-    ["sceneHeading", "НАТ. ОЗЕРО — УТРО"],
-    ["action", "Туман."],
-  ]);
-  const changed = (side: { changed: boolean; text: string }[]) =>
-    side.filter((p) => p.changed).map((p) => p.text);
-  const same = compareDocs(base, base);
-  if (changed(same.before).length + changed(same.after).length !== 0)
-    fail("сравнение одинаковых текстов дало пометки");
-
-  const edited = structuredClone(base);
-  edited.content[3] = {
-    type: "dialogue",
-    content: [{ type: "text", text: "Выросла ты." }],
-  };
-  const line = compareDocs(base, edited);
-  if (
-    changed(line.before).join("|") !== "Выросла." ||
-    changed(line.after).join("|") !== "Выросла ты."
-  )
-    fail(
-      `замена реплики: было ${changed(line.before).join("|")}, стало ${changed(line.after).join("|")}`,
-    );
-
-  const longer = plainDoc([
-    ...paragraphs(base).map((p) => [p.type, p.text] as [ElementName, string]),
-    ["action", "Тишина."],
-  ]);
-  const added = compareDocs(base, longer);
-  if (
-    changed(added.before).length !== 0 ||
-    changed(added.after).join("|") !== "Тишина."
-  )
-    fail("добавленный абзац помечен неверно");
-
-  const moved = {
-    type: "doc" as const,
-    content: [...base.content.slice(4), ...base.content.slice(0, 4)],
-  };
-  const swap = compareDocs(base, moved);
-  if (
-    changed(swap.before).join("|") !== "НАТ. ОЗЕРО — УТРО|Туман." ||
-    changed(swap.after).join("|") !== "НАТ. ОЗЕРО — УТРО|Туман."
-  )
-    fail(
-      `перестановка сцены: было ${changed(swap.before).join("|")}, стало ${changed(swap.after).join("|")}`,
-    );
 }
 
 // Lasting scene ids (web/screenplay-editor, «Постоянный uid сцены»).
@@ -1012,5 +959,5 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log(
-  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, образцы экспорта, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник, правки сцен, комментарии, предложения соавтора, копия и сравнение драфтов, uid сцен, якоря предложений — без расхождений`,
+  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, образцы экспорта, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник, правки сцен, комментарии, предложения соавтора, копия драфтов, uid сцен, якоря предложений — без расхождений`,
 );

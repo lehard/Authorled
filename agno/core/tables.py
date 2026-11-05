@@ -4,10 +4,12 @@ Migrations in `migrations/versions/` create these tables; tests compare this des
 """
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     Column,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     LargeBinary,
@@ -86,16 +88,37 @@ projects = Table(
     Index("ix_projects_owner_id_deleted_at", "owner_id", "deleted_at"),
 )
 
-DOCUMENT_KINDS = ("script", "character", "location", "world", "draft")
+# A parallel version of a story: it owns the screenplay, the cards, the review and the conversations. All drafts
+# are equal; a new one is a copy of another and keeps only the name of its base, for the label.
+drafts = Table(
+    "drafts",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=text("gen_random_uuid()")),
+    Column("project_id", Uuid, ForeignKey(projects.c.id, ondelete="CASCADE"), nullable=False),
+    Column("name", Text, nullable=False),
+    Column("locked", Boolean, nullable=False, server_default=text("false")),
+    Column("forked_from_id", Uuid, ForeignKey("drafts.id", ondelete="SET NULL")),
+    Column("forked_from_name", Text),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    Column("deleted_at", DateTime(timezone=True)),
+    CheckConstraint("name <> ''", name="name_not_empty"),
+    # The target of the composite key of `documents`: a document stays in the story of its draft.
+    UniqueConstraint("id", "project_id"),
+    Index("ix_drafts_project_id", "project_id"),
+)
+
+DOCUMENT_KINDS = ("script", "character", "location", "world")
 ROLES = ("main", "secondary", "episodic")
 
-# Every document of a story in one table; the fields of each kind live in `fields` and the core
+# Every document of a draft in one table; the fields of each kind live in `fields` and the core
 # validates them (core/fields.py).
 documents = Table(
     "documents",
     metadata,
     Column("id", Uuid, primary_key=True, server_default=text("gen_random_uuid()")),
     Column("project_id", Uuid, ForeignKey(projects.c.id, ondelete="CASCADE"), nullable=False),
+    Column("draft_id", Uuid, nullable=False),
     Column("kind", Text, nullable=False),
     Column("name", Text, nullable=False),
     Column("role", Text),
@@ -103,13 +126,17 @@ documents = Table(
     Column("position", Integer, nullable=False),
     Column("fields", JSONB, nullable=False, server_default=text("'{}'::jsonb")),
     Column("revision", Integer, nullable=False, server_default=text("1")),
+    Column("updated_by", Uuid, ForeignKey(users.c.id, ondelete="RESTRICT"), nullable=False),
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     Column("deleted_at", DateTime(timezone=True)),
-    CheckConstraint(
-        "kind IN ('script', 'character', 'location', 'world', 'draft')",
-        name="kind_known",
+    ForeignKeyConstraint(
+        ["draft_id", "project_id"],
+        [drafts.c.id, drafts.c.project_id],
+        name="fk_documents_draft_id_drafts",
+        ondelete="CASCADE",
     ),
+    CheckConstraint("kind IN ('script', 'character', 'location', 'world')", name="kind_known"),
     CheckConstraint("name <> ''", name="name_not_empty"),
     # A role exactly for characters and locations.
     CheckConstraint(
@@ -120,12 +147,12 @@ documents = Table(
     CheckConstraint("position >= 0", name="position_not_negative"),
     CheckConstraint("jsonb_typeof(fields) = 'object'", name="fields_object"),
     CheckConstraint("revision >= 1", name="revision_positive"),
-    Index("ix_documents_project_id_kind_position", "project_id", "kind", "position"),
-    # One screenplay per story.
-    Index("ix_documents_one_script", "project_id", unique=True, postgresql_where=text("kind = 'script'")),
+    Index("ix_documents_draft_id_kind_position", "draft_id", "kind", "position"),
+    # One screenplay per draft.
+    Index("ix_documents_one_script", "draft_id", unique=True, postgresql_where=text("kind = 'script'")),
 )
 
-# Text of the screenplay or of a draft: the editor document (web/src/editor/document.ts) with the
+# Text of the screenplay of a draft: the editor document (web/src/editor/document.ts) with the
 # marks of colour, comments and suggestions.
 screenplay_texts = Table(
     "screenplay_texts",
@@ -133,9 +160,61 @@ screenplay_texts = Table(
     Column("document_id", Uuid, ForeignKey(documents.c.id, ondelete="CASCADE"), primary_key=True),
     Column("content", JSONB, nullable=False),
     Column("revision", Integer, nullable=False, server_default=text("1")),
+    Column("updated_by", Uuid, ForeignKey(users.c.id, ondelete="RESTRICT"), nullable=False),
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     CheckConstraint("jsonb_typeof(content) = 'object'", name="content_object"),
     CheckConstraint("revision >= 1", name="revision_positive"),
+)
+
+VERSION_PARTS = ("text", "fields")
+VERSION_REASONS = ("auto", "suggestion", "import", "restore")
+
+# A snapshot of a part of a document as it was: `saved_by` and `saved_at` tell who saved that state,
+# `created_at` when the snapshot was taken. Full copies, no diffs (design of story-drafts-and-saves).
+document_versions = Table(
+    "document_versions",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=text("gen_random_uuid()")),
+    Column("document_id", Uuid, ForeignKey(documents.c.id, ondelete="CASCADE"), nullable=False),
+    Column("part", Text, nullable=False),
+    Column("content", JSONB, nullable=False),
+    Column("reason", Text, nullable=False),
+    Column("saved_by", Uuid, ForeignKey(users.c.id, ondelete="RESTRICT"), nullable=False),
+    Column("saved_at", DateTime(timezone=True), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    CheckConstraint("part IN ('text', 'fields')", name="part_known"),
+    CheckConstraint("reason IN ('auto', 'suggestion', 'import', 'restore')", name="reason_known"),
+    CheckConstraint("jsonb_typeof(content) = 'object'", name="content_object"),
+    Index("ix_document_versions_document_id_part_created_at", "document_id", "part", "created_at"),
+)
+
+POINT_KINDS = ("manual", "auto")
+
+# A named point of a whole draft: every document outside the trash with its fields and text.
+draft_points = Table(
+    "draft_points",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=text("gen_random_uuid()")),
+    Column("draft_id", Uuid, ForeignKey(drafts.c.id, ondelete="CASCADE"), nullable=False),
+    Column("name", Text, nullable=False),
+    Column("kind", Text, nullable=False),
+    Column("content", JSONB, nullable=False),
+    Column("created_by", Uuid, ForeignKey(users.c.id, ondelete="RESTRICT"), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    CheckConstraint("name <> ''", name="name_not_empty"),
+    CheckConstraint("kind IN ('manual', 'auto')", name="kind_known"),
+    CheckConstraint("jsonb_typeof(content) = 'object'", name="content_object"),
+    Index("ix_draft_points_draft_id", "draft_id"),
+)
+
+# The draft a user opened last in a story, so the story opens there on any device.
+draft_opens = Table(
+    "draft_opens",
+    metadata,
+    Column("user_id", Uuid, ForeignKey(users.c.id, ondelete="CASCADE"), primary_key=True),
+    Column("project_id", Uuid, ForeignKey(projects.c.id, ondelete="CASCADE"), primary_key=True),
+    Column("draft_id", Uuid, ForeignKey(drafts.c.id, ondelete="CASCADE"), nullable=False),
+    Column("opened_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
 )
 
 # A comment thread on a fragment; its id is the id of the `comment` mark in the text.

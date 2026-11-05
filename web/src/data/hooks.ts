@@ -6,9 +6,13 @@ import {
   type Draft,
   type Entity,
   type EntityKind,
+  type Point,
   type Project,
   type Script,
   type Suggestion,
+  type Version,
+  type VersionContent,
+  type VersionTarget,
 } from "./model";
 
 // Queries of the workspace. Screens read data only through these and Refine mutations.
@@ -34,23 +38,23 @@ export function useProject(id: string) {
   return { project: result, query };
 }
 
-export function useScript(projectId: string) {
+export function useScript(draftId: string) {
   const { result, query } = useOne<Script>({
     resource: "scripts",
-    id: projectId,
+    id: draftId,
   });
   return { script: result, query };
 }
 
 export function useEntities<T extends Entity = Entity>(
   kind: EntityKind,
-  projectId: string,
+  draftId: string,
   inTrash = false,
 ) {
   const { result, query } = useList<T>({
     resource: ENTITY_RESOURCE[kind],
     filters: [
-      { field: "projectId", operator: "eq", value: projectId },
+      { field: "draftId", operator: "eq", value: draftId },
       deleted(inTrash),
     ],
     pagination: { mode: "off" },
@@ -58,28 +62,28 @@ export function useEntities<T extends Entity = Entity>(
   return { items: result.data, query };
 }
 
-/** Comment threads of the story, oldest first. */
-export function useComments(projectId: string) {
+/** Comment threads of a draft, oldest first. */
+export function useComments(draftId: string) {
   const { result, query } = useList<CommentThread>({
     resource: "comments",
-    filters: [{ field: "projectId", operator: "eq", value: projectId }],
+    filters: [{ field: "draftId", operator: "eq", value: draftId }],
     sorters: [{ field: "at", order: "asc" }],
     pagination: { mode: "off" },
   });
   return { threads: result.data, query };
 }
 
-/** Co-author suggestions of the story. */
-export function useSuggestions(projectId: string) {
+/** Co-author suggestions of a draft. */
+export function useSuggestions(draftId: string) {
   const { result, query } = useList<Suggestion>({
     resource: "suggestions",
-    filters: [{ field: "projectId", operator: "eq", value: projectId }],
+    filters: [{ field: "draftId", operator: "eq", value: draftId }],
     pagination: { mode: "off" },
   });
   return { suggestions: result.data, query };
 }
 
-/** Drafts of the screenplay, oldest first; `inTrash` lists the deleted ones. */
+/** Drafts of a story, oldest first; `inTrash` lists the deleted ones. */
 export function useDrafts(projectId: string, inTrash = false) {
   const { result, query } = useList<Draft>({
     resource: "drafts",
@@ -91,4 +95,38 @@ export function useDrafts(projectId: string, inTrash = false) {
     pagination: { mode: "off" },
   });
   return { drafts: result.data, query };
+}
+
+/** Snapshots of a part of a document, newest first. */
+export function useVersions(target: VersionTarget) {
+  const { result, query } = useList<Version>({
+    resource: "versions",
+    filters: Object.entries(target).map(([field, value]) => ({
+      field,
+      operator: "eq",
+      value,
+    })),
+    pagination: { mode: "off" },
+  });
+  return { versions: result.data, query };
+}
+
+/** One snapshot with its content; nothing is read until a snapshot is chosen. */
+export function useVersion(id: string | null) {
+  const { result, query } = useOne<VersionContent>({
+    resource: "versions",
+    id: id ?? undefined,
+    queryOptions: { enabled: id !== null },
+  });
+  return { version: result, query };
+}
+
+/** Points of a draft, newest first. */
+export function usePoints(draftId: string) {
+  const { result, query } = useList<Point>({
+    resource: "points",
+    filters: [{ field: "draftId", operator: "eq", value: draftId }],
+    pagination: { mode: "off" },
+  });
+  return { points: result.data, query };
 }

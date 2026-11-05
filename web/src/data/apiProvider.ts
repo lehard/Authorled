@@ -26,13 +26,18 @@ import type {
   NewDraft,
   NewReply,
   NewThread,
+  Point,
   Project,
   Role,
   Script,
   Suggestion,
   TitlePage,
+  Version,
+  VersionContent,
+  VersionTarget,
   World,
 } from "./model";
+import type { SaveOperation } from "./saves";
 
 // Data source `api` (openspec/specs/web/workspace, «Источник данных»; design of story-data-web,
 // decisions 1, 2 and 7): the resources of the screens translated into the routes of the core.
@@ -88,18 +93,12 @@ function text(what: string, fields: Json, key: string): string {
 }
 
 type Kind = "script" | "character" | "location" | "world" | "draft";
-const KINDS: readonly string[] = [
-  "script",
-  "character",
-  "location",
-  "world",
-  "draft",
-];
+const KINDS: readonly string[] = ["script", "character", "location", "world"];
 const ROLES: readonly string[] = ["main", "secondary", "episodic"];
 
 type Doc = {
   id: string;
-  projectId: string;
+  draftId: string;
   kind: Kind;
   name: string;
   role: Role | null;
@@ -121,7 +120,7 @@ function readDoc(body: unknown): Doc {
     throw new Error(`Сервер вернул документ с ролью «${String(role)}».`);
   return {
     id: field(what, o, "id", isString),
-    projectId: field(what, o, "project_id", isString),
+    draftId: field(what, o, "draft_id", isString),
     kind: kind as Kind,
     name: field(what, o, "name", isString),
     role: role as Role | null,
@@ -133,7 +132,9 @@ function readDoc(body: unknown): Doc {
   };
 }
 
-function readProject(body: unknown): Project {
+type SavedProject = Omit<Project, "draftsCount" | "openDraftId">;
+
+function readProject(body: unknown): SavedProject {
   const o = shape("историю", body);
   return {
     id: field("историю", o, "id", isString),
@@ -143,6 +144,55 @@ function readProject(body: unknown): Project {
     cover: false,
     updatedAt: field("историю", o, "updated_at", isString),
     deletedAt: field("историю", o, "deleted_at", isTime),
+  };
+}
+
+/** A story of the list, which alone tells its drafts for the caller. */
+function readListedProject(body: unknown): Project {
+  const o = shape("историю", body);
+  return {
+    ...readProject(o),
+    draftsCount: field("историю", o, "drafts_count", isNumber),
+    openDraftId: field("историю", o, "open_draft_id", isString),
+  };
+}
+
+function readDraft(body: unknown): Draft {
+  const o = shape("драфт", body);
+  const from = o.forked_from_name;
+  if (from !== null && !isString(from))
+    throw new Error("Сервер вернул драфт с неверным полем «forked_from_name».");
+  return {
+    id: field("драфт", o, "id", isString),
+    projectId: field("драфт", o, "project_id", isString),
+    name: field("драфт", o, "name", isString),
+    locked: field("драфт", o, "locked", isBool),
+    forkedFromName: from,
+    createdAt: field("драфт", o, "created_at", isString),
+    deletedAt: field("драфт", o, "deleted_at", isTime),
+  };
+}
+
+function readVersion(body: unknown): Version {
+  const o = shape("снимок", body);
+  return {
+    id: field("снимок", o, "id", isString),
+    part: field("снимок", o, "part", isString) as Version["part"],
+    reason: field("снимок", o, "reason", isString) as Version["reason"],
+    savedByName: field("снимок", o, "saved_by_name", isString),
+    savedAt: field("снимок", o, "saved_at", isString),
+  };
+}
+
+function readPoint(body: unknown): Point {
+  const o = shape("точку драфта", body);
+  return {
+    id: field("точку драфта", o, "id", isString),
+    draftId: field("точку драфта", o, "draft_id", isString),
+    name: field("точку драфта", o, "name", isString),
+    kind: field("точку драфта", o, "kind", isString) as Point["kind"],
+    createdByName: field("точку драфта", o, "created_by_name", isString),
+    createdAt: field("точку драфта", o, "created_at", isString),
   };
 }
 
@@ -213,43 +263,43 @@ async function revised(
   }
 }
 
-// --- the tree of a story: one request for all resources that read it at once
+// --- the tree of a draft: one request for all resources that read it at once
 
 const trees = new Map<string, Promise<Doc[]>>();
-/** Project id → id of its screenplay document. */
+/** Draft id → id of its screenplay document. */
 const scripts = new Map<string, string>();
 
-function tree(projectId: string): Promise<Doc[]> {
-  const running = trees.get(projectId);
+function tree(draftId: string): Promise<Doc[]> {
+  const running = trees.get(draftId);
   if (running !== undefined) return running;
   const load = (async () => {
     const docs = list(
-      "документы истории",
-      await request(`/projects/${projectId}/documents`),
+      "документы драфта",
+      await request(`/drafts/${draftId}/documents`),
     ).map(readDoc);
     for (const d of docs) remember(docKey(d.id), d.revision);
     const script = docs.filter((d) => d.kind === "script");
     if (script.length !== 1)
       throw new Error(
-        `У истории ${projectId} ${script.length} сценариев, а должен быть один.`,
+        `У драфта ${draftId} ${script.length} сценариев, а должен быть один.`,
       );
-    scripts.set(projectId, script[0].id);
+    scripts.set(draftId, script[0].id);
     return docs;
   })();
-  trees.set(projectId, load);
+  trees.set(draftId, load);
   // Only requests that run at the same time share the answer; the next read asks again.
   void load.then(
-    () => trees.delete(projectId),
-    () => trees.delete(projectId),
+    () => trees.delete(draftId),
+    () => trees.delete(draftId),
   );
   return load;
 }
 
-async function scriptId(projectId: string): Promise<string> {
-  const known = scripts.get(projectId);
+async function scriptId(draftId: string): Promise<string> {
+  const known = scripts.get(draftId);
   if (known !== undefined) return known;
-  await tree(projectId);
-  return scripts.get(projectId)!;
+  await tree(draftId);
+  return scripts.get(draftId)!;
 }
 
 async function readTextOf(documentId: string): Promise<Text> {
@@ -321,7 +371,7 @@ function toEntity(d: Doc): Entity {
   }
   const base = {
     id: d.id,
-    projectId: d.projectId,
+    draftId: d.draftId,
     name: d.name,
     one: d.summary,
     long: text(what, d.fields, "description"),
@@ -385,7 +435,7 @@ const ALL_PARTS: Script["show"] = {
   text: true,
 };
 
-function toScript(projectId: string, d: Doc, t: Text): Script {
+function toScript(draftId: string, d: Doc, t: Text): Script {
   const what = "сценарий";
   const show = d.fields.show;
   const page = d.fields.title_page;
@@ -396,8 +446,8 @@ function toScript(projectId: string, d: Doc, t: Text): Script {
   const pageText = (key: keyof TitlePage) =>
     page === undefined ? "" : text("титульную страницу", page, key);
   return {
-    id: projectId,
-    projectId,
+    id: draftId,
+    draftId,
     name: d.name,
     tagline: text(what, d.fields, "tagline"),
     logline: text(what, d.fields, "logline"),
@@ -448,21 +498,6 @@ function scriptChanges(values: Partial<Script>): {
   return { doc, text: content };
 }
 
-async function toDraft(d: Doc): Promise<Draft> {
-  const locked = d.fields.locked;
-  if (!isBool(locked))
-    throw new Error(`Сервер вернул драфт «${d.name}» без поля «locked».`);
-  return {
-    id: d.id,
-    projectId: d.projectId,
-    name: d.name,
-    locked,
-    createdAt: d.createdAt,
-    text: (await readTextOf(d.id)).content,
-    deletedAt: d.deletedAt,
-  };
-}
-
 /** Thread id → id of its first message, which the screens know by the thread id. */
 const firstMessages = new Map<string, string>();
 
@@ -479,7 +514,7 @@ function toMessage(body: unknown): CommentMessage {
   };
 }
 
-function toThread(projectId: string, body: unknown): CommentThread {
+function toThread(draftId: string, body: unknown): CommentThread {
   const o = shape("ветку комментария", body);
   const what = "ветку комментария";
   const id = field(what, o, "id", isString);
@@ -492,7 +527,7 @@ function toThread(projectId: string, body: unknown): CommentThread {
   return {
     ...first,
     id,
-    projectId,
+    draftId,
     quote: field(what, o, "quote", isString),
     resolved: field(what, o, "resolved_at", isTime) !== null,
     replies,
@@ -501,7 +536,7 @@ function toThread(projectId: string, body: unknown): CommentThread {
 
 const STATUSES: readonly string[] = ["open", "accepted", "rejected"];
 
-function toSuggestion(projectId: string, body: unknown): Suggestion {
+function toSuggestion(draftId: string, body: unknown): Suggestion {
   const o = shape("предложение соавтора", body);
   const what = "предложение соавтора";
   const status = field(what, o, "status", isString);
@@ -509,7 +544,7 @@ function toSuggestion(projectId: string, body: unknown): Suggestion {
     throw new Error(`Сервер вернул предложение со статусом «${status}».`);
   return {
     id: field(what, o, "id", isString),
-    projectId,
+    draftId,
     sceneUid: field(what, o, "scene_uid", isString),
     quote: field(what, o, "quote", isString),
     at: field(what, o, "created_at", isString),
@@ -522,17 +557,31 @@ function toSuggestion(projectId: string, body: unknown): Suggestion {
 
 // --- filters and sorting of the screens' lists
 
-type Query = { projectId: string | null; deleted: boolean | null };
+type Query = {
+  projectId: string | null;
+  draftId: string | null;
+  documentId: string | null;
+  part: string | null;
+  deleted: boolean | null;
+};
+
+const EQUAL_FILTERS = ["projectId", "draftId", "documentId", "part"] as const;
 
 function query(resource: string, filters: CrudFilter[]): Query {
-  const q: Query = { projectId: null, deleted: null };
+  const q: Query = {
+    projectId: null,
+    draftId: null,
+    documentId: null,
+    part: null,
+    deleted: null,
+  };
   for (const f of filters) {
     if (!("field" in f))
       throw new Error(
         `Источник api не поддерживает составной фильтр «${f.operator}».`,
       );
-    if (f.field === "projectId" && f.operator === "eq")
-      q.projectId = String(f.value);
+    const equal = EQUAL_FILTERS.find((name) => name === f.field);
+    if (equal !== undefined && f.operator === "eq") q[equal] = String(f.value);
     else if (f.field === "deletedAt" && f.operator === "null")
       q.deleted = false;
     else if (f.field === "deletedAt" && f.operator === "nnull")
@@ -545,10 +594,20 @@ function query(resource: string, filters: CrudFilter[]): Query {
   return q;
 }
 
-function needProject(resource: string, q: Query): string {
-  if (q.projectId === null)
-    throw new Error(`Список «${resource}» читается только по истории.`);
-  return q.projectId;
+function needDraft(resource: string, q: Query): string {
+  if (q.draftId === null)
+    throw new Error(`Список «${resource}» читается только по драфту.`);
+  return q.draftId;
+}
+
+/** The document of a history: a card by its id, the screenplay by its draft. */
+async function versionDocument(q: {
+  draftId?: string | null;
+  documentId?: string | null;
+}): Promise<string> {
+  if (q.documentId !== null && q.documentId !== undefined) return q.documentId;
+  if (q.draftId !== null && q.draftId !== undefined) return scriptId(q.draftId);
+  throw new Error("История сохранений читается по документу или драфту.");
 }
 
 function sorted<T extends BaseRecord>(rows: T[], sorters: CrudSort[]): T[] {
@@ -601,7 +660,7 @@ async function projects(trash: boolean): Promise<Project[]> {
   return list(
     "истории",
     await request("/projects", { query: { trash: String(trash) } }),
-  ).map(readProject);
+  ).map(readListedProject);
 }
 
 async function getList(
@@ -614,9 +673,33 @@ async function getList(
       throw new Error("Истории читаются списком полки или корзины.");
     return projects(q.deleted);
   }
-  const projectId = needProject(resource, q);
+  if (resource === "drafts") {
+    if (q.projectId === null)
+      throw new Error("Драфты читаются только по истории.");
+    return list("драфты", await request(`/projects/${q.projectId}/drafts`))
+      .map(readDraft)
+      .filter(
+        (d) => q.deleted === null || (d.deletedAt !== null) === q.deleted,
+      );
+  }
+  if (resource === "versions") {
+    if (q.part === null)
+      throw new Error("История сохранений читается по части документа.");
+    const documentId = await versionDocument(q);
+    return list(
+      "снимки",
+      await request(`/documents/${documentId}/versions`, {
+        query: { part: q.part },
+      }),
+    ).map(readVersion);
+  }
+  const draftId = needDraft(resource, q);
+  if (resource === "points")
+    return list("точки драфта", await request(`/drafts/${draftId}/points`)).map(
+      readPoint,
+    );
   if (isEntityResource(resource)) {
-    const docs = await tree(projectId);
+    const docs = await tree(draftId);
     return docs
       .filter(
         (d) =>
@@ -625,30 +708,18 @@ async function getList(
       )
       .map(toEntity);
   }
-  if (resource === "drafts") {
-    const docs = await tree(projectId);
-    return Promise.all(
-      docs
-        .filter(
-          (d) =>
-            d.kind === "draft" &&
-            (q.deleted === null || (d.deletedAt !== null) === q.deleted),
-        )
-        .map(toDraft),
-    );
-  }
   if (q.deleted !== null)
     throw new Error(`У ресурса «${resource}» нет корзины.`);
-  const sid = await scriptId(projectId);
+  const sid = await scriptId(draftId);
   if (resource === "comments")
     return list("комментарии", await request(`/documents/${sid}/comments`)).map(
-      (t) => toThread(projectId, t),
+      (t) => toThread(draftId, t),
     );
   if (resource === "suggestions")
     return list(
       "предложения соавтора",
       await request(`/documents/${sid}/suggestions`),
-    ).map((s) => toSuggestion(projectId, s));
+    ).map((s) => toSuggestion(draftId, s));
   throw unsupported(resource, "список");
 }
 
@@ -672,10 +743,13 @@ async function getOne(resource: string, id: string): Promise<BaseRecord> {
       throw new HttpError("Документ не найден.", 404);
     return toEntity(d);
   }
-  if (resource === "drafts") {
-    const d = await readDocument(id);
-    if (d.kind !== "draft") throw new HttpError("Драфт не найден.", 404);
-    return toDraft(d);
+  if (resource === "versions") {
+    const body = await request(`/versions/${id}`);
+    const version: VersionContent = {
+      ...readVersion(body),
+      content: field("снимок", shape("снимок", body), "content", isObject),
+    };
+    return version;
   }
   throw unsupported(resource, "запись");
 }
@@ -695,13 +769,14 @@ async function create(
       }),
     );
     const project = readProject(o.project);
+    const draftId = field("новую историю", o, "draft_id", isString);
     field("новую историю", o, "script_id", isString);
     // The screens fill the title page next: read the tree for the revision of the screenplay.
-    await tree(project.id);
-    return project;
+    await tree(draftId);
+    return { ...project, draftId };
   }
   if (isEntityResource(resource)) {
-    const { projectId, deletedAt, ...values } = variables as Omit<
+    const { draftId, deletedAt, ...values } = variables as Omit<
       Character & World,
       "id"
     >;
@@ -710,7 +785,7 @@ async function create(
     const { name, role, summary, fields } = entityChanges(values);
     const body = list(
       "новые документы",
-      await request(`/projects/${projectId}/documents`, {
+      await request(`/drafts/${draftId}/documents`, {
         method: "POST",
         json: {
           kind: ENTITY_KIND[resource],
@@ -732,24 +807,27 @@ async function create(
   }
   if (resource === "drafts") {
     const values = variables as NewDraft;
-    const d = readDoc(
+    return readDraft(
       await request(`/projects/${values.projectId}/drafts`, {
         method: "POST",
-        json: {
-          name: values.name,
-          locked: values.locked,
-          base_id: values.baseId,
-        },
+        json: { name: values.name, base_id: values.baseId },
       }),
     );
-    remember(docKey(d.id), d.revision);
-    return toDraft(d);
+  }
+  if (resource === "points") {
+    const values = variables as Pick<Point, "draftId" | "name">;
+    return readPoint(
+      await request(`/drafts/${values.draftId}/points`, {
+        method: "POST",
+        json: { name: values.name },
+      }),
+    );
   }
   if (resource === "comments") {
     const values = variables as NewThread;
-    const sid = await scriptId(values.projectId);
+    const sid = await scriptId(values.draftId);
     return toThread(
-      values.projectId,
+      values.draftId,
       await request(`/documents/${sid}/comments`, {
         method: "POST",
         json: { id: values.id, quote: values.quote, body: values.text },
@@ -791,17 +869,18 @@ async function update(
   const values = variables as Json;
   const toTrash = trashMove(resource, values);
   if (resource === "projects") {
-    if (toTrash !== null)
-      return readProject(await moveToTrash(`/projects/${id}`, toTrash));
+    if (toTrash !== null) {
+      await moveToTrash(`/projects/${id}`, toTrash);
+      return { id, ...values };
+    }
     const changes: Json = {};
     for (const [key, value] of Object.entries(values)) {
       if (key === "title") changes.title = value;
       else if (key === "desc") changes.description = value;
       else throw new Error(`Источник api не меняет поле «${key}» истории.`);
     }
-    return readProject(
-      await request(`/projects/${id}`, { method: "PATCH", json: changes }),
-    );
+    await request(`/projects/${id}`, { method: "PATCH", json: changes });
+    return { id, ...values };
   }
   if (resource === "scripts") {
     const sid = await scriptId(id);
@@ -816,21 +895,14 @@ async function update(
     return toEntity(await patchDocument(id, entityChanges(values)));
   }
   if (resource === "drafts") {
-    if (toTrash !== null) {
-      await moveToTrash(`/documents/${id}`, toTrash);
-      return { id, ...values };
-    }
-    const changes: Json = {};
-    let content: ScreenplayDoc | null = null;
-    for (const [key, value] of Object.entries(values)) {
-      if (key === "name") changes.name = value;
-      else if (key === "locked") changes.fields = { locked: value };
-      else if (key === "text") content = value as ScreenplayDoc;
-      else throw new Error(`Источник api не меняет поле «${key}» драфта.`);
-    }
-    if (Object.keys(changes).length > 0) await patchDocument(id, changes);
-    if (content !== null) await putText(id, content);
-    return { id, ...values };
+    if (toTrash !== null)
+      return readDraft(await moveToTrash(`/drafts/${id}`, toTrash));
+    for (const key of Object.keys(values))
+      if (key !== "name" && key !== "locked")
+        throw new Error(`Источник api не меняет поле «${key}» драфта.`);
+    return readDraft(
+      await request(`/drafts/${id}`, { method: "PATCH", json: values }),
+    );
   }
   if (resource === "comments") {
     if (Object.keys(values).join() !== "resolved")
@@ -853,11 +925,11 @@ async function update(
   if (resource === "suggestions") {
     // The core keeps the time of the decision itself.
     const { status } = values as Pick<Suggestion, "status">;
-    const projectId: unknown = meta?.projectId;
-    if (typeof projectId !== "string")
-      throw new Error("Решению по предложению нужен meta.projectId.");
+    const draftId: unknown = meta?.draftId;
+    if (typeof draftId !== "string")
+      throw new Error("Решению по предложению нужен meta.draftId.");
     return toSuggestion(
-      projectId,
+      draftId,
       await request(`/suggestions/${id}`, {
         method: "PATCH",
         json: { status },
@@ -876,8 +948,12 @@ async function deleteOne(
     await request(`/projects/${id}`, { method: "DELETE" });
     return { id };
   }
-  if (isEntityResource(resource) || resource === "drafts") {
+  if (isEntityResource(resource)) {
     await request(`/documents/${id}`, { method: "DELETE" });
+    return { id };
+  }
+  if (resource === "drafts") {
+    await request(`/drafts/${id}`, { method: "DELETE" });
     return { id };
   }
   if (resource === "comment-replies") {
@@ -901,8 +977,30 @@ function readFile(body: unknown): UploadedFile {
   };
 }
 
-async function fileOperation(op: FileOperation): Promise<unknown> {
+async function restoreVersion(id: string, target: VersionTarget) {
+  const documentId = await versionDocument(target);
+  const key = target.part === "text" ? textKey(documentId) : docKey(documentId);
+  return inTurn(key, async () => {
+    const o = shape(
+      "откат",
+      await revised(key, `/versions/${id}/restore`, { method: "POST" }),
+    );
+    remember(key, field("откат", o, "revision", isNumber));
+    return { id };
+  });
+}
+
+async function operation(op: FileOperation | SaveOperation): Promise<unknown> {
   switch (op.operation) {
+    case "openDraft":
+      await request(`/drafts/${op.payload.draftId}/open`, { method: "POST" });
+      return {};
+    case "restoreVersion":
+      return restoreVersion(op.payload.id, op.payload.target);
+    case "restorePoint":
+      return readPoint(
+        await request(`/points/${op.payload.id}/restore`, { method: "POST" }),
+      );
     case "upload": {
       const { projectId, file, purpose, sessionId } = op.payload;
       const form = new FormData();
@@ -914,11 +1012,11 @@ async function fileOperation(op: FileOperation): Promise<unknown> {
       );
     }
     case "import": {
-      const { projectId, fileId } = op.payload;
-      const sid = await scriptId(projectId);
+      const { draftId, fileId } = op.payload;
+      const sid = await scriptId(draftId);
       return inTurn(textKey(sid), async () => {
         const t = readText(
-          await revised(textKey(sid), `/projects/${projectId}/import`, {
+          await revised(textKey(sid), `/drafts/${draftId}/import`, {
             method: "POST",
             json: { file_id: fileId },
           }),
@@ -937,8 +1035,9 @@ async function fileOperation(op: FileOperation): Promise<unknown> {
         await request("/projects", { method: "POST", form }),
       );
       const project = readProject(o.project);
-      await tree(project.id);
-      return { id: project.id };
+      const draftId = field("новую историю", o, "draft_id", isString);
+      await tree(draftId);
+      return { id: project.id, draftId };
     }
     default:
       throw new Error(
@@ -973,9 +1072,9 @@ export const apiProvider: DataProvider = {
   }),
 
   custom: async ({ meta, payload }) => ({
-    data: (await fileOperation({
+    data: (await operation({
       operation: meta?.operation,
       payload,
-    } as FileOperation)) as never,
+    } as FileOperation | SaveOperation)) as never,
   }),
 };

@@ -11,6 +11,7 @@ from typing import Any, Protocol
 
 from sqlalchemy import Connection, delete, func, insert, select, update
 
+from core import drafts
 from core.engine import get_engine
 from core.errors import Conflict, Invalid, NotFound
 from core.tables import documents, projects, users
@@ -27,6 +28,14 @@ class Project:
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None
+
+
+@dataclass(frozen=True)
+class ListedProject(Project):
+    """A story on the shelf of its owner."""
+
+    drafts_count: int
+    open_draft_id: uuid.UUID
 
 
 def _project(row: Any) -> Project:
@@ -95,30 +104,55 @@ def project_row(connection: Connection, project_id: uuid.UUID, for_update: bool 
     return _project(row)
 
 
-def list_projects(connection: Connection, owner_id: uuid.UUID, trash: bool) -> list[Project]:
+def list_projects(connection: Connection, owner_id: uuid.UUID, trash: bool) -> list[ListedProject]:
     deleted = projects.c.deleted_at.is_not(None) if trash else projects.c.deleted_at.is_(None)
     rows = connection.execute(
         select(projects).where(projects.c.owner_id == owner_id, deleted).order_by(projects.c.updated_at.desc())
     ).all()
-    return [_project(row) for row in rows]
+    return [
+        ListedProject(
+            row.id,
+            row.title,
+            row.description,
+            row.format,
+            row.created_at,
+            row.updated_at,
+            row.deleted_at,
+            drafts.count_drafts(connection, row.id),
+            drafts.open_draft_id(connection, owner_id, row.id),
+        )
+        for row in rows
+    ]
 
 
 def create_project(
     connection: Connection, owner_id: uuid.UUID, title: Any, description: Any = "", text: dict[str, Any] | None = None
-) -> tuple[Project, uuid.UUID]:
-    """A new feature film with its screenplay; the text is one empty scene heading unless `text` is given."""
+) -> tuple[Project, uuid.UUID, uuid.UUID]:
+    """A new feature film with «Драфт 1» and its screenplay; the text is one empty scene heading unless given.
+
+    Returns the story, the draft and the screenplay.
+    """
     row = connection.execute(
         insert(projects)
         .values(owner_id=owner_id, title=_title(title), description=_description(description), format="feature")
         .returning(projects)
     ).one()
+    draft_id = drafts.add_first_draft(connection, row.id)
     script_id = connection.execute(
         insert(documents)
-        .values(project_id=row.id, kind="script", name=row.title, position=0, fields={})
+        .values(
+            project_id=row.id,
+            draft_id=draft_id,
+            kind="script",
+            name=row.title,
+            position=0,
+            fields={},
+            updated_by=owner_id,
+        )
         .returning(documents.c.id)
     ).scalar_one()
-    add_text(connection, script_id, text if text is not None else new_screenplay())
-    return _project(row), script_id
+    add_text(connection, script_id, text if text is not None else new_screenplay(), owner_id)
+    return _project(row), draft_id, script_id
 
 
 def update_project(connection: Connection, project_id: uuid.UUID, changes: dict[str, Any]) -> Project:

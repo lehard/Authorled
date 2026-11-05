@@ -7,14 +7,10 @@ import {
   BookOpen,
   ChevronRight,
   Clapperboard,
-  Columns2,
-  Copy,
   FileText,
   Globe,
   Home,
-  Lock,
   MapPin,
-  Pencil,
   Plus,
   SortAsc,
   Trash2,
@@ -39,19 +35,17 @@ import {
   titleCase,
 } from "@/editor/scenes.ts";
 import { ConfirmDialog } from "@/screens/shared/ConfirmDialog";
-import { NameDialog } from "@/screens/shared/NameDialog";
 
 import { AddDocumentDialog } from "./AddDocumentDialog";
 import {
-  CURRENT,
   docPath,
   ENTITY_WORDS,
   GROUP_OF,
   type DocRef,
   type GroupKey,
 } from "./docRef";
-import { trashItems, useDraftActions, useTrashActions } from "./draftActions";
-import { CompareDialog, CreateDraftDialog } from "./DraftDialogs";
+import { trashItems, useTrashActions } from "./draftActions";
+import { DraftSwitcher } from "./DraftSwitcher";
 import { useEntityActions } from "./entityActions";
 import { NodeMenu, type MenuEntry } from "./NodeMenu";
 import { useProjectData } from "./ProjectContext";
@@ -83,17 +77,14 @@ type Row = {
   kids?: Row[];
   /** The row has a scene list (screenplay-text-tools, decision 9). */
   drill?: boolean;
-  /** A draft closed for editing. */
-  lock?: boolean;
 };
 
 /** Navigator of a story (openspec/specs/web/workspace, «Навигатор»). */
 export function Navigator({ onNavigate }: { onNavigate: () => void }) {
   const data = useProjectData();
-  const { project, script, docSegment } = data;
+  const { project, draft, script, docSegment } = data;
   const navigate = useNavigate();
-  const actions = useEntityActions(project.id);
-  const draftActions = useDraftActions(data);
+  const actions = useEntityActions(draft.id);
   const trashActions = useTrashActions(data);
   const [open, setOpen] = useState<Set<string>>(new Set(["chars", "sp"]));
   const [sorted, setSorted] = useState<Record<GroupKey, boolean>>({
@@ -103,11 +94,6 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
   });
   const [adding, setAdding] = useState<EntityKind | null>(null);
   const [emptying, setEmptying] = useState(false);
-  const [drafting, setDrafting] = useState(false);
-  const [comparing, setComparing] = useState(false);
-  const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(
-    null,
-  );
   // The tree, or the scene list of «Текст сценария» or «Поэпизодник».
   const [mode, setMode] = useState<"tree" | "text" | "treatment">("tree");
   const [notice, setNotice] = useState<string | null>(null);
@@ -131,7 +117,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
     );
   }
 
-  const path = (ref: DocRef) => docPath(project.id, ref);
+  const path = (ref: DocRef) => docPath(draft, ref);
   const trashed = trashItems(data.trash);
 
   async function remove(kind: EntityKind, x: Entity) {
@@ -154,6 +140,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
         {
           label: ENTITY_WORDS[kind].add,
           icon: Plus,
+          disabled: draft.locked,
           run: () => setAdding(kind),
         },
         ...(kind === "world"
@@ -165,6 +152,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
                     ? "Найти всех персонажей в тексте"
                     : "Найти все локации в тексте",
                 icon: ScanSearch,
+                disabled: draft.locked,
                 run: () => void harvest(kind),
               },
             ]),
@@ -189,6 +177,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
             label: "Удалить",
             icon: Trash2,
             danger: true,
+            disabled: draft.locked,
             run: () => void remove(kind, x),
           },
         ],
@@ -200,50 +189,6 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
     (p) => script.show[p],
   );
 
-  /** A deleted draft that is open, alone or in a comparison, gives way to the text. */
-  async function removeDraft(id: string) {
-    await draftActions.trash(id, true);
-    if (
-      docSegment === `draft:${id}` ||
-      (docSegment.startsWith("compare:") &&
-        docSegment.split(":").slice(1).includes(id))
-    )
-      navigate(
-        path(
-          script.show.text ? { kind: "part", part: "text" } : { kind: "sp" },
-        ),
-      );
-  }
-
-  const draftRows: Row[] = data.drafts.map((d) => ({
-    key: `draft:${d.id}`,
-    to: path({ kind: "draft", id: d.id }),
-    icon: Copy,
-    label: d.name,
-    lock: d.locked,
-    menu: [
-      {
-        label: "Открыть",
-        run: () => navigate(path({ kind: "draft", id: d.id })),
-      },
-      {
-        label: "Сравнить с текущим текстом",
-        icon: Columns2,
-        run: () => navigate(path({ kind: "compare", a: d.id, b: CURRENT })),
-      },
-      {
-        label: "Переименовать",
-        icon: Pencil,
-        run: () => setRenaming({ id: d.id, name: d.name }),
-      },
-      {
-        label: "Удалить в корзину",
-        icon: Trash2,
-        danger: true,
-        run: () => void removeDraft(d.id),
-      },
-    ],
-  }));
   const rows: Row[] = [
     {
       key: "info",
@@ -266,24 +211,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
           icon: PART_ICON[p],
           label: SCRIPT_PARTS[p],
           drill: p === "text" || p === "treatment",
-          menu:
-            p === "text"
-              ? [
-                  {
-                    label: "Создать драфт",
-                    icon: Copy,
-                    run: () => setDrafting(true),
-                  },
-                  {
-                    label: "Сравнить драфты",
-                    icon: Columns2,
-                    disabled: data.drafts.length === 0,
-                    run: () => setComparing(true),
-                  },
-                ]
-              : undefined,
         })),
-        ...draftRows,
       ],
     },
     {
@@ -296,7 +224,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
         {
           label: "Очистить корзину",
           danger: true,
-          disabled: trashed.length === 0,
+          disabled: trashed.length === 0 || draft.locked,
           run: () => setEmptying(true),
         },
       ],
@@ -342,12 +270,6 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
         >
           <row.icon className="size-4 shrink-0" />
           <span className="min-w-0 flex-1 truncate">{row.label}</span>
-          {row.lock === true && (
-            <>
-              <Lock aria-hidden className="size-3.5 text-muted-foreground" />
-              <span className="sr-only">, правка запрещена</span>
-            </>
-          )}
           {row.count !== undefined && row.count > 0 && (
             <span className="text-xs text-muted-foreground">{row.count}</span>
           )}
@@ -405,6 +327,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
           </small>
         </span>
       </Link>
+      <DraftSwitcher onNavigate={onNavigate} />
       {notice !== null && (
         <p
           role="status"
@@ -434,6 +357,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
       )}
       <button
         type="button"
+        disabled={draft.locked}
         onClick={() => setAdding("char")}
         className="mx-2.5 mt-1.5 mb-3 flex items-center gap-2 rounded-full px-3 py-2.5 font-semibold text-primary hover:bg-accent"
       >
@@ -450,41 +374,6 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
           setOpen((s) => new Set(s).add(GROUP_OF[kind]));
           onNavigate();
           navigate(path({ kind: "entity", entity: kind, id }));
-        }}
-      />
-      <CreateDraftDialog
-        open={drafting}
-        onOpenChange={setDrafting}
-        drafts={data.drafts}
-        onSubmit={async (name, base, locked) => {
-          const id = await draftActions.create(name, base, locked);
-          setOpen((s) => new Set(s).add("sp"));
-          onNavigate();
-          navigate(path({ kind: "draft", id }));
-        }}
-      />
-      <CompareDialog
-        open={comparing}
-        onOpenChange={setComparing}
-        drafts={data.drafts}
-        onSubmit={(a, b) => {
-          setComparing(false);
-          onNavigate();
-          navigate(path({ kind: "compare", a, b }));
-        }}
-      />
-      <NameDialog
-        open={renaming !== null}
-        onOpenChange={(o) => !o && setRenaming(null)}
-        title="Переименовать драфт"
-        label="Название драфта"
-        initial={renaming?.name}
-        submitLabel="Сохранить"
-        emptyError="Назовите драфт."
-        onSubmit={async (name) => {
-          if (renaming === null)
-            throw new Error("Нет драфта для переименования.");
-          await draftActions.rename(renaming.id, name);
         }}
       />
       <ConfirmDialog
@@ -519,7 +408,7 @@ function SceneList({
   onNavigate: () => void;
   partPath: string;
 }) {
-  const { text, setText, docSegment, currentScene } = useProjectData();
+  const { text, setText, docSegment, currentScene, draft } = useProjectData();
   const [dropAt, setDropAt] = useState<number | null>(null);
   const list = scenes(text);
   const target = (at: number) => ({
@@ -585,7 +474,7 @@ function SceneList({
               <Link
                 to={`${partPath}?scene=${s.number}`}
                 onClick={onNavigate}
-                draggable
+                draggable={!draft.locked}
                 onDragStart={(e) => {
                   e.dataTransfer.setData(DRAG_TYPE, String(s.number));
                   e.dataTransfer.effectAllowed = "move";

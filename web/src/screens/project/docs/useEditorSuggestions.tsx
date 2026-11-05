@@ -22,14 +22,16 @@ const quiet = { successNotification: false, errorNotification: false } as const;
  * (`tools`).
  */
 export function useEditorSuggestions(
-  projectId: string,
+  draftId: string,
   editor: RefObject<ScreenplayEditorHandle | null>,
   /** A suggestion card opens: another card of the editor closes. */
   onOpened: () => void,
   /** «Обсудить в чате»: shows the chat where it is hidden. */
   openChat: () => void,
+  /** A locked draft: suggestions are only read, no mark is put in the text. */
+  readOnly: boolean,
 ) {
-  const { suggestions } = useSuggestions(projectId);
+  const { suggestions } = useSuggestions(draftId);
   const { mutateAsync: update } = useUpdate();
   const [active, setActive] = useState<string | null>(null);
   const [style, setStyle] = useState<CSSProperties>({});
@@ -50,10 +52,11 @@ export function useEditorSuggestions(
     open.map((s) => ({ id: s.id, sceneUid: s.sceneUid, quote: s.quote })),
   );
   useEffect(() => {
+    if (readOnly) return;
     if (editor.current === null)
       throw new Error("Редактор сценария ещё не открыт");
     editor.current.placeSuggestions(JSON.parse(anchors) as SuggestionAnchor[]);
-  }, [editor, anchors]);
+  }, [editor, anchors, readOnly]);
   const [marked, setMarked] = useState<string[] | null>(null);
   const missing =
     marked === null ? [] : open.filter((s) => !marked.includes(s.id));
@@ -78,7 +81,7 @@ export function useEditorSuggestions(
         status: accept ? "accepted" : "rejected",
         decidedAt: new Date().toISOString(),
       },
-      meta: { projectId },
+      meta: { draftId },
       ...quiet,
     }).catch((e: unknown) =>
       setError(e instanceof Error ? e.message : String(e)),
@@ -118,6 +121,7 @@ export function useEditorSuggestions(
           suggestion={current}
           old={old}
           error={error}
+          readOnly={readOnly}
           onClose={close}
           onDiscuss={() => {
             setActive(null);
@@ -131,6 +135,7 @@ export function useEditorSuggestions(
       <SuggestionsButton
         count={shown.length}
         missing={missing}
+        readOnly={readOnly}
         onReject={(s) => record(s, false)}
         onNext={() => {
           const ids = shown.map(([id]) => id);

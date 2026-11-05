@@ -73,7 +73,7 @@ export function SceneBoard({
   mode: EditorMode;
   onOpen: (scene: number) => void;
 }) {
-  const { text, setText } = useProjectData();
+  const { text, setText, draft } = useProjectData();
   const [chosen, setChosen] = useState<number | null>(null);
   const [dropAt, setDropAt] = useState<number | null>(null);
   const list = scenes(text);
@@ -102,7 +102,7 @@ export function SceneBoard({
   return (
     <div className="mx-auto grid max-w-[1000px] gap-4 min-[1100px]:grid-cols-[minmax(0,1fr)_300px]">
       <div className="grid content-start gap-4">
-        <div className="flex gap-2">
+        <fieldset disabled={draft.locked} className="flex gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -123,7 +123,7 @@ export function SceneBoard({
             <Plus />
             Акт
           </Button>
-        </div>
+        </fieldset>
         {all.length === 0 ? (
           <p className="rounded-2xl bg-panel px-4 py-6 text-center text-muted-foreground shadow-panel">
             <b className="block text-foreground">Сцен пока нет</b>
@@ -151,7 +151,7 @@ export function SceneBoard({
                   <button
                     key={s.index}
                     type="button"
-                    draggable
+                    draggable={!draft.locked}
                     onDragStart={(e) => {
                       e.dataTransfer.setData(DRAG_TYPE, String(s.number));
                       e.dataTransfer.effectAllowed = "move";
@@ -261,7 +261,7 @@ function ScenePanel({
   canMove: (dir: -1 | 1) => boolean;
   onDelete: () => void;
 }) {
-  const { text, setText } = useProjectData();
+  const { text, setText, draft } = useProjectData();
   const n = scene.number;
   // Beats are edited as lines; an empty line stays on screen while the author types.
   const [beats, setBeats] = useState(scene.beats.join("\n"));
@@ -293,149 +293,153 @@ function ScenePanel({
           <X />
         </Button>
       </header>
-      <Field
-        label="Название"
-        hint="Видно на карточке и в навигаторе, в тексте не печатается."
-      >
-        {(id) => (
-          <Input
-            id={id}
-            value={scene.params.alt}
-            onChange={(e) => params({ alt: e.target.value })}
-          />
-        )}
-      </Field>
-      <Field label="Заголовок">
-        {(id) => (
-          <Input
-            id={id}
-            value={scene.heading}
-            onChange={(e) => setText(setSceneHeading(text, n, e.target.value))}
-          />
-        )}
-      </Field>
-      <Field label="Биты" hint="Каждая строка — отдельный бит.">
-        {(id) => (
-          <Textarea
-            id={id}
-            rows={4}
-            value={beats}
-            onChange={(e) => {
-              setBeats(e.target.value);
-              const lines = e.target.value
-                .split("\n")
-                .map((l) => l.trim())
-                .filter((l) => l !== "");
-              setText(setSceneBeats(text, n, lines));
-            }}
-          />
-        )}
-      </Field>
-      <Field label="День истории">
-        {(id) => (
-          <Input
-            id={id}
-            placeholder="Например, 3-й день"
-            value={scene.params.day}
-            onChange={(e) => params({ day: e.target.value })}
-          />
-        )}
-      </Field>
-      <div className="grid gap-1.5">
-        <span className="text-caption text-muted-foreground">Цвет</span>
-        <div role="radiogroup" aria-label="Цвет сцены" className="flex gap-2">
-          <button
-            type="button"
-            role="radio"
-            aria-checked={scene.params.color === null}
-            aria-label="Без цвета"
-            onClick={() => params({ color: null })}
-            className="grid size-7 place-items-center rounded-full border border-border-strong text-muted-foreground aria-checked:ring-2 aria-checked:ring-ring"
-          >
-            <X className="size-3.5" />
-          </button>
-          {MARK_COLORS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              role="radio"
-              aria-checked={scene.params.color === c}
-              aria-label={`Цвет ${c}`}
-              onClick={() => params({ color: c })}
-              className="size-7 rounded-full aria-checked:ring-2 aria-checked:ring-ring aria-checked:ring-offset-2 aria-checked:ring-offset-panel"
-              style={{ background: `var(--mark-${c})` }}
-            />
-          ))}
-        </div>
-      </div>
-      <Field label="Теги">
-        {(id) => (
-          <div className="grid gap-2">
-            {scene.params.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {scene.params.tags.map((t) => (
-                  <span
-                    key={t}
-                    className="flex items-center gap-1 rounded-full bg-muted py-0.5 pr-1 pl-2.5 text-caption"
-                  >
-                    {t}
-                    <button
-                      type="button"
-                      aria-label={`Убрать тег «${t}»`}
-                      className="grid size-5 place-items-center rounded-full hover:bg-accent"
-                      onClick={() =>
-                        params({
-                          tags: scene.params.tags.filter((x) => x !== t),
-                        })
-                      }
-                    >
-                      <X className="size-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
+      <fieldset disabled={draft.locked} className="contents">
+        <Field
+          label="Название"
+          hint="Видно на карточке и в навигаторе, в тексте не печатается."
+        >
+          {(id) => (
             <Input
               id={id}
-              placeholder="Новый тег и Enter"
-              value={tag}
-              onChange={(e) => setTag(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key !== "Enter") return;
-                e.preventDefault();
-                const t = tag.trim();
-                if (t === "") return;
-                if (!scene.params.tags.includes(t))
-                  params({ tags: [...scene.params.tags, t] });
-                setTag("");
+              value={scene.params.alt}
+              onChange={(e) => params({ alt: e.target.value })}
+            />
+          )}
+        </Field>
+        <Field label="Заголовок">
+          {(id) => (
+            <Input
+              id={id}
+              value={scene.heading}
+              onChange={(e) =>
+                setText(setSceneHeading(text, n, e.target.value))
+              }
+            />
+          )}
+        </Field>
+        <Field label="Биты" hint="Каждая строка — отдельный бит.">
+          {(id) => (
+            <Textarea
+              id={id}
+              rows={4}
+              value={beats}
+              onChange={(e) => {
+                setBeats(e.target.value);
+                const lines = e.target.value
+                  .split("\n")
+                  .map((l) => l.trim())
+                  .filter((l) => l !== "");
+                setText(setSceneBeats(text, n, lines));
               }}
             />
+          )}
+        </Field>
+        <Field label="День истории">
+          {(id) => (
+            <Input
+              id={id}
+              placeholder="Например, 3-й день"
+              value={scene.params.day}
+              onChange={(e) => params({ day: e.target.value })}
+            />
+          )}
+        </Field>
+        <div className="grid gap-1.5">
+          <span className="text-caption text-muted-foreground">Цвет</span>
+          <div role="radiogroup" aria-label="Цвет сцены" className="flex gap-2">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={scene.params.color === null}
+              aria-label="Без цвета"
+              onClick={() => params({ color: null })}
+              className="grid size-7 place-items-center rounded-full border border-border-strong text-muted-foreground aria-checked:ring-2 aria-checked:ring-ring"
+            >
+              <X className="size-3.5" />
+            </button>
+            {MARK_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                role="radio"
+                aria-checked={scene.params.color === c}
+                aria-label={`Цвет ${c}`}
+                onClick={() => params({ color: c })}
+                className="size-7 rounded-full aria-checked:ring-2 aria-checked:ring-ring aria-checked:ring-offset-2 aria-checked:ring-offset-panel"
+                style={{ background: `var(--mark-${c})` }}
+              />
+            ))}
           </div>
-        )}
-      </Field>
-      <p className="text-caption text-muted-foreground">
-        Длительность ≈ {screenTime(scene.chars)} · битов: {scene.beats.length}
-      </p>
-      <div className="flex gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!canMove(-1)}
-          onClick={() => onMove(-1)}
-        >
-          <ArrowUp />
-          Выше
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!canMove(1)}
-          onClick={() => onMove(1)}
-        >
-          <ArrowDown />
-          Ниже
-        </Button>
-      </div>
+        </div>
+        <Field label="Теги">
+          {(id) => (
+            <div className="grid gap-2">
+              {scene.params.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {scene.params.tags.map((t) => (
+                    <span
+                      key={t}
+                      className="flex items-center gap-1 rounded-full bg-muted py-0.5 pr-1 pl-2.5 text-caption"
+                    >
+                      {t}
+                      <button
+                        type="button"
+                        aria-label={`Убрать тег «${t}»`}
+                        className="grid size-5 place-items-center rounded-full hover:bg-accent"
+                        onClick={() =>
+                          params({
+                            tags: scene.params.tags.filter((x) => x !== t),
+                          })
+                        }
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <Input
+                id={id}
+                placeholder="Новый тег и Enter"
+                value={tag}
+                onChange={(e) => setTag(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter") return;
+                  e.preventDefault();
+                  const t = tag.trim();
+                  if (t === "") return;
+                  if (!scene.params.tags.includes(t))
+                    params({ tags: [...scene.params.tags, t] });
+                  setTag("");
+                }}
+              />
+            </div>
+          )}
+        </Field>
+        <p className="text-caption text-muted-foreground">
+          Длительность ≈ {screenTime(scene.chars)} · битов: {scene.beats.length}
+        </p>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!canMove(-1)}
+            onClick={() => onMove(-1)}
+          >
+            <ArrowUp />
+            Выше
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!canMove(1)}
+            onClick={() => onMove(1)}
+          >
+            <ArrowDown />
+            Ниже
+          </Button>
+        </div>
+      </fieldset>
       <Button variant="outline" onClick={onOpen}>
         <AlignLeft />
         Открыть текст сцены
@@ -443,6 +447,7 @@ function ScenePanel({
       <Button
         variant="ghost"
         className="text-destructive"
+        disabled={draft.locked}
         onClick={() => setDeleting(true)}
       >
         <Trash2 />

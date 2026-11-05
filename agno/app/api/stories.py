@@ -1,4 +1,4 @@
-"""Stories, their documents, texts, drafts and trash: /api/v1 (openspec/specs/api/stories).
+"""Stories, their drafts, documents, texts and trash: /api/v1 (openspec/specs/api/stories).
 
 Every route first finds the story of the record and checks the caller's access to it through the auth
 module; a missing and someone else's record both answer 404.
@@ -21,10 +21,10 @@ from app.api.body import (
     require_project,
 )
 from app.api.problems import Problem
-from app.api.schemas import CreatedProject, DocumentOut, ProjectOut, TextOut
+from app.api.schemas import CreatedProject, DocumentOut, DraftOut, ListedProjectOut, ProjectOut, TextOut
 from app.auth import Principal, current_principal
 from core import documents as docs
-from core import imports, texts
+from core import drafts, imports, texts
 from core import projects as stories
 from core.engine import get_engine
 
@@ -41,6 +41,14 @@ def _project_id(principal: Principal, raw: str) -> uuid.UUID:
     return project_id
 
 
+def _draft_id(principal: Principal, raw: str) -> uuid.UUID:
+    draft_id = parse_id(raw)
+    with get_engine().connect() as connection:
+        project_id = drafts.project_of_draft(connection, draft_id)
+    require_project(principal, project_id)
+    return draft_id
+
+
 def _document_id(principal: Principal, raw: str) -> uuid.UUID:
     document_id = parse_id(raw)
     with get_engine().connect() as connection:
@@ -52,11 +60,11 @@ def _document_id(principal: Principal, raw: str) -> uuid.UUID:
 # --- stories
 
 
-@router.get("/projects", response_model=list[ProjectOut], summary="The caller's stories, or their trash")
-def list_projects(trash: bool = False, principal: Principal = Depends(current_principal)) -> list[ProjectOut]:
+@router.get("/projects", response_model=list[ListedProjectOut], summary="The caller's stories, or their trash")
+def list_projects(trash: bool = False, principal: Principal = Depends(current_principal)) -> list[ListedProjectOut]:
     with get_engine().connect() as connection:
         owner = caller_id(connection, principal)
-        return [ProjectOut.model_validate(p) for p in stories.list_projects(connection, owner, trash)]
+        return [ListedProjectOut.model_validate(p) for p in stories.list_projects(connection, owner, trash)]
 
 
 def _create_project(principal: Principal, body: dict[str, Any]) -> CreatedProject:
@@ -66,15 +74,17 @@ def _create_project(principal: Principal, body: dict[str, Any]) -> CreatedProjec
         raise Problem(422, "Unprocessable Content", f"Поле «{name}» нельзя задать при создании.")
     with get_engine().begin() as connection:
         owner = caller_id(connection, principal)
-        project, script_id = stories.create_project(connection, owner, body.get("title"), body.get("description", ""))
-    return CreatedProject(project=ProjectOut.model_validate(project), script_id=script_id)
+        project, draft_id, script_id = stories.create_project(
+            connection, owner, body.get("title"), body.get("description", "")
+        )
+    return CreatedProject(project=ProjectOut.model_validate(project), draft_id=draft_id, script_id=script_id)
 
 
 def _create_project_from_file(principal: Principal, title: str | None, name: str, data: bytes) -> CreatedProject:
     with get_engine().begin() as connection:
         owner = caller_id(connection, principal)
-        project, script_id = imports.create_project_from_file(connection, owner, title, name, data)
-    return CreatedProject(project=ProjectOut.model_validate(project), script_id=script_id)
+        project, draft_id, script_id = imports.create_project_from_file(connection, owner, title, name, data)
+    return CreatedProject(project=ProjectOut.model_validate(project), draft_id=draft_id, script_id=script_id)
 
 
 @router.post(
@@ -148,41 +158,127 @@ def delete_project(project_id: str, principal: Principal = Depends(current_princ
     return Response(status_code=204)
 
 
-# --- documents of a story
+# --- drafts of a story
 
 
 @router.get(
-    "/projects/{project_id}/documents",
-    response_model=list[DocumentOut],
-    summary="The navigator tree: all documents of a story, the trash included, without texts",
+    "/projects/{project_id}/drafts",
+    response_model=list[DraftOut],
+    summary="The drafts of a story, the trash included",
 )
-def list_documents(project_id: str, principal: Principal = Depends(current_principal)) -> list[DocumentOut]:
+def list_drafts(project_id: str, principal: Principal = Depends(current_principal)) -> list[DraftOut]:
     found = _project_id(principal, project_id)
+    with get_engine().connect() as connection:
+        return [DraftOut.model_validate(d) for d in drafts.list_drafts(connection, found)]
+
+
+def _create_draft(principal: Principal, project_id: uuid.UUID, body: dict[str, Any]) -> DraftOut:
+    unknown = set(body) - {"name", "base_id"}
+    if unknown:
+        field = sorted(unknown)[0]
+        raise Problem(422, "Unprocessable Content", f"Поле «{field}» нельзя задать при создании драфта.")
+    base = body.get("base_id")
+    if not isinstance(base, str):
+        raise Problem(422, "Unprocessable Content", "Поле «base_id»: нужен id драфта-основы.")
+    with get_engine().begin() as connection:
+        user = caller_id(connection, principal)
+        return DraftOut.model_validate(
+            drafts.create_draft(connection, project_id, body.get("name"), parse_id(base), user)
+        )
+
+
+@router.post(
+    "/projects/{project_id}/drafts",
+    status_code=201,
+    response_model=DraftOut,
+    summary="Create a draft: an independent copy of another draft, without review and history",
+)
+async def create_draft(
+    project_id: str, request: Request, principal: Principal = Depends(current_principal)
+) -> DraftOut:
+    body = await read_object(request)
+    found = await run_in_threadpool(_project_id, principal, project_id)
+    return await run_in_threadpool(_create_draft, principal, found, body)
+
+
+def _update_draft(draft_id: uuid.UUID, body: dict[str, Any]) -> DraftOut:
+    with get_engine().begin() as connection:
+        return DraftOut.model_validate(drafts.update_draft(connection, draft_id, body))
+
+
+@router.patch("/drafts/{draft_id}", response_model=DraftOut, summary="Rename a draft or set its lock")
+async def update_draft(draft_id: str, request: Request, principal: Principal = Depends(current_principal)) -> DraftOut:
+    body = await read_object(request)
+    found = await run_in_threadpool(_draft_id, principal, draft_id)
+    return await run_in_threadpool(_update_draft, found, body)
+
+
+@router.post("/drafts/{draft_id}/trash", response_model=DraftOut, summary="Move a draft to the trash of its story")
+def trash_draft(draft_id: str, principal: Principal = Depends(current_principal)) -> DraftOut:
+    found = _draft_id(principal, draft_id)
+    with get_engine().begin() as connection:
+        return DraftOut.model_validate(drafts.trash_draft(connection, found))
+
+
+@router.post("/drafts/{draft_id}/restore", response_model=DraftOut, summary="Restore a draft from the trash")
+def restore_draft(draft_id: str, principal: Principal = Depends(current_principal)) -> DraftOut:
+    found = _draft_id(principal, draft_id)
+    with get_engine().begin() as connection:
+        return DraftOut.model_validate(drafts.restore_draft(connection, found))
+
+
+@router.delete("/drafts/{draft_id}", status_code=204, summary="Delete a draft from the trash for good")
+def delete_draft(draft_id: str, principal: Principal = Depends(current_principal)) -> Response:
+    found = _draft_id(principal, draft_id)
+    with get_engine().begin() as connection:
+        drafts.delete_draft(connection, found)
+    return Response(status_code=204)
+
+
+@router.post("/drafts/{draft_id}/open", status_code=204, summary="Remember the draft the caller opened last")
+def open_draft(draft_id: str, principal: Principal = Depends(current_principal)) -> Response:
+    found = _draft_id(principal, draft_id)
+    with get_engine().begin() as connection:
+        drafts.open_draft(connection, found, caller_id(connection, principal))
+    return Response(status_code=204)
+
+
+# --- documents of a draft
+
+
+@router.get(
+    "/drafts/{draft_id}/documents",
+    response_model=list[DocumentOut],
+    summary="The navigator tree: all documents of a draft, the trash included, without texts",
+)
+def list_documents(draft_id: str, principal: Principal = Depends(current_principal)) -> list[DocumentOut]:
+    found = _draft_id(principal, draft_id)
     with get_engine().connect() as connection:
         return [DocumentOut.model_validate(d) for d in docs.list_documents(connection, found)]
 
 
-def _create_documents(project_id: uuid.UUID, items: list[Any]) -> list[DocumentOut]:
+def _create_documents(principal: Principal, draft_id: uuid.UUID, items: list[Any]) -> list[DocumentOut]:
     with get_engine().begin() as connection:
-        return [DocumentOut.model_validate(d) for d in docs.create_documents(connection, project_id, items)]
+        user = caller_id(connection, principal)
+        return [DocumentOut.model_validate(d) for d in docs.create_documents(connection, draft_id, items, user)]
 
 
 @router.post(
-    "/projects/{project_id}/documents",
+    "/drafts/{draft_id}/documents",
     status_code=201,
     response_model=list[DocumentOut],
     summary="Create characters, locations or worlds: one (object) or several (array), all or none",
 )
 async def create_documents(
-    project_id: str, request: Request, principal: Principal = Depends(current_principal)
+    draft_id: str, request: Request, principal: Principal = Depends(current_principal)
 ) -> list[DocumentOut]:
     body = await read_json(request)
     items = body if isinstance(body, list) else [body]
-    found = await run_in_threadpool(_project_id, principal, project_id)
-    return await run_in_threadpool(_create_documents, found, items)
+    found = await run_in_threadpool(_draft_id, principal, draft_id)
+    return await run_in_threadpool(_create_documents, principal, found, items)
 
 
-def _import(project_id: uuid.UUID, revision: int, body: dict[str, Any]) -> TextOut:
+def _import(principal: Principal, draft_id: uuid.UUID, revision: int, body: dict[str, Any]) -> TextOut:
     unknown = set(body) - {"file_id"}
     if unknown:
         raise Problem(422, "Unprocessable Content", f"Поле «{sorted(unknown)[0]}» здесь не принимается.")
@@ -190,62 +286,35 @@ def _import(project_id: uuid.UUID, revision: int, body: dict[str, Any]) -> TextO
     if not isinstance(raw, str):
         raise Problem(422, "Unprocessable Content", "Поле «file_id»: нужен id загруженного файла.")
     with get_engine().begin() as connection:
-        return TextOut.model_validate(imports.import_into(connection, project_id, parse_id(raw), revision))
+        user = caller_id(connection, principal)
+        return TextOut.model_validate(imports.import_into(connection, draft_id, parse_id(raw), revision, user))
 
 
 @router.post(
-    "/projects/{project_id}/import",
+    "/drafts/{draft_id}/import",
     response_model=TextOut,
-    summary="Replace the screenplay text by an uploaded manuscript, based on the text revision (If-Match)",
+    summary="Replace the screenplay text of a draft by an uploaded manuscript, based on the text revision (If-Match)",
 )
 async def import_file(
-    project_id: str, request: Request, response: Response, principal: Principal = Depends(current_principal)
+    draft_id: str, request: Request, response: Response, principal: Principal = Depends(current_principal)
 ) -> TextOut:
     body = await read_object(request)
-    found = await run_in_threadpool(_project_id, principal, project_id)
-    text = await run_in_threadpool(_import, found, if_match(request), body)
+    found = await run_in_threadpool(_draft_id, principal, draft_id)
+    text = await run_in_threadpool(_import, principal, found, if_match(request), body)
     _etag(response, text.revision)
     return text
 
 
-@router.post("/projects/{project_id}/trash/empty", status_code=204, summary="Empty the trash of a story")
-def empty_trash(project_id: str, principal: Principal = Depends(current_principal)) -> Response:
-    found = _project_id(principal, project_id)
-    with get_engine().begin() as connection:
-        docs.empty_trash(connection, found)
-    return Response(status_code=204)
-
-
-def _create_draft(project_id: uuid.UUID, body: dict[str, Any]) -> DocumentOut:
-    unknown = set(body) - {"name", "base_id", "locked"}
-    if unknown:
-        field = sorted(unknown)[0]
-        raise Problem(422, "Unprocessable Content", f"Поле «{field}» нельзя задать при создании драфта.")
-    locked = body.get("locked", True)
-    if not isinstance(locked, bool):
-        raise Problem(422, "Unprocessable Content", "Поле «locked» должно быть true или false.")
-    name = body.get("name")
-    if not isinstance(name, str):
-        raise Problem(422, "Unprocessable Content", "Поле «name»: название драфта не может быть пустым.")
-    with get_engine().begin() as connection:
-        base = body.get("base_id")
-        base_id = texts.screenplay_id(connection, project_id) if base is None else parse_id(str(base))
-        draft_id = texts.create_draft(connection, project_id, name, base_id, locked)
-        return DocumentOut.model_validate(docs.document_row(connection, draft_id))
-
-
 @router.post(
-    "/projects/{project_id}/drafts",
-    status_code=201,
-    response_model=DocumentOut,
-    summary="Create a draft: a copy of the screenplay or of a draft, without comments and suggestions",
+    "/drafts/{draft_id}/trash/empty",
+    status_code=204,
+    summary="Empty the trash: the documents of this draft and the drafts of the story",
 )
-async def create_draft(
-    project_id: str, request: Request, principal: Principal = Depends(current_principal)
-) -> DocumentOut:
-    body = await read_object(request)
-    found = await run_in_threadpool(_project_id, principal, project_id)
-    return await run_in_threadpool(_create_draft, found, body)
+def empty_trash(draft_id: str, principal: Principal = Depends(current_principal)) -> Response:
+    found = _draft_id(principal, draft_id)
+    with get_engine().begin() as connection:
+        drafts.empty_trash(connection, found)
+    return Response(status_code=204)
 
 
 # --- one document
@@ -262,9 +331,10 @@ def get_document(
     return DocumentOut.model_validate(document)
 
 
-def _update_document(document_id: uuid.UUID, revision: int, body: dict[str, Any]) -> DocumentOut:
+def _update_document(principal: Principal, document_id: uuid.UUID, revision: int, body: dict[str, Any]) -> DocumentOut:
     with get_engine().begin() as connection:
-        return DocumentOut.model_validate(docs.update_document(connection, document_id, revision, body))
+        user = caller_id(connection, principal)
+        return DocumentOut.model_validate(docs.update_document(connection, document_id, revision, body, user))
 
 
 @router.patch(
@@ -277,7 +347,7 @@ async def update_document(
 ) -> DocumentOut:
     body = await read_object(request)
     found = await run_in_threadpool(_document_id, principal, document_id)
-    document = await run_in_threadpool(_update_document, found, if_match(request), body)
+    document = await run_in_threadpool(_update_document, principal, found, if_match(request), body)
     _etag(response, document.revision)
     return document
 
@@ -306,7 +376,7 @@ def delete_document(document_id: str, principal: Principal = Depends(current_pri
     return Response(status_code=204)
 
 
-@router.get("/documents/{document_id}/text", response_model=TextOut, summary="Text of the screenplay or a draft")
+@router.get("/documents/{document_id}/text", response_model=TextOut, summary="Text of the screenplay of a draft")
 def get_text(document_id: str, response: Response, principal: Principal = Depends(current_principal)) -> TextOut:
     found = _document_id(principal, document_id)
     with get_engine().connect() as connection:
@@ -315,9 +385,10 @@ def get_text(document_id: str, response: Response, principal: Principal = Depend
     return TextOut.model_validate(text)
 
 
-def _put_text(document_id: uuid.UUID, revision: int, content: Any) -> TextOut:
+def _put_text(principal: Principal, document_id: uuid.UUID, revision: int, content: Any) -> TextOut:
     with get_engine().begin() as connection:
-        return TextOut.model_validate(texts.put_text(connection, document_id, revision, content))
+        user = caller_id(connection, principal)
+        return TextOut.model_validate(texts.put_text(connection, document_id, revision, content, user))
 
 
 @router.put(
@@ -330,6 +401,6 @@ async def put_text(
 ) -> TextOut:
     content = await read_json(request)
     found = await run_in_threadpool(_document_id, principal, document_id)
-    text = await run_in_threadpool(_put_text, found, if_match(request), content)
+    text = await run_in_threadpool(_put_text, principal, found, if_match(request), content)
     _etag(response, text.revision)
     return text

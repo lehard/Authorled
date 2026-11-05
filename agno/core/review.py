@@ -1,4 +1,4 @@
-"""Review of the screenplay text: comment threads and co-author suggestions (openspec/specs/api/review).
+"""Review of the screenplay text of a draft: comment threads and co-author suggestions (openspec/specs/api/review).
 
 The place of a thread or a suggestion is a mark in the text; the threads, messages and suggestions live here,
 apart from the text. The co-author creates suggestions (its tool), the author decides on them.
@@ -14,7 +14,7 @@ from sqlalchemy import Connection, Row, delete, func, insert, select, update
 from core.documents import Document, document_row, ensure_open
 from core.errors import Conflict, Forbidden, Invalid, NotFound
 from core.tables import SUGGESTION_STATUSES, comment_messages, comment_threads, suggestions, users
-from core.texts import block_text, get_text, scenes
+from core.texts import block_text, get_text, keep_text, scenes
 
 
 @dataclass(frozen=True)
@@ -59,10 +59,8 @@ def _body(value: object) -> str:
 
 
 def _screenplay(connection: Connection, document_id: uuid.UUID) -> Document:
-    """The current screenplay text of a story: drafts take no review, other documents have no text."""
+    """The screenplay of a draft: other documents have no text."""
     document = document_row(connection, document_id)
-    if document.kind == "draft":
-        raise Conflict("Драфт не принимает комментарии и предложения.")
     if document.kind != "script":
         raise NotFound(f"У документа {document_id} нет текста.")
     return document
@@ -275,16 +273,24 @@ def list_suggestions(connection: Connection, document_id: uuid.UUID, status: str
 
 
 def decide(connection: Connection, suggestion_id: uuid.UUID, status: object) -> Suggestion:
-    """The author's decision, once; the accepted text is saved by the client through the text route."""
+    """The author's decision, once; the accepted text is saved by the client through the text route.
+
+    The text as it stands before an accepted edit becomes a snapshot.
+    """
     if status not in ("accepted", "rejected"):
         raise Invalid("Поле «status» должно быть accepted или rejected.", "status")
     current = connection.execute(
-        select(suggestions.c.status).where(suggestions.c.id == suggestion_id).with_for_update()
-    ).scalar_one_or_none()
+        select(suggestions.c.status, suggestions.c.document_id)
+        .where(suggestions.c.id == suggestion_id)
+        .with_for_update()
+    ).one_or_none()
     if current is None:
         raise NotFound(f"Предложения {suggestion_id} нет.")
-    if current != "open":
+    if current.status != "open":
         raise Conflict("По предложению уже есть решение.")
+    ensure_open(connection, document_row(connection, current.document_id))
+    if status == "accepted":
+        keep_text(connection, current.document_id, "suggestion")
     row = connection.execute(
         update(suggestions)
         .where(suggestions.c.id == suggestion_id)

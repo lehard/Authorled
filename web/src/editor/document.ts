@@ -83,7 +83,7 @@ export function plainDoc(rows: [ElementName, string][]): ScreenplayDoc {
 
 /**
  * The document without marks of `types`: a draft copies the text without the comments and
- * suggestions of the current one (screenplay-drafts, decision 2).
+ * suggestions of its base.
  */
 export function stripMarks(
   doc: ScreenplayDoc,

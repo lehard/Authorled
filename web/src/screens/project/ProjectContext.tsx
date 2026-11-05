@@ -19,13 +19,15 @@ import type { DocRef } from "./docRef";
 /** Everything the window of one story has loaded; documents read it instead of refetching. */
 export type ProjectData = {
   project: Project;
+  /** The open draft: everything else here belongs to it. */
+  draft: Draft;
   script: Script;
   chars: Character[];
   locs: Location[];
   worlds: World[];
-  /** Drafts of the screenplay, oldest first (screenplay-drafts, decision 1). */
+  /** Drafts of the story outside the trash, oldest first. */
   drafts: Draft[];
-  /** Documents in the story trash, by kind. */
+  /** Documents of the draft and drafts of the story in the trash. */
   trash: Record<EntityKind, Entity[]> & { draft: Draft[] };
   doc: DocRef;
   docSegment: string;

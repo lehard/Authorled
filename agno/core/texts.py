@@ -1,17 +1,20 @@
-"""Text of the screenplay and of drafts (openspec/specs/api/stories, «Текст сценария», «Проверка текста», «Драфты»).
+"""Text of the screenplay of a draft (openspec/specs/api/stories, «Текст сценария», «Проверка текста»).
 
 The text is the JSON document of the editor (web/src/editor/document.ts). The core checks it against the same
 paragraph types, marks and scene attributes as web/src/editor/schema; anything unknown is refused, never dropped.
 """
 
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import Connection, func, insert, select, update
 
-from core.documents import document_row, ensure_open, next_position
-from core.errors import Conflict, Invalid, Locked, NotFound
+from core import snapshots
+from core.documents import document_row, ensure_open, touch_draft
+from core.errors import Conflict, Invalid, NotFound
 from core.tables import documents, screenplay_texts
 
 # Paragraph types of web/src/editor/elements.ts (ElementName); tests/test_texts.py compares the lists.
@@ -44,6 +47,8 @@ class Text:
     document_id: uuid.UUID
     content: Doc
     revision: int
+    updated_by: uuid.UUID
+    updated_at: datetime
 
 
 def heading(uid: str, text: str = "") -> dict[str, Any]:
@@ -155,12 +160,17 @@ def block_text(block: dict[str, Any]) -> str:
 
 def strip_marks(doc: Doc, kinds: tuple[str, ...]) -> Doc:
     """The document without marks of `kinds`: a draft copies the text without comments and suggestions."""
+    return filter_marks(doc, lambda mark: mark["type"] not in kinds)
+
+
+def filter_marks(doc: Doc, keep: Callable[[dict[str, Any]], bool]) -> Doc:
+    """The document with only the marks `keep` accepts."""
     blocks = []
     for block in doc["content"]:
         if "content" in block:
             nodes = []
             for node in block["content"]:
-                marks = [mark for mark in node.get("marks", []) if mark["type"] not in kinds]
+                marks = [mark for mark in node.get("marks", []) if keep(mark)]
                 nodes.append({**{k: v for k, v in node.items() if k != "marks"}, **({"marks": marks} if marks else {})})
             block = {**block, "content": nodes}
         blocks.append(block)
@@ -191,76 +201,73 @@ def scenes(doc: Doc) -> list[Scene]:
     return found
 
 
-def _text_row(connection: Connection, document_id: uuid.UUID, for_update: bool = False) -> Text:
+def text_row(connection: Connection, document_id: uuid.UUID, for_update: bool = False) -> Text:
     query = select(screenplay_texts).where(screenplay_texts.c.document_id == document_id)
     if for_update:
         query = query.with_for_update()
     row = connection.execute(query).one_or_none()
     if row is None:
         raise NotFound(f"У документа {document_id} нет текста.")
-    return Text(row.document_id, row.content, row.revision)
+    return Text(row.document_id, row.content, row.revision, row.updated_by, row.updated_at)
 
 
 def get_text(connection: Connection, document_id: uuid.UUID) -> Text:
     document_row(connection, document_id)
-    return _text_row(connection, document_id)
+    return text_row(connection, document_id)
 
 
-def put_text(connection: Connection, document_id: uuid.UUID, expected_revision: int, content: Any) -> Text:
-    """Replace the whole text if its revision is still `expected_revision`."""
-    document = document_row(connection, document_id)
-    ensure_open(connection, document)
-    if document.kind == "draft" and document.fields.get("locked", False):
-        raise Locked("Правка текста драфта запрещена.")
-    doc = validate_text(content)
-    current = _text_row(connection, document_id, for_update=True)
-    if current.revision != expected_revision:
-        raise Conflict(f"Текст изменился: ревизия {current.revision}, а не {expected_revision}.")
+def write_text(connection: Connection, document_id: uuid.UUID, doc: Doc, user_id: uuid.UUID) -> Text:
+    """Store a checked text as a new revision; the caller holds the row and has taken its snapshot."""
     row = connection.execute(
         update(screenplay_texts)
         .where(screenplay_texts.c.document_id == document_id)
-        .values(content=doc, revision=screenplay_texts.c.revision + 1, updated_at=func.now())
-        .returning(screenplay_texts.c.revision)
+        .values(content=doc, revision=screenplay_texts.c.revision + 1, updated_by=user_id, updated_at=func.now())
+        .returning(screenplay_texts)
     ).one()
     connection.execute(update(documents).where(documents.c.id == document_id).values(updated_at=func.now()))
-    return Text(document_id, doc, row.revision)
+    return Text(document_id, doc, row.revision, row.updated_by, row.updated_at)
 
 
-def create_draft(
-    connection: Connection, project_id: uuid.UUID, name: str, base_id: uuid.UUID, locked: bool
-) -> uuid.UUID:
-    """A draft of the story: a copy of the screenplay or of one of its drafts, without comments and suggestions."""
-    name = name.strip()
-    if not name:
-        raise Invalid("Название драфта не может быть пустым.", "name")
-    base = document_row(connection, base_id)
-    if base.project_id != project_id or base.kind not in ("script", "draft"):
-        raise NotFound("Основа драфта не найдена в этой истории.")
-    ensure_open(connection, base)
-    content = strip_marks(_text_row(connection, base_id).content, ("comment", "suggestion"))
-    draft_id = connection.execute(
-        insert(documents)
-        .values(
-            project_id=project_id,
-            kind="draft",
-            name=name,
-            position=next_position(connection, project_id, "draft"),
-            fields={"locked": locked},
-        )
-        .returning(documents.c.id)
-    ).scalar_one()
-    connection.execute(insert(screenplay_texts).values(document_id=draft_id, content=content))
-    return draft_id
+def keep_text(connection: Connection, document_id: uuid.UUID, reason: str) -> None:
+    """A snapshot of the saved text for an action that is about to change it."""
+    current = text_row(connection, document_id)
+    snapshots.keep(connection, document_id, "text", current.content, current.updated_by, current.updated_at, reason)
 
 
-def add_text(connection: Connection, document_id: uuid.UUID, content: Doc) -> None:
-    connection.execute(insert(screenplay_texts).values(document_id=document_id, content=validate_text(content)))
+def put_text(
+    connection: Connection,
+    document_id: uuid.UUID,
+    expected_revision: int,
+    content: Any,
+    user_id: uuid.UUID,
+    reason: str | None = None,
+) -> Text:
+    """Replace the whole text if its revision is still `expected_revision`.
+
+    The state it replaces becomes a snapshot: with `reason` always, without it when the last one is old enough.
+    """
+    document = document_row(connection, document_id)
+    ensure_open(connection, document)
+    doc = validate_text(content)
+    current = text_row(connection, document_id, for_update=True)
+    if current.revision != expected_revision:
+        raise Conflict(f"Текст изменился: ревизия {current.revision}, а не {expected_revision}.")
+    snapshots.keep(connection, document_id, "text", current.content, current.updated_by, current.updated_at, reason)
+    text = write_text(connection, document_id, doc, user_id)
+    touch_draft(connection, document.draft_id)
+    return text
 
 
-def screenplay_id(connection: Connection, project_id: uuid.UUID) -> uuid.UUID:
+def add_text(connection: Connection, document_id: uuid.UUID, content: Doc, user_id: uuid.UUID) -> None:
+    connection.execute(
+        insert(screenplay_texts).values(document_id=document_id, content=validate_text(content), updated_by=user_id)
+    )
+
+
+def screenplay_id(connection: Connection, draft_id: uuid.UUID) -> uuid.UUID:
     script = connection.execute(
-        select(documents.c.id).where(documents.c.project_id == project_id, documents.c.kind == "script")
+        select(documents.c.id).where(documents.c.draft_id == draft_id, documents.c.kind == "script")
     ).scalar_one_or_none()
     if script is None:
-        raise Conflict(f"У истории {project_id} нет сценария.")
+        raise Conflict(f"У драфта {draft_id} нет сценария.")
     return script

@@ -6,8 +6,9 @@ from typing import Any
 import pytest
 from sqlalchemy import Connection
 
-from core.documents import create_documents
-from core.errors import Conflict, Forbidden, Invalid, NotFound
+from core.documents import create_documents, draft_row
+from core.drafts import create_draft, update_draft
+from core.errors import Conflict, Forbidden, Invalid, Locked, NotFound
 from core.projects import create_project
 from core.review import (
     add_reply,
@@ -20,7 +21,8 @@ from core.review import (
     list_threads,
     set_resolved,
 )
-from core.texts import create_draft, get_text, heading, put_text
+from core.saves import list_versions
+from core.texts import get_text, heading, put_text, screenplay_id
 from core.users import get_or_create_user
 
 SESSION = "story:1"
@@ -31,16 +33,17 @@ def _p(kind: str, text: str) -> dict[str, Any]:
 
 
 def _story(connection: Connection) -> tuple[uuid.UUID, uuid.UUID, uuid.UUID]:
-    """A story whose screenplay has scene s3 «Вера молчит»; returns the project, the screenplay and the author."""
+    """A story whose screenplay has scene s3 «Вера молчит»; returns the draft, the screenplay and the author."""
     author = get_or_create_user(connection, "s1", "writer@authorled.test", "Сценарист").id
-    project, script_id = create_project(connection, author, "Маяк")
+    _, draft_id, script_id = create_project(connection, author, "Маяк")
     put_text(
         connection,
         script_id,
         1,
         {"type": "doc", "content": [heading("s3", "НАТ. ОЗЕРО — ДЕНЬ"), _p("action", "Вера молчит.")]},
+        author,
     )
-    return project.id, script_id, author
+    return draft_id, script_id, author
 
 
 def test_new_thread(connection: Connection) -> None:
@@ -66,16 +69,52 @@ def test_repeated_thread_id(connection: Connection) -> None:
         create_thread(connection, script_id, thread_id, "Вера", "Ещё", author, "")
 
 
-def test_draft_takes_no_comments(connection: Connection) -> None:
-    project_id, script_id, author = _story(connection)
-    draft_id = create_draft(connection, project_id, "Драфт", script_id, locked=False)
-    with pytest.raises(Conflict):
-        create_thread(connection, draft_id, uuid.uuid4(), "Вера", "Да", author, "")
+def _second_draft(connection: Connection, draft_id: uuid.UUID, author: uuid.UUID) -> tuple[uuid.UUID, uuid.UUID]:
+    project_id = draft_row(connection, draft_id).project_id
+    second = create_draft(connection, project_id, "Драфт 2", draft_id, author).id
+    return second, screenplay_id(connection, second)
+
+
+def test_any_draft_takes_comments(connection: Connection) -> None:
+    draft_id, script_id, author = _story(connection)
+    _, second_script = _second_draft(connection, draft_id, author)
+    thread = create_thread(connection, second_script, uuid.uuid4(), "Вера", "Да", author, "")
+    assert [t.id for t in list_threads(connection, second_script)] == [thread.id]
+    assert list_threads(connection, script_id) == []
+
+
+def test_locked_draft_refuses_review(connection: Connection) -> None:
+    draft_id, script_id, author = _story(connection)
+    thread = create_thread(connection, script_id, uuid.uuid4(), "Вера", "Да", author, "")
+    suggestion = create_suggestion(connection, script_id, "s3", "Вера молчит", "Вера плачет", "", "x:y:z")
+    update_draft(connection, draft_id, {"locked": True})
+    with pytest.raises(Locked):
+        create_thread(connection, script_id, uuid.uuid4(), "Вера", "Да", author, "")
+    with pytest.raises(Locked):
+        decide(connection, suggestion.id, "accepted")
+    assert [t.id for t in list_threads(connection, script_id)] == [thread.id]
+
+
+def test_accepting_keeps_the_text_as_a_snapshot(connection: Connection) -> None:
+    _, script_id, author = _story(connection)
+    before = get_text(connection, script_id).content
+    accepted = create_suggestion(connection, script_id, "s3", "Вера молчит", "Вера плачет", "", "x:y:z")
+    decide(connection, accepted.id, "accepted")
+    (version,) = [v for v in list_versions(connection, script_id, "text") if v.reason == "suggestion"]
+    assert version.content == before
+
+
+def test_rejecting_keeps_no_snapshot(connection: Connection) -> None:
+    _, script_id, author = _story(connection)
+    rejected = create_suggestion(connection, script_id, "s3", "Вера молчит", "Вера плачет", "", "x:y:z")
+    versions = len(list_versions(connection, script_id, "text"))
+    decide(connection, rejected.id, "rejected")
+    assert len(list_versions(connection, script_id, "text")) == versions
 
 
 def test_character_has_no_text(connection: Connection) -> None:
-    project_id, _, _ = _story(connection)
-    (vera,) = create_documents(connection, project_id, [{"kind": "character", "name": "Вера", "role": "main"}])
+    draft_id, _, author = _story(connection)
+    (vera,) = create_documents(connection, draft_id, [{"kind": "character", "name": "Вера", "role": "main"}], author)
     with pytest.raises(NotFound):
         list_threads(connection, vera.id)
 

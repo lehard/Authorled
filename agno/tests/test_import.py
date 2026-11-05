@@ -16,6 +16,7 @@ from core.importers.fountain import parse_fountain
 from core.importers.screenplay import cast_from_text, places_from_text
 from core.imports import import_into, parse_manuscript
 from core.projects import create_project
+from core.saves import list_versions
 from core.texts import ELEMENT_NAMES, get_text
 from core.users import get_or_create_user
 
@@ -97,23 +98,25 @@ def test_names_from_the_text() -> None:
 
 def test_import_into_a_story(connection: Connection) -> None:
     owner = get_or_create_user(connection, "s1", "writer@authorled.test", "Сценарист").id
-    project, script_id = create_project(connection, owner, "Тихая вода")
-    create_documents(connection, project.id, [{"kind": "character", "name": "Вера", "role": "main"}])
+    project, draft, script_id = create_project(connection, owner, "Тихая вода")
+    create_documents(connection, draft, [{"kind": "character", "name": "Вера", "role": "main"}], owner)
     stored = upload_file(
         connection, project.id, owner, "manuscript.txt", "import", None, (SAMPLES / "manuscript.txt").read_bytes()
     )
-    text = import_into(connection, project.id, stored.id, 1)
+    text = import_into(connection, draft, stored.id, 1, owner)
     assert text.revision == 2
+    (snapshot,) = [v for v in list_versions(connection, script_id, "text") if v.reason == "import"]
+    assert snapshot.content["content"][0]["type"] == "sceneHeading"
     assert _types(get_text(connection, script_id).content)[0] == "sceneHeading"
-    names = sorted((d.kind, d.name) for d in list_documents(connection, project.id) if d.kind != "script")
+    names = sorted((d.kind, d.name) for d in list_documents(connection, draft) if d.kind != "script")
     assert names == [("character", "Вера"), ("character", "Миша"), ("location", "Кухня"), ("location", "Озеро")]
     with pytest.raises(Conflict):
-        import_into(connection, project.id, stored.id, 1)
+        import_into(connection, draft, stored.id, 1, owner)
 
 
 def test_chat_file_is_not_imported(connection: Connection) -> None:
     owner = get_or_create_user(connection, "s1", "writer@authorled.test", "Сценарист").id
-    project, _ = create_project(connection, owner, "Тихая вода")
+    project, draft, _ = create_project(connection, owner, "Тихая вода")
     stored = upload_file(connection, project.id, owner, "notes.txt", "chat", f"{project.id}:1", b"text")
     with pytest.raises(Invalid):
-        import_into(connection, project.id, stored.id, 1)
+        import_into(connection, draft, stored.id, 1, owner)

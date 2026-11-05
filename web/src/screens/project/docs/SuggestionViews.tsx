@@ -25,6 +25,7 @@ export function SuggestionCard({
   suggestion,
   old,
   error,
+  readOnly,
   onClose,
   onDiscuss,
   onDecide,
@@ -34,6 +35,8 @@ export function SuggestionCard({
   /** The text it would replace. */
   old: string;
   error: string | null;
+  /** A locked draft: no decision. */
+  readOnly: boolean;
   onClose: () => void;
   onDiscuss: () => void;
   onDecide: (accept: boolean) => void;
@@ -83,14 +86,16 @@ export function SuggestionCard({
         </ins>
       </div>
       <p className="text-caption text-muted-foreground">{suggestion.why}</p>
-      <div className="flex justify-end gap-1.5">
-        <Button variant="ghost" size="sm" onClick={() => onDecide(false)}>
-          Отклонить
-        </Button>
-        <Button size="sm" onClick={() => onDecide(true)}>
-          Принять
-        </Button>
-      </div>
+      {!readOnly && (
+        <div className="flex justify-end gap-1.5">
+          <Button variant="ghost" size="sm" onClick={() => onDecide(false)}>
+            Отклонить
+          </Button>
+          <Button size="sm" onClick={() => onDecide(true)}>
+            Принять
+          </Button>
+        </div>
+      )}
       {error !== null && (
         <p role="alert" className="text-caption text-destructive">
           {error}
@@ -103,6 +108,7 @@ export function SuggestionCard({
 export function SuggestionsButton({
   count,
   missing,
+  readOnly,
   onNext,
   onReject,
 }: {
@@ -110,6 +116,8 @@ export function SuggestionsButton({
   count: number;
   /** Open suggestions whose anchor is not in the text (web/workspace, «Предложения без места в тексте»). */
   missing: Suggestion[];
+  /** A locked draft: no decision. */
+  readOnly: boolean;
   onNext: () => void;
   onReject: (s: Suggestion) => void;
 }) {
@@ -167,14 +175,16 @@ export function SuggestionsButton({
                   </ins>
                 </div>
                 <p className="text-caption text-muted-foreground">{m.why}</p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="justify-self-end"
-                  onClick={() => onReject(m)}
-                >
-                  Отклонить
-                </Button>
+                {!readOnly && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="justify-self-end"
+                    onClick={() => onReject(m)}
+                  >
+                    Отклонить
+                  </Button>
+                )}
               </li>
             ))}
           </ul>

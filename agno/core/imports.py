@@ -1,8 +1,8 @@
 """Import of a manuscript into a story (openspec/specs/api/story-import).
 
 The file passed the checks of an upload (core/files.py): size, type and the antivirus. The text of the
-screenplay is replaced and the missing characters and locations are added in one transaction; drafts,
-comments and suggestions stay as they are.
+screenplay of a draft is replaced and the missing characters and locations are added in one transaction;
+other drafts, comments and suggestions stay as they are.
 """
 
 import uuid
@@ -11,7 +11,7 @@ from typing import Any
 
 from sqlalchemy import Connection, select
 
-from core.documents import create_documents, ensure_project_open
+from core.documents import create_documents, draft_row, ensure_writable
 from core.errors import Invalid
 from core.files import check_upload, file_bytes, file_format, get_file, store_file
 from core.importers.fdx import parse_fdx
@@ -57,12 +57,14 @@ def _manuscript(connection: Connection, project_id: uuid.UUID, file_id: uuid.UUI
     return parse_manuscript(file_format(stored.name, "import", data).extension, data)
 
 
-def _add_cast_and_places(connection: Connection, project_id: uuid.UUID, manuscript: Manuscript) -> None:
+def _add_cast_and_places(
+    connection: Connection, draft_id: uuid.UUID, manuscript: Manuscript, user_id: uuid.UUID
+) -> None:
     have = {
         (kind, name.upper())
         for kind, name in connection.execute(
             select(documents.c.kind, documents.c.name).where(
-                documents.c.project_id == project_id, documents.c.deleted_at.is_(None)
+                documents.c.draft_id == draft_id, documents.c.deleted_at.is_(None)
             )
         ).all()
     }
@@ -77,25 +79,29 @@ def _add_cast_and_places(connection: Connection, project_id: uuid.UUID, manuscri
                 have.add((kind, named.name.upper()))
                 items.append({"kind": kind, "name": named.name, "role": named.role})
     if items:
-        create_documents(connection, project_id, items)
+        create_documents(connection, draft_id, items, user_id)
 
 
-def import_into(connection: Connection, project_id: uuid.UUID, file_id: uuid.UUID, expected_revision: int) -> Text:
-    """Replace the screenplay text by the manuscript if its revision is still `expected_revision`."""
-    ensure_project_open(connection, project_id)
-    manuscript = _manuscript(connection, project_id, file_id)
-    text = put_text(connection, screenplay_id(connection, project_id), expected_revision, manuscript.doc)
-    _add_cast_and_places(connection, project_id, manuscript)
+def import_into(
+    connection: Connection, draft_id: uuid.UUID, file_id: uuid.UUID, expected_revision: int, user_id: uuid.UUID
+) -> Text:
+    """Replace the screenplay text of a draft by the manuscript if its revision is still `expected_revision`."""
+    draft = draft_row(connection, draft_id)
+    ensure_writable(connection, draft)
+    manuscript = _manuscript(connection, draft.project_id, file_id)
+    script_id = screenplay_id(connection, draft_id)
+    text = put_text(connection, script_id, expected_revision, manuscript.doc, user_id, "import")
+    _add_cast_and_places(connection, draft_id, manuscript, user_id)
     return text
 
 
 def create_project_from_file(
     connection: Connection, owner_id: uuid.UUID, title: Any, name: str, data: bytes
-) -> tuple[Project, uuid.UUID]:
+) -> tuple[Project, uuid.UUID, uuid.UUID]:
     """A new story whose screenplay is the manuscript; the file is checked and parsed before anything is written."""
     checked = check_upload(name, "import", data)
     manuscript = parse_manuscript(checked.format.extension, checked.data)
-    project, script_id = create_project(connection, owner_id, title, text=manuscript.doc)
+    project, draft_id, script_id = create_project(connection, owner_id, title, text=manuscript.doc)
     store_file(connection, project.id, owner_id, "import", None, checked)
-    _add_cast_and_places(connection, project.id, manuscript)
-    return project, script_id
+    _add_cast_and_places(connection, draft_id, manuscript, owner_id)
+    return project, draft_id, script_id

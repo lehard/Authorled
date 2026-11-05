@@ -1,7 +1,7 @@
 import { useInvalidate } from "@refinedev/core";
-import { AlignLeft, Copy, FileUp, LayoutGrid } from "lucide-react";
+import { AlignLeft, FileUp, LayoutGrid } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -15,14 +15,12 @@ import {
 } from "@/editor/ScreenplayEditor";
 import { ConfirmDialog } from "@/screens/shared/ConfirmDialog";
 
-import { docPath } from "../docRef";
-import { useDraftActions } from "../draftActions";
-import { CreateDraftDialog } from "../DraftDialogs";
 import { useProjectData } from "../ProjectContext";
 import { ActionError, ExportItems } from "./ExportItems";
 import { useEditorComments } from "./useEditorComments";
 import { useEditorSuggestions } from "./useEditorSuggestions";
 import { DocHead } from "./DocHead";
+import { SaveHistory } from "./SaveHistory";
 import { SceneBoard } from "./SceneBoard";
 
 /**
@@ -33,6 +31,7 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
   const data = useProjectData();
   const {
     project,
+    draft,
     script,
     chars,
     locs,
@@ -42,22 +41,25 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
     setCurrentScene,
     openChat,
   } = data;
-  const navigate = useNavigate();
-  const draftActions = useDraftActions(data);
-  const [drafting, setDrafting] = useState(false);
   const editor = useRef<ScreenplayEditorHandle>(null);
   // One card at a time: a comment thread or a co-author suggestion.
   const closeSuggestion = useRef<(() => void) | null>(null);
-  const comments = useEditorComments(project.id, editor, () => {
-    if (closeSuggestion.current === null)
-      throw new Error("Предложения соавтора ещё не подключены");
-    closeSuggestion.current();
-  });
+  const comments = useEditorComments(
+    draft.id,
+    editor,
+    () => {
+      if (closeSuggestion.current === null)
+        throw new Error("Предложения соавтора ещё не подключены");
+      closeSuggestion.current();
+    },
+    draft.locked,
+  );
   const suggestions = useEditorSuggestions(
-    project.id,
+    draft.id,
     editor,
     () => comments.close(),
     openChat,
+    draft.locked,
   );
   useEffect(() => {
     closeSuggestion.current = suggestions.close;
@@ -107,10 +109,7 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
         file,
         purpose: "import",
       });
-      const { text: imported } = await files.importInto(
-        project.id,
-        uploaded.id,
-      );
+      const { text: imported } = await files.importInto(draft.id, uploaded.id);
       // The cards may be open by now: then the text of the window takes it.
       if (editor.current === null) setText(imported);
       else editor.current.replace(toNode(imported));
@@ -152,6 +151,7 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
         status={textStatus}
         wide
       >
+        <SaveHistory target={{ draftId: draft.id, part: "text" }} />
         <ToggleGroup
           type="single"
           variant="outline"
@@ -199,6 +199,7 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
           ref={editor}
           mode={mode}
           doc={text}
+          readOnly={draft.locked}
           onChange={setText}
           suggestData={suggestData}
           onScene={setCurrentScene}
@@ -220,15 +221,11 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
             mode === "outline" ? undefined : (
               <>
                 <DropdownMenuItem
-                  disabled={importing}
+                  disabled={importing || draft.locked}
                   onSelect={() => fileInput.current?.click()}
                 >
                   <FileUp />
                   {importing ? "Импортируем…" : "Импорт…"}
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setDrafting(true)}>
-                  <Copy />
-                  Создать драфт…
                 </DropdownMenuItem>
                 <ExportItems
                   name={base}
@@ -243,15 +240,6 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
       )}
       <ActionError error={error} onClose={() => setError(null)} />
       {comments.dialog}
-      <CreateDraftDialog
-        open={drafting}
-        onOpenChange={setDrafting}
-        drafts={data.drafts}
-        onSubmit={async (name, from, locked) => {
-          const id = await draftActions.create(name, from, locked);
-          navigate(docPath(project.id, { kind: "draft", id }));
-        }}
-      />
       <ConfirmDialog
         open={pending !== null}
         onOpenChange={(open) => {

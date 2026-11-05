@@ -39,6 +39,7 @@ import {
   newThreadId,
   renameConversation,
   switchThread,
+  threadPrefix,
   type Conversation,
 } from "./api";
 import { coauthorContext } from "./docContext";
@@ -109,6 +110,8 @@ export function CoauthorChat({
   const feed = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const projectId = data.project.id;
+  const { draft: openDraft } = data;
+  const openDraftId = openDraft.id;
   const storyFiles = useStoryFiles();
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [fileErrors, setFileErrors] = useState<string[]>([]);
@@ -119,12 +122,13 @@ export function CoauthorChat({
     value: coauthorContext(data, selection),
   });
 
-  // A conversation belongs to one story: switching stories starts a new one.
+  // A conversation belongs to one draft: switching drafts starts a new one.
   useEffect(() => {
-    if (!agent.threadId.startsWith(`${projectId}:`)) {
-      switchThread(agent, newThreadId(projectId), []);
+    const here = { id: openDraftId, projectId };
+    if (!agent.threadId.startsWith(threadPrefix(here))) {
+      switchThread(agent, newThreadId(here), []);
     }
-  }, [agent, projectId]);
+  }, [agent, openDraftId, projectId]);
 
   const messages = agent.messages.filter(
     (m) => m.role === "user" || m.role === "assistant",
@@ -278,7 +282,7 @@ export function CoauthorChat({
 
   function startNew() {
     clearFiles();
-    switchThread(agent, newThreadId(projectId), []);
+    switchThread(agent, newThreadId(openDraft), []);
     setError(null);
     setView("messages");
   }
@@ -291,7 +295,7 @@ export function CoauthorChat({
     setView("history");
     setHistory(null);
     try {
-      setHistory(await listConversations(projectId));
+      setHistory(await listConversations(openDraft));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setView("messages");

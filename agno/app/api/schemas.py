@@ -21,14 +21,33 @@ class ProjectOut(_Out):
     deleted_at: datetime | None
 
 
+class ListedProjectOut(ProjectOut):
+    drafts_count: int
+    open_draft_id: uuid.UUID
+
+
 class CreatedProject(BaseModel):
     project: ProjectOut
+    draft_id: uuid.UUID
     script_id: uuid.UUID
+
+
+class DraftOut(_Out):
+    id: uuid.UUID
+    project_id: uuid.UUID
+    name: str
+    locked: bool
+    forked_from_id: uuid.UUID | None
+    forked_from_name: str | None
+    created_at: datetime
+    updated_at: datetime
+    deleted_at: datetime | None
 
 
 class DocumentOut(_Out):
     id: uuid.UUID
     project_id: uuid.UUID
+    draft_id: uuid.UUID
     kind: str
     name: str
     role: str | None
@@ -45,6 +64,34 @@ class TextOut(_Out):
     document_id: uuid.UUID
     content: dict[str, Any]
     revision: int
+
+
+class VersionOut(_Out):
+    id: uuid.UUID
+    part: str
+    reason: str
+    saved_by: uuid.UUID
+    saved_by_name: str
+    saved_at: datetime
+
+
+class VersionContentOut(VersionOut):
+    document_id: uuid.UUID
+    content: dict[str, Any]
+
+
+class RestoredOut(BaseModel):
+    revision: int
+
+
+class PointOut(_Out):
+    id: uuid.UUID
+    draft_id: uuid.UUID
+    name: str
+    kind: str
+    created_by: uuid.UUID
+    created_by_name: str
+    created_at: datetime
 
 
 class MessageOut(BaseModel):

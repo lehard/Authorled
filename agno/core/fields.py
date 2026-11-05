@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 
 from core.errors import Invalid
 
-DocumentKind = Literal["script", "character", "location", "world", "draft"]
+DocumentKind = Literal["script", "character", "location", "world"]
 Role = Literal["main", "secondary", "episodic"]
 
 # Kinds with a role; the database checks the same rule (core/tables.py, ck_documents_role_by_kind).
@@ -78,16 +78,11 @@ class ScriptFields(_Strict):
     synopsis: str | None = None
 
 
-class DraftFields(_Strict):
-    locked: bool | None = None
-
-
 FIELDS: dict[str, type[_Strict]] = {
     "script": ScriptFields,
     "character": CharacterFields,
     "location": LocationFields,
     "world": WorldFields,
-    "draft": DraftFields,
 }
 
 

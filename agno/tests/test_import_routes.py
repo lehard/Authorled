@@ -22,7 +22,7 @@ def test_story_from_fountain(authors: Any) -> None:
     text = author.get(f"/api/v1/documents/{created['script_id']}/text").json()["content"]
     uids = [b["attrs"]["uid"] for b in text["content"] if b["type"] == "sceneHeading"]
     assert len(uids) == 2 and len(set(uids)) == 2
-    tree = author.get(f"/api/v1/projects/{created['project']['id']}/documents").json()
+    tree = author.get(f"/api/v1/drafts/{created['draft_id']}/documents").json()
     assert sorted(d["name"] for d in tree if d["kind"] == "character") == ["Вера", "Миша"]
 
 
@@ -35,7 +35,7 @@ def test_story_from_starc(authors: Any) -> None:
     created = response.json()
     text = author.get(f"/api/v1/documents/{created['script_id']}/text").json()["content"]
     assert text["content"][0]["type"] == "sceneHeading"
-    tree = author.get(f"/api/v1/projects/{created['project']['id']}/documents").json()
+    tree = author.get(f"/api/v1/drafts/{created['draft_id']}/documents").json()
     assert [d["name"] for d in tree if d["kind"] == "character"] == ["Вера", "Миша", "Олег", "Почтальон"]
     assert [d["name"] for d in tree if d["kind"] == "location"] == ["Кухня", "Озеро", "Маяк"]
 
@@ -80,13 +80,13 @@ def test_story_from_file_needs_a_title(authors: Any) -> None:
 def test_import_into_a_story(authors: Any) -> None:
     author = authors()
     story = author.story()
-    project_id = story["project"]["id"]
+    project_id, draft_id = story["project"]["id"], story["draft_id"]
     uploaded = author.post(
         f"/api/v1/projects/{project_id}/files",
         files={"file": ("manuscript.txt", (SAMPLES / "manuscript.txt").read_bytes())},
         data={"purpose": "import"},
     ).json()
-    url = f"/api/v1/projects/{project_id}/import"
+    url = f"/api/v1/drafts/{draft_id}/import"
     assert author.post(url, json={"file_id": uploaded["id"]}).status_code == 428
     imported = author.post(url, json={"file_id": uploaded["id"]}, headers={"If-Match": "1"})
     assert imported.status_code == 200 and imported.json()["revision"] == 2
@@ -96,19 +96,20 @@ def test_import_into_a_story(authors: Any) -> None:
 
 def test_chat_file_is_not_imported(authors: Any) -> None:
     author = authors()
-    project_id = author.story()["project"]["id"]
+    story = author.story()
+    project_id, draft_id = story["project"]["id"], story["draft_id"]
     uploaded = author.post(
         f"/api/v1/projects/{project_id}/files",
         files={"file": ("notes.txt", b"text")},
         data={"purpose": "chat", "session_id": f"{project_id}:1"},
     ).json()
     response = author.post(
-        f"/api/v1/projects/{project_id}/import", json={"file_id": uploaded["id"]}, headers={"If-Match": "1"}
+        f"/api/v1/drafts/{draft_id}/import", json={"file_id": uploaded["id"]}, headers={"If-Match": "1"}
     )
     assert response.status_code == 422
     assert (
         author.get(
-            f"/api/v1/documents/{author.get(f'/api/v1/projects/{project_id}/documents').json()[0]['id']}/text"
+            f"/api/v1/documents/{author.get(f'/api/v1/drafts/{draft_id}/documents').json()[0]['id']}/text"
         ).json()["revision"]
         == 1
     )

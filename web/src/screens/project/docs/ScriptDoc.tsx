@@ -8,11 +8,12 @@ import { useAutosave } from "@/screens/shared/useAutosave";
 import { useProjectData } from "../ProjectContext";
 import { DocHead, FieldCard } from "./DocHead";
 import { Field } from "./Field";
+import { SaveHistory } from "./SaveHistory";
 import { scriptFacts } from "./scriptFacts";
 
 /** «Сценарий»: name, tagline, logline and which parts the navigator shows. */
 export function ScriptDoc() {
-  const { script, text } = useProjectData();
+  const { draft, script, text } = useProjectData();
   const { save, status } = useAutosave<Script>("scripts", script.id);
   const [form, setForm] = useState({
     name: script.name,
@@ -31,8 +32,13 @@ export function ScriptDoc() {
 
   return (
     <>
-      <DocHead title="Сценарий" status={status} />
-      <div className="mx-auto grid max-w-[720px] gap-5">
+      <DocHead title="Сценарий" status={status}>
+        <SaveHistory target={{ draftId: draft.id, part: "fields" }} />
+      </DocHead>
+      <fieldset
+        disabled={draft.locked}
+        className="mx-auto grid max-w-[720px] gap-5"
+      >
         <FieldCard>
           <Field
             label="Название сценария"
@@ -74,7 +80,7 @@ export function ScriptDoc() {
             {facts.scenes} сцен · ≈ {facts.duration}
           </p>
         </FieldCard>
-      </div>
+      </fieldset>
     </>
   );
 }

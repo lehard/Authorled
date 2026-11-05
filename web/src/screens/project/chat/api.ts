@@ -109,13 +109,19 @@ export function switchThread(
   agent.setMessages(messages);
 }
 
-export function newThreadId(projectId: string): string {
-  return `${projectId}:${crypto.randomUUID()}`;
+/** A conversation belongs to one draft (openspec/specs/api/agents, «Инструменты соавтора»). */
+export function threadPrefix(draft: { id: string; projectId: string }): string {
+  return `${draft.projectId}:${draft.id}:`;
 }
 
-export async function listConversations(
-  projectId: string,
-): Promise<Conversation[]> {
+export function newThreadId(draft: { id: string; projectId: string }): string {
+  return `${threadPrefix(draft)}${crypto.randomUUID()}`;
+}
+
+export async function listConversations(draft: {
+  id: string;
+  projectId: string;
+}): Promise<Conversation[]> {
   const params = new URLSearchParams({
     type: "agent",
     component_id: COAUTHOR_ID,
@@ -127,7 +133,7 @@ export async function listConversations(
     data: SessionRow[];
   };
   return body.data
-    .filter((s) => s.session_id.startsWith(`${projectId}:`))
+    .filter((s) => s.session_id.startsWith(threadPrefix(draft)))
     .map((s) => ({
       id: s.session_id,
       title: s.session_name ?? "Беседа без названия",

@@ -29,12 +29,14 @@ const quiet = { successNotification: false, errorNotification: false } as const;
  * open thread (`overlay`), the list button (`tools`) and the delete confirmation (`dialog`).
  */
 export function useEditorComments(
-  projectId: string,
+  draftId: string,
   editor: RefObject<ScreenplayEditorHandle | null>,
   /** A thread card opens: another card of the editor closes. */
   onOpened: () => void,
+  /** A locked draft: threads are only read. */
+  readOnly: boolean,
 ) {
-  const { threads } = useComments(projectId);
+  const { threads } = useComments(draftId);
   const invalidate = useInvalidate();
   const { mutateAsync: create } = useCreate();
   const { mutateAsync: update } = useUpdate();
@@ -83,7 +85,7 @@ export function useEditorComments(
       throw new Error("Пометки нового комментария нет в тексте.");
     await create({
       resource: "comments",
-      values: { id: unsavedDraft, projectId, quote, text },
+      values: { id: unsavedDraft, draftId, quote, text },
       ...quiet,
     });
   }
@@ -162,6 +164,7 @@ export function useEditorComments(
         key={active}
         style={style}
         thread={thread}
+        readOnly={readOnly}
         quote={quotes.get(active)}
         error={error}
         onClose={close}

@@ -203,7 +203,7 @@ def test_refused_files(data: bytes, reason: str) -> None:
 
 def test_text_for_the_coauthor(connection: Connection) -> None:
     owner = get_or_create_user(connection, "s1", "writer@authorled.test", "Сценарист").id
-    project, _ = create_project(connection, owner, "Тихая вода")
+    project, draft, _ = create_project(connection, owner, "Тихая вода")
     stored = upload_file(connection, project.id, owner, "p.starc", "chat", f"{project.id}:1", SAMPLE.read_bytes())
     assert stored.media_type == "application/x-starc"
     assert "Ты опять ходил к воде?" in file_text(connection, stored.id)
@@ -211,11 +211,11 @@ def test_text_for_the_coauthor(connection: Connection) -> None:
 
 def test_import_into_a_story(connection: Connection) -> None:
     owner = get_or_create_user(connection, "s1", "writer@authorled.test", "Сценарист").id
-    project, script_id = create_project(connection, owner, "Тихая вода")
+    project, draft, script_id = create_project(connection, owner, "Тихая вода")
     stored = upload_file(connection, project.id, owner, "p.starc", "import", None, SAMPLE.read_bytes())
-    import_into(connection, project.id, stored.id, 1)
+    import_into(connection, draft, stored.id, 1, owner)
     assert get_text(connection, script_id).content["content"][0]["type"] == "sceneHeading"
-    found = [(d.kind, d.name, d.role) for d in list_documents(connection, project.id) if d.kind != "script"]
+    found = [(d.kind, d.name, d.role) for d in list_documents(connection, draft) if d.kind != "script"]
     assert found == [
         ("character", "Вера", "episodic"),
         ("character", "Миша", "episodic"),
@@ -229,8 +229,8 @@ def test_import_into_a_story(connection: Connection) -> None:
 
 def test_main_character_who_does_not_speak(connection: Connection) -> None:
     owner = get_or_create_user(connection, "s1", "writer@authorled.test", "Сценарист").id
-    project, _ = create_project(connection, owner, "Тихая вода")
+    project, draft, _ = create_project(connection, owner, "Тихая вода")
     stored = upload_file(connection, project.id, owner, "p.starc", "import", None, with_role("ОЛЕГ", "0"))
-    import_into(connection, project.id, stored.id, 1)
-    roles = {d.name: d.role for d in list_documents(connection, project.id) if d.kind == "character"}
+    import_into(connection, draft, stored.id, 1, owner)
+    roles = {d.name: d.role for d in list_documents(connection, draft) if d.kind == "character"}
     assert roles["Олег"] == "main"

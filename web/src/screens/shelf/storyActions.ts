@@ -1,7 +1,7 @@
 import { useCreate, useGetIdentity, useUpdate } from "@refinedev/core";
 
 import type { Identity } from "@/auth/authProvider";
-import { useStoryFiles } from "@/data/files";
+import { useStoryFiles, type NewStory } from "@/data/files";
 import type { Project, Script } from "@/data/model";
 
 const quiet = { successNotification: false, errorNotification: false } as const;
@@ -22,7 +22,7 @@ export function useStoryActions() {
   ): Promise<string> {
     if (me === undefined)
       throw new Error("Профиль пользователя ещё не загружен.");
-    let id: string;
+    let story: NewStory;
     if (file === null) {
       const project: Pick<Project, "title" | "desc"> = { title, desc: "" };
       const { data } = await create({
@@ -30,9 +30,9 @@ export function useStoryActions() {
         values: project,
         ...quiet,
       });
-      id = String(data.id);
+      story = data as unknown as NewStory;
     } else {
-      id = (await files.createFromFile(title, file)).id;
+      story = await files.createFromFile(title, file);
     }
     const script: Pick<Script, "show" | "titlePage"> = {
       show: { title: true, synopsis: true, treatment: true, text: true },
@@ -44,8 +44,13 @@ export function useStoryActions() {
         place: "",
       },
     };
-    await update({ resource: "scripts", id, values: script, ...quiet });
-    return id;
+    await update({
+      resource: "scripts",
+      id: story.draftId,
+      values: script,
+      ...quiet,
+    });
+    return story.id;
   }
 
   async function renameStory(id: string, title: string) {

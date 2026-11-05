@@ -13,8 +13,8 @@ const quiet = { successNotification: false, errorNotification: false } as const;
 type NewEntity =
   Omit<Character, "id"> | Omit<Location, "id"> | Omit<World, "id">;
 
-function blank(kind: EntityKind, projectId: string, name: string): NewEntity {
-  const base = { projectId, name, one: "", long: "", ext: {}, deletedAt: null };
+function blank(kind: EntityKind, draftId: string, name: string): NewEntity {
+  const base = { draftId, name, one: "", long: "", ext: {}, deletedAt: null };
   if (kind === "char")
     return { ...base, role: "secondary", age: "", gender: "" };
   if (kind === "loc") return { ...base, role: "secondary" };
@@ -22,7 +22,7 @@ function blank(kind: EntityKind, projectId: string, name: string): NewEntity {
 }
 
 /** Characters, locations and worlds: add, move to the story trash and back, delete for good. */
-export function useEntityActions(projectId: string) {
+export function useEntityActions(draftId: string) {
   const { mutateAsync: create } = useCreate();
   const { mutateAsync: update } = useUpdate();
   const { mutateAsync: remove } = useDelete();
@@ -31,7 +31,7 @@ export function useEntityActions(projectId: string) {
     async add(kind: EntityKind, name: string): Promise<string> {
       const { data } = await create({
         resource: ENTITY_RESOURCE[kind],
-        values: blank(kind, projectId, name),
+        values: blank(kind, draftId, name),
         ...quiet,
       });
       return String(data.id);
@@ -40,7 +40,7 @@ export function useEntityActions(projectId: string) {
     async addFromText(kind: "char" | "loc", name: string): Promise<void> {
       await create({
         resource: ENTITY_RESOURCE[kind],
-        values: { ...blank(kind, projectId, name), role: "episodic" },
+        values: { ...blank(kind, draftId, name), role: "episodic" },
         ...quiet,
       });
     },

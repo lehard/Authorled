@@ -2,7 +2,6 @@ import { RotateCcw } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { paragraphs } from "@/editor/document.ts";
 import { ConfirmDialog } from "@/screens/shared/ConfirmDialog";
 
 import { ENTITY_WORDS } from "../docRef";
@@ -15,25 +14,12 @@ const date = new Intl.DateTimeFormat("ru", { day: "numeric", month: "long" });
 const kindName = (i: TrashItem) =>
   i.kind === "draft" ? "Драфт" : ENTITY_WORDS[i.kind].one;
 
-const PARAGRAPHS: Partial<Record<Intl.LDMLPluralRule, string>> = {
-  one: "абзац",
-  few: "абзаца",
-  many: "абзацев",
-};
-const plural = new Intl.PluralRules("ru");
-
 function summary(i: TrashItem): string {
-  if (i.kind === "draft") {
-    const n = paragraphs(i.x.text).length;
-    const word = PARAGRAPHS[plural.select(n)];
-    if (word === undefined)
-      throw new Error(`Нет формы слова «абзац» для ${n}.`);
-    return `${n} ${word} текста`;
-  }
+  if (i.kind === "draft") return "Сценарий, карточки и беседы этого драфта";
   return i.x.one === "" ? "Без описания" : i.x.one;
 }
 
-/** Trash of a story: deleted characters, locations, worlds and drafts. */
+/** Trash of a story: documents of the open draft and deleted drafts of the story. */
 export function BinDoc() {
   const data = useProjectData();
   const actions = useTrashActions(data);

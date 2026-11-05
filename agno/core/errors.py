@@ -10,7 +10,7 @@ class Conflict(Exception):
 
 
 class Locked(Conflict):
-    """The text of a locked draft does not change."""
+    """Nothing in a locked draft changes."""
 
 
 class Invalid(Exception):

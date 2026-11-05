@@ -1,6 +1,6 @@
 import { Menu, Sparkles } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import { useDrafts, useEntities, useProject, useScript } from "@/data/hooks";
 import type { Character, Location, Script, World } from "@/data/model";
+import { useSaveActions } from "@/data/saves";
 import type { ScreenplayDoc } from "@/editor/document.ts";
 import { useAutosave } from "@/screens/shared/useAutosave";
 import { useMediaQuery } from "@/screens/shared/useMediaQuery";
@@ -25,25 +26,25 @@ import { CoauthorChat } from "./chat/CoauthorChat";
 import { CoauthorProvider } from "./chat/CoauthorProvider";
 import { useSelectionIn } from "./chat/useSelectionIn";
 import { DocView } from "./docs/DocView";
-import { CURRENT, parseDoc } from "./docRef";
+import { parseDoc } from "./docRef";
 import { docTitle } from "./docTitle";
 import { Navigator } from "./Navigator";
 import { ProjectContext, type ProjectData } from "./ProjectContext";
 
 /** Window of a story: navigator, workspace, chat (openspec/specs/web/workspace, «Окно истории»). */
 export function ProjectScreen() {
-  const { projectId, doc } = useParams();
-  if (projectId === undefined || doc === undefined)
-    throw new Error("Маршрут истории без :projectId или :doc.");
+  const { projectId, draftId, doc } = useParams();
+  if (projectId === undefined || draftId === undefined || doc === undefined)
+    throw new Error("Маршрут истории без :projectId, :draftId или :doc.");
   const ref = parseDoc(doc);
   const { project, query: pq } = useProject(projectId);
-  const { script, query: sq } = useScript(projectId);
-  const chars = useEntities<Character>("char", projectId);
-  const locs = useEntities<Location>("loc", projectId);
-  const worlds = useEntities<World>("world", projectId);
-  const trashChars = useEntities("char", projectId, true);
-  const trashLocs = useEntities("loc", projectId, true);
-  const trashWorlds = useEntities("world", projectId, true);
+  const { script, query: sq } = useScript(draftId);
+  const chars = useEntities<Character>("char", draftId);
+  const locs = useEntities<Location>("loc", draftId);
+  const worlds = useEntities<World>("world", draftId);
+  const trashChars = useEntities("char", draftId, true);
+  const trashLocs = useEntities("loc", draftId, true);
+  const trashWorlds = useEntities("world", draftId, true);
   const drafts = useDrafts(projectId);
   const trashDrafts = useDrafts(projectId, true);
   const narrow = useMediaQuery("(max-width: 900px)");
@@ -51,8 +52,8 @@ export function ProjectScreen() {
   const [chatOpen, setChatOpen] = useState(false);
   const [selection, clearSelection] = useSelectionIn();
   const [currentScene, setCurrentScene] = useState<number | null>(null);
-  // The working copy of the text belongs to one story; another story starts from its data.
-  const [draft, setDraft] = useState<{
+  // The working copy of the text belongs to one draft; another draft starts from its data.
+  const [working, setWorking] = useState<{
     id: string;
     text: ScreenplayDoc;
   } | null>(null);
@@ -60,12 +61,20 @@ export function ProjectScreen() {
     save: saveText,
     status: textStatus,
     discard: discardText,
-  } = useAutosave<Script>("scripts", projectId);
+  } = useAutosave<Script>("scripts", draftId);
   const queryClient = useQueryClient();
   const [generation, setGeneration] = useState(0);
+  const { open: rememberDraft } = useSaveActions();
+  const draft = drafts.drafts.find((d) => d.id === draftId);
+  const opened = draft?.id;
 
-  // An unknown story is «Не найдено»; any other failure is shown with «Повторить» for all.
-  if (pq.isError && pq.error.statusCode === 404) return <NotFoundScreen />;
+  // The story opens in this draft next time; a refused request stays an unhandled rejection.
+  useEffect(() => {
+    if (opened !== undefined) void rememberDraft(opened);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened]);
+
+  // An unknown story or draft is «Не найдено»; any other failure is shown with «Повторить» for all.
   const lists = [
     sq,
     chars.query,
@@ -77,6 +86,8 @@ export function ProjectScreen() {
     drafts.query,
     trashDrafts.query,
   ];
+  if ([pq, ...lists].some((q) => q.isError && q.error?.statusCode === 404))
+    return <NotFoundScreen />;
   const failed = [pq, ...lists].find((q) => q.isError);
   if (failed?.error)
     return (
@@ -91,11 +102,16 @@ export function ProjectScreen() {
   // Refine keeps the previous story's data while the next one loads; never show it as this one.
   if (
     project?.id !== projectId ||
-    script?.id !== projectId ||
+    script?.id !== draftId ||
     lists.some((q) => q.isPending || q.isPlaceholderData)
   )
     return <MessageScreen loading title="Открываем историю…" />;
-  if (project.deletedAt !== null || ref === null) return <NotFoundScreen />;
+  if (project.deletedAt !== null || ref === null || draft === undefined) {
+    // A draft just made is missing until its list refetches; only then is it «Не найдено».
+    if (ref !== null && drafts.query.isFetching)
+      return <MessageScreen loading title="Открываем драфт…" />;
+    return <NotFoundScreen />;
+  }
   if (ref.kind === "part" && !script.show[ref.part]) return <NotFoundScreen />;
   if (ref.kind === "entity") {
     const { items, query } = { char: chars, loc: locs, world: worlds }[
@@ -108,21 +124,9 @@ export function ProjectScreen() {
       return <NotFoundScreen />;
     }
   }
-  // A draft or a side of a comparison: the same rule as a document just added.
-  const draftIds = [
-    ...(ref.kind === "draft" ? [ref.id] : []),
-    ...(ref.kind === "compare"
-      ? [ref.a, ref.b].filter((x) => x !== CURRENT)
-      : []),
-  ];
-  if (!draftIds.every((id) => drafts.drafts.some((d) => d.id === id))) {
-    if (drafts.query.isFetching)
-      return <MessageScreen loading title="Открываем документ…" />;
-    return <NotFoundScreen />;
-  }
-
   const base = {
     project,
+    draft,
     script,
     chars: chars.items,
     locs: locs.items,
@@ -139,9 +143,9 @@ export function ProjectScreen() {
     ...base,
     doc: ref,
     docSegment: doc,
-    text: draft?.id === script.id ? draft.text : script.text,
+    text: working?.id === script.id ? working.text : script.text,
     setText: (text) => {
-      setDraft({ id: script.id, text });
+      setWorking({ id: script.id, text });
       saveText({ text });
     },
     textStatus,
@@ -155,7 +159,7 @@ export function ProjectScreen() {
       // shows the error screen of the window.
       void queryClient.invalidateQueries().then(() => {
         discardText();
-        setDraft(null);
+        setWorking(null);
         setGeneration((g) => g + 1);
       });
     },
@@ -219,6 +223,7 @@ export function ProjectScreen() {
                   Чат с соавтором
                 </SheetDescription>
                 <CoauthorChat
+                  key={draft.id}
                   sees={title}
                   selection={selection}
                   clearSelection={clearSelection}
@@ -240,6 +245,7 @@ export function ProjectScreen() {
             </main>
             <aside className="min-h-0 overflow-hidden rounded-panel bg-panel shadow-panel">
               <CoauthorChat
+                key={draft.id}
                 sees={title}
                 selection={selection}
                 clearSelection={clearSelection}

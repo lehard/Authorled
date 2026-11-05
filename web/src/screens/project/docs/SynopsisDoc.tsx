@@ -5,19 +5,23 @@ import { useAutosave } from "@/screens/shared/useAutosave";
 
 import { useProjectData } from "../ProjectContext";
 import { DocHead } from "./DocHead";
+import { SaveHistory } from "./SaveHistory";
 
 /** «Синопсис»: prose on a sheet of paper; paragraphs are separated by an empty line. */
 export function SynopsisDoc() {
-  const { script } = useProjectData();
+  const { draft, script } = useProjectData();
   const { save, status } = useAutosave<Script>("scripts", script.id);
   const [text, setText] = useState(script.synopsis);
   return (
     <>
-      <DocHead title="Синопсис" status={status} />
+      <DocHead title="Синопсис" status={status}>
+        <SaveHistory target={{ draftId: draft.id, part: "fields" }} />
+      </DocHead>
       <div className="sheet sheet-prose">
         <textarea
           aria-label="Синопсис"
           placeholder="Начните синопсис"
+          readOnly={draft.locked}
           value={text}
           onChange={(e) => {
             setText(e.target.value);

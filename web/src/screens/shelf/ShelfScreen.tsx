@@ -26,6 +26,20 @@ const updated = new Intl.DateTimeFormat("ru", {
 });
 
 /** Shelf of stories (openspec/specs/web/workspace, «Полка историй»). */
+const DRAFT_WORDS: Partial<Record<Intl.LDMLPluralRule, string>> = {
+  one: "драфт",
+  few: "драфта",
+  many: "драфтов",
+};
+const plural = new Intl.PluralRules("ru");
+
+function draftsLabel(count: number): string {
+  const word = DRAFT_WORDS[plural.select(count)];
+  if (word === undefined)
+    throw new Error(`Нет формы слова «драфт» для ${count}.`);
+  return `${count} ${word}`;
+}
+
 export function ShelfScreen() {
   const navigate = useNavigate();
   const { projects, query } = useProjects(false);
@@ -71,6 +85,7 @@ export function ShelfScreen() {
                   <small className="text-caption text-muted-foreground">
                     Полный метр · изменено{" "}
                     {updated.format(new Date(p.updatedAt))}
+                    {p.draftsCount > 1 && ` · ${draftsLabel(p.draftsCount)}`}
                   </small>
                   {p.desc !== "" && (
                     <span className="mt-1 line-clamp-2 text-caption text-muted-foreground">

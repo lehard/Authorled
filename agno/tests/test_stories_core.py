@@ -10,12 +10,12 @@ from sqlalchemy import Connection, Engine, delete
 from core.documents import (
     create_documents,
     delete_document,
-    empty_trash,
     list_documents,
     restore_document,
     trash_document,
     update_document,
 )
+from core.drafts import empty_trash
 from core.errors import Conflict, Invalid
 from core.fields import merge_fields, validate_fields
 from core.projects import (
@@ -68,9 +68,9 @@ def test_null_removes_a_field() -> None:
 
 
 def test_new_story_has_one_screenplay_with_a_scene(connection: Connection) -> None:
-    project, script_id = create_project(connection, _owner(connection), "  Маяк ")
+    project, draft, script_id = create_project(connection, _owner(connection), "  Маяк ")
     assert project.title == "Маяк"
-    tree = list_documents(connection, project.id)
+    tree = list_documents(connection, draft)
     assert [(d.kind, d.name) for d in tree] == [("script", "Маяк")]
     blocks = get_text(connection, script_id).content["content"]
     assert blocks[0]["type"] == "sceneHeading" and blocks[0]["attrs"]["uid"]
@@ -83,8 +83,8 @@ def test_empty_title_is_refused(connection: Connection) -> None:
 
 def test_shelf_and_trash(connection: Connection) -> None:
     owner = _owner(connection)
-    lighthouse, _ = create_project(connection, owner, "Маяк")
-    ferry, _ = create_project(connection, owner, "Паром")
+    lighthouse, _, _ = create_project(connection, owner, "Маяк")
+    ferry, _, _ = create_project(connection, owner, "Паром")
     trash_project(connection, ferry.id)
     assert [p.title for p in list_projects(connection, owner, trash=False)] == ["Маяк"]
     assert [p.title for p in list_projects(connection, owner, trash=True)] == ["Паром"]
@@ -93,23 +93,25 @@ def test_shelf_and_trash(connection: Connection) -> None:
 
 
 def test_story_outside_trash_is_not_deleted(connection: Connection) -> None:
-    project, _ = create_project(connection, _owner(connection), "Маяк")
+    project, draft, _ = create_project(connection, _owner(connection), "Маяк")
     with pytest.raises(Conflict):
         delete_project(connection, project.id)
 
 
 def test_story_in_trash_refuses_changes(connection: Connection) -> None:
-    project, _ = create_project(connection, _owner(connection), "Маяк")
-    (vera,) = create_documents(connection, project.id, [{"kind": "character", "name": "Вера", "role": "main"}])
+    project, draft, _ = create_project(connection, _owner(connection), "Маяк")
+    (vera,) = create_documents(
+        connection, draft, [{"kind": "character", "name": "Вера", "role": "main"}], _owner(connection)
+    )
     trash_project(connection, project.id)
     with pytest.raises(Conflict):
         update_project(connection, project.id, {"title": "Новое"})
     with pytest.raises(Conflict):
-        update_document(connection, vera.id, vera.revision, {"name": "Вера Андреевна"})
+        update_document(connection, vera.id, vera.revision, {"name": "Вера Андреевна"}, _owner(connection))
 
 
 def test_unknown_story_field_is_named(connection: Connection) -> None:
-    project, _ = create_project(connection, _owner(connection), "Маяк")
+    project, draft, _ = create_project(connection, _owner(connection), "Маяк")
     with pytest.raises(Invalid) as error:
         update_project(connection, project.id, {"color": "red"})
     assert error.value.field == "color"
@@ -119,89 +121,93 @@ def test_unknown_story_field_is_named(connection: Connection) -> None:
 
 
 def test_batch_is_all_or_nothing(connection: Connection) -> None:
-    project, _ = create_project(connection, _owner(connection), "Маяк")
+    project, draft, _ = create_project(connection, _owner(connection), "Маяк")
     with pytest.raises(Invalid):
         create_documents(
             connection,
-            project.id,
+            draft,
             [
                 {"kind": "character", "name": "Нина", "role": "episodic"},
                 {"kind": "character", "name": " ", "role": "episodic"},
             ],
+            _owner(connection),
         )
-    assert [d.kind for d in list_documents(connection, project.id)] == ["script"]
+    assert [d.kind for d in list_documents(connection, draft)] == ["script"]
 
 
 def test_screenplay_is_not_created_by_hand(connection: Connection) -> None:
-    project, _ = create_project(connection, _owner(connection), "Маяк")
+    project, draft, _ = create_project(connection, _owner(connection), "Маяк")
     with pytest.raises(Invalid):
-        create_documents(connection, project.id, [{"kind": "script", "name": "Второй"}])
+        create_documents(connection, draft, [{"kind": "script", "name": "Второй"}], _owner(connection))
 
 
 def test_world_has_no_role(connection: Connection) -> None:
-    project, _ = create_project(connection, _owner(connection), "Маяк")
+    project, draft, _ = create_project(connection, _owner(connection), "Маяк")
     with pytest.raises(Invalid) as error:
-        create_documents(connection, project.id, [{"kind": "world", "name": "Деревня", "role": "main"}])
+        create_documents(connection, draft, [{"kind": "world", "name": "Деревня", "role": "main"}], _owner(connection))
     assert error.value.field == "role"
 
 
 def test_old_revision_is_refused(connection: Connection) -> None:
-    project, _ = create_project(connection, _owner(connection), "Маяк")
-    (vera,) = create_documents(connection, project.id, [{"kind": "character", "name": "Вера", "role": "main"}])
-    first = update_document(connection, vera.id, vera.revision, {"fields": {"fear": "вода"}})
+    project, draft, _ = create_project(connection, _owner(connection), "Маяк")
+    (vera,) = create_documents(
+        connection, draft, [{"kind": "character", "name": "Вера", "role": "main"}], _owner(connection)
+    )
+    first = update_document(connection, vera.id, vera.revision, {"fields": {"fear": "вода"}}, _owner(connection))
     assert first.revision == vera.revision + 1
     with pytest.raises(Conflict):
-        update_document(connection, vera.id, vera.revision, {"fields": {"fear": "огонь"}})
+        update_document(connection, vera.id, vera.revision, {"fields": {"fear": "огонь"}}, _owner(connection))
 
 
 def test_positions_stay_without_gaps(connection: Connection) -> None:
-    project, _ = create_project(connection, _owner(connection), "Маяк")
+    project, draft, _ = create_project(connection, _owner(connection), "Маяк")
     names = ["Вера", "Аня", "Олег"]
     created = create_documents(
-        connection, project.id, [{"kind": "character", "name": n, "role": "main"} for n in names]
+        connection, draft, [{"kind": "character", "name": n, "role": "main"} for n in names], _owner(connection)
     )
     by_name = {d.name: d for d in created}
-    update_document(connection, by_name["Олег"].id, by_name["Олег"].revision, {"position": 0})
+    update_document(connection, by_name["Олег"].id, by_name["Олег"].revision, {"position": 0}, _owner(connection))
     trash_document(connection, by_name["Аня"].id)
-    characters = [d for d in list_documents(connection, project.id) if d.kind == "character" and not d.deleted_at]
+    characters = [d for d in list_documents(connection, draft) if d.kind == "character" and not d.deleted_at]
     assert [(d.name, d.position) for d in characters] == [("Олег", 0), ("Вера", 1)]
     restore_document(connection, by_name["Аня"].id)
-    characters = [d for d in list_documents(connection, project.id) if d.kind == "character"]
+    characters = [d for d in list_documents(connection, draft) if d.kind == "character"]
     assert [(d.name, d.position) for d in characters] == [("Олег", 0), ("Вера", 1), ("Аня", 2)]
 
 
 def test_screenplay_is_not_trashed(connection: Connection) -> None:
-    project, script_id = create_project(connection, _owner(connection), "Маяк")
+    project, draft, script_id = create_project(connection, _owner(connection), "Маяк")
     with pytest.raises(Conflict):
         trash_document(connection, script_id)
 
 
 def test_trash_of_the_story(connection: Connection) -> None:
-    project, _ = create_project(connection, _owner(connection), "Маяк")
+    project, draft, _ = create_project(connection, _owner(connection), "Маяк")
     misha, pier, vera = create_documents(
         connection,
-        project.id,
+        draft,
         [
             {"kind": "character", "name": "Миша", "role": "episodic", "fields": {"fear": "темнота"}},
             {"kind": "location", "name": "Пристань", "role": "main"},
             {"kind": "character", "name": "Вера", "role": "main"},
         ],
+        _owner(connection),
     )
     trash_document(connection, misha.id)
-    trashed = {d.name: d for d in list_documents(connection, project.id)}["Миша"]
+    trashed = {d.name: d for d in list_documents(connection, draft)}["Миша"]
     assert trashed.deleted_at is not None
     with pytest.raises(Conflict):
         delete_document(connection, vera.id)
     trash_document(connection, pier.id)
-    assert empty_trash(connection, project.id) == 2
-    assert sorted(d.name for d in list_documents(connection, project.id)) == ["Вера", "Маяк"]
+    empty_trash(connection, draft)
+    assert sorted(d.name for d in list_documents(connection, draft)) == ["Вера", "Маяк"]
 
 
 # --- access
 
 
 def test_owner_only(connection: Connection) -> None:
-    project, _ = create_project(connection, _owner(connection, "a"), "Маяк")
+    project, _, _ = create_project(connection, _owner(connection, "a"), "Маяк")
     _owner(connection, "b")
     assert owns_project(connection, "a", project.id)
     assert not owns_project(connection, "b", project.id)
@@ -220,7 +226,7 @@ def test_access_source_reads_committed_stories(engine: Engine) -> None:
 
     subject = f"test-{uuid.uuid4()}"
     with engine.begin() as connection:
-        project, _ = create_project(connection, _owner(connection, subject), "Маяк")
+        project, _, _ = create_project(connection, _owner(connection, subject), "Маяк")
     try:
         access = ProjectAccess()
         assert access.can_access(Caller(subject), str(project.id))

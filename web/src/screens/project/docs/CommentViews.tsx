@@ -177,6 +177,7 @@ function Compose({
 export function ThreadCard({
   style,
   thread,
+  readOnly,
   quote,
   error,
   onClose,
@@ -190,6 +191,8 @@ export function ThreadCard({
   style: CSSProperties;
   /** Null for a new comment that is not saved yet. */
   thread: CommentThread | null;
+  /** A locked draft: the thread is only read. */
+  readOnly: boolean;
   quote: string | undefined;
   error: string | null;
   onClose: () => void;
@@ -237,7 +240,7 @@ export function ThreadCard({
               key={m.id}
               m={m}
               first={i === 0}
-              own={m.own}
+              own={!readOnly && m.own}
               onEdit={(text) => onEdit(thread!, m.id, text)}
               onDelete={() =>
                 i === 0 ? onDeleteThread(thread!) : onDeleteReply(thread!, m.id)
@@ -246,7 +249,7 @@ export function ThreadCard({
           ))}
         </ul>
       )}
-      {thread === null ? (
+      {readOnly ? null : thread === null ? (
         <Compose
           label="Комментарий"
           submit="Сохранить"

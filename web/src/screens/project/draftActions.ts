@@ -1,38 +1,41 @@
-import { useCreate, useDelete, useUpdate } from "@refinedev/core";
+import {
+  useCreate,
+  useDelete,
+  useInvalidate,
+  useUpdate,
+} from "@refinedev/core";
 
 import type { Draft, Entity, EntityKind, NewDraft } from "@/data/model";
 
-import { CURRENT } from "./docRef";
-import { draftOf } from "./docTitle";
 import { useEntityActions } from "./entityActions";
 import type { ProjectData } from "./ProjectContext";
 
 const quiet = { successNotification: false, errorNotification: false } as const;
 
-/** Drafts of the screenplay: create, rename, lock, move to the story trash and back, delete. */
-export function useDraftActions(data: ProjectData) {
+/** Drafts of a story: create, rename, lock, move to the story trash and back, delete. */
+export function useDraftActions(data: Pick<ProjectData, "project">) {
   const { mutateAsync: create } = useCreate();
   const { mutateAsync: update } = useUpdate();
   const { mutateAsync: remove } = useDelete();
-  const patch = (id: string, values: Partial<Draft>) =>
-    update({ resource: "drafts", id, values, ...quiet });
+  const invalidate = useInvalidate();
+  const patch = async (id: string, values: Partial<Draft>) => {
+    await update({ resource: "drafts", id, values, ...quiet });
+    // The shelf counts the drafts and knows where a story opens.
+    await invalidate({ resource: "projects", invalidates: ["list", "detail"] });
+  };
 
   return {
-    /**
-     * A copy of the saved current text without comments and suggestions, or of another draft;
-     * the data source makes it.
-     */
-    async create(name: string, base: string, locked: boolean): Promise<string> {
-      const values: NewDraft = {
-        projectId: data.project.id,
-        name,
-        locked,
-        baseId: base === CURRENT ? null : draftOf(data.drafts, base).id,
-      };
+    /** An independent copy of `baseId`; the data source makes it. */
+    async create(name: string, baseId: string): Promise<string> {
+      const values: NewDraft = { projectId: data.project.id, name, baseId };
       const { data: row } = await create({
         resource: "drafts",
         values,
         ...quiet,
+      });
+      await invalidate({
+        resource: "projects",
+        invalidates: ["list", "detail"],
       });
       return String(row.id);
     },
@@ -68,7 +71,7 @@ export function trashItems(trash: ProjectData["trash"]): TrashItem[] {
 
 /** «Восстановить» and «Удалить навсегда» for any document of the trash. */
 export function useTrashActions(data: ProjectData) {
-  const entities = useEntityActions(data.project.id);
+  const entities = useEntityActions(data.draft.id);
   const drafts = useDraftActions(data);
   return {
     restore: (i: TrashItem) =>
