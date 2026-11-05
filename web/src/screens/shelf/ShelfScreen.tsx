@@ -9,9 +9,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { MANUSCRIPT_TYPES } from "@/data/files";
 import { useProjects } from "@/data/hooks";
 import type { Project } from "@/data/model";
 import { NameDialog } from "@/screens/shared/NameDialog";
+import { DataErrorScreen } from "@/screens/system/DataErrorScreen";
 import { MessageScreen } from "@/screens/system/MessageScreen";
 import "@/screens/workspace.css";
 
@@ -24,21 +26,42 @@ const updated = new Intl.DateTimeFormat("ru", {
 });
 
 /** Shelf of stories (openspec/specs/web/workspace, «Полка историй»). */
+const DRAFT_WORDS: Partial<Record<Intl.LDMLPluralRule, string>> = {
+  one: "драфт",
+  few: "драфта",
+  many: "драфтов",
+};
+const plural = new Intl.PluralRules("ru");
+
+function draftsLabel(count: number): string {
+  const word = DRAFT_WORDS[plural.select(count)];
+  if (word === undefined)
+    throw new Error(`Нет формы слова «драфт» для ${count}.`);
+  return `${count} ${word}`;
+}
+
 export function ShelfScreen() {
   const navigate = useNavigate();
   const { projects, query } = useProjects(false);
-  const { projects: trash } = useProjects(true);
+  const { projects: trash, query: trashQuery } = useProjects(true);
   const { createStory, renameStory, trashStory } = useStoryActions();
   const [creating, setCreating] = useState(false);
   const [renaming, setRenaming] = useState<Project | null>(null);
 
-  if (query.isError)
+  const failed = [query, trashQuery].find((q) => q.isError);
+  if (failed?.error)
     return (
-      <MessageScreen
+      <DataErrorScreen
         title="Истории не загрузились"
-        text={query.error.message}
+        error={failed.error}
+        onRetry={() => {
+          void query.refetch();
+          void trashQuery.refetch();
+        }}
       />
     );
+  if (query.isPending || trashQuery.isPending)
+    return <MessageScreen loading title="Загружаем истории…" />;
 
   return (
     <div className="min-h-dvh">
@@ -62,6 +85,7 @@ export function ShelfScreen() {
                   <small className="text-caption text-muted-foreground">
                     Полный метр · изменено{" "}
                     {updated.format(new Date(p.updatedAt))}
+                    {p.draftsCount > 1 && ` · ${draftsLabel(p.draftsCount)}`}
                   </small>
                   {p.desc !== "" && (
                     <span className="mt-1 line-clamp-2 text-caption text-muted-foreground">
@@ -134,8 +158,13 @@ export function ShelfScreen() {
         label="Название"
         submitLabel="Создать"
         emptyError="Введите название истории."
-        onSubmit={async (title) => {
-          const id = await createStory(title);
+        file={{
+          label: "Рукопись (необязательно)",
+          accept: MANUSCRIPT_TYPES,
+          hint: "Fountain, Final Draft, STARC, DOCX или TXT: история создастся из текста файла.",
+        }}
+        onSubmit={async (title, file) => {
+          const id = await createStory(title, file);
           navigate(`/p/${id}/text`);
         }}
       />

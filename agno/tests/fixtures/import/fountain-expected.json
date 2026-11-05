@@ -1,0 +1,117 @@
+{
+ "source": "parseFountain of the former browser importer (removed by story-data-web)",
+ "files": {
+  "all-types.fountain": [
+   {
+    "type": "act",
+    "text": "Акт первый"
+   },
+   {
+    "type": "sequence",
+    "text": "Утро"
+   },
+   {
+    "type": "sceneHeading",
+    "text": "НАТ. ОЗЕРО, МОСТКИ — РАССВЕТ"
+   },
+   {
+    "type": "sceneCharacters",
+    "text": "Вера, Миша"
+   },
+   {
+    "type": "beat",
+    "text": "Вера приходит к воде"
+   },
+   {
+    "type": "action",
+    "text": "Туман над водой. Вера стоит у края мостков."
+   },
+   {
+    "type": "shot",
+    "text": "КРУПНО: её руки"
+   },
+   {
+    "type": "character",
+    "text": "ВЕРА"
+   },
+   {
+    "type": "parenthetical",
+    "text": "тихо"
+   },
+   {
+    "type": "dialogue",
+    "text": "Двадцать лет."
+   },
+   {
+    "type": "lyrics",
+    "text": "Ой, вода, вода"
+   },
+   {
+    "type": "inlineNote",
+    "text": "Проверить время рассвета"
+   },
+   {
+    "type": "unformatted",
+    "text": "Простой текст"
+   },
+   {
+    "type": "transition",
+    "text": "CUT TO:"
+   },
+   {
+    "type": "sceneHeading",
+    "text": "ИНТ. ДОМ ВЕРЫ — ДЕНЬ"
+   },
+   {
+    "type": "character",
+    "text": "МИША (ЗК)"
+   },
+   {
+    "type": "dialogue",
+    "text": "Мама, ты где?"
+   }
+  ],
+  "manuscript.txt": [
+   {
+    "type": "sceneHeading",
+    "text": "ИНТ. КУХНЯ — ДЕНЬ"
+   },
+   {
+    "type": "action",
+    "text": "Вера ставит чайник. За окном озеро."
+   },
+   {
+    "type": "character",
+    "text": "ВЕРА"
+   },
+   {
+    "type": "parenthetical",
+    "text": "не оборачиваясь"
+   },
+   {
+    "type": "dialogue",
+    "text": "Ты опять ходил к воде?"
+   },
+   {
+    "type": "character",
+    "text": "МИША"
+   },
+   {
+    "type": "dialogue",
+    "text": "Нет."
+   },
+   {
+    "type": "sceneHeading",
+    "text": "НАТ. ОЗЕРО — ВЕЧЕР"
+   },
+   {
+    "type": "action",
+    "text": "Миша бросает камень. Круги на воде."
+   },
+   {
+    "type": "transition",
+    "text": "FADE OUT."
+   }
+  ]
+ }
+}

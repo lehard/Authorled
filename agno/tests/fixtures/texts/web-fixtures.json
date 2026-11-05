@@ -1,0 +1,603 @@
+{
+ "source": "web/src/data/fixtures.ts (scripts, drafts) exported 2026-11-02; scene headings got attrs.uid",
+ "texts": [
+  {
+   "id": "scripts:water",
+   "text": {
+    "type": "doc",
+    "content": [
+     {
+      "type": "act",
+      "content": [
+       {
+        "type": "text",
+        "text": "Акт первый"
+       }
+      ]
+     },
+     {
+      "type": "sceneHeading",
+      "content": [
+       {
+        "type": "text",
+        "text": "НАТ. ОЗЕРО, МОСТКИ — РАССВЕТ"
+       }
+      ],
+      "attrs": {
+       "uid": "water-s1"
+      }
+     },
+     {
+      "type": "beat",
+      "content": [
+       {
+        "type": "text",
+        "text": "Миша уходит на озеро один"
+       }
+      ]
+     },
+     {
+      "type": "action",
+      "content": [
+       {
+        "type": "text",
+        "text": "1998 год. Туман над водой. МИША (17) идёт по мосткам босиком, в руке удочка. Доски скрипят."
+       }
+      ]
+     },
+     {
+      "type": "action",
+      "content": [
+       {
+        "type": "text",
+        "text": "Он оглядывается на дом за деревьями. В окне кухни горит свет."
+       }
+      ]
+     },
+     {
+      "type": "transition",
+      "content": [
+       {
+        "type": "text",
+        "text": "Склейка:"
+       }
+      ]
+     },
+     {
+      "type": "sceneHeading",
+      "content": [
+       {
+        "type": "text",
+        "text": "ИНТ. ДОМ ВЕРЫ, КУХНЯ — УТРО"
+       }
+      ],
+      "attrs": {
+       "uid": "water-s2"
+      }
+     },
+     {
+      "type": "beat",
+      "content": [
+       {
+        "type": "text",
+        "text": "Аня звонит и говорит, что приедет"
+       }
+      ]
+     },
+     {
+      "type": "action",
+      "content": [
+       {
+        "type": "text",
+        "text": "Наши дни. ВЕРА (52) режет хлеб. Радио бормочет новости. Телефон на столе вибрирует: «Аня»."
+       }
+      ]
+     },
+     {
+      "type": "character",
+      "content": [
+       {
+        "type": "text",
+        "text": "Вера"
+       }
+      ]
+     },
+     {
+      "type": "dialogue",
+      "content": [
+       {
+        "type": "text",
+        "text": "Да, Анечка."
+       }
+      ]
+     },
+     {
+      "type": "character",
+      "content": [
+       {
+        "type": "text",
+        "text": "Аня (З.К.)"
+       }
+      ]
+     },
+     {
+      "type": "dialogue",
+      "content": [
+       {
+        "type": "text",
+        "text": "Мам, я приеду в пятницу. Надолго."
+       }
+      ]
+     },
+     {
+      "type": "action",
+      "content": [
+       {
+        "type": "text",
+        "text": "Вера кладёт нож."
+       }
+      ]
+     },
+     {
+      "type": "character",
+      "content": [
+       {
+        "type": "text",
+        "text": "Вера"
+       }
+      ]
+     },
+     {
+      "type": "parenthetical",
+      "content": [
+       {
+        "type": "text",
+        "text": "тихо"
+       }
+      ]
+     },
+     {
+      "type": "dialogue",
+      "content": [
+       {
+        "type": "text",
+        "text": "Приезжай."
+       }
+      ]
+     },
+     {
+      "type": "sceneHeading",
+      "content": [
+       {
+        "type": "text",
+        "text": "НАТ. ПРИСТАНЬ ПОСЁЛКА — ДЕНЬ"
+       }
+      ],
+      "attrs": {
+       "uid": "water-s3"
+      }
+     },
+     {
+      "type": "action",
+      "content": [
+       {
+        "type": "text",
+        "text": "Паром причаливает. АНЯ (24) спрыгивает на берег с рюкзаком. ДЯДЯ КОЛЯ (60) курит у будки кассы."
+       }
+      ]
+     },
+     {
+      "type": "character",
+      "content": [
+       {
+        "type": "text",
+        "text": "Дядя Коля"
+       }
+      ]
+     },
+     {
+      "type": "dialogue",
+      "content": [
+       {
+        "type": "text",
+        "text": "Выросла."
+       }
+      ]
+     },
+     {
+      "type": "character",
+      "content": [
+       {
+        "type": "text",
+        "text": "Аня"
+       }
+      ]
+     },
+     {
+      "type": "dialogue",
+      "content": [
+       {
+        "type": "text",
+        "text": "Двадцать лет прошло, дядь Коль."
+       }
+      ]
+     },
+     {
+      "type": "action",
+      "content": [
+       {
+        "type": "text",
+        "text": "Коля отводит глаза к воде."
+       }
+      ]
+     },
+     {
+      "type": "act",
+      "content": [
+       {
+        "type": "text",
+        "text": "Акт второй"
+       }
+      ]
+     },
+     {
+      "type": "sceneHeading",
+      "content": [
+       {
+        "type": "text",
+        "text": "НАТ. ОЗЕРО, МОСТКИ — ДЕНЬ"
+       }
+      ],
+      "attrs": {
+       "uid": "water-s4"
+      }
+     },
+     {
+      "type": "beat",
+      "content": [
+       {
+        "type": "text",
+        "text": "Аня выходит на мостки"
+       }
+      ]
+     },
+     {
+      "type": "action",
+      "content": [
+       {
+        "type": "text",
+        "text": "Доски потемнели и прогнулись. АНЯ стоит на самом краю, смотрит в воду."
+       }
+      ]
+     },
+     {
+      "type": "beat",
+      "content": [
+       {
+        "type": "text",
+        "text": "Не берёт трубку матери"
+       }
+      ]
+     },
+     {
+      "type": "action",
+      "content": [
+       {
+        "type": "text",
+        "text": "Звонит телефон. На экране: «Мама». Аня смотрит, пока звонок не обрывается."
+       }
+      ]
+     },
+     {
+      "type": "sceneHeading",
+      "content": [
+       {
+        "type": "text",
+        "text": "ИНТ. ГАРАЖ ДЯДИ КОЛИ — ВЕЧЕР"
+       }
+      ],
+      "attrs": {
+       "uid": "water-s5"
+      }
+     },
+     {
+      "type": "action",
+      "content": [
+       {
+        "type": "text",
+        "text": "Разобранный мотор на верстаке. КОЛЯ протирает ключ ветошью. Аня садится на перевёрнутый ящик."
+       }
+      ]
+     },
+     {
+      "type": "character",
+      "content": [
+       {
+        "type": "text",
+        "text": "Аня"
+       }
+      ]
+     },
+     {
+      "type": "dialogue",
+      "content": [
+       {
+        "type": "text",
+        "text": "Расскажи, как это было."
+       }
+      ]
+     },
+     {
+      "type": "character",
+      "content": [
+       {
+        "type": "text",
+        "text": "Дядя Коля"
+       }
+      ]
+     },
+     {
+      "type": "parenthetical",
+      "content": [
+       {
+        "type": "text",
+        "text": "не поднимая головы"
+       }
+      ]
+     },
+     {
+      "type": "dialogue",
+      "content": [
+       {
+        "type": "text",
+        "text": "Он утонул. Всё.",
+        "marks": [
+         {
+          "type": "suggestion",
+          "attrs": {
+           "id": "s2"
+          }
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "character",
+      "content": [
+       {
+        "type": "text",
+        "text": "Аня"
+       }
+      ]
+     },
+     {
+      "type": "dialogue",
+      "content": [
+       {
+        "type": "text",
+        "text": "Мама говорит то же самое. Теми же словами."
+       }
+      ]
+     },
+     {
+      "type": "sceneHeading",
+      "content": [
+       {
+        "type": "text",
+        "text": "ИНТ. ДОМ ВЕРЫ, КУХНЯ — НОЧЬ"
+       }
+      ],
+      "attrs": {
+       "uid": "water-s6"
+      }
+     },
+     {
+      "type": "beat",
+      "content": [
+       {
+        "type": "text",
+        "text": "Вера не спит и ждёт"
+       }
+      ]
+     },
+     {
+      "type": "action",
+      "content": [
+       {
+        "type": "text",
+        "text": "Свет только над раковиной. ВЕРА моет чашку. "
+       },
+       {
+        "type": "text",
+        "text": "Чашка давно чистая. Она всё равно трёт её губкой.",
+        "marks": [
+         {
+          "type": "suggestion",
+          "attrs": {
+           "id": "s1"
+          }
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "character",
+      "content": [
+       {
+        "type": "text",
+        "text": "Аня (З.К.)"
+       }
+      ]
+     },
+     {
+      "type": "dialogue",
+      "content": [
+       {
+        "type": "text",
+        "text": "Мам, ты опять не спишь?"
+       }
+      ]
+     },
+     {
+      "type": "beat",
+      "content": [
+       {
+        "type": "text",
+        "text": "Аня приносит слова дяди"
+       }
+      ]
+     },
+     {
+      "type": "action",
+      "content": [
+       {
+        "type": "text",
+        "text": "Входит АНЯ, в куртке, с рюкзаком. Ставит рюкзак на стул."
+       }
+      ]
+     },
+     {
+      "type": "character",
+      "content": [
+       {
+        "type": "text",
+        "text": "Вера"
+       }
+      ]
+     },
+     {
+      "type": "parenthetical",
+      "content": [
+       {
+        "type": "text",
+        "text": "не оборачиваясь"
+       }
+      ]
+     },
+     {
+      "type": "dialogue",
+      "content": [
+       {
+        "type": "text",
+        "text": "Я же просила звонить, когда едешь так поздно.",
+        "marks": [
+         {
+          "type": "comment",
+          "attrs": {
+           "id": "c1"
+          }
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "character",
+      "content": [
+       {
+        "type": "text",
+        "text": "Аня"
+       }
+      ]
+     },
+     {
+      "type": "dialogue",
+      "content": [
+       {
+        "type": "text",
+        "text": "Я была у дяди Коли. "
+       },
+       {
+        "type": "text",
+        "text": "Он сказал, что Миша утонул не случайно.",
+        "marks": [
+         {
+          "type": "comment",
+          "attrs": {
+           "id": "c2"
+          }
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "type": "action",
+      "content": [
+       {
+        "type": "text",
+        "text": "Вода продолжает течь. Вера закрывает кран."
+       }
+      ]
+     },
+     {
+      "type": "sceneHeading",
+      "content": [
+       {
+        "type": "text",
+        "text": "НАТ. ПРИСТАНЬ — РАССВЕТ"
+       }
+      ],
+      "attrs": {
+       "uid": "water-s7"
+      }
+     },
+     {
+      "type": "action",
+      "content": [
+       {
+        "type": "text",
+        "text": "Вера идёт по пустой пристани. Здесь она не была двадцать лет."
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "scripts:ferry",
+   "text": {
+    "type": "doc",
+    "content": [
+     {
+      "type": "sceneHeading",
+      "content": [
+       {
+        "type": "text",
+        "text": "НАТ. ПЕРЕПРАВА — УТРО"
+       }
+      ],
+      "attrs": {
+       "uid": "ferry-s1"
+      }
+     },
+     {
+      "type": "action",
+      "content": [
+       {
+        "type": "text",
+        "text": "Река в тумане. ПАВЕЛ (60) отвязывает паром."
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "scripts:untitled",
+   "text": {
+    "type": "doc",
+    "content": [
+     {
+      "type": "sceneHeading",
+      "attrs": {
+       "uid": "untitled-s1"
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

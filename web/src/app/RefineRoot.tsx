@@ -8,12 +8,14 @@ import { Button } from "@/components/ui/button";
 import { useAccountTheme } from "@/account/useAccount";
 import { authProvider } from "@/auth/authProvider";
 import { currentPath, userManager } from "@/auth/userManager";
+import { apiProvider } from "@/data/apiProvider";
 import { fixturesProvider } from "@/data/fixturesProvider";
 import { MessageScreen } from "@/screens/system/MessageScreen";
 
 import type { DataSource } from "./config";
 
 const DATA_PROVIDERS: Record<DataSource, DataProvider> = {
+  api: apiProvider,
   fixtures: fixturesProvider,
 };
 

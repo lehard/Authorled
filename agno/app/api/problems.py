@@ -8,6 +8,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.auth import MissingIdentityClaim
+from core.errors import Conflict, Forbidden, Invalid, NotFound, PreconditionRequired, ScannerUnavailable, TooLarge
+from core.users import AccountDeleted, AccountNotFound
 
 PROBLEM_JSON = "application/problem+json"
 
@@ -42,6 +44,35 @@ async def _on_missing_claim(_: Request, exc: Exception) -> JSONResponse:
     )
 
 
+# Refusals of the core (core/errors.py) and their HTTP answers; the detail is the core's reason.
+_CORE: dict[type[Exception], tuple[int, str]] = {
+    NotFound: (404, "Not Found"),
+    Conflict: (409, "Conflict"),
+    Invalid: (422, "Unprocessable Content"),
+    PreconditionRequired: (428, "Precondition Required"),
+    Forbidden: (403, "Forbidden"),
+    TooLarge: (413, "Content Too Large"),
+    ScannerUnavailable: (503, "Service Unavailable"),
+}
+
+
+async def _on_core(_: Request, exc: Exception) -> JSONResponse:
+    status, title = next(answer for kind, answer in _CORE.items() if isinstance(exc, kind))
+    return problem_response(Problem(status, title, str(exc)))
+
+
+async def _on_account_not_found(_: Request, exc: Exception) -> JSONResponse:
+    return problem_response(Problem(404, "Not Found", "Аккаунта ещё нет: сначала вызовите GET /api/v1/me."))
+
+
+async def _on_account_deleted(_: Request, exc: Exception) -> JSONResponse:
+    return problem_response(Problem(410, "Gone", "Аккаунт удалён."))
+
+
 def install_problem_handlers(app: FastAPI) -> None:
     app.add_exception_handler(Problem, _on_problem)
     app.add_exception_handler(MissingIdentityClaim, _on_missing_claim)
+    for kind in _CORE:
+        app.add_exception_handler(kind, _on_core)
+    app.add_exception_handler(AccountNotFound, _on_account_not_found)
+    app.add_exception_handler(AccountDeleted, _on_account_deleted)

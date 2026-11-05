@@ -10,6 +10,9 @@ from sqlalchemy.engine import make_url
 
 from core.connection import build_db_url
 
+# Fixtures of the route tests: client, authors.
+pytest_plugins = ["tests.routes"]
+
 TEST_DATABASE = "ai_test"
 ALEMBIC_INI = Path(__file__).resolve().parents[1] / "alembic.ini"
 
@@ -39,3 +42,12 @@ def connection(engine: Engine) -> Iterator[Connection]:
 @pytest.fixture(scope="session")
 def alembic_config() -> Config:
     return Config(str(ALEMBIC_INI))
+
+
+@pytest.fixture(scope="session", autouse=True)
+def project_access() -> None:
+    """The source of project access the API registers at startup (app/main.py), once per test process."""
+    from app.auth import set_project_access_source
+    from core.projects import ProjectAccess
+
+    set_project_access_source(ProjectAccess())

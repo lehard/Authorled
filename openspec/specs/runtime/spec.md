@@ -101,7 +101,7 @@
 - `agentos` (по умолчанию): весь контекст сборки в `/app`, рабочий каталог и `PYTHONPATH` — `/app/agno`, entrypoint `/app/agno/scripts/entrypoint.sh`, CMD `uvicorn app.main:app --host 0.0.0.0 --port 8000`;
 - `sandbox`: пользователь UID 1000, порт 8080, `python -I -m agno.sandbox.agentcore.server serve`.
 
-`.dockerignore` в корне репозитория MUST исключать `.env*`, `.claude/`, `.codex/`, `tmp/`, `web/` и выгруженные ключи `auth/jwks/jwks.json*` и MUST оставлять `.agents/skills/`, `AGENTS.md` и `openspec/`.
+`.dockerignore` в корне репозитория MUST исключать `.env*`, `.claude/`, `.codex/`, `tmp/`, `web/` и выгруженные ключи `auth/jwks/jwks.json*` и MUST оставлять `.agents/skills/`, `agno/skills/`, `AGENTS.md` и `openspec/`.
 
 #### Scenario: Сборка sandbox
 - WHEN выполняется `docker build --target sandbox --load -t agno-sandbox:local -f agno/Dockerfile .` из корня репозитория
@@ -110,7 +110,7 @@
 #### Scenario: Состав образа API
 - GIVEN образ цели `agentos` собран
 - WHEN перечисляется содержимое `/app`
-- THEN MUST присутствовать `/app/AGENTS.md`, `/app/.agents/skills/`, `/app/openspec/` и `/app/agno/app/main.py`
+- THEN MUST присутствовать `/app/AGENTS.md`, `/app/.agents/skills/`, `/app/openspec/`, `/app/agno/app/main.py` и `/app/agno/skills/coauthor/SKILL.md`
 - AND `/app/web` и `/app/.env` MUST отсутствовать
 
 ### Requirement: Публикация образа
@@ -206,3 +206,26 @@ CI (`.github/workflows/validate.yml`, Python 3.14, Node.js из `web/.nvmrc`) MU
 - WHEN выполняется `./scripts/dev.sh migrate`
 - THEN `agentos-db` MUST быть `healthy`, `agentos-db-init` MUST завершиться успешно
 - AND миграции схемы `authorled` MUST быть применены, а скрипт MUST вернуть код `agentos-migrate`
+
+### Requirement: Антивирус ClamAV
+Compose-файлы MUST объявлять сервис `clamav` (образ ClamAV с закреплённой версией, демон `clamd` по TCP; в разработке порт публикуется только на `127.0.0.1` для API на хосте, в production не публикуется; том для антивирусных баз, healthcheck готовности). `agentos-api` MUST стартовать после статуса `healthy` у `clamav` и MUST получать его адрес из обязательных `CLAMAV_HOST` и `CLAMAV_PORT`; без них старт API MUST завершаться ошибкой, называющей переменную. В production действует то же.
+
+#### Scenario: Порядок запуска
+- GIVEN `.env` заполнен
+- WHEN выполняется `docker compose up -d --build`
+- THEN `agentos-api` MUST стартовать только после статуса `healthy` у `clamav`
+
+#### Scenario: Нет адреса антивируса
+- GIVEN `CLAMAV_HOST` не задан
+- WHEN запускается API
+- THEN старт MUST завершиться ошибкой, называющей `CLAMAV_HOST`
+
+#### Scenario: Порт не опубликован
+- GIVEN запущена конфигурация production
+- WHEN проверяются опубликованные порты `clamav`
+- THEN порт `clamd` MUST NOT быть опубликован на хосте
+
+#### Scenario: API на хосте
+- GIVEN `./scripts/dev.sh api` запускает API на хосте
+- WHEN API принимает загрузку файла
+- THEN `clamav` MUST быть запущен скриптом и доступен по `CLAMAV_HOST` и `CLAMAV_PORT`

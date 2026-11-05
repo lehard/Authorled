@@ -30,7 +30,7 @@ function roleLabel(kind: EntityKind, x: Entity): string | null {
 export function GroupDoc({ kind }: { kind: EntityKind }) {
   const data = useProjectData();
   const navigate = useNavigate();
-  const actions = useEntityActions(data.project.id);
+  const actions = useEntityActions(data.draft.id);
   const [adding, setAdding] = useState(false);
   const list: Entity[] = {
     char: data.chars,
@@ -61,7 +61,7 @@ export function GroupDoc({ kind }: { kind: EntityKind }) {
             return (
               <Link
                 key={x.id}
-                to={docPath(data.project.id, {
+                to={docPath(data.draft, {
                   kind: "entity",
                   entity: kind,
                   id: x.id,
@@ -96,9 +96,7 @@ export function GroupDoc({ kind }: { kind: EntityKind }) {
         emptyError={`Введите ${kind === "char" ? "имя" : "название"}.`}
         onSubmit={async (name) => {
           const id = await actions.add(kind, name);
-          navigate(
-            docPath(data.project.id, { kind: "entity", entity: kind, id }),
-          );
+          navigate(docPath(data.draft, { kind: "entity", entity: kind, id }));
         }}
       />
     </>

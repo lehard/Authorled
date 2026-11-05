@@ -33,6 +33,7 @@ import { useEntityActions } from "../entityActions";
 import { useProjectData } from "../ProjectContext";
 import { DocHead, FieldCard } from "./DocHead";
 import { Field } from "./Field";
+import { SaveHistory } from "./SaveHistory";
 
 const GENDERS: { value: Gender; label: string }[] = [
   { value: "", label: "Не указан" },
@@ -58,9 +59,9 @@ export function EntityDoc({ kind, id }: { kind: EntityKind; id: string }) {
 }
 
 function EntityForm({ kind, record }: { kind: EntityKind; record: Entity }) {
-  const { project } = useProjectData();
+  const { draft } = useProjectData();
   const navigate = useNavigate();
-  const actions = useEntityActions(project.id);
+  const actions = useEntityActions(draft.id);
   const { save, status } = useAutosave<Entity>(
     ENTITY_RESOURCE[kind],
     record.id,
@@ -79,6 +80,7 @@ function EntityForm({ kind, record }: { kind: EntityKind; record: Entity }) {
         title={x.name.trim() === "" ? words.one : x.name}
         status={status}
       >
+        <SaveHistory target={{ documentId: record.id, part: "fields" }} />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -93,13 +95,12 @@ function EntityForm({ kind, record }: { kind: EntityKind; record: Entity }) {
           <DropdownMenuContent align="end">
             <DropdownMenuItem
               variant="destructive"
+              disabled={draft.locked}
               onSelect={() =>
                 void actions
                   .trash(kind, record.id, true)
                   .then(() =>
-                    navigate(
-                      docPath(project.id, { kind: "group", entity: kind }),
-                    ),
+                    navigate(docPath(draft, { kind: "group", entity: kind })),
                   )
               }
             >
@@ -109,7 +110,10 @@ function EntityForm({ kind, record }: { kind: EntityKind; record: Entity }) {
           </DropdownMenuContent>
         </DropdownMenu>
       </DocHead>
-      <div className="mx-auto grid max-w-[900px] gap-4">
+      <fieldset
+        disabled={draft.locked}
+        className="mx-auto grid max-w-[900px] gap-4"
+      >
         <FieldCard>
           <Field
             label={words.nameLabel}
@@ -234,7 +238,7 @@ function EntityForm({ kind, record }: { kind: EntityKind; record: Entity }) {
             </details>
           );
         })}
-      </div>
+      </fieldset>
     </>
   );
 }

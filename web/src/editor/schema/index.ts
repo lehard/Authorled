@@ -9,7 +9,9 @@ import {
 } from "../elements.ts";
 
 // Parameters of a scene live on its heading and move with it (scene-outline-and-cards, decision 2).
+// `uid` names the scene for the core and co-author suggestions; the sceneUids plugin fills it.
 const SCENE_ATTRS: NodeSpec["attrs"] = {
+  uid: { default: "", validate: "string" },
   alt: { default: "", validate: "string" },
   day: { default: "", validate: "string" },
   color: {

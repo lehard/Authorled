@@ -13,6 +13,8 @@ export type MarkJSON =
 export type TextJSON = { type: "text"; text: string; marks?: MarkJSON[] };
 
 export type SceneParams = {
+  /** Lasting id of the scene, unique in the document (web/screenplay-editor, «Постоянный uid сцены»). */
+  uid: string;
   /** Meaningful name of the scene, shown on the card and in the navigator, not in the text. */
   alt: string;
   /** Day of the story. */
@@ -22,6 +24,7 @@ export type SceneParams = {
 };
 
 export const NO_PARAMS: SceneParams = {
+  uid: "",
   alt: "",
   day: "",
   color: null,
@@ -46,6 +49,28 @@ export function toJSON(node: Node): ScreenplayDoc {
   return node.toJSON() as ScreenplayDoc;
 }
 
+/**
+ * The document with a `uid` on every scene heading: an empty one and a repeated one (a copy)
+ * get a new id, the first heading with an id keeps it.
+ */
+export function ensureSceneUids(doc: ScreenplayDoc): ScreenplayDoc {
+  const seen = new Set<string>();
+  let changed = false;
+  const content = doc.content.map((block): BlockJSON => {
+    if (block.type !== "sceneHeading") return block;
+    const uid = block.attrs?.uid ?? "";
+    if (uid !== "" && !seen.has(uid)) {
+      seen.add(uid);
+      return block;
+    }
+    changed = true;
+    const fresh = crypto.randomUUID();
+    seen.add(fresh);
+    return { ...block, attrs: { ...block.attrs, uid: fresh } };
+  });
+  return changed ? { type: "doc", content } : doc;
+}
+
 /** A document of plain paragraphs: samples and a new story. */
 export function plainDoc(rows: [ElementName, string][]): ScreenplayDoc {
   return {
@@ -58,7 +83,7 @@ export function plainDoc(rows: [ElementName, string][]): ScreenplayDoc {
 
 /**
  * The document without marks of `types`: a draft copies the text without the comments and
- * suggestions of the current one (screenplay-drafts, decision 2).
+ * suggestions of its base.
  */
 export function stripMarks(
   doc: ScreenplayDoc,

@@ -12,13 +12,16 @@ import {
   type EditorMode,
   type ElementName,
 } from "./elements.ts";
-import { toJSON, toNode, type ScreenplayDoc } from "./document.ts";
+import { placeAnchors, type SuggestionAnchor } from "./anchors.ts";
+import {
+  ensureSceneUids,
+  toJSON,
+  toNode,
+  type ScreenplayDoc,
+} from "./document.ts";
 import { docToFDX } from "./exporters/fdx.ts";
 import { docToFountain } from "./exporters/fountain.ts";
 import { printScreenplay, type TitlePage } from "./exporters/print.ts";
-import { fdxToDoc } from "./importers/fdx.ts";
-import { fountainToDoc } from "./importers/fountain.ts";
-import { ImportError } from "./importers/ImportError.ts";
 import { screenplayKeymap, setElement } from "./keymaps/index.ts";
 import { createBubbleMenuPlugin } from "./plugins/bubbleMenu.ts";
 import {
@@ -52,6 +55,7 @@ import {
 import { screenplayInputRules } from "./plugins/inputRules.ts";
 import { paginationPlugin } from "./plugins/pagination.ts";
 import { sceneNumbersPlugin } from "./plugins/sceneNumbers.ts";
+import { sceneUidsPlugin } from "./plugins/sceneUids.ts";
 import {
   pick,
   setSuggestData,
@@ -93,6 +97,8 @@ export type EditorSnapshot = {
   comments: ReadonlyMap<string, string>;
   /** Suggestions with a shown place and the text they would replace, in text order. */
   suggestions: [id: string, old: string][];
+  /** Ids of every suggestion with a mark in the text, shown or hidden, in text order. */
+  marked: string[];
 };
 
 /** Where a comment's or suggestion's place is, relative to the editor container (screenplay-comments, decision 6). */
@@ -126,16 +132,6 @@ export type ScreenplayEditorOptions = {
   extraPlugins?: Plugin[];
 };
 
-/** Reads a Fountain (.fountain) or Final Draft (.fdx) file; throws ImportError. */
-export function parseScreenplayFile(name: string, text: string): Node {
-  const ext = name.toLowerCase().split(".").pop();
-  if (ext === "fdx") return fdxToDoc(text);
-  if (ext === "fountain" || ext === "spmd") return fountainToDoc(text);
-  throw new ImportError(
-    `Формат «${name}» не поддерживается: нужен .fountain или .fdx.`,
-  );
-}
-
 export class ScreenplayEditorView {
   readonly view: EditorView;
   private readonly container: HTMLElement;
@@ -158,6 +154,7 @@ export class ScreenplayEditorView {
       keymap({ "Mod-z": undo, "Mod-y": redo, "Shift-Mod-z": redo }),
       keymap(baseKeymap),
       history(),
+      sceneUidsPlugin,
       // Visibility before find: find skips the paragraphs it hides.
       visibilityPlugin(options.mode === "outline"),
       ...(options.mode === "outline" ? [outlineGuardPlugin] : []),
@@ -172,7 +169,8 @@ export class ScreenplayEditorView {
       createBubbleMenuPlugin(options.onCommentRequest),
       ...(options.extraPlugins ?? []),
     ];
-    const doc = toNode(options.doc);
+    // A text without scene ids (sample data) gets them on opening.
+    const doc = toNode(ensureSceneUids(options.doc));
     // The treatment opens with the caret in its first shown paragraph.
     const at = options.mode === "outline" ? outlineCaret(doc, 1) : null;
     const state = EditorState.create({
@@ -261,6 +259,7 @@ export class ScreenplayEditorView {
       scene,
       comments: comments.quotes,
       suggestions: this.shownSuggestions(s, suggestions.order),
+      marked: suggestions.order,
     };
   }
 
@@ -363,6 +362,16 @@ export class ScreenplayEditorView {
     return acceptSuggestion(id, text)(this.view.state, this.view.dispatch);
   }
 
+  /**
+   * Marks open suggestions that have no place in the text yet by their anchor, as one ordinary
+   * edit (it is saved and undone like typing); the rest stay without a mark.
+   */
+  placeSuggestions(anchors: SuggestionAnchor[]): void {
+    const tr = this.view.state.tr;
+    placeAnchors(tr, anchors);
+    if (tr.docChanged) this.view.dispatch(tr);
+  }
+
   /** «Отклонить»: the text stays; false when the suggestion is not in the text. */
   rejectSuggestion(id: string): boolean {
     return rejectSuggestion(id)(this.view.state, this.view.dispatch);
@@ -456,7 +465,11 @@ export class ScreenplayEditorView {
   load(doc: ScreenplayDoc): void {
     const { state } = this.view;
     const tr = state.tr
-      .replaceWith(0, state.doc.content.size, toNode(doc).content)
+      .replaceWith(
+        0,
+        state.doc.content.size,
+        toNode(ensureSceneUids(doc)).content,
+      )
       .setMeta(outlineGuardKey, true);
     this.view.dispatch(tr.setMeta("addToHistory", false));
   }
@@ -493,10 +506,10 @@ export type { EditorMode, ElementName, MarkColor } from "./elements.ts";
 export { elementsOf } from "./keymaps/index.ts";
 export { paragraphs, plainDoc, scenes, screenTime } from "./document.ts";
 export type { Paragraph, SceneEntry, ScreenplayDoc } from "./document.ts";
-export { ImportError } from "./importers/ImportError.ts";
 export { FIND_SCOPES, type FindScope } from "./plugins/find.ts";
 export type { SuggestData } from "./plugins/suggest.ts";
 export type { CommentsMeta } from "./plugins/comments.ts";
 export type { SuggestionsMeta } from "./plugins/suggestions.ts";
+export type { SuggestionAnchor } from "./anchors.ts";
 export { PrintError } from "./exporters/print.ts";
 export type { TitlePage } from "./exporters/print.ts";

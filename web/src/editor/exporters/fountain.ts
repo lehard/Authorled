@@ -1,17 +1,58 @@
 import type { Node } from "prosemirror-model";
 
 import type { ElementName } from "../elements.ts";
-import { isSceneHeading, isTransition, TAGS } from "../importers/fountain.ts";
 
 // Fountain (fountain.io) by the table of design decision 6. Types Fountain has no syntax for,
 // and paragraphs that would read as another type, go as notes `[[@tag text]]` that only our
-// import reads; other programs show them as notes and keep the text. Marks are not written.
+// import (the core, agno/core/importers/fountain.py) reads; other programs show them as notes
+// and keep the text. Marks are not written.
+
+/** Tags of `[[@tag text]]` notes for types Fountain has no syntax for. */
+const TAG_OF: Partial<Record<ElementName, string>> = {
+  sceneCharacters: "cast",
+  shot: "shot",
+  unformatted: "text",
+  dialogue: "dialogue",
+  parenthetical: "parenthetical",
+  action: "action",
+  sceneHeading: "heading",
+  character: "character",
+  lyrics: "lyrics",
+  transition: "transition",
+  inlineNote: "note",
+  beat: "beat",
+  sequence: "sequence",
+  act: "act",
+};
+
+// Lines Fountain reads as a transition or a scene heading without a mark.
+const TRANSITIONS = new Set([
+  "FADE OUT.",
+  "FADE IN:",
+  "FADE TO BLACK.",
+  "CUT TO:",
+  "SMASH CUT TO:",
+  "MATCH CUT TO:",
+  "DISSOLVE TO:",
+  "JUMP CUT TO:",
+  "WIPE TO:",
+  "TIME CUT:",
+  "IRIS IN:",
+  "IRIS OUT.",
+]);
+
+function isTransition(line: string): boolean {
+  const t = line.trim().toUpperCase();
+  return TRANSITIONS.has(t) || /^[A-Z\s]+TO:$/.test(t);
+}
+
+function isSceneHeading(line: string): boolean {
+  return /^(INT\.?\/EXT\.|INT\.|EXT\.|EST\.|I\/E\.?|ИНТ\.\/НАТ\.|ИНТ\.|НАТ\.)\s/iu.test(
+    line.trim(),
+  );
+}
 
 const SPECIAL_START = /^(\.|@|>|~|=|#|!|\[\[|===)/;
-
-const TAG_OF = Object.fromEntries(
-  Object.entries(TAGS).map(([tag, type]) => [type, tag]),
-) as Partial<Record<ElementName, string>>;
 
 function tagged(type: ElementName, text: string): string {
   const tag = TAG_OF[type];

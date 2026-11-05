@@ -15,7 +15,8 @@ generic manager behavior belongs in Agno. `CLAUDE.md` links to this file.
   under `/api/v1/`, added by `attach_api` to the app that `agent_os.get_app()` returns, before the
   MCP mount at the root (see `openspec/context/ADR/ADR-002-own-routes-via-base-app.md`). Do not pass
   `base_app`: with it Agno drops its error handlers for its own routes. Every other API surface stays
-  with Agno; today the only own routes are `GET` and `PATCH /api/v1/me`.
+  with Agno; today the own routes are `/api/v1/me` and the story routes (stories, documents, texts,
+  drafts, comments, suggestions, saves, files, import).
 - Check framework behavior against the Agno version pinned in `agno/pyproject.toml`.
   Do not bypass framework rejections or add compatibility adapters to this template.
 - Keep the starter lean. Add abstractions, tests and infrastructure only for a concrete
@@ -60,26 +61,36 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 ## Where changes belong
 
 - `agno/app/main.py`: AgentOS registration, shared database, OS Manager, Company and queue.
-- `agno/app/api/`: own product routes (`/api/v1/me`) and their `application/problem+json` errors,
-  handled only for the product's own exception types.
+- `agno/app/api/`: own product routes (`me.py`; `stories.py`, `review.py`, `saves.py`, `files.py` for stories) and their
+  `application/problem+json` errors, handled only for the product's own exception types (`Problem`, `core/errors.py`).
+  `body.py`: JSON body, `If-Match`, the caller and the project access check every story route does first.
 - `agno/app/auth/` and `auth/`: the auth module. `agno/app/auth/` is the only code that reads JWT
-  or claims (other code uses `Principal`, `current_principal`, `Identity`, `current_identity` and `can_access_project`);
+  or claims (other code uses `Principal`, `current_principal`, `run_principal` for agent tools, `Identity`,
+  `current_identity` and `can_access_project`; the core registers the project access source in `app/main.py`);
   `auth/` holds the Authentik blueprints, database init, key export and its services in
   `auth/compose.yaml`, which `compose.yaml` includes; Authentik runs as separate
   containers. `./scripts/check_auth_boundary.sh` (part of `validate.sh`) enforces the boundary
   and that the blueprint groups match `GROUP_SCOPES` (token contract in `openspec/specs/auth`).
 - `agno/app/interfaces.py`: MCP OAuth, `agno` and built-in MCP tools.
 - `agno/app/company.py`: Product and Source declarations. `agno/app/config.yaml`: component
-  descriptions, prompts and optional additional Products.
+  descriptions, quick prompts and optional additional Products.
 - `agno/app/registry.py`: Studio palette, web tools, shared knowledge, learning and notes.
   `agno/app/settings.py`: application model factories.
 - `agno/app/sandbox.py`: providers, repository URL/branch and checkpoint paths.
-- `agno/agents/`: application agents, including the Claude engineer (Claude Code on DeepSeek).
+- `agno/agents/`: application agents, including the Claude engineer (Claude Code on DeepSeek) and the co-author
+  with its tools (`coauthor_tools.py`: read the story of the conversation, propose an edit; in-process functions
+  that call the core).
+  `agno/skills/<agent_id>/SKILL.md`: an agent's prompt as an Anthropic Agent Skill (`name` equals the id,
+  the body is the prompt), loaded by `agents/prompts.py`; restart the API after editing it.
   `agno/teams/`: user-defined teams; no Engineering team ships by default.
 - `agno/db/`: cached OS database and distinct knowledge content adapters.
 - `agno/core/`: the product core, independent of Agno: `connection.py` (database URL from `DB_*`),
-  `tables.py` (tables of schema `authorled`: `users`, `user_settings`), `engine.py` (the core's own
-  connection pool), `users.py` (account operations). `agno/migrations/` and `agno/alembic.ini`: Alembic for
+  `tables.py` (tables of schema `authorled`: users and settings, stories, drafts, documents, texts, snapshots and points, review, files),
+  `engine.py` (the core's own connection pool), `users.py` (account operations), `projects.py`, `drafts.py`,
+  `documents.py`, `fields.py`, `texts.py`, `snapshots.py`, `saves.py`, `review.py`, `files.py`, `imports.py` and
+  `importers/` (stories, their equal drafts and the documents of a draft, the editor text with revisions, snapshots
+  of a document and points of a draft, comments and suggestions, uploads, manuscript import), `clamav.py` (antivirus
+  client), `errors.py` (refusals the routes answer with). `agno/migrations/` and `agno/alembic.ini`: Alembic for
   schema `authorled` only, forward-only, one head; never migrate Agno or Authentik schemas there.
   `agno/tests/`: pytest for the core on real PostgreSQL (`./scripts/dev.sh test`).
 - `agno/evals/`: application cases and the Agno eval CLI entrypoint.
@@ -88,7 +99,12 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   `web/src/design-system/`: tokens, themes, fonts and base components; screens use only its
   semantic tokens (`./web/scripts/check_web_tokens.sh` rejects raw colors). `web/src/components/ui/`:
   shadcn/ui components generated by its CLI.
-- `compose.yaml`: local PostgreSQL, the LiteLLM proxy and development API. The API connects
+  `web/src/data/`: the data of the screens through Refine — `apiProvider.ts` over `apiClient.ts` (source `api`,
+  the routes `/api/v1` of the core with revisions for `If-Match`) or `fixturesProvider.ts` (sample data), chosen by
+  `VITE_DATA_SOURCE`. `web/src/editor/`: the screenplay editor; it exports only, the core imports manuscripts;
+  `anchors.ts` places co-author suggestions by scene `uid` and quote.
+- `compose.yaml`: local PostgreSQL, the LiteLLM proxy, the antivirus ClamAV (`clamav`, required by the API through
+  `CLAMAV_HOST` and `CLAMAV_PORT`) and development API. The API connects
   as the non-superuser role `agentos` (`AGENTOS_DB_PASSWORD`), prepared by `agentos-db-init`
   from `agno/db/init.sql` (schemas `ai` and `authorled`); the one-shot `agentos-migrate` then
   applies the core migrations, and the API starts only after it succeeds. `agno/litellm/config.yaml`:
@@ -106,7 +122,7 @@ on loopback; token checks are on in `dev` too, so API calls need a token from Au
 To run the API on the host with `--reload`, use `./scripts/dev.sh api` (Postgres, LiteLLM and
 Authentik in Docker; it migrates the core schema and exports the Authentik keys before the API starts).
 `./scripts/dev.sh migrate` applies the core migrations; `./scripts/dev.sh test` runs the core tests on a
-fresh database `ai_test`, never on `ai`. New migration: `alembic revision --rev-id 0002_<what> -m "..."` from `agno/`,
+fresh database `ai_test`, never on `ai`. New migration: `alembic revision --rev-id <NNNN>_<what> -m "..."` from `agno/`,
 written by hand to match `agno/core/tables.py`.
 `./scripts/dev.sh db|stop|reset-db --yes|psql` manage the database (`reset-db` also wipes the
 Authentik data);
@@ -140,8 +156,9 @@ requirements; rebuild both after dependency changes.
 
 Follow the Agent shape in `create-agent`: stable ID, explicit instructions/tools,
 `default_model()`, shared DB, history and datetime. Register code agents and teams in
-`agno/app/main.py` and their descriptions/prompts in `agno/app/config.yaml`. Put new Studio
-capabilities in `agno/app/registry.py`; import shared resources from there.
+`agno/app/main.py`, their prompts in `agno/skills/<agent_id>/SKILL.md` and their descriptions and
+quick prompts in `agno/app/config.yaml`. Put new Studio capabilities in `agno/app/registry.py`;
+import shared resources from there.
 
 OS, Company, queue, agents and teams must reuse `get_postgres_db()` with no arguments.
 Knowledge content adapters need distinct IDs; never create a second adapter with the OS ID.

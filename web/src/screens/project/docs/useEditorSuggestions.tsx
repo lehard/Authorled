@@ -1,8 +1,9 @@
 import { useUpdate } from "@refinedev/core";
-import { useState, type CSSProperties, type RefObject } from "react";
+import { useEffect, useState, type CSSProperties, type RefObject } from "react";
 
 import { useSuggestions } from "@/data/hooks";
 import type { Suggestion } from "@/data/model";
+import type { SuggestionAnchor } from "@/editor";
 import type {
   EditorSuggestions,
   ScreenplayEditorHandle,
@@ -21,14 +22,16 @@ const quiet = { successNotification: false, errorNotification: false } as const;
  * (`tools`).
  */
 export function useEditorSuggestions(
-  projectId: string,
+  draftId: string,
   editor: RefObject<ScreenplayEditorHandle | null>,
   /** A suggestion card opens: another card of the editor closes. */
   onOpened: () => void,
   /** «Обсудить в чате»: shows the chat where it is hidden. */
   openChat: () => void,
+  /** A locked draft: suggestions are only read, no mark is put in the text. */
+  readOnly: boolean,
 ) {
-  const { suggestions } = useSuggestions(projectId);
+  const { suggestions } = useSuggestions(draftId);
   const { mutateAsync: update } = useUpdate();
   const [active, setActive] = useState<string | null>(null);
   const [style, setStyle] = useState<CSSProperties>({});
@@ -43,6 +46,21 @@ export function useEditorSuggestions(
   const open = suggestions.filter((s) => s.status === "open");
   const shown = places.filter(([id]) => open.some((s) => s.id === id));
 
+  // Open suggestions without a mark get one by their anchor after the text opens and after every
+  // change of the list (design of story-data-web, decision 5); the rest have no place.
+  const anchors = JSON.stringify(
+    open.map((s) => ({ id: s.id, sceneUid: s.sceneUid, quote: s.quote })),
+  );
+  useEffect(() => {
+    if (readOnly) return;
+    if (editor.current === null)
+      throw new Error("Редактор сценария ещё не открыт");
+    editor.current.placeSuggestions(JSON.parse(anchors) as SuggestionAnchor[]);
+  }, [editor, anchors, readOnly]);
+  const [marked, setMarked] = useState<string[] | null>(null);
+  const missing =
+    marked === null ? [] : open.filter((s) => !marked.includes(s.id));
+
   function show(id: string, scroll: boolean) {
     onOpened();
     setError(null);
@@ -55,6 +73,21 @@ export function useEditorSuggestions(
     setActive(null);
   }
 
+  function record(s: Suggestion, accept: boolean) {
+    update({
+      resource: "suggestions",
+      id: s.id,
+      values: {
+        status: accept ? "accepted" : "rejected",
+        decidedAt: new Date().toISOString(),
+      },
+      meta: { draftId },
+      ...quiet,
+    }).catch((e: unknown) =>
+      setError(e instanceof Error ? e.message : String(e)),
+    );
+  }
+
   function decide(s: Suggestion, accept: boolean) {
     const done = accept
       ? view().acceptSuggestion(s.id, s.text)
@@ -64,17 +97,7 @@ export function useEditorSuggestions(
       return;
     }
     setActive(null);
-    update({
-      resource: "suggestions",
-      id: s.id,
-      values: {
-        status: accept ? "accepted" : "rejected",
-        decidedAt: new Date().toISOString(),
-      },
-      ...quiet,
-    }).catch((e: unknown) =>
-      setError(e instanceof Error ? e.message : String(e)),
-    );
+    record(s, accept);
   }
 
   const editorSuggestions: EditorSuggestions = {
@@ -82,6 +105,7 @@ export function useEditorSuggestions(
     active,
     onOpen: (id) => show(id, false),
     onPlaces: setPlaces,
+    onMarked: setMarked,
   };
 
   const current = open.find((s) => s.id === active);
@@ -97,6 +121,7 @@ export function useEditorSuggestions(
           suggestion={current}
           old={old}
           error={error}
+          readOnly={readOnly}
           onClose={close}
           onDiscuss={() => {
             setActive(null);
@@ -109,6 +134,9 @@ export function useEditorSuggestions(
     tools: (
       <SuggestionsButton
         count={shown.length}
+        missing={missing}
+        readOnly={readOnly}
+        onReject={(s) => record(s, false)}
         onNext={() => {
           const ids = shown.map(([id]) => id);
           const at = active === null ? -1 : ids.indexOf(active);

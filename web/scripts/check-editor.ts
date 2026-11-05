@@ -1,7 +1,7 @@
 // Deterministic check of the screenplay editor without a browser (openspec/specs/web/screenplay-editor,
 // design of fork-screenplay-editor, decision 12): Tab/Enter against the TYPES table of mockup v2,
-// the type keys, scene-heading autoreplace, the Fountain round trip, paragraphs(), colour and comment marks.
-// FDX import and printing need DOMParser and a window; they are checked by hand.
+// the type keys, scene-heading autoreplace, export samples of the core import tests, paragraphs(),
+// colour and comment marks. Printing needs a window; it is checked by hand.
 //
 // Usage: npm run check:editor --prefix web
 import { readFileSync } from "node:fs";
@@ -10,8 +10,8 @@ import { fileURLToPath } from "node:url";
 import { history, undo, undoDepth } from "prosemirror-history";
 import { EditorState, TextSelection, type Command } from "prosemirror-state";
 
-import { compareDocs } from "../src/editor/compare.ts";
 import {
+  ensureSceneUids,
   paragraphs,
   plainDoc,
   scenes,
@@ -27,7 +27,6 @@ import {
 } from "../src/editor/elements.ts";
 import { docToFDX } from "../src/editor/exporters/fdx.ts";
 import { docToFountain } from "../src/editor/exporters/fountain.ts";
-import { fountainToDoc } from "../src/editor/importers/fountain.ts";
 import {
   ELEMENT_KEYS,
   enter,
@@ -77,7 +76,11 @@ import {
   visibilityPlugin,
 } from "../src/editor/plugins/visibility.ts";
 import { SCENE_HEADING_START } from "../src/editor/plugins/inputRules.ts";
+import { sceneUidsPlugin } from "../src/editor/plugins/sceneUids.ts";
+import { findAnchor, placeAnchors } from "../src/editor/anchors.ts";
 import { schema } from "../src/editor/schema/index.ts";
+
+import { SAMPLE_ROWS, staleSamples } from "./samples.ts";
 
 const MOCKUP = fileURLToPath(
   new URL(
@@ -223,50 +226,22 @@ for (const typed of ["НАТАША ", "ИНТЕРЕСНО ", "INTO "]) {
     fail(`«${typed}» ошибочно становится заголовком сцены`);
 }
 
-// 4. Fountain round trip of a document with every type, empty paragraphs and look-alikes.
+// 4. Export samples: every type, and the files the core imports equal the current export.
+for (const name of ELEMENT_NAMES) {
+  if (!SAMPLE_ROWS.some(([t]) => t === name))
+    fail(`в образце экспорта нет типа «${ELEMENTS[name].label}»`);
+}
+for (const path of staleSamples())
+  fail(
+    `образец ${path} расходится с экспортом редактора: npm run samples:export --prefix web`,
+  );
 const sample: [ElementName, string][] = [
-  ["act", "Акт первый"],
-  ["sequence", "Утро"],
   ["sceneHeading", "НАТ. ОЗЕРО, МОСТКИ — РАССВЕТ"],
-  ["sceneCharacters", "Миша"],
-  ["beat", "Миша уходит на озеро один"],
-  ["action", "Туман над водой. МИША (17) идёт по мосткам."],
-  ["shot", "Крупно: поплавок"],
-  ["transition", "Склейка:"],
-  ["sceneHeading", "INT. KITCHEN - DAY"],
-  ["character", "Вера"],
-  ["dialogue", "Да, Анечка."],
-  ["character", "АНЯ (З.К.)"],
-  ["parenthetical", "тихо"],
-  ["dialogue", "Мам, я приеду в пятницу."],
-  ["lyrics", "Ой, то не вечер"],
-  ["dialogue", "(не ремарка)"],
+  ["action", "Туман над водой."],
   ["character", "ВЕРА"],
-  ["action", "ИНТ. ЭТО ДЕЙСТВИЕ, А НЕ СЦЕНА"],
-  ["action", "CUT TO:"],
-  ["unformatted", "Простой текст"],
-  ["inlineNote", "Проверить дату"],
-  ["inlineNote", "@cast не тег"],
-  ["action", ""],
-  ["dialogue", "Реплика без персонажа"],
-  ["character", ""],
-  ["parenthetical", ""],
+  ["dialogue", "Да, Анечка."],
 ];
 const original = plainDoc(sample);
-const fountain = docToFountain(toNode(original));
-const back2 = toJSON(fountainToDoc(fountain));
-const show = (d: ScreenplayDoc) =>
-  paragraphs(d).map((p) => `${p.type}: ${p.text}`);
-const a = show(original);
-const b = show(back2);
-for (let i = 0; i < Math.max(a.length, b.length); i++) {
-  if (a[i] !== b[i])
-    fail(`Fountain, абзац ${i + 1}: было «${a[i]}», стало «${b[i]}»`);
-}
-for (const name of ELEMENT_NAMES) {
-  if (!sample.some(([t]) => t === name))
-    fail(`в примере круга Fountain нет типа «${ELEMENTS[name].label}»`);
-}
 
 // 5. paragraphs() and an unknown type.
 if (paragraphs(original).length !== sample.length)
@@ -483,7 +458,7 @@ try {
   if (
     params?.kind !== "scene" ||
     JSON.stringify(params.params) !==
-      JSON.stringify({ alt: "", day: "", color: null, tags: [] })
+      JSON.stringify({ uid: "", alt: "", day: "", color: null, tags: [] })
   ) {
     fail(`параметры сцены по умолчанию: ${JSON.stringify(params)}`);
   }
@@ -799,7 +774,7 @@ try {
     fail("«Отклонить» попало в историю отмены");
 }
 
-// 11. Drafts: a copy without comment and suggestion marks, paragraph comparison (screenplay-drafts).
+// 11. Drafts: a copy without comment and suggestion marks.
 {
   const marked: ScreenplayDoc = {
     type: "doc",
@@ -836,58 +811,144 @@ try {
     "Свет. Чашка чистая."
   )
     fail("копия для драфта изменила текст");
+}
 
-  const base = plainDoc([
-    ["sceneHeading", "ИНТ. КУХНЯ — НОЧЬ"],
-    ["action", "Вера моет чашку."],
-    ["character", "АНЯ"],
-    ["dialogue", "Выросла."],
-    ["sceneHeading", "НАТ. ОЗЕРО — УТРО"],
-    ["action", "Туман."],
-  ]);
-  const changed = (side: { changed: boolean; text: string }[]) =>
-    side.filter((p) => p.changed).map((p) => p.text);
-  const same = compareDocs(base, base);
-  if (changed(same.before).length + changed(same.after).length !== 0)
-    fail("сравнение одинаковых текстов дало пометки");
-
-  const edited = structuredClone(base);
-  edited.content[3] = {
-    type: "dialogue",
-    content: [{ type: "text", text: "Выросла ты." }],
-  };
-  const line = compareDocs(base, edited);
-  if (
-    changed(line.before).join("|") !== "Выросла." ||
-    changed(line.after).join("|") !== "Выросла ты."
-  )
-    fail(
-      `замена реплики: было ${changed(line.before).join("|")}, стало ${changed(line.after).join("|")}`,
+// Lasting scene ids (web/screenplay-editor, «Постоянный uid сцены»).
+{
+  const uids = (d: ScreenplayDoc) =>
+    d.content.flatMap((b) =>
+      b.type === "sceneHeading" ? [b.attrs?.uid ?? ""] : [],
     );
+  const distinct = (list: string[]) =>
+    list.every((u) => u !== "") && new Set(list).size === list.length;
+  const two = ensureSceneUids(
+    plainDoc([
+      ["sceneHeading", "ИНТ. КУХНЯ — ДЕНЬ"],
+      ["action", "Вера молчит."],
+      ["sceneHeading", "НАТ. ОЗЕРО — ВЕЧЕР"],
+      ["action", "Круги на воде."],
+    ]),
+  );
+  const [s1, s2] = uids(two);
+  if (!distinct([s1, s2])) fail(`ensureSceneUids: ${uids(two).join(", ")}`);
+  if (ensureSceneUids(two) !== two)
+    fail("ensureSceneUids изменил документ, где у всех сцен есть uid");
 
-  const longer = plainDoc([
-    ...paragraphs(base).map((p) => [p.type, p.text] as [ElementName, string]),
-    ["action", "Тишина."],
-  ]);
-  const added = compareDocs(base, longer);
-  if (
-    changed(added.before).length !== 0 ||
-    changed(added.after).join("|") !== "Тишина."
-  )
-    fail("добавленный абзац помечен неверно");
-
-  const moved = {
-    type: "doc" as const,
-    content: [...base.content.slice(4), ...base.content.slice(0, 4)],
+  const editor = (d: ScreenplayDoc, at: number) => {
+    const node = toNode(d);
+    return EditorState.create({
+      doc: node,
+      plugins: [history(), sceneUidsPlugin],
+      selection: TextSelection.create(node, at),
+    });
   };
-  const swap = compareDocs(base, moved);
+  const apply = (s: EditorState, f: (tr: EditorState["tr"]) => void) => {
+    const tr = s.tr;
+    f(tr);
+    return s.apply(tr);
+  };
+  const end = toNode(two).content.size;
+
+  // A new scene: a heading typed at the end.
+  const third = apply(editor(two, end - 1), (tr) =>
+    tr.insert(
+      end,
+      schema.nodes.sceneHeading.create(null, schema.text("НАТ. ПРИСТАНЬ")),
+    ),
+  );
+  const all3 = uids(toJSON(third.doc));
+  if (all3.length !== 3 || !distinct(all3) || all3[0] !== s1 || all3[1] !== s2)
+    fail(`новая сцена: ${all3.join(", ")}`);
+  if (undoDepth(third) !== 1) fail("uid новой сцены — отдельный шаг отмены");
+
+  // A pasted copy of the first scene at the end: the copy gets a new id.
+  const copy = toNode(two).cut(0, toNode(two).child(0).nodeSize * 1).content;
+  const pasted = apply(editor(two, 1), (tr) => tr.insert(end, copy));
+  const all4 = uids(toJSON(pasted.doc));
+  if (all4[0] !== s1 || all4[1] !== s2 || !distinct(all4))
+    fail(`копия сцены в конце: ${all4.join(", ")}`);
+  // The same copy pasted in front of the original: the original keeps its id.
+  const before = apply(editor(two, 1), (tr) => tr.insert(0, copy));
+  const all5 = uids(toJSON(before.doc));
+  if (all5[1] !== s1 || !distinct(all5))
+    fail(`копия сцены перед исходной: ${all5.join(", ")}`);
+
+  // Splitting a heading in the middle: the first half keeps the id.
+  const split = apply(editor(two, 5), (tr) => tr.split(5));
+  const all6 = uids(toJSON(split.doc));
+  if (all6[0] !== s1 || all6.length !== 3 || !distinct(all6))
+    fail(`разделение заголовка: ${all6.join(", ")}`);
+
+  // A card moved to the front keeps its id; «+ Сцена» gets a new one.
+  const moved = moveScene(two, 2, 0);
+  if (uids(moved).join() !== [s2, s1].join())
+    fail(`перестановка карточкой: ${uids(moved).join(", ")}`);
+  const added = uids(addScene(two));
+  if (added.length !== 3 || !distinct(added) || added[0] !== s1)
+    fail(`«+ Сцена»: ${added.join(", ")}`);
+  const edited = setSceneParams(two, 1, { alt: "Чайник" });
+  if (uids(edited)[0] !== s1) fail("параметры сцены сменили uid");
+
+  // Export and print read the text only.
+  const exported = docToFountain(toNode(two)) + docToFDX(toNode(two));
+  if (exported.includes(s1) || exported.includes(s2))
+    fail("uid сцены попал в экспорт");
+}
+
+// Suggestions by anchor (web/workspace, «Предложение по якорю», «Предложения без места в тексте»).
+{
+  const doc = toNode({
+    type: "doc",
+    content: [
+      {
+        type: "sceneHeading",
+        attrs: { uid: "s1" },
+        content: [{ type: "text", text: "ИНТ. КУХНЯ — ДЕНЬ" }],
+      },
+      { type: "action", content: [{ type: "text", text: "Вера молчит." }] },
+      {
+        type: "sceneHeading",
+        attrs: { uid: "s3" },
+        content: [{ type: "text", text: "НАТ. ОЗЕРО — ВЕЧЕР" }],
+      },
+      {
+        type: "action",
+        content: [{ type: "text", text: "Вода. Вера молчит." }],
+      },
+      { type: "action", content: [{ type: "text", text: "Долго." }] },
+    ],
+  });
+  const at = findAnchor(doc, "s3", "Вера молчит");
+  if (at === null || doc.textBetween(at.from, at.to) !== "Вера молчит")
+    fail(`якорь в сцене s3: ${JSON.stringify(at)}`);
+  else if (at.from < doc.child(0).nodeSize + doc.child(1).nodeSize)
+    fail("якорь найден не в своей сцене");
+  if (findAnchor(doc, "s9", "Вера молчит") !== null)
+    fail("якорь найден без сцены");
+  if (findAnchor(doc, "s3", "Вера кричит") !== null)
+    fail("якорь найден без цитаты");
+  if (findAnchor(doc, "s3", "молчит. Долго") !== null)
+    fail("якорь найден через два абзаца");
+
+  const tr = EditorState.create({ doc }).tr;
+  const missing = placeAnchors(tr, [
+    { id: "a", sceneUid: "s3", quote: "Вера молчит" },
+    { id: "b", sceneUid: "s9", quote: "Вера молчит" },
+    { id: "c", sceneUid: "s3", quote: "Вера кричит" },
+    { id: "d", sceneUid: "s3", quote: "Вода. Вера" },
+  ]);
+  if (missing.join() !== "b,c,d")
+    fail(`без места в тексте: ${missing.join(", ")}`);
+  const placed = suggestionRanges(tr.doc, "a");
   if (
-    changed(swap.before).join("|") !== "НАТ. ОЗЕРО — УТРО|Туман." ||
-    changed(swap.after).join("|") !== "НАТ. ОЗЕРО — УТРО|Туман."
+    placed.length !== 1 ||
+    tr.doc.textBetween(placed[0].from, placed[0].to) !== "Вера молчит"
   )
-    fail(
-      `перестановка сцены: было ${changed(swap.before).join("|")}, стало ${changed(swap.after).join("|")}`,
-    );
+    fail(`метка предложения: ${JSON.stringify(placed)}`);
+  // A second placement leaves the mark as it is.
+  const again = EditorState.create({ doc: tr.doc }).tr;
+  placeAnchors(again, [{ id: "a", sceneUid: "s3", quote: "Вера молчит" }]);
+  if (again.docChanged) fail("повторная постановка изменила текст");
 }
 
 if (failures.length > 0) {
@@ -898,5 +959,5 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log(
-  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, круг Fountain, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник, правки сцен, комментарии, предложения соавтора, копия и сравнение драфтов — без расхождений`,
+  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, образцы экспорта, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник, правки сцен, комментарии, предложения соавтора, копия драфтов, uid сцен, якоря предложений — без расхождений`,
 );

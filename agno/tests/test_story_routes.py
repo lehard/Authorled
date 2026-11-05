@@ -1,0 +1,202 @@
+"""Routes of stories, documents, texts, drafts and trash (openspec/specs/api/stories)."""
+
+from typing import Any
+
+from tests.routes import PROBLEM
+
+SCENE = {"type": "sceneHeading", "attrs": {"uid": "s1"}, "content": [{"type": "text", "text": "ИНТ. КУХНЯ — ДЕНЬ"}]}
+
+
+def _doc(*blocks: dict[str, Any]) -> dict[str, Any]:
+    return {"type": "doc", "content": list(blocks)}
+
+
+def test_foreign_story_is_not_found(authors: Any) -> None:
+    owner, stranger = authors(), authors()
+    story = owner.story()
+    response = stranger.get(f"/api/v1/drafts/{story['draft_id']}/documents")
+    assert response.status_code == 404
+    assert response.headers["content-type"] == PROBLEM
+
+
+def test_without_token(client: Any) -> None:
+    assert client.get("/api/v1/projects").status_code == 401
+
+
+def test_account_is_needed(authors: Any) -> None:
+    response = authors(account=False).get("/api/v1/projects")
+    assert response.status_code == 404
+    assert "GET /api/v1/me" in response.json()["detail"]
+
+
+def test_new_story_and_shelf(authors: Any) -> None:
+    author = authors()
+    lighthouse = author.story("Маяк")
+    ferry = author.story("Паром")
+    tree = author.get(f"/api/v1/drafts/{lighthouse['draft_id']}/documents").json()
+    assert [(d["kind"], d["id"]) for d in tree] == [("script", lighthouse["script_id"])]
+    assert author.post(f"/api/v1/projects/{ferry['project']['id']}/trash").status_code == 200
+    assert [p["title"] for p in author.get("/api/v1/projects").json()] == ["Маяк"]
+    assert [p["title"] for p in author.get("/api/v1/projects?trash=true").json()] == ["Паром"]
+
+
+def test_empty_title(authors: Any) -> None:
+    response = authors().post("/api/v1/projects", json={"title": "  "})
+    assert response.status_code == 422
+
+
+def test_unknown_field_is_named(authors: Any) -> None:
+    author = authors()
+    story = author.story()
+    response = author.patch(f"/api/v1/projects/{story['project']['id']}", json={"color": "red"})
+    assert response.status_code == 422
+    assert "color" in response.json()["detail"]
+
+
+def test_body_must_be_json(authors: Any) -> None:
+    response = authors().post("/api/v1/projects", content=b"title", headers={"Content-Type": "application/json"})
+    assert response.status_code == 422
+
+
+def test_delete_only_from_trash(authors: Any) -> None:
+    author = authors()
+    story = author.story()
+    project_id, draft_id = story["project"]["id"], story["draft_id"]
+    assert author.delete(f"/api/v1/projects/{project_id}").status_code == 409
+    author.post(f"/api/v1/projects/{project_id}/trash")
+    assert author.delete(f"/api/v1/projects/{project_id}").status_code == 204
+    assert author.get(f"/api/v1/drafts/{draft_id}/documents").status_code == 404
+
+
+def test_documents_with_revision(authors: Any) -> None:
+    author = authors()
+    story = author.story()
+    draft_id = story["draft_id"]
+    created = author.post(
+        f"/api/v1/drafts/{draft_id}/documents",
+        json={"kind": "character", "name": "Вера", "role": "main", "fields": {"fear": "вода", "habits": "курит"}},
+    )
+    assert created.status_code == 201
+    vera = created.json()[0]
+    url = f"/api/v1/documents/{vera['id']}"
+    got = author.get(url)
+    assert got.headers["ETag"] == f'"{vera["revision"]}"'
+    assert author.patch(url, json={"name": "Вера Андреевна"}).status_code == 428
+    first = author.patch(url, json={"fields": {"fear": "огонь"}}, headers={"If-Match": str(vera["revision"])})
+    assert first.status_code == 200
+    assert first.json()["fields"] == {"fear": "огонь", "habits": "курит"}
+    second = author.patch(url, json={"fields": {"fear": "лёд"}}, headers={"If-Match": str(vera["revision"])})
+    assert second.status_code == 409
+    assert author.get(url).json()["fields"]["fear"] == "огонь"
+
+
+def test_field_of_another_kind(authors: Any) -> None:
+    author = authors()
+    story = author.story()
+    draft_id = story["draft_id"]
+    response = author.post(
+        f"/api/v1/drafts/{draft_id}/documents",
+        json={"kind": "location", "name": "Пристань", "role": "main", "fields": {"age": "30"}},
+    )
+    assert response.status_code == 422
+    assert "age" in response.json()["detail"]
+
+
+def test_batch_all_or_nothing(authors: Any) -> None:
+    author = authors()
+    story = author.story()
+    draft_id = story["draft_id"]
+    response = author.post(
+        f"/api/v1/drafts/{draft_id}/documents",
+        json=[
+            {"kind": "character", "name": "Нина", "role": "episodic"},
+            {"kind": "character", "name": "", "role": "episodic"},
+        ],
+    )
+    assert response.status_code == 422
+    assert len(author.get(f"/api/v1/drafts/{draft_id}/documents").json()) == 1
+
+
+def test_trash_of_the_story(authors: Any) -> None:
+    author = authors()
+    story = author.story()
+    draft_id = story["draft_id"]
+    assert author.post(f"/api/v1/documents/{story['script_id']}/trash").status_code == 409
+    (misha,) = author.post(
+        f"/api/v1/drafts/{draft_id}/documents", json={"kind": "character", "name": "Миша", "role": "episodic"}
+    ).json()
+    author.post(f"/api/v1/documents/{misha['id']}/trash")
+    tree = author.get(f"/api/v1/drafts/{draft_id}/documents").json()
+    assert [d["deleted_at"] is not None for d in tree if d["name"] == "Миша"] == [True]
+    assert author.post(f"/api/v1/drafts/{draft_id}/trash/empty").status_code == 204
+    assert author.get(f"/api/v1/documents/{misha['id']}").status_code == 404
+
+
+def test_story_in_trash_refuses_changes(authors: Any) -> None:
+    author = authors()
+    story = author.story()
+    (vera,) = author.post(
+        f"/api/v1/drafts/{story['draft_id']}/documents",
+        json={"kind": "character", "name": "Вера", "role": "main"},
+    ).json()
+    author.post(f"/api/v1/projects/{story['project']['id']}/trash")
+    response = author.patch(f"/api/v1/documents/{vera['id']}", json={"name": "Вера А."}, headers={"If-Match": "1"})
+    assert response.status_code == 409
+
+
+def test_text_with_revision(authors: Any) -> None:
+    author = authors()
+    url = f"/api/v1/documents/{author.story()['script_id']}/text"
+    text = author.get(url)
+    revision = text.json()["revision"]
+    assert text.headers["ETag"] == f'"{revision}"'
+    saved = author.put(url, json=_doc(SCENE), headers={"If-Match": str(revision)})
+    assert saved.status_code == 200 and saved.json()["revision"] == revision + 1
+    stale = author.put(url, json=_doc(SCENE), headers={"If-Match": str(revision)})
+    assert stale.status_code == 409
+    assert author.put(url, json=_doc(SCENE)).status_code == 428
+
+
+def test_text_checks(authors: Any) -> None:
+    author = authors()
+    url = f"/api/v1/documents/{author.story()['script_id']}/text"
+    no_uid = author.put(url, json=_doc({"type": "sceneHeading"}), headers={"If-Match": "1"})
+    assert no_uid.status_code == 422 and "uid" in no_uid.json()["detail"]
+    unknown = author.put(url, json=_doc(SCENE, {"type": "chorus"}), headers={"If-Match": "1"})
+    assert unknown.status_code == 422 and "chorus" in unknown.json()["detail"]
+
+
+def test_character_has_no_text(authors: Any) -> None:
+    author = authors()
+    story = author.story()
+    draft_id = story["draft_id"]
+    (vera,) = author.post(
+        f"/api/v1/drafts/{draft_id}/documents", json={"kind": "character", "name": "Вера", "role": "main"}
+    ).json()
+    assert author.get(f"/api/v1/documents/{vera['id']}/text").status_code == 404
+
+
+def test_drafts(authors: Any) -> None:
+    author = authors()
+    story = author.story()
+    project_id, draft_id = story["project"]["id"], story["draft_id"]
+    marked = _doc(
+        SCENE,
+        {
+            "type": "action",
+            "content": [{"type": "text", "text": "Вера", "marks": [{"type": "comment", "attrs": {"id": "c1"}}]}],
+        },
+    )
+    author.put(f"/api/v1/documents/{story['script_id']}/text", json=marked, headers={"If-Match": "1"})
+    created = author.post(f"/api/v1/projects/{project_id}/drafts", json={"name": "Первый", "base_id": draft_id})
+    assert created.status_code == 201
+    draft = created.json()
+    assert (draft["locked"], draft["forked_from_id"], draft["forked_from_name"]) == (False, draft_id, "Драфт 1")
+    script = next(d for d in author.get(f"/api/v1/drafts/{draft['id']}/documents").json() if d["kind"] == "script")
+    text = author.get(f"/api/v1/documents/{script['id']}/text").json()
+    assert "marks" not in text["content"]["content"][1]["content"][0]
+    author.patch(f"/api/v1/drafts/{draft['id']}", json={"locked": True})
+    locked = author.put(f"/api/v1/documents/{script['id']}/text", json=marked, headers={"If-Match": "1"})
+    assert locked.status_code == 409
+    empty = author.post(f"/api/v1/projects/{project_id}/drafts", json={"name": " ", "base_id": draft_id})
+    assert empty.status_code == 422

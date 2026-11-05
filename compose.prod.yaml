@@ -40,6 +40,11 @@ services:
       AGENTOS_URL: ${AGENTOS_URL:?AGENTOS_URL must be set in .env}
       MCP_CONNECT_SECRET: ${MCP_CONNECT_SECRET:-}
 
+  # The antivirus stays inside the compose network: the API in the container reaches it as
+  # clamav:3310, nothing on the host needs it.
+  clamav:
+    ports: !reset []
+
   # Migrations run the code baked into the image, as the API does; the order (agentos-db-init,
   # agentos-migrate, agentos-api) stays as in compose.yaml.
   agentos-migrate:

@@ -11,9 +11,19 @@ npm run dev       # open http://localhost:5173 (not 127.0.0.1: sign-in returns t
 
 Settings come from the repository `.env` (see `example.env`): `AUTH_ISSUER`,
 `AUTH_FRONTEND_CLIENT_ID` and `AUTH_FRONTEND_REDIRECT_URI` for sign-in with Authentik
-(`docker compose up -d`), and `VITE_DATA_SOURCE`. The only data source for now is `fixtures`:
-sample data in page memory, reset on reload, until the backend has project routes. A missing
-setting stops the app with its name. The design-system showcase is at `/showcase`.
+(`docker compose up -d`), and `VITE_DATA_SOURCE`. A missing setting stops the app with its name.
+The design-system showcase is at `/showcase`.
+
+`VITE_DATA_SOURCE` picks the data of the screens (`openspec/specs/web/workspace`, «Источник данных»):
+
+- `api` — the stories of the signed-in user in the core: the routes `/api/v1` of AgentOS
+  (`openspec/specs/api/stories`, `api/review`, `api/files`, `api/story-import`) on `/os/` with the
+  user's token. Needs the API and ClamAV running (`docker compose up -d`). `src/data/apiProvider.ts`
+  translates the resources of the screens into the routes and keeps the revisions for `If-Match`;
+  a refused save of an older revision (`409`) shows «История изменилась в другой вкладке».
+  Import of manuscripts (Fountain, FDX, STARC, DOCX, TXT) and files in the chat go to the core.
+- `fixtures` — sample data of mockup v2 in page memory, reset on reload, for the showcase and
+  development; import and chat files answer that they need `api`.
 
 The chat column talks to the co-author agent (`coauthor`) of AgentOS over AG-UI with CopilotKit
 v2 (core and hooks only; the chat UI is ours, `src/screens/project/chat/`). The browser reaches
@@ -24,7 +34,8 @@ reverse proxy. Conversations are Agno sessions of the user, one story each
 third-party fonts and assets.
 
 - `src/app/` — settings, Refine root, routes. `src/auth/` — OIDC sign-in (oidc-client-ts).
-- `src/data/` — model, data provider (`fixtures`), sample data, profile fields.
+- `src/data/` — model, data providers (`api`: `apiProvider.ts` over `apiClient.ts`; `fixtures`:
+  `fixturesProvider.ts` over sample data), file operations (`files.ts`), profile fields.
 - `src/screens/` — shelf, story trash, story window (navigator, documents, chat column).
 - `src/design-system/` — tokens (`tokens.css`), fonts, type scale, paper, decorations and base
   components. Screens import from `@/design-system`. Rules: `openspec/specs/web/design-system`.
@@ -32,9 +43,13 @@ third-party fonts and assets.
   overlays of dialog, alert-dialog and sheet use `bg-background/60` instead of a raw colour.
 - `src/editor/` — the screenplay editor: a fork of `@plotwell/editor` on ProseMirror with the
   paragraph types and keys of STARC (`ORIGIN.md`, `openspec/specs/web/screenplay-editor`);
-  `ScreenplayEditor.tsx` is its React wrapper.
+  `ScreenplayEditor.tsx` is its React wrapper. It only exports (Fountain, FDX, print); the core
+  imports manuscripts. `anchors.ts` puts co-author suggestions in the text by their anchor (scene
+  `uid` and the exact words); `plugins/sceneUids.ts` gives every scene heading a lasting `uid`.
 - `scripts/check-contrast.ts` — WCAG contrast of token pairs in every theme.
-- `scripts/check-editor.ts` — Tab/Enter, type keys, Fountain round trip and colour marks of the editor.
+- `scripts/check-editor.ts` — Tab/Enter, type keys, colour marks, scene `uid`s and suggestion anchors
+  of the editor; the export samples the core import tests read (`agno/tests/fixtures/import/all-types.*`)
+  must equal the current export. `npm run samples:export` (`scripts/samples.ts`) writes them again.
 - `scripts/check-native-ui.ts` — no native tooltips, checkboxes, radio buttons or selects.
 
 Checks run from the repository root with `./scripts/validate.sh`.
