@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from tests.starc_sample import SAMPLE as STARC
-from tests.starc_sample import novel
+from tests.starc_sample import novel, with_text
 
 SAMPLES = Path(__file__).parent / "fixtures" / "import"
 BROKEN_FDX = b'<?xml version="1.0"?><FinalDraft><Content><Paragraph'
@@ -38,6 +38,21 @@ def test_story_from_starc(authors: Any) -> None:
     tree = author.get(f"/api/v1/projects/{created['project']['id']}/documents").json()
     assert [d["name"] for d in tree if d["kind"] == "character"] == ["Вера", "Миша", "Олег", "Почтальон"]
     assert [d["name"] for d in tree if d["kind"] == "location"] == ["Кухня", "Озеро", "Маяк"]
+
+
+def test_story_from_starc_keeps_scene_parameters(authors: Any) -> None:
+    author = authors()
+    scene = (
+        '<scene uuid="{1}"><title>Завтрак</title><story_day>День 1</story_day><color>#2060e0</color>'
+        "<tags><tag>дом</tag></tags><content><scene_heading><v>ИНТ. ДОМ - ДЕНЬ</v></scene_heading></content></scene>"
+    )
+    response = author.post(
+        "/api/v1/projects", data={"title": "Тихая вода"}, files={"file": ("проект.starc", with_text(scene))}
+    )
+    assert response.status_code == 201, response.text
+    text = author.get(f"/api/v1/documents/{response.json()['script_id']}/text").json()["content"]
+    attrs = text["content"][0]["attrs"]
+    assert (attrs["alt"], attrs["day"], attrs["color"], attrs["tags"]) == ("Завтрак", "День 1", "4", ["дом"])
 
 
 def test_novel_creates_no_story(authors: Any) -> None:

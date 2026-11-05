@@ -41,6 +41,23 @@ def edited(document_type: int, old: str, new: str) -> bytes:
         return path.read_bytes()
 
 
+def with_text(body: str) -> bytes:
+    """The sample whose screenplay text is `body`, the XML inside the document."""
+    start = '<document mime-type="application/x-starc/document/screenplay/text" version="1.0">'
+    xml = f'<?xml version="1.0"?>\n{start}\n{body}\n</document>\n'.replace("'", "''")
+    return run_sql(f"UPDATE documents SET content = CAST('{xml}' AS BLOB) WHERE type = {TEXT}")
+
+
+def with_role(name: str, role: str) -> bytes:
+    """The sample where the profile of `name` has this story role."""
+    old = "<story_role><![CDATA[3]]></story_role>"
+    new = f"<story_role><![CDATA[{role}]]></story_role>"
+    return run_sql(
+        f"UPDATE documents SET content = CAST(replace(CAST(content AS TEXT), '{old}', '{new}') AS BLOB) "
+        f"WHERE type IN (30001, 40001) AND CAST(content AS TEXT) LIKE '%<name><![CDATA[{name}]]></name>%'"
+    )
+
+
 def novel() -> bytes:
     """A project without a screenplay."""
     return edited(STRUCTURE, 'document/screenplay"', 'document/novel"')

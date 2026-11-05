@@ -18,7 +18,7 @@ from core.importers.fdx import parse_fdx
 from core.importers.fountain import parse_fountain
 from core.importers.plain import parse_docx, parse_txt, text_of_txt
 from core.importers.screenplay import Paragraph, build_doc, cast_from_text, places_from_text
-from core.importers.starc import parse_starc
+from core.importers.starc import Named, parse_starc
 from core.projects import Project, create_project
 from core.tables import documents
 from core.texts import Doc, Text, put_text, screenplay_id
@@ -29,8 +29,8 @@ class Manuscript:
     """The text, and the characters and locations a project file names apart from its text (STARC)."""
 
     doc: Doc
-    characters: list[str] = field(default_factory=list)
-    locations: list[str] = field(default_factory=list)
+    characters: list[Named] = field(default_factory=list)
+    locations: list[Named] = field(default_factory=list)
 
 
 def parse_manuscript(extension: str, data: bytes) -> Manuscript:
@@ -69,13 +69,13 @@ def _add_cast_and_places(connection: Connection, project_id: uuid.UUID, manuscri
     doc = manuscript.doc
     items: list[dict[str, Any]] = []
     for kind, names in (
-        ("character", [*manuscript.characters, *cast_from_text(doc)]),
-        ("location", [*manuscript.locations, *places_from_text(doc)]),
+        ("character", [*manuscript.characters, *(Named(name, "episodic") for name in cast_from_text(doc))]),
+        ("location", [*manuscript.locations, *(Named(name, "episodic") for name in places_from_text(doc))]),
     ):
-        for name in names:
-            if (kind, name.upper()) not in have:
-                have.add((kind, name.upper()))
-                items.append({"kind": kind, "name": name, "role": "episodic"})
+        for named in names:
+            if (kind, named.name.upper()) not in have:
+                have.add((kind, named.name.upper()))
+                items.append({"kind": kind, "name": named.name, "role": named.role})
     if items:
         create_documents(connection, project_id, items)
 
