@@ -3,7 +3,7 @@ import { PROFILE, ROLES } from "@/data/profiles";
 import { paragraphs } from "@/editor/document.ts";
 import { ELEMENTS, OUTLINE_TYPES } from "@/editor/elements.ts";
 
-import { ENTITY_WORDS } from "../docRef";
+import { DOC_WORDS, ENTITY_WORDS } from "../docRef";
 import type { ProjectData } from "../ProjectContext";
 
 // What the co-author sees (openspec/specs/web/workspace, «Контекст соавтора»): the story, the
@@ -39,12 +39,7 @@ function documentText(data: ProjectData): { title: string; text: string } {
     case "info":
       return {
         title: "История",
-        text: `Название: ${project.title}\nОписание: ${project.desc}`,
-      };
-    case "sp":
-      return {
-        title: "Сценарий",
-        text: `Название: ${script.name}\nТэглайн: ${script.tagline}\nЛоглайн: ${script.logline}`,
+        text: `Название: ${project.title}\nТэглайн: ${project.desc}`,
       };
     case "part":
       if (doc.part === "title") {
@@ -56,8 +51,8 @@ function documentText(data: ProjectData): { title: string; text: string } {
             .join("\n"),
         };
       }
-      if (doc.part === "synopsis")
-        return { title: SCRIPT_PARTS.synopsis, text: script.synopsis };
+      if (doc.part === "logline" || doc.part === "synopsis")
+        return { title: SCRIPT_PARTS[doc.part], text: script[doc.part] };
       return {
         title: SCRIPT_PARTS[doc.part],
         text: paragraphs(data.text)
@@ -90,6 +85,17 @@ function documentText(data: ProjectData): { title: string; text: string } {
       if (x === undefined)
         throw new Error(`Нет документа ${doc.entity}:${doc.id}.`);
       return { title: x.name, text: entityText(doc.entity, x) };
+    }
+    case "notes":
+      // Texts of notes reach the co-author only from an open note.
+      return {
+        title: DOC_WORDS.note.group,
+        text: "Автор смотрит список заметок истории.",
+      };
+    case "note": {
+      const note = data.notes.find((n) => n.id === doc.id);
+      if (note === undefined) throw new Error(`Нет заметки ${doc.id}.`);
+      return { title: note.title, text: note.body };
     }
     case "trash":
       return {

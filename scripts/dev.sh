@@ -15,9 +15,10 @@
 #      ./scripts/dev.sh psql            Open psql inside agentos-db
 #      ./scripts/dev.sh auth-users      Create the development users writer@authorled.test and
 #                                       editor@authorled.test in the local Authentik
+#      ./scripts/dev.sh seed            Load the demo stories for these two users into the database ai
 #
 #    Needs Docker with Compose and a filled .env (compose.yaml requires the
-#    LiteLLM, DeepSeek, GigaChat and Authentik settings for every service). `api` and `test` also need uv.
+#    LiteLLM, DeepSeek, GigaChat and Authentik settings for every service). `api`, `test` and `seed` also need uv.
 #
 ############################################################################
 
@@ -25,7 +26,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 usage() {
-    echo 'Usage: ./scripts/dev.sh db | api | migrate | test | stop | reset-db --yes | psql | auth-users'
+    echo 'Usage: ./scripts/dev.sh db | api | migrate | test | stop | reset-db --yes | psql | auth-users | seed'
     echo '  db            start agentos-db and wait until healthy'
     echo '  api           start agentos-db, litellm, clamav and Authentik, migrate, export the Authentik keys, run the API on the host (--reload)'
     echo '  migrate       prepare the database (agentos-db-init) and apply the migrations of schema authorled'
@@ -34,6 +35,7 @@ usage() {
     echo '  reset-db      delete the agentos-db container and its volume, with the Authentik data (requires --yes)'
     echo '  psql          open psql inside agentos-db'
     echo '  auth-users    create or update the development users of the local Authentik (password AUTH_DEV_USER_PASSWORD)'
+    echo '  seed          load the demo stories for the development users into the database ai; refuses if they are there'
 }
 
 fail() {
@@ -44,7 +46,7 @@ fail() {
 command="${1:-}"
 case "${command}" in
     -h|--help) usage; exit 0 ;;
-    db|api|migrate|test|stop|psql|auth-users)
+    db|api|migrate|test|stop|psql|auth-users|seed)
         [[ $# -eq 1 ]] || { usage >&2; exit 2; }
         ;;
     reset-db)
@@ -160,5 +162,32 @@ for username in ("writer", "editor"):
 ' > /dev/null
         echo "Development users: writer@authorled.test (screenwriters), editor@authorled.test (editors)."
         echo "Sign-in codes arrive at http://localhost:8025."
+        ;;
+    seed)
+        # Local stand only (openspec/specs/runtime, «Демо-контент»): nothing is started or migrated here.
+        runtime_env="${RUNTIME_ENV:-$(sed -n 's/^RUNTIME_ENV=//p' .env | tail -n 1)}"
+        if [[ -n "${runtime_env}" && "${runtime_env}" != "dev" ]]; then
+            fail "seed is for the local stand only; RUNTIME_ENV is ${runtime_env}."
+        fi
+        command -v uv > /dev/null || fail "uv not found. Install: https://docs.astral.sh/uv/"
+        agentos_db_password="$(sed -n 's/^AGENTOS_DB_PASSWORD=//p' .env | tail -n 1)"
+        [[ -n "${agentos_db_password}" ]] || fail "AGENTOS_DB_PASSWORD is not set in .env (password of the database role agentos)."
+        for service in agentos-db authentik-worker; do
+            [[ -n "$(docker compose ps -q --status running "${service}")" ]] \
+                || fail "${service} is not running: seed needs the local stand (docker compose up -d)."
+        done
+        # The subject of a user is what the token of the user will carry. Logs share stdout, hence the
+        # prefix; without the line the users are missing, whatever the exit code of ak shell.
+        people="$(docker compose exec -T authentik-worker ak shell -c '
+import json
+from authentik.core.models import User
+users = [User.objects.get(username=name) for name in ("writer", "editor")]
+print("DEMO_USERS " + json.dumps([{"subject": u.uid, "email": u.email, "name": u.name} for u in users]))
+' | sed -n 's/^DEMO_USERS //p' || true)"
+        [[ -n "${people}" ]] || fail "no development users in Authentik: run ./scripts/dev.sh auth-users."
+        export DB_DRIVER=postgresql+psycopg DB_HOST=127.0.0.1 DB_PORT=5432
+        export DB_USER=agentos DB_PASS="${agentos_db_password}" DB_DATABASE=ai
+        cd agno
+        exec uv run --no-project --with-requirements requirements.txt python -m demo <<< "${people}"
         ;;
 esac

@@ -9,10 +9,12 @@ import {
   Clapperboard,
   FileText,
   Globe,
-  Home,
   MapPin,
+  NotebookPen,
   Plus,
+  Quote,
   SortAsc,
+  StickyNote,
   Trash2,
   User,
   Users,
@@ -38,16 +40,19 @@ import { ConfirmDialog } from "@/screens/shared/ConfirmDialog";
 
 import { AddDocumentDialog } from "./AddDocumentDialog";
 import {
+  DOC_WORDS,
   docPath,
   ENTITY_WORDS,
   GROUP_OF,
+  type DocKind,
   type DocRef,
   type GroupKey,
 } from "./docRef";
-import { trashItems, useTrashActions } from "./draftActions";
+import { emptyTrashText, trashItems, useTrashActions } from "./draftActions";
 import { DraftSwitcher } from "./DraftSwitcher";
 import { useEntityActions } from "./entityActions";
 import { NodeMenu, type MenuEntry } from "./NodeMenu";
+import { useNoteActions } from "./noteActions";
 import { useProjectData } from "./ProjectContext";
 
 const GROUP_ICON: Record<EntityKind, LucideIcon> = {
@@ -62,6 +67,7 @@ const ITEM_ICON: Record<EntityKind, LucideIcon> = {
 };
 const PART_ICON: Record<ScriptPart, LucideIcon> = {
   title: BookOpen,
+  logline: Quote,
   synopsis: AlignLeft,
   treatment: ListOrdered,
   text: FileText,
@@ -69,7 +75,8 @@ const PART_ICON: Record<ScriptPart, LucideIcon> = {
 
 type Row = {
   key: string;
-  to: string;
+  /** A row without an address only opens and closes. */
+  to?: string;
   icon: LucideIcon;
   label: string;
   count?: number;
@@ -86,13 +93,16 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
   const navigate = useNavigate();
   const actions = useEntityActions(draft.id);
   const trashActions = useTrashActions(data);
-  const [open, setOpen] = useState<Set<string>>(new Set(["chars", "sp"]));
+  const noteActions = useNoteActions(project.id);
+  const [open, setOpen] = useState<Set<string>>(
+    new Set(["chars", "sp", "notes"]),
+  );
   const [sorted, setSorted] = useState<Record<GroupKey, boolean>>({
     chars: false,
     locs: false,
     worlds: false,
   });
-  const [adding, setAdding] = useState<EntityKind | null>(null);
+  const [adding, setAdding] = useState<DocKind | null>(null);
   const [emptying, setEmptying] = useState(false);
   // The tree, or the scene list of «Текст сценария» or «Поэпизодник».
   const [mode, setMode] = useState<"tree" | "text" | "treatment">("tree");
@@ -124,6 +134,11 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
     await actions.trash(kind, x.id, true);
     if (docSegment === `${kind}:${x.id}`)
       navigate(path({ kind: "group", entity: kind }));
+  }
+
+  async function removeNote(id: string) {
+    await noteActions.trash(id, true);
+    if (docSegment === `note:${id}`) navigate(path({ kind: "notes" }));
   }
 
   function group(kind: EntityKind, list: Entity[]): Row {
@@ -190,20 +205,13 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
   );
 
   const rows: Row[] = [
-    {
-      key: "info",
-      to: path({ kind: "info" }),
-      icon: Home,
-      label: project.title,
-    },
     group("char", data.chars),
     group("loc", data.locs),
     group("world", data.worlds),
     {
       key: "sp",
-      to: path({ kind: "sp" }),
       icon: Clapperboard,
-      label: script.name,
+      label: "Сценарий",
       kids: [
         ...parts.map((p) => ({
           key: p,
@@ -213,6 +221,37 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
           drill: p === "text" || p === "treatment",
         })),
       ],
+    },
+    {
+      key: "notes",
+      to: path({ kind: "notes" }),
+      icon: NotebookPen,
+      label: DOC_WORDS.note.group,
+      menu: [
+        {
+          label: DOC_WORDS.note.add,
+          icon: Plus,
+          run: () => setAdding("note"),
+        },
+      ],
+      kids: data.notes.map((n) => ({
+        key: `note:${n.id}`,
+        to: path({ kind: "note", id: n.id }),
+        icon: StickyNote,
+        label: n.title,
+        menu: [
+          {
+            label: "Открыть",
+            run: () => navigate(path({ kind: "note", id: n.id })),
+          },
+          {
+            label: "Удалить",
+            icon: Trash2,
+            danger: true,
+            run: () => void removeNote(n.id),
+          },
+        ],
+      })),
     },
     {
       key: "trash",
@@ -234,6 +273,24 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
   function node(row: Row, depth: number): ReactNode {
     const expandable = row.kids !== undefined && row.kids.length > 0;
     const isOpen = open.has(row.key);
+    const toggle = () =>
+      setOpen((s) => {
+        const next = new Set(s);
+        if (isOpen) next.delete(row.key);
+        else next.add(row.key);
+        return next;
+      });
+    const item = (
+      <>
+        <row.icon className="size-4 shrink-0" />
+        <span className="min-w-0 flex-1 truncate">{row.label}</span>
+        {row.count !== undefined && row.count > 0 && (
+          <span className="text-xs text-muted-foreground">{row.count}</span>
+        )}
+      </>
+    );
+    const itemClass = `tree-item ${row.drill === true && row.menu !== undefined ? "pr-16" : "pr-8"}`;
+    const itemStyle = { paddingLeft: depth * 14 + 24 };
     const link = (
       <>
         {expandable ? (
@@ -245,35 +302,36 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
               isOpen ? `Свернуть: ${row.label}` : `Развернуть: ${row.label}`
             }
             aria-expanded={isOpen}
-            onClick={() =>
-              setOpen((s) => {
-                const next = new Set(s);
-                if (isOpen) next.delete(row.key);
-                else next.add(row.key);
-                return next;
-              })
-            }
+            onClick={toggle}
           >
             <ChevronRight
               className={`size-3.5 transition-transform ${isOpen ? "rotate-90" : ""}`}
             />
           </button>
         ) : null}
-        <Link
-          to={row.to}
-          onClick={onNavigate}
-          className={`tree-item ${row.drill === true && row.menu !== undefined ? "pr-16" : "pr-8"}`}
-          style={{ paddingLeft: depth * 14 + 24 }}
-          aria-current={
-            docSegment === row.to.split("/").pop() ? "page" : undefined
-          }
-        >
-          <row.icon className="size-4 shrink-0" />
-          <span className="min-w-0 flex-1 truncate">{row.label}</span>
-          {row.count !== undefined && row.count > 0 && (
-            <span className="text-xs text-muted-foreground">{row.count}</span>
-          )}
-        </Link>
+        {row.to === undefined ? (
+          <button
+            type="button"
+            className={itemClass}
+            style={itemStyle}
+            aria-expanded={isOpen}
+            onClick={toggle}
+          >
+            {item}
+          </button>
+        ) : (
+          <Link
+            to={row.to}
+            onClick={onNavigate}
+            className={itemClass}
+            style={itemStyle}
+            aria-current={
+              docSegment === row.to.split("/").pop() ? "page" : undefined
+            }
+          >
+            {item}
+          </Link>
+        )}
         {row.drill === true && (
           <button
             type="button"
@@ -309,10 +367,17 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
       aria-label="Навигатор истории"
       className="flex h-full min-h-0 flex-col"
     >
+      <div className="px-2 pt-2">
+        <Link to="/" onClick={onNavigate} className="tree-item">
+          <ArrowLeft className="size-4 shrink-0" />
+          Все истории
+        </Link>
+      </div>
       <Link
         to={path({ kind: "info" })}
         onClick={onNavigate}
-        className="flex items-center gap-3 px-4 pt-4 pb-2 text-left"
+        className="story-head mx-2 mb-1 flex items-center gap-3 rounded-xl px-2 py-1.5 text-left"
+        aria-current={docSegment === "info" ? "page" : undefined}
       >
         <span
           className={project.cover ? "book-mini art" : "book-mini"}
@@ -357,8 +422,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
       )}
       <button
         type="button"
-        disabled={draft.locked}
-        onClick={() => setAdding("char")}
+        onClick={() => setAdding(draft.locked ? "note" : "char")}
         className="mx-2.5 mt-1.5 mb-3 flex items-center gap-2 rounded-full px-3 py-2.5 font-semibold text-primary hover:bg-accent"
       >
         <Plus className="size-4" />
@@ -368,8 +432,16 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
       <AddDocumentDialog
         open={adding !== null}
         onOpenChange={(o) => !o && setAdding(null)}
+        kinds={draft.locked ? ["note"] : ["char", "loc", "world", "note"]}
         initialKind={adding ?? "char"}
         onSubmit={async (kind, name) => {
+          if (kind === "note") {
+            const id = await noteActions.add(name);
+            setOpen((s) => new Set(s).add("notes"));
+            onNavigate();
+            navigate(path({ kind: "note", id }));
+            return;
+          }
           const id = await actions.add(kind, name);
           setOpen((s) => new Set(s).add(GROUP_OF[kind]));
           onNavigate();
@@ -380,7 +452,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
         open={emptying}
         onOpenChange={setEmptying}
         title="Очистить корзину?"
-        text={`Документы из корзины (${trashed.length}) удалятся без возможности восстановления.`}
+        text={emptyTrashText(trashed)}
         actionLabel="Очистить"
         onConfirm={() => {
           trashed.forEach((i) => void trashActions.purge(i));

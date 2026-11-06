@@ -60,6 +60,17 @@ class DocumentOut(_Out):
     deleted_at: datetime | None
 
 
+class NoteOut(_Out):
+    id: uuid.UUID
+    project_id: uuid.UUID
+    title: str
+    body: str
+    revision: int
+    created_at: datetime
+    updated_at: datetime
+    deleted_at: datetime | None
+
+
 class TextOut(_Out):
     document_id: uuid.UUID
     content: dict[str, Any]

@@ -6,6 +6,7 @@ import type {
   Entity,
   EntityKind,
   Location,
+  Note,
   Project,
   Script,
   World,
@@ -27,8 +28,10 @@ export type ProjectData = {
   worlds: World[];
   /** Drafts of the story outside the trash, oldest first. */
   drafts: Draft[];
-  /** Documents of the draft and drafts of the story in the trash. */
-  trash: Record<EntityKind, Entity[]> & { draft: Draft[] };
+  /** Notes of the story outside the trash, the same in every draft. */
+  notes: Note[];
+  /** Documents of the draft, drafts and notes of the story in the trash. */
+  trash: Record<EntityKind, Entity[]> & { draft: Draft[]; note: Note[] };
   doc: DocRef;
   docSegment: string;
   /**

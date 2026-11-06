@@ -6,6 +6,7 @@ import {
   type Draft,
   type Entity,
   type EntityKind,
+  type Note,
   type Point,
   type Project,
   type Script,
@@ -60,6 +61,19 @@ export function useEntities<T extends Entity = Entity>(
     pagination: { mode: "off" },
   });
   return { items: result.data, query };
+}
+
+/** Notes of a story, oldest first; `inTrash` lists the deleted ones. */
+export function useNotes(projectId: string, inTrash = false) {
+  const { result, query } = useList<Note>({
+    resource: "notes",
+    filters: [
+      { field: "projectId", operator: "eq", value: projectId },
+      deleted(inTrash),
+    ],
+    pagination: { mode: "off" },
+  });
+  return { notes: result.data, query };
 }
 
 /** Comment threads of a draft, oldest first. */

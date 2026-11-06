@@ -21,6 +21,7 @@ export type Project = {
 
 export const SCRIPT_PARTS = {
   title: "Титульная страница",
+  logline: "Логлайн",
   synopsis: "Синопсис",
   treatment: "Поэпизодник",
   text: "Текст сценария",
@@ -39,8 +40,6 @@ export type TitlePage = {
 export type Script = {
   id: string;
   draftId: string;
-  name: string;
-  tagline: string;
   logline: string;
   show: Record<ScriptPart, boolean>;
   titlePage: TitlePage;
@@ -68,6 +67,18 @@ export type Character = EntityBase & {
 export type Location = EntityBase & { role: Role };
 export type World = EntityBase & { overview: string };
 export type Entity = Character | Location | World;
+
+/** A note of the author: it belongs to the story and is the same in every draft. */
+export type Note = {
+  id: string;
+  projectId: string;
+  title: string;
+  body: string;
+  deletedAt: string | null;
+};
+
+/** A new note: it starts without text. */
+export type NewNote = Pick<Note, "projectId" | "title">;
 
 /** A message of a comment thread; `own`: written by the signed-in user (the data source decides). */
 export type CommentMessage = {

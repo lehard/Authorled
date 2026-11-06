@@ -19,7 +19,7 @@ from core.documents import (
     ensure_writable,
 )
 from core.errors import Conflict, Invalid, NotFound
-from core.tables import documents, draft_opens, drafts
+from core.tables import documents, draft_opens, drafts, notes
 from core.texts import add_text, strip_marks, text_row
 
 FIRST_DRAFT = "Драфт 1"
@@ -152,11 +152,12 @@ def delete_draft(connection: Connection, draft_id: uuid.UUID) -> None:
 
 
 def empty_trash(connection: Connection, draft_id: uuid.UUID) -> None:
-    """Delete for good the documents in the trash of this draft and the drafts in the trash of the story."""
+    """Delete for good the documents in the trash of this draft, the drafts and the notes in the trash of the story."""
     draft = draft_row(connection, draft_id)
     ensure_writable(connection, draft)
     connection.execute(delete(documents).where(documents.c.draft_id == draft_id, documents.c.deleted_at.is_not(None)))
     connection.execute(delete(drafts).where(drafts.c.project_id == draft.project_id, drafts.c.deleted_at.is_not(None)))
+    connection.execute(delete(notes).where(notes.c.project_id == draft.project_id, notes.c.deleted_at.is_not(None)))
 
 
 def open_draft(connection: Connection, draft_id: uuid.UUID, user_id: uuid.UUID) -> None:

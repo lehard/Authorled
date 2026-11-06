@@ -18,6 +18,20 @@ export type SaveStatus =
 
 const DELAY_MS = 600;
 
+const weight = (status: SaveStatus): number =>
+  typeof status === "object"
+    ? "conflict" in status
+      ? 3
+      : 2
+    : status === "saving"
+      ? 1
+      : 0;
+
+/** One status for a screen that saves two records: the one the author must see first. */
+export function combineStatus(a: SaveStatus, b: SaveStatus): SaveStatus {
+  return weight(b) > weight(a) ? b : a;
+}
+
 /**
  * Saves edits of one record after a pause in typing (design, decision 9). Pending fields are
  * merged, so quick edits of several fields go out as one update. A failed save stays visible;

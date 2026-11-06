@@ -95,6 +95,13 @@
     font-weight: 600;
     box-shadow: var(--shadow-panel);
   }
+  .story-head:hover {
+    background: var(--accent);
+  }
+  .story-head[aria-current="page"] {
+    background: var(--paper);
+    box-shadow: var(--shadow-panel);
+  }
   .tree-item[aria-current="page"] > svg {
     color: var(--primary);
   }

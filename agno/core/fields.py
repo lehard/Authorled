@@ -37,6 +37,10 @@ WORLD_PROFILE = (
 )
 
 
+# The screenplay of a draft has this name always: the title belongs to the story.
+SCRIPT_NAME = "Сценарий"
+
+
 class _Strict(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
@@ -45,6 +49,7 @@ class ScriptParts(_Strict):
     """Which parts of the screenplay the navigator shows."""
 
     title: bool
+    logline: bool
     synopsis: bool
     treatment: bool
     text: bool
@@ -71,7 +76,6 @@ WorldFields = _profile("WorldFields", WORLD_PROFILE, overview=(str | None, None)
 
 
 class ScriptFields(_Strict):
-    tagline: str | None = None
     logline: str | None = None
     show: ScriptParts | None = None
     title_page: TitlePage | None = None

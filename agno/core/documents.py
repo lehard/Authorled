@@ -14,7 +14,7 @@ from sqlalchemy import Connection, case, delete, func, insert, select, update
 
 from core import snapshots
 from core.errors import Conflict, Invalid, Locked, NotFound
-from core.fields import KINDS_WITH_ROLE, merge_fields, validate_fields
+from core.fields import KINDS_WITH_ROLE, SCRIPT_NAME, merge_fields, validate_fields
 from core.tables import ROLES, documents, drafts, projects
 
 # Kinds the author adds in the navigator; the screenplay comes with the draft.
@@ -258,6 +258,8 @@ def update_document(
         raise Invalid("Передайте хотя бы одно поле.")
     values: dict[str, Any] = {}
     if "name" in changes:
+        if document.kind == "script":
+            raise Invalid(f"Сценарий всегда называется «{SCRIPT_NAME}».", "name")
         values["name"] = _name(changes["name"])
     if "role" in changes:
         values["role"] = _role(document.kind, changes["role"])

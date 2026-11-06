@@ -166,11 +166,21 @@
 - THEN MUST присутствовать ровно `id`, `owner_id`, `title`, `description`, `format`, `created_at`, `updated_at`, `deleted_at`
 
 ### Requirement: Таблица документов
-Схема `authorled` MUST содержать таблицу `documents`: `id`, `project_id` (ссылка на `projects.id`, удаляется вместе с историей), `kind` (`script`, `character`, `location`, `world`, `draft`), непустой `name`, `role` (`main`, `secondary`, `episodic` или пусто; заполнена только у `character` и `location`), `summary`, `position` (не меньше 0), `fields` (JSON-объект), `revision` (не меньше 1), `created_at`, `updated_at`, `deleted_at`. У истории MUST быть не больше одного документа `script`.
+Схема `authorled` MUST содержать таблицу `documents`: `id`, `project_id` (ссылка на `projects.id`, удаляется вместе с историей), `draft_id` (обязательная ссылка на драфт той же истории, удаляется вместе с драфтом), `kind` (`script`, `character`, `location`, `world`), непустой `name`, `role` (`main`, `secondary`, `episodic` или пусто; заполнена только у `character` и `location`), `summary`, `position` (не меньше 0), `fields` (JSON-объект), `revision` (не меньше 1), `updated_by` (ссылка на `users.id`), `created_at`, `updated_at`, `deleted_at`. У драфта MUST быть не больше одного документа `script`.
 
 #### Scenario: Второй сценарий
-- GIVEN у истории есть документ `script`
-- WHEN вставляется второй документ `script` той же истории
+- GIVEN у драфта есть документ `script`
+- WHEN вставляется второй документ `script` того же драфта
+- THEN база MUST отклонить запись
+
+#### Scenario: Сценарий в каждом драфте
+- GIVEN у истории два драфта
+- WHEN в каждый вставляется документ `script`
+- THEN база MUST принять обе записи
+
+#### Scenario: Драфт другой истории
+- GIVEN драфт принадлежит истории А
+- WHEN вставляется документ истории Б с этим `draft_id`
 - THEN база MUST отклонить запись
 
 #### Scenario: Роль мира
@@ -179,11 +189,11 @@
 - THEN база MUST отклонить запись
 
 ### Requirement: Таблица текстов сценария
-Схема `authorled` MUST содержать таблицу `screenplay_texts`, один текст на документ `script` или `draft`: `document_id` (первичный ключ, ссылка на `documents.id`, удаляется вместе с документом), `content` (JSON-документ редактора), `revision` (не меньше 1), `updated_at`.
+Схема `authorled` MUST содержать таблицу `screenplay_texts`, один текст на документ `script`: `document_id` (первичный ключ, ссылка на `documents.id`, удаляется вместе с документом), `content` (JSON-документ редактора), `revision` (не меньше 1), `updated_by` (ссылка на `users.id`), `updated_at`.
 
 #### Scenario: Текст удаляется с документом
-- GIVEN у драфта есть текст
-- WHEN драфт удаляется из `documents`
+- GIVEN у сценария есть текст
+- WHEN сценарий удаляется из `documents`
 - THEN его строки в `screenplay_texts` MUST NOT остаться
 
 ### Requirement: Таблицы комментариев
@@ -214,3 +224,98 @@
 - GIVEN у истории есть документы, тексты, комментарии, предложения и файлы
 - WHEN история удаляется из `projects`
 - THEN в схеме `authorled` MUST NOT остаться их строк
+
+### Requirement: Таблица драфтов
+Схема `authorled` MUST содержать таблицу `drafts`: `id`, `project_id` (удаляется вместе с историей), непустой `name`, `locked`, `forked_from_id` (ссылка на драфт, при его удалении становится пустой), `forked_from_name`, `created_at`, `updated_at`, `deleted_at`.
+
+#### Scenario: Содержимое удаляется с драфтом
+- GIVEN у драфта есть документы и текст
+- WHEN драфт удаляется из `drafts`
+- THEN его документов и текстов MUST NOT остаться
+
+#### Scenario: Основа удалена
+- GIVEN драфт 2 ответвился от драфта 1
+- WHEN драфт 1 удаляется из `drafts`
+- THEN `forked_from_id` драфта 2 MUST стать пустым, а `forked_from_name` MUST остаться
+
+### Requirement: Таблица снимков документа
+Схема `authorled` MUST содержать таблицу `document_versions`: `id`, `document_id` (удаляется вместе с документом), `part` (`text` или `fields`), `content` (JSON-объект), `reason` (`auto`, `suggestion`, `import`, `restore`), `saved_by` (ссылка на `users.id`), `saved_at`, `created_at`.
+
+#### Scenario: Неизвестная причина
+- GIVEN все миграции применены
+- WHEN вставляется снимок с `reason` `manual`
+- THEN база MUST отклонить запись
+
+#### Scenario: Снимки удаляются с документом
+- GIVEN у документа есть снимки
+- WHEN документ удаляется
+- THEN его снимков MUST NOT остаться
+
+### Requirement: Таблица точек драфта
+Схема `authorled` MUST содержать таблицу `draft_points`: `id`, `draft_id` (удаляется вместе с драфтом), непустой `name`, `kind` (`manual` или `auto`), `content` (JSON-объект со всеми документами драфта), `created_by` (ссылка на `users.id`), `created_at`.
+
+#### Scenario: Точка без названия
+- GIVEN все миграции применены
+- WHEN вставляется точка с пустым `name`
+- THEN база MUST отклонить запись
+
+### Requirement: Таблица последних открытых драфтов
+Схема `authorled` MUST содержать таблицу `draft_opens`, одну запись на пользователя и историю: `user_id`, `project_id` (первичный ключ вместе), `draft_id` (удаляется вместе с драфтом), `opened_at`.
+
+#### Scenario: Вторая запись
+- GIVEN у пользователя есть запись для истории
+- WHEN вставляется вторая запись той же пары
+- THEN база MUST отклонить запись
+
+### Requirement: Очистка демо-контента
+Миграция драфтов MUST удалять все истории со всем содержимым и MUST NOT трогать пользователей, их настройки и схемы `ai` и `authentik`.
+
+#### Scenario: Миграция на базе с демо-контентом
+- GIVEN в базе есть пользователь и история с документами
+- WHEN применяется миграция драфтов
+- THEN таблицы историй MUST быть пустыми, а пользователь MUST остаться
+
+### Requirement: Новая форма полей сценария
+Миграция MUST приводить к новой форме документы сценария, снимки части `fields` этих документов и сценарии в точках драфтов: убирать `tagline`, задавать имя «Сценарий» и дополнять заданный `show` частью `logline` со значением `true`. Остальные поля, логлайн и ревизии MUST оставаться прежними. Истории, драфты и пользователи MUST NOT удаляться.
+
+#### Scenario: Сценарий старой формы
+- GIVEN у сценария заданы `tagline`, `logline` и `show` без `logline`, а имя равно названию истории
+- WHEN применяется миграция
+- THEN `tagline` MUST исчезнуть, имя MUST стать «Сценарий», `show.logline` MUST быть `true`, а логлайн и ревизия MUST остаться прежними
+
+#### Scenario: Сценарий без заданных частей
+- GIVEN у сценария не задан `show`
+- WHEN применяется миграция
+- THEN `show` MUST остаться не заданным
+
+#### Scenario: Откат к старому снимку
+- GIVEN снимок и точка драфта сделаны до миграции
+- WHEN после миграции автор откатывается к ним и сохраняет логлайн
+- THEN сохранение MUST пройти без отказа
+
+#### Scenario: Документы других видов
+- GIVEN в драфте есть персонаж и его снимок
+- WHEN применяется миграция
+- THEN персонаж и снимок MUST остаться прежними
+
+### Requirement: Таблица заметок
+Схема `authorled` MUST содержать таблицу `notes`: `id`, `project_id` (удаляется вместе с историей), непустой `title`, `body`, `revision` от 1, `updated_by` (ссылка на пользователя), `created_at`, `updated_at`, `deleted_at`. Ссылки на драфт у заметки MUST NOT быть.
+
+#### Scenario: Заметки удаляются с историей
+- GIVEN у истории есть заметка
+- WHEN история удаляется из `projects`
+- THEN её заметок MUST NOT остаться
+
+#### Scenario: Заметка переживает драфт
+- GIVEN у истории два драфта и заметка
+- WHEN один драфт удаляется из `drafts`
+- THEN заметка MUST остаться
+
+#### Scenario: Пустое название
+- WHEN в `notes` вставляется строка с пустым `title`
+- THEN база MUST отказать
+
+#### Scenario: Данные истории не меняются
+- GIVEN в базе есть истории с документами
+- WHEN применяется миграция заметок
+- THEN истории и документы MUST остаться прежними, а таблица `notes` MUST быть пустой

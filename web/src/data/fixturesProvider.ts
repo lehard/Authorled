@@ -16,6 +16,7 @@ import type {
   CommentThread,
   Entity,
   NewDraft,
+  NewNote,
   NewReply,
   NewThread,
   Point,
@@ -40,6 +41,7 @@ const RESOURCES = [
   "characters",
   "locations",
   "worlds",
+  "notes",
   "comments",
   "suggestions",
   "drafts",
@@ -122,18 +124,6 @@ function copyDraft(base: string, draftId: string): void {
       });
 }
 
-// The sample story has a second draft to switch to.
-store.drafts.push({
-  id: "water-2",
-  projectId: "water",
-  name: "После читки",
-  locked: false,
-  forkedFromName: "Драфт 1",
-  createdAt: "2026-10-20T09:00:00.000Z",
-  deletedAt: null,
-});
-copyDraft("water-1", "water-2");
-
 /** The drafts opened last, by story: the only user of this source is the signed-in one. */
 const opened = new Map<string, string>();
 /** ISO time of the last change of a draft. */
@@ -157,11 +147,10 @@ function fieldsContent(resource: string, row: Row): Record<string, unknown> {
   if (resource === "scripts") {
     const s = row as unknown as Script;
     return {
-      name: s.name,
+      name: "Сценарий",
       role: null,
       summary: "",
       fields: {
-        tagline: s.tagline,
         logline: s.logline,
         synopsis: s.synopsis,
         title_page: s.titlePage,
@@ -446,10 +435,14 @@ export const fixturesProvider: DataProvider = {
       const script: Script = {
         id: draftId,
         draftId,
-        name: project.title,
-        tagline: "",
         logline: "",
-        show: { title: true, synopsis: true, treatment: true, text: true },
+        show: {
+          title: true,
+          logline: true,
+          synopsis: true,
+          treatment: true,
+          text: true,
+        },
         titlePage: {
           title: "",
           genre: "",
@@ -488,6 +481,15 @@ export const fixturesProvider: DataProvider = {
         deletedAt: null,
       };
       copyDraft(base.id, row.id);
+    } else if (resource === "notes") {
+      const values = variables as NewNote;
+      row = {
+        id: crypto.randomUUID(),
+        projectId: values.projectId,
+        title: values.title,
+        body: "",
+        deletedAt: null,
+      };
     } else if (resource === "points") {
       const values = variables as Pick<Point, "draftId" | "name">;
       return {
@@ -555,9 +557,11 @@ export const fixturesProvider: DataProvider = {
     }
     const data = await out(resource, row);
     rows.splice(rows.indexOf(row), 1);
-    if (resource === "projects")
+    if (resource === "projects") {
       for (const draft of store.drafts.filter((d) => d.projectId === row.id))
         deleteDraft(draft.id);
+      store.notes = store.notes.filter((n) => n.projectId !== row.id);
+    }
     return { data: data as never };
   },
 

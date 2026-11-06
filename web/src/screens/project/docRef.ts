@@ -4,10 +4,11 @@ import type { EntityKind, ScriptPart } from "@/data/model";
 
 export type DocRef =
   | { kind: "info" }
-  | { kind: "sp" }
   | { kind: "part"; part: ScriptPart }
   | { kind: "group"; entity: EntityKind }
   | { kind: "entity"; entity: EntityKind; id: string }
+  | { kind: "notes" }
+  | { kind: "note"; id: string }
   | { kind: "trash" };
 
 export const GROUPS = {
@@ -46,11 +47,29 @@ export const ENTITY_WORDS: Record<
   },
 };
 
+/** What «Добавить документ» creates. */
+export type DocKind = EntityKind | "note";
+
+export const DOC_WORDS: Record<
+  DocKind,
+  { group: string; one: string; add: string; nameLabel: string }
+> = {
+  ...ENTITY_WORDS,
+  note: {
+    group: "Заметки",
+    one: "Заметка",
+    add: "Добавить заметку",
+    nameLabel: "Название",
+  },
+};
+
 /** Parses the segment; null means «Не найдено». */
 export function parseDoc(doc: string): DocRef | null {
-  if (doc === "info" || doc === "sp" || doc === "trash") return { kind: doc };
+  if (doc === "info" || doc === "trash" || doc === "notes")
+    return { kind: doc };
   if (
     doc === "title" ||
+    doc === "logline" ||
     doc === "synopsis" ||
     doc === "treatment" ||
     doc === "text"
@@ -60,6 +79,8 @@ export function parseDoc(doc: string): DocRef | null {
   const m = /^(char|loc|world):(.+)$/.exec(doc);
   if (m !== null)
     return { kind: "entity", entity: m[1] as EntityKind, id: m[2] };
+  if (doc.startsWith("note:") && doc.length > "note:".length)
+    return { kind: "note", id: doc.slice("note:".length) };
   return null;
 }
 
@@ -74,6 +95,8 @@ export function docPath(
         ? GROUP_OF[ref.entity]
         : ref.kind === "entity"
           ? `${ref.entity}:${ref.id}`
-          : ref.kind;
+          : ref.kind === "note"
+            ? `note:${ref.id}`
+            : ref.kind;
   return `/p/${draft.projectId}/d/${draft.id}/${seg}`;
 }

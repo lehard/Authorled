@@ -16,7 +16,7 @@ generic manager behavior belongs in Agno. `CLAUDE.md` links to this file.
   MCP mount at the root (see `openspec/context/ADR/ADR-002-own-routes-via-base-app.md`). Do not pass
   `base_app`: with it Agno drops its error handlers for its own routes. Every other API surface stays
   with Agno; today the own routes are `/api/v1/me` and the story routes (stories, documents, texts,
-  drafts, comments, suggestions, saves, files, import).
+  drafts, notes, comments, suggestions, saves, files, import).
 - Check framework behavior against the Agno version pinned in `agno/pyproject.toml`.
   Do not bypass framework rejections or add compatibility adapters to this template.
 - Keep the starter lean. Add abstractions, tests and infrastructure only for a concrete
@@ -61,7 +61,7 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 ## Where changes belong
 
 - `agno/app/main.py`: AgentOS registration, shared database, OS Manager, Company and queue.
-- `agno/app/api/`: own product routes (`me.py`; `stories.py`, `review.py`, `saves.py`, `files.py` for stories) and their
+- `agno/app/api/`: own product routes (`me.py`; `stories.py`, `notes.py`, `review.py`, `saves.py`, `files.py` for stories) and their
   `application/problem+json` errors, handled only for the product's own exception types (`Problem`, `core/errors.py`).
   `body.py`: JSON body, `If-Match`, the caller and the project access check every story route does first.
 - `agno/app/auth/` and `auth/`: the auth module. `agno/app/auth/` is the only code that reads JWT
@@ -85,15 +85,17 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   `agno/teams/`: user-defined teams; no Engineering team ships by default.
 - `agno/db/`: cached OS database and distinct knowledge content adapters.
 - `agno/core/`: the product core, independent of Agno: `connection.py` (database URL from `DB_*`),
-  `tables.py` (tables of schema `authorled`: users and settings, stories, drafts, documents, texts, snapshots and points, review, files),
+  `tables.py` (tables of schema `authorled`: users and settings, stories, drafts, documents, texts, notes, snapshots and points, review, files),
   `engine.py` (the core's own connection pool), `users.py` (account operations), `projects.py`, `drafts.py`,
-  `documents.py`, `fields.py`, `texts.py`, `snapshots.py`, `saves.py`, `review.py`, `files.py`, `imports.py` and
-  `importers/` (stories, their equal drafts and the documents of a draft, the editor text with revisions, snapshots
+  `documents.py`, `fields.py`, `texts.py`, `notes.py`, `snapshots.py`, `saves.py`, `review.py`, `files.py`, `imports.py` and
+  `importers/` (stories, their equal drafts and the documents of a draft, the editor text with revisions, notes of a story, snapshots
   of a document and points of a draft, comments and suggestions, uploads, manuscript import), `clamav.py` (antivirus
   client), `errors.py` (refusals the routes answer with). `agno/migrations/` and `agno/alembic.ini`: Alembic for
   schema `authorled` only, forward-only, one head; never migrate Agno or Authentik schemas there.
   `agno/tests/`: pytest for the core on real PostgreSQL (`./scripts/dev.sh test`).
 - `agno/evals/`: application cases and the Agno eval CLI entrypoint.
+- `agno/demo/`: `python -m demo`, the loader of the demo stories through the core; `./scripts/dev.sh seed` runs it. Their
+  content is `web/src/data/demo.json`, shared with the `fixtures` data source.
 - `scripts/`: local setup, validation and builds. Deployment files: `compose.prod.yaml`.
 - `web/`: the frontend (Vite + React + TypeScript, thin client without its own database, ADR-001/ADR-004).
   `web/src/design-system/`: tokens, themes, fonts and base components; screens use only its
@@ -124,6 +126,7 @@ Authentik in Docker; it migrates the core schema and exports the Authentik keys 
 `./scripts/dev.sh migrate` applies the core migrations; `./scripts/dev.sh test` runs the core tests on a
 fresh database `ai_test`, never on `ai`. New migration: `alembic revision --rev-id <NNNN>_<what> -m "..."` from `agno/`,
 written by hand to match `agno/core/tables.py`.
+`./scripts/dev.sh seed` loads the demo stories for the development users into `ai` after `auth-users`.
 `./scripts/dev.sh db|stop|reset-db --yes|psql` manage the database (`reset-db` also wipes the
 Authentik data);
 `.env` is required for every command because `compose.yaml` interpolates the whole file.

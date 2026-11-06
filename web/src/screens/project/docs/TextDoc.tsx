@@ -71,7 +71,6 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
-  const base = script.name.trim() === "" ? "Сценарий" : script.name.trim();
   const suggestData = useMemo(
     () => ({
       characters: chars.map((c) => c.name),
@@ -228,7 +227,7 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
                   {importing ? "Импортируем…" : "Импорт…"}
                 </DropdownMenuItem>
                 <ExportItems
-                  name={base}
+                  name={project.title}
                   editor={editor}
                   titlePage={script.titlePage}
                   act={act}

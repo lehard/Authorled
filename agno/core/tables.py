@@ -152,6 +152,24 @@ documents = Table(
     Index("ix_documents_one_script", "draft_id", unique=True, postgresql_where=text("kind = 'script'")),
 )
 
+# Notes of the author: they belong to the story, not to a draft, so forks, rollbacks and locks do not touch them.
+notes = Table(
+    "notes",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=text("gen_random_uuid()")),
+    Column("project_id", Uuid, ForeignKey(projects.c.id, ondelete="CASCADE"), nullable=False),
+    Column("title", Text, nullable=False),
+    Column("body", Text, nullable=False, server_default=""),
+    Column("revision", Integer, nullable=False, server_default=text("1")),
+    Column("updated_by", Uuid, ForeignKey(users.c.id, ondelete="RESTRICT"), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    Column("deleted_at", DateTime(timezone=True)),
+    CheckConstraint("title <> ''", name="title_not_empty"),
+    CheckConstraint("revision >= 1", name="revision_positive"),
+    Index("ix_notes_project_id", "project_id"),
+)
+
 # Text of the screenplay of a draft: the editor document (web/src/editor/document.ts) with the
 # marks of colour, comments and suggestions.
 screenplay_texts = Table(
