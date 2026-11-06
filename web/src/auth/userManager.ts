@@ -81,9 +81,14 @@ export async function activeUser(): Promise<User | null> {
   return renew();
 }
 
+/** How long «Входим…» waits (openspec/specs/web/workspace, «Предел ожидания входа»). */
+export const SIGN_IN_TIMEOUT_MS = 20_000;
+export const SIGN_IN_TIMEOUT_REASON = "Authentik не ответил за 20 секунд.";
+
+/** Replaces /login in the history: «Назад» must not bring a sign-in that has already ended. */
 export function signIn(returnTo: string): Promise<void> {
   const state: ReturnState = { returnTo };
-  return userManager().signinRedirect({ state });
+  return userManager().signinRedirect({ state, redirectMethod: "replace" });
 }
 
 // React StrictMode runs effects twice; the code from Authentik can be exchanged only once.
