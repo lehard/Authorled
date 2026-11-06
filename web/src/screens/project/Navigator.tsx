@@ -309,10 +309,16 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
       aria-label="Навигатор истории"
       className="flex h-full min-h-0 flex-col"
     >
+      <div className="px-2 pt-2">
+        <Link to="/" onClick={onNavigate} className="tree-item">
+          <ArrowLeft className="size-4 shrink-0" />
+          Все истории
+        </Link>
+      </div>
       <Link
         to={path({ kind: "info" })}
         onClick={onNavigate}
-        className="flex items-center gap-3 px-4 pt-4 pb-2 text-left"
+        className="flex items-center gap-3 px-4 pt-2 pb-2 text-left"
       >
         <span
           className={project.cover ? "book-mini art" : "book-mini"}
