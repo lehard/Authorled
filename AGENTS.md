@@ -94,6 +94,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   schema `authorled` only, forward-only, one head; never migrate Agno or Authentik schemas there.
   `agno/tests/`: pytest for the core on real PostgreSQL (`./scripts/dev.sh test`).
 - `agno/evals/`: application cases and the Agno eval CLI entrypoint.
+- `agno/demo/`: `python -m demo`, the loader of the demo stories through the core; `./scripts/dev.sh seed` runs it. Their
+  content is `web/src/data/demo.json`, shared with the `fixtures` data source.
 - `scripts/`: local setup, validation and builds. Deployment files: `compose.prod.yaml`.
 - `web/`: the frontend (Vite + React + TypeScript, thin client without its own database, ADR-001/ADR-004).
   `web/src/design-system/`: tokens, themes, fonts and base components; screens use only its
@@ -124,6 +126,7 @@ Authentik in Docker; it migrates the core schema and exports the Authentik keys 
 `./scripts/dev.sh migrate` applies the core migrations; `./scripts/dev.sh test` runs the core tests on a
 fresh database `ai_test`, never on `ai`. New migration: `alembic revision --rev-id <NNNN>_<what> -m "..."` from `agno/`,
 written by hand to match `agno/core/tables.py`.
+`./scripts/dev.sh seed` loads the demo stories for the development users into `ai` after `auth-users`.
 `./scripts/dev.sh db|stop|reset-db --yes|psql` manage the database (`reset-db` also wipes the
 Authentik data);
 `.env` is required for every command because `compose.yaml` interpolates the whole file.

@@ -421,6 +421,10 @@ on are the token contract in `openspec/specs/auth`. The API accepts only tokens 
   `AUTH_DEV_USER_PASSWORD` and a confirmed e-mail code device. In the dev server the sign-in
   screen has «Войти как Сценарист» and «Войти как Редактор»: they walk the same flow and take
   the code from Mailpit. Production builds do not contain these buttons.
+- **Demo stories.** `./scripts/dev.sh seed` loads the stories of `web/src/data/demo.json` into the
+  local database `ai`, a copy for each development user. Run it after `auth-users` on a running,
+  migrated stand. It refuses, and changes nothing, if a user already has a story with a demo
+  title, in the trash too. The `fixtures` data source shows the same file.
 - **Groups.** `screenwriters` and `editors` (authors; they may run only the product agent `coauthor`, scope `agents:coauthor:run`), `admins` (superusers, the only ones in the
   Authentik admin interface and with full API access), `plugins` (service accounts). What each
   group may call is in `agno/app/auth/authorization.py`.

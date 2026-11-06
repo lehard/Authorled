@@ -122,18 +122,6 @@ function copyDraft(base: string, draftId: string): void {
       });
 }
 
-// The sample story has a second draft to switch to.
-store.drafts.push({
-  id: "water-2",
-  projectId: "water",
-  name: "После читки",
-  locked: false,
-  forkedFromName: "Драфт 1",
-  createdAt: "2026-10-20T09:00:00.000Z",
-  deletedAt: null,
-});
-copyDraft("water-1", "water-2");
-
 /** The drafts opened last, by story: the only user of this source is the signed-in one. */
 const opened = new Map<string, string>();
 /** ISO time of the last change of a draft. */
