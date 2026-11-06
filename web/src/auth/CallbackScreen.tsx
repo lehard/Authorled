@@ -5,7 +5,12 @@ import { useNavigate } from "react-router";
 import { MessageScreen } from "@/screens/system/MessageScreen";
 import { Button } from "@/components/ui/button";
 
-import { completeSignIn, type ReturnState } from "./userManager";
+import {
+  completeSignIn,
+  SIGN_IN_TIMEOUT_MS,
+  SIGN_IN_TIMEOUT_REASON,
+  type ReturnState,
+} from "./userManager";
 
 function isReturnState(value: unknown): value is ReturnState {
   return (
@@ -37,10 +42,19 @@ export function CallbackScreen() {
       .catch((e: unknown) => setError(reason(e)));
   }, [navigate]);
 
+  // The exchange may hang without a failure; a reason that came first stays.
+  useEffect(() => {
+    const timer = window.setTimeout(
+      () => setError((e) => e ?? SIGN_IN_TIMEOUT_REASON),
+      SIGN_IN_TIMEOUT_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, []);
+
   if (error === null) return <MessageScreen loading title="Входим…" />;
   return (
     <MessageScreen title="Не удалось войти" text={error}>
-      <Button onClick={() => navigate("/login")}>Войти снова</Button>
+      <Button onClick={() => navigate("/login")}>Попробовать снова</Button>
     </MessageScreen>
   );
 }

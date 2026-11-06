@@ -18,7 +18,12 @@ import { InkLoader } from "@/design-system";
 
 import { CodeInput } from "./CodeInput";
 import { SignInError, SignInFlow, type Step } from "./flow/flowClient";
-import { activeUser, signIn } from "./userManager";
+import {
+  activeUser,
+  signIn,
+  SIGN_IN_TIMEOUT_MS,
+  SIGN_IN_TIMEOUT_REASON,
+} from "./userManager";
 
 // Quick sign-in of the development users: only `vite serve` has it, production builds drop it.
 const DevSignIn = import.meta.env.DEV
@@ -70,12 +75,15 @@ export function LoginScreen() {
         navigate(returnTo, { replace: true });
         return;
       }
-      if ((await flow.current.start()) === "done") {
+      const first = await flow.current.start();
+      // React StrictMode runs this effect twice: only the live run goes on to Authentik.
+      if (cancelled) return;
+      if (first === "done") {
         setStage("finishing");
         await signIn(returnTo);
         return;
       }
-      if (!cancelled) setChecking(false);
+      setChecking(false);
     };
     check().catch((e: unknown) => {
       if (cancelled) return;
@@ -90,6 +98,16 @@ export function LoginScreen() {
       cancelled = true;
     };
   }, [navigate, returnTo]);
+
+  // «Входим…» never spins for ever: whatever held the sign-in up, the author gets a reason.
+  useEffect(() => {
+    if (stage !== "finishing") return;
+    const timer = window.setTimeout(
+      () => setError(new SignInError("page", SIGN_IN_TIMEOUT_REASON)),
+      SIGN_IN_TIMEOUT_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [stage]);
 
   useEffect(() => {
     if (wait <= 0) return;
@@ -399,6 +417,20 @@ export function LoginScreen() {
         </p>
       </div>
     );
+  } else if (error?.field === "page") {
+    card = (
+      <div role="alert" className="grid justify-items-center gap-3 text-center">
+        <h1 className="text-heading-1 font-medium">Не удалось войти</h1>
+        <p className="text-muted-foreground">{error.message}</p>
+        {/* A reload checks everything anew: tokens, the Authentik session, else the form. */}
+        <Button
+          className="rounded-full"
+          onClick={() => window.location.reload()}
+        >
+          Попробовать снова
+        </Button>
+      </div>
+    );
   } else {
     card = <Waiting>Входим…</Waiting>;
   }
@@ -415,7 +447,7 @@ export function LoginScreen() {
         </div>
         <div className="rounded-[22px] bg-paper px-6 py-7 text-paper-foreground shadow-paper sm:px-8">
           {card}
-          {error?.field === "page" && (
+          {error?.field === "page" && stage !== "finishing" && (
             <div
               role="alert"
               className="mt-4 grid gap-2 rounded-xl bg-muted px-3 py-2.5 text-caption"
