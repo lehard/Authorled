@@ -1,0 +1,156 @@
+name: Deploy
+
+# A published release goes to the server (openspec/specs/runtime, «Деплой по релизу»). A manual
+# run with the tag of an earlier release is the rollback. Pushes never deploy.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to deploy, for example v0.1.0
+        required: true
+        type: string
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Choose the tag
+        id: tag
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          tag="${RELEASE_TAG:-$INPUT_TAG}"
+          if [[ ! "$tag" =~ ^v[0-9A-Za-z._-]+$ ]]; then
+            echo "::error::Not a release tag: $tag"
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ steps.tag.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Check that the tag is in main
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          git fetch --quiet origin main
+          if ! git merge-base --is-ancestor "refs/tags/$TAG" origin/main; then
+            echo "::error::Tag $TAG is not in main"
+            exit 1
+          fi
+
+  validate:
+    needs: resolve
+    uses: ./.github/workflows/validate.yml
+    with:
+      ref: refs/tags/${{ needs.resolve.outputs.tag }}
+
+  deploy:
+    needs: [resolve, validate]
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      TAG: ${{ needs.resolve.outputs.tag }}
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      PUBLIC_URL: ${{ vars.PUBLIC_URL }}
+    steps:
+      - name: Check the settings
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          AUTH_ISSUER: ${{ vars.AUTH_ISSUER }}
+          AUTH_FRONTEND_CLIENT_ID: ${{ vars.AUTH_FRONTEND_CLIENT_ID }}
+          AUTH_FRONTEND_REDIRECT_URI: ${{ vars.AUTH_FRONTEND_REDIRECT_URI }}
+          AUTH_FRONTEND_LOGOUT_URI: ${{ vars.AUTH_FRONTEND_LOGOUT_URI }}
+          VITE_DATA_SOURCE: ${{ vars.VITE_DATA_SOURCE }}
+        run: |
+          missing=0
+          for name in DEPLOY_HOST DEPLOY_SSH_KEY DEPLOY_KNOWN_HOSTS PUBLIC_URL AUTH_ISSUER \
+              AUTH_FRONTEND_CLIENT_ID AUTH_FRONTEND_REDIRECT_URI AUTH_FRONTEND_LOGOUT_URI VITE_DATA_SOURCE; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::$name is not set in the GitHub Environment production"
+              missing=1
+            fi
+          done
+          if [[ "$VITE_DATA_SOURCE" != "api" ]]; then
+            echo "::error::VITE_DATA_SOURCE must be api on the server"
+            missing=1
+          fi
+          exit "$missing"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ needs.resolve.outputs.tag }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build the frontend
+        env:
+          AUTH_ISSUER: ${{ vars.AUTH_ISSUER }}
+          AUTH_FRONTEND_CLIENT_ID: ${{ vars.AUTH_FRONTEND_CLIENT_ID }}
+          AUTH_FRONTEND_REDIRECT_URI: ${{ vars.AUTH_FRONTEND_REDIRECT_URI }}
+          AUTH_FRONTEND_LOGOUT_URI: ${{ vars.AUTH_FRONTEND_LOGOUT_URI }}
+          VITE_DATA_SOURCE: ${{ vars.VITE_DATA_SOURCE }}
+        run: |
+          npm ci --prefix web
+          npm run build --prefix web
+          deploy/check_web_build.sh web/dist
+
+      - name: Set up SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          (umask 077 && printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_deploy)
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Send the frontend
+        run: |
+          rsync -rlt --delete --chmod=D755,F644 \
+            -e 'ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes' \
+            web/dist/ "deploy@$DEPLOY_HOST:/srv/authorled/web/incoming/$TAG/"
+
+      - name: Deploy on the server
+        run: |
+          ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "deploy@$DEPLOY_HOST" bash -s -- "$TAG" < deploy/deploy.sh
+
+      # The first start of ClamAV downloads its database, so the API can take minutes to come up.
+      - name: Check the public addresses
+        run: |
+          for _ in $(seq 60); do
+            if curl -fsS -o /dev/null --max-time 8 "$PUBLIC_URL/os/health"; then
+              healthy=1
+              break
+            fi
+            sleep 10
+          done
+          if [[ -z "${healthy:-}" ]]; then
+            echo "::error::$PUBLIC_URL/os/health did not answer within 10 minutes"
+            exit 1
+          fi
+          status="$(curl -sS -o /dev/null --max-time 8 -w '%{http_code}' "$PUBLIC_URL/os/agents")"
+          if [[ "$status" != "401" ]]; then
+            echo "::error::/os/agents without a token answered $status instead of 401"
+            exit 1
+          fi
