@@ -2,8 +2,6 @@
 # /etc/caddy/Caddyfile imports this file; deploy/deploy.sh reloads Caddy on each release.
 
 coauthor.glavai.ru {
-	encode gzip
-
 	# AgentOS: the frontend reaches it on its own origin under /os/.
 	handle_path /os/* {
 		reverse_proxy 127.0.0.1:8000
@@ -20,6 +18,8 @@ coauthor.glavai.ru {
 
 	# The frontend of the current release; addresses of screens open index.html.
 	handle {
+		# Only here: encode appends -gzip to ETag, and the API sends the revision in ETag.
+		encode gzip
 		root * /srv/authorled/web/current
 		try_files {path} /index.html
 		file_server
