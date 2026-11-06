@@ -170,18 +170,25 @@ entries:
       required: true
       placeholder: Например, Анна Северова
       order: 2
-  # A decision only, no side effects: one account per e-mail, the username equals the e-mail,
-  # the name is not blank.
+  # A decision only, no side effects: the e-mail is in AUTH_ALLOWED_EMAILS, one account per
+  # e-mail, the username equals the e-mail, the name is not blank. The list comes before the
+  # registered check, so a refusal does not tell whether an address has an account.
   - model: authentik_policies_expression.expressionpolicy
     id: policy-email-not-registered
     identifiers:
       name: authorled-email-not-registered
     attrs:
       expression: |
+        import os
+
         data = request.context.get("prompt_data", {})
         email = str(data.get("email", "")).strip()
         if data.get("username") != data.get("email"):
             ak_message("Имя пользователя должно совпадать с почтой.")
+            return False
+        allowed = [item.strip().lower() for item in os.environ["AUTH_ALLOWED_EMAILS"].split(",") if item.strip()]
+        if allowed != ["*"] and email.lower() not in allowed:
+            ak_message("Регистрация сейчас доступна только по приглашению.")
             return False
         if not str(data.get("name", "")).strip():
             ak_message("Введите имя.")

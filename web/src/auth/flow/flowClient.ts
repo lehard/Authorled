@@ -61,6 +61,10 @@ const KNOWN: Record<string, { field: SignInError["field"]; text: string }> = {
     text: "Аккаунт с такой почтой уже есть: войдите с ней.",
   },
   "Введите имя.": { field: "name", text: "Введите имя." },
+  "Регистрация сейчас доступна только по приглашению.": {
+    field: "page",
+    text: "Регистрация сейчас доступна только по приглашению.",
+  },
   "Invalid password": { field: "password", text: "Неверный пароль." },
   "Неверный пароль": { field: "password", text: "Неверный пароль." },
   "Code does not match": WRONG_CODE,

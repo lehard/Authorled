@@ -40,7 +40,7 @@ If `.env` does not exist, `cp example.env .env`, then fill its Required block
 (`LITELLM_MASTER_KEY`, `LITELLM_API_KEY` equal to it, `DEEPSEEK_API_KEY`,
 `GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`, `SBER500_API_BASE`, `SBER500_API_KEY`, `EMBEDDINGS_MODEL`, `AGENTOS_DB_PASSWORD`) and the auth block (`AUTHENTIK_SECRET_KEY`,
 `AUTHENTIK_DB_PASSWORD`, `AUTHENTIK_BOOTSTRAP_EMAIL`, `AUTHENTIK_BOOTSTRAP_PASSWORD`,
-`AUTH_FRONTEND_CLIENT_ID`, `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_DEV_SERVICE_TOKEN`, `AUTH_BRAND_DOMAIN`, `AUTH_ISSUER`;
+`AUTH_FRONTEND_CLIENT_ID`, `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_DEV_SERVICE_TOKEN`, `AUTH_BRAND_DOMAIN`, `AUTH_ALLOWED_EMAILS` (`*` locally), `AUTH_ISSUER`;
 generate the secrets with `openssl rand -hex`), and confirm `agno/litellm/certs/ca-bundle.pem` exists:
 
 - Already in their shell → say so and copy it across without reading or printing it.
