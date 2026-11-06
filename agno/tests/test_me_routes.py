@@ -160,9 +160,17 @@ def test_deleted_account_is_410(client: TestClient, subjects: list[str], engine:
         client.patch("/api/v1/me", headers=headers, json={"theme": "dark"}),
     ):
         assert (response.status_code, response.headers["content-type"]) == (410, PROBLEM)
+        assert response.headers["cache-control"] == "no-store"
     with engine.connect() as connection:
         rows = connection.execute(select(users.c.deleted_at).where(users.c.auth_subject == subjects[0])).all()
     assert len(rows) == 1 and rows[0].deleted_at is not None
+
+
+def test_stories_before_the_account_are_404_and_not_cached(client: TestClient, subjects: list[str]) -> None:
+    response = client.get("/api/v1/projects", headers=_claims(subjects))
+    assert (response.status_code, response.headers["content-type"]) == (404, PROBLEM)
+    assert response.headers["cache-control"] == "no-store"
+    assert response.json()["detail"] == "Аккаунта ещё нет: сначала вызовите GET /api/v1/me."
 
 
 def test_without_token_is_401(client: TestClient) -> None:

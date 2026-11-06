@@ -23,7 +23,7 @@ export function createRouter(dataSource: DataSource) {
         { path: "/login", element: <LoginScreen /> },
         { path: "/auth/callback", element: <CallbackScreen /> },
         {
-          element: <RequireAuth />,
+          element: <RequireAuth dataSource={dataSource} />,
           children: [
             { path: "/", element: <ShelfScreen /> },
             { path: "/trash", element: <ProjectTrashScreen /> },
