@@ -1,0 +1,41 @@
+{% comment %}
+Base of the product e-mails. Mail clients know neither CSS variables nor oklch, so the values of
+the light theme are written out: desk #f0e8dd, paper #fefdf9, --neutral-12 #1a222f,
+--neutral-11 #62594f, --primary #2b4d8e (web/src/design-system/tokens.css).
+{% endcomment %}<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>{% block title %}CoAuthor{% endblock %}</title>
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #f0e8dd;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f0e8dd" style="background-color: #f0e8dd;">
+      <tr>
+        <td align="center" style="padding: 32px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 480px;">
+            <tr>
+              <td align="center" style="padding: 0 0 20px; font-family: Georgia, 'Times New Roman', serif; font-size: 22px; font-weight: 700; color: #2b4d8e;">
+                CoAuthor
+              </td>
+            </tr>
+            <tr>
+              <td bgcolor="#fefdf9" style="padding: 32px 24px; background-color: #fefdf9; border-radius: 16px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  {% block content %}{% endblock %}
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding: 20px 8px 0; font-family: -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 13px; line-height: 20px; color: #62594f;">
+                {% block footer %}{% endblock %}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
