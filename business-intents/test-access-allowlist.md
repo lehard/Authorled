@@ -1,6 +1,6 @@
 # Бизнес-интент: белый список пользователей на время тестирования
 
-Статус: решения согласованы с владельцем 2026-11-06; OpenSpec change `test-access-allowlist` создан и реализован 2026-11-06 (`openspec/changes/test-access-allowlist/`), ждёт `/opsx:verify` и архивации. Владелец: lehard. Обновлено: 2026-11-06.
+Статус: решения согласованы с владельцем 2026-11-06; OpenSpec change: `openspec/changes/archive/2026-11-06-test-access-allowlist` (реализовано и заархивировано 2026-11-06). Владелец: lehard. Обновлено: 2026-11-06.
 Рамки: мастер-спека `auth` («Регистрация», «Вход фронтенда», «Blueprints»), `auth/blueprints/30-authentication-flow.yaml`.
 
 ## Why

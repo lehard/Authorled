@@ -25,10 +25,12 @@ class Problem(Exception):
 
 
 def problem_response(problem: Problem) -> JSONResponse:
+    # no-store: browsers keep a 410 without this header forever and show it to the next user.
     return JSONResponse(
         status_code=problem.status,
         content={"type": "about:blank", "title": problem.title, "status": problem.status, "detail": problem.detail},
         media_type=PROBLEM_JSON,
+        headers={"Cache-Control": "no-store"},
     )
 
 
