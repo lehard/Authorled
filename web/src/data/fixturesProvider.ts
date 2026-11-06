@@ -16,6 +16,7 @@ import type {
   CommentThread,
   Entity,
   NewDraft,
+  NewNote,
   NewReply,
   NewThread,
   Point,
@@ -40,6 +41,7 @@ const RESOURCES = [
   "characters",
   "locations",
   "worlds",
+  "notes",
   "comments",
   "suggestions",
   "drafts",
@@ -479,6 +481,15 @@ export const fixturesProvider: DataProvider = {
         deletedAt: null,
       };
       copyDraft(base.id, row.id);
+    } else if (resource === "notes") {
+      const values = variables as NewNote;
+      row = {
+        id: crypto.randomUUID(),
+        projectId: values.projectId,
+        title: values.title,
+        body: "",
+        deletedAt: null,
+      };
     } else if (resource === "points") {
       const values = variables as Pick<Point, "draftId" | "name">;
       return {
@@ -546,9 +557,11 @@ export const fixturesProvider: DataProvider = {
     }
     const data = await out(resource, row);
     rows.splice(rows.indexOf(row), 1);
-    if (resource === "projects")
+    if (resource === "projects") {
       for (const draft of store.drafts.filter((d) => d.projectId === row.id))
         deleteDraft(draft.id);
+      store.notes = store.notes.filter((n) => n.projectId !== row.id);
+    }
     return { data: data as never };
   },
 

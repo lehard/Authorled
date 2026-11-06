@@ -4,22 +4,30 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/screens/shared/ConfirmDialog";
 
-import { ENTITY_WORDS } from "../docRef";
-import { trashItems, useTrashActions, type TrashItem } from "../draftActions";
+import { DOC_WORDS } from "../docRef";
+import {
+  emptyTrashText,
+  trashItems,
+  trashName,
+  useTrashActions,
+  type TrashItem,
+} from "../draftActions";
+import { firstLine } from "../noteActions";
 import { useProjectData } from "../ProjectContext";
 import { DocHead } from "./DocHead";
 
 const date = new Intl.DateTimeFormat("ru", { day: "numeric", month: "long" });
 
 const kindName = (i: TrashItem) =>
-  i.kind === "draft" ? "Драфт" : ENTITY_WORDS[i.kind].one;
+  i.kind === "draft" ? "Драфт" : DOC_WORDS[i.kind].one;
 
 function summary(i: TrashItem): string {
   if (i.kind === "draft") return "Сценарий, карточки и беседы этого драфта";
+  if (i.kind === "note") return firstLine(i.x.body);
   return i.x.one === "" ? "Без описания" : i.x.one;
 }
 
-/** Trash of a story: documents of the open draft and deleted drafts of the story. */
+/** Trash of a story: documents of the open draft, deleted drafts and notes of the story. */
 export function BinDoc() {
   const data = useProjectData();
   const actions = useTrashActions(data);
@@ -36,8 +44,8 @@ export function BinDoc() {
           <b className="mb-2 block text-heading-3 text-foreground">
             Корзина пуста
           </b>
-          Сюда попадают удалённые персонажи, локации, миры и драфты. Удалить
-          можно из меню документа.
+          Сюда попадают удалённые персонажи, локации, миры, заметки и драфты.
+          Удалить можно из меню документа.
         </p>
       </>
     );
@@ -49,6 +57,7 @@ export function BinDoc() {
         <Button
           variant="outline"
           className="rounded-full"
+          disabled={data.draft.locked}
           onClick={() => setConfirm("all")}
         >
           Очистить корзину
@@ -64,9 +73,9 @@ export function BinDoc() {
                 onClick={() => setSelected(i.x.id)}
                 className="grid w-full gap-0.5 rounded-2xl bg-paper px-4 py-2.5 text-left shadow-panel aria-current:ring-2 aria-current:ring-primary"
               >
-                <b className="truncate">{i.x.name}</b>
+                <b className="truncate">{trashName(i)}</b>
                 <small className="text-caption text-muted-foreground">
-                  {kindName(i)} · удалён{" "}
+                  {kindName(i)} · {i.kind === "note" ? "удалена" : "удалён"}{" "}
                   {i.x.deletedAt === null
                     ? ""
                     : date.format(new Date(i.x.deletedAt))}
@@ -79,7 +88,7 @@ export function BinDoc() {
           <span className="text-caption text-muted-foreground">
             {kindName(current)}
           </span>
-          <h2 className="text-heading-2">{current.x.name}</h2>
+          <h2 className="text-heading-2">{trashName(current)}</h2>
           <p>{summary(current)}</p>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -105,8 +114,8 @@ export function BinDoc() {
         title={confirm === "all" ? "Очистить корзину?" : "Удалить навсегда?"}
         text={
           confirm === "all"
-            ? `Документы из корзины (${items.length}) удалятся без возможности восстановления.`
-            : `«${confirm?.x.name ?? ""}» удалится без возможности восстановления.`
+            ? emptyTrashText(items)
+            : `«${confirm === null ? "" : trashName(confirm)}» удалится без возможности восстановления.`
         }
         actionLabel="Удалить навсегда"
         onConfirm={() => {

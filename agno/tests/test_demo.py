@@ -9,6 +9,7 @@ from sqlalchemy import Connection, func, select, text
 
 from core.documents import list_documents
 from core.drafts import list_drafts
+from core.notes import list_notes
 from core.projects import create_project, list_projects, trash_project
 from core.review import list_suggestions, list_threads
 from core.saves import list_points
@@ -83,6 +84,15 @@ def test_drafts_of_the_water_story(connection: Connection, accounts: dict[str, u
     assert vera(first.id).summary != vera(second.id).summary
     assert "change" in vera(second.id).fields
     assert "Нина" in [d.name for d in list_documents(connection, first.id) if d.deleted_at]
+
+
+def test_notes_of_the_water_story(connection: Connection, accounts: dict[str, uuid.UUID]) -> None:
+    load_demo(connection, accounts)
+    story = _story(connection, accounts[WRITER], "Тихая вода")
+    saved = list_notes(connection, story.id)
+    assert [n.title for n in saved if n.deleted_at is None] == ["Что знает Аня", "Вопросы к читке"]
+    assert [n.title for n in saved if n.deleted_at is not None] == ["Соседка"]
+    assert list_notes(connection, _story(connection, accounts[WRITER], "Последний паром").id) == []
 
 
 def test_marks_of_the_text(connection: Connection, accounts: dict[str, uuid.UUID]) -> None:

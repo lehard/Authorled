@@ -11,7 +11,7 @@ from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from sqlalchemy import Connection, select
 
-from core import documents, drafts, projects, review, saves, texts
+from core import documents, drafts, notes, projects, review, saves, texts
 from core.tables import SCHEMA, users
 from core.tables import projects as projects_table
 
@@ -111,6 +111,14 @@ def _points(connection: Connection, demo: Item, source_id: str, draft_id: uuid.U
             saves.create_point(connection, draft_id, point["name"], owner)
 
 
+def _notes(connection: Connection, demo: Item, source_id: str, story_id: uuid.UUID, owner: uuid.UUID) -> None:
+    for note in demo["notes"]:
+        if note["projectId"] == source_id:
+            made = notes.create_note(connection, story_id, note["title"], note["body"], owner)
+            if note["deletedAt"]:
+                notes.trash_note(connection, made.id)
+
+
 def _script(demo: Item, draft_id: str) -> Item:
     return next(script for script in demo["scripts"] if script["draftId"] == draft_id)
 
@@ -175,6 +183,7 @@ def _story(connection: Connection, demo: Item, project: Item, owner: uuid.UUID, 
     for source in source_drafts[1:]:
         ids[source["name"]] = _fork(connection, demo, story.id, source, ids[source["forkedFromName"]], owner)
 
+    _notes(connection, demo, project["id"], story.id, owner)
     drafts.open_draft(connection, first_id, owner)
     if project["deletedAt"]:
         projects.trash_project(connection, story.id)

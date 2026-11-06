@@ -10,9 +10,11 @@ import {
   FileText,
   Globe,
   MapPin,
+  NotebookPen,
   Plus,
   Quote,
   SortAsc,
+  StickyNote,
   Trash2,
   User,
   Users,
@@ -38,16 +40,19 @@ import { ConfirmDialog } from "@/screens/shared/ConfirmDialog";
 
 import { AddDocumentDialog } from "./AddDocumentDialog";
 import {
+  DOC_WORDS,
   docPath,
   ENTITY_WORDS,
   GROUP_OF,
+  type DocKind,
   type DocRef,
   type GroupKey,
 } from "./docRef";
-import { trashItems, useTrashActions } from "./draftActions";
+import { emptyTrashText, trashItems, useTrashActions } from "./draftActions";
 import { DraftSwitcher } from "./DraftSwitcher";
 import { useEntityActions } from "./entityActions";
 import { NodeMenu, type MenuEntry } from "./NodeMenu";
+import { useNoteActions } from "./noteActions";
 import { useProjectData } from "./ProjectContext";
 
 const GROUP_ICON: Record<EntityKind, LucideIcon> = {
@@ -88,13 +93,16 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
   const navigate = useNavigate();
   const actions = useEntityActions(draft.id);
   const trashActions = useTrashActions(data);
-  const [open, setOpen] = useState<Set<string>>(new Set(["chars", "sp"]));
+  const noteActions = useNoteActions(project.id);
+  const [open, setOpen] = useState<Set<string>>(
+    new Set(["chars", "sp", "notes"]),
+  );
   const [sorted, setSorted] = useState<Record<GroupKey, boolean>>({
     chars: false,
     locs: false,
     worlds: false,
   });
-  const [adding, setAdding] = useState<EntityKind | null>(null);
+  const [adding, setAdding] = useState<DocKind | null>(null);
   const [emptying, setEmptying] = useState(false);
   // The tree, or the scene list of «Текст сценария» or «Поэпизодник».
   const [mode, setMode] = useState<"tree" | "text" | "treatment">("tree");
@@ -126,6 +134,11 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
     await actions.trash(kind, x.id, true);
     if (docSegment === `${kind}:${x.id}`)
       navigate(path({ kind: "group", entity: kind }));
+  }
+
+  async function removeNote(id: string) {
+    await noteActions.trash(id, true);
+    if (docSegment === `note:${id}`) navigate(path({ kind: "notes" }));
   }
 
   function group(kind: EntityKind, list: Entity[]): Row {
@@ -208,6 +221,37 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
           drill: p === "text" || p === "treatment",
         })),
       ],
+    },
+    {
+      key: "notes",
+      to: path({ kind: "notes" }),
+      icon: NotebookPen,
+      label: DOC_WORDS.note.group,
+      menu: [
+        {
+          label: DOC_WORDS.note.add,
+          icon: Plus,
+          run: () => setAdding("note"),
+        },
+      ],
+      kids: data.notes.map((n) => ({
+        key: `note:${n.id}`,
+        to: path({ kind: "note", id: n.id }),
+        icon: StickyNote,
+        label: n.title,
+        menu: [
+          {
+            label: "Открыть",
+            run: () => navigate(path({ kind: "note", id: n.id })),
+          },
+          {
+            label: "Удалить",
+            icon: Trash2,
+            danger: true,
+            run: () => void removeNote(n.id),
+          },
+        ],
+      })),
     },
     {
       key: "trash",
@@ -378,8 +422,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
       )}
       <button
         type="button"
-        disabled={draft.locked}
-        onClick={() => setAdding("char")}
+        onClick={() => setAdding(draft.locked ? "note" : "char")}
         className="mx-2.5 mt-1.5 mb-3 flex items-center gap-2 rounded-full px-3 py-2.5 font-semibold text-primary hover:bg-accent"
       >
         <Plus className="size-4" />
@@ -389,8 +432,16 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
       <AddDocumentDialog
         open={adding !== null}
         onOpenChange={(o) => !o && setAdding(null)}
+        kinds={draft.locked ? ["note"] : ["char", "loc", "world", "note"]}
         initialKind={adding ?? "char"}
         onSubmit={async (kind, name) => {
+          if (kind === "note") {
+            const id = await noteActions.add(name);
+            setOpen((s) => new Set(s).add("notes"));
+            onNavigate();
+            navigate(path({ kind: "note", id }));
+            return;
+          }
           const id = await actions.add(kind, name);
           setOpen((s) => new Set(s).add(GROUP_OF[kind]));
           onNavigate();
@@ -401,7 +452,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
         open={emptying}
         onOpenChange={setEmptying}
         title="Очистить корзину?"
-        text={`Документы из корзины (${trashed.length}) удалятся без возможности восстановления.`}
+        text={emptyTrashText(trashed)}
         actionLabel="Очистить"
         onConfirm={() => {
           trashed.forEach((i) => void trashActions.purge(i));

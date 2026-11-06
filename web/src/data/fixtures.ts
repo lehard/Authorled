@@ -6,6 +6,7 @@ import type {
   CommentThread,
   Draft,
   Location,
+  Note,
   Project,
   Script,
   Suggestion,
@@ -27,6 +28,7 @@ export const FIXTURES = demo as unknown as {
   characters: Character[];
   locations: Location[];
   worlds: World[];
+  notes: Note[];
   comments: FixtureThread[];
   suggestions: Suggestion[];
   drafts: Draft[];

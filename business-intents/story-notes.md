@@ -1,6 +1,6 @@
 # Бизнес-интент: заметки автора в истории
 
-Статус: решения согласованы с владельцем 2026-11-06; OpenSpec change ещё не создан. Владелец: lehard. Обновлено: 2026-11-06.
+Статус: решения согласованы с владельцем 2026-11-06; change `story-notes` реализован и архивирован 2026-11-06 (`openspec/changes/archive/2026-11-06-story-notes/`). Владелец: lehard. Обновлено: 2026-11-06.
 Рамки: ADR-005, ADR-006, `openspec/context/03-architecture.md`, мастер-спеки `web/workspace` («Навигатор», «Действия навигатора», «Документы истории»), `api/stories`, `core/database`.
 
 ## Why
@@ -68,7 +68,7 @@
 ## References
 
 - `agno/core/tables.py`: у `documents` обязательный `draft_id`, поэтому заметки не могут быть видом документа.
-- `web/src/screens/project/Navigator.tsx`, `AddDocumentDialog.tsx`, `draftActions.ts`, `docs/SynopsisDoc.tsx`, `docs/BinDoc.tsx`, `chat/docContext.ts`.
+- `web/src/screens/project/Navigator.tsx`, `AddDocumentDialog.tsx`, `draftActions.ts`, `docs/ProseDoc.tsx`, `docs/BinDoc.tsx`, `chat/docContext.ts`.
 - `openspec/specs/web/workspace/spec.md` — «Действия навигатора», запрет свободного документа.
 - `openspec/context/ADR/ADR-006-workspace-kabinet.md`.
 - `business-intents/story-page-and-logline.md`.

@@ -4,6 +4,8 @@ import { EntityDoc } from "./EntityDoc";
 import { GroupDoc } from "./GroupDoc";
 import { InfoDoc } from "./InfoDoc";
 import { LockBanner } from "./LockBanner";
+import { NoteDoc } from "./NoteDoc";
+import { NotesDoc } from "./NotesDoc";
 import { ProseDoc } from "./ProseDoc";
 import { TextDoc } from "./TextDoc";
 import { TitleDoc } from "./TitleDoc";
@@ -19,7 +21,8 @@ export function DocView() {
       key={`${draft.id}:${docSegment}:${generation}`}
       className="min-h-full px-3 pt-16 pb-20 min-[901px]:px-5 min-[1241px]:px-8"
     >
-      <LockBanner />
+      {/* Notes belong to the story: the lock of the draft does not close them. */}
+      {doc.kind !== "notes" && doc.kind !== "note" && <LockBanner />}
       {doc.kind === "info" && <InfoDoc />}
       {doc.kind === "part" && doc.part === "title" && <TitleDoc />}
       {doc.kind === "part" &&
@@ -32,6 +35,8 @@ export function DocView() {
       {doc.kind === "part" && doc.part === "text" && <TextDoc mode="text" />}
       {doc.kind === "group" && <GroupDoc kind={doc.entity} />}
       {doc.kind === "entity" && <EntityDoc kind={doc.entity} id={doc.id} />}
+      {doc.kind === "notes" && <NotesDoc />}
+      {doc.kind === "note" && <NoteDoc id={doc.id} />}
       {doc.kind === "trash" && <BinDoc />}
     </div>
   );

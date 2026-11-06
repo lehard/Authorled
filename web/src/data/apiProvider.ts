@@ -24,8 +24,10 @@ import type {
   Entity,
   Location,
   NewDraft,
+  NewNote,
   NewReply,
   NewThread,
+  Note,
   Point,
   Project,
   Role,
@@ -215,6 +217,7 @@ function readText(body: unknown): Text {
 const revisions = new Map<string, number>();
 const docKey = (id: string) => `doc:${id}`;
 const textKey = (id: string) => `text:${id}`;
+const noteKey = (id: string) => `note:${id}`;
 
 /** Revisions only grow: an answer of a read that started before a save never lowers them. */
 function remember(key: string, revision: number): void {
@@ -338,6 +341,34 @@ async function putText(documentId: string, content: ScreenplayDoc) {
     remember(textKey(documentId), t.revision);
     return t;
   });
+}
+
+/** A note of an answer; its revision stays here. */
+function readNote(body: unknown): Note {
+  const o = shape("заметку", body);
+  const id = field("заметку", o, "id", isString);
+  remember(noteKey(id), field("заметку", o, "revision", isNumber));
+  return {
+    id,
+    projectId: field("заметку", o, "project_id", isString),
+    title: field("заметку", o, "title", isString),
+    body: field("заметку", o, "body", isString),
+    deletedAt: field("заметку", o, "deleted_at", isTime),
+  };
+}
+
+async function patchNote(id: string, changes: Json): Promise<Note> {
+  for (const key of Object.keys(changes))
+    if (key !== "title" && key !== "body")
+      throw new Error(`Источник api не меняет поле «${key}» заметки.`);
+  return inTurn(noteKey(id), async () =>
+    readNote(
+      await revised(noteKey(id), `/notes/${id}`, {
+        method: "PATCH",
+        json: changes,
+      }),
+    ),
+  );
 }
 
 async function moveToTrash(path: string, inTrash: boolean): Promise<unknown> {
@@ -677,6 +708,15 @@ async function getList(
         (d) => q.deleted === null || (d.deletedAt !== null) === q.deleted,
       );
   }
+  if (resource === "notes") {
+    if (q.projectId === null)
+      throw new Error("Заметки читаются только по истории.");
+    return list("заметки", await request(`/projects/${q.projectId}/notes`))
+      .map(readNote)
+      .filter(
+        (n) => q.deleted === null || (n.deletedAt !== null) === q.deleted,
+      );
+  }
   if (resource === "versions") {
     if (q.part === null)
       throw new Error("История сохранений читается по части документа.");
@@ -809,6 +849,15 @@ async function create(
       }),
     );
   }
+  if (resource === "notes") {
+    const values = variables as NewNote;
+    return readNote(
+      await request(`/projects/${values.projectId}/notes`, {
+        method: "POST",
+        json: { title: values.title },
+      }),
+    );
+  }
   if (resource === "points") {
     const values = variables as Pick<Point, "draftId" | "name">;
     return readPoint(
@@ -889,6 +938,11 @@ async function update(
       return toEntity(readDoc(await moveToTrash(`/documents/${id}`, toTrash)));
     return toEntity(await patchDocument(id, entityChanges(values)));
   }
+  if (resource === "notes") {
+    if (toTrash !== null)
+      return readNote(await moveToTrash(`/notes/${id}`, toTrash));
+    return patchNote(id, values);
+  }
   if (resource === "drafts") {
     if (toTrash !== null)
       return readDraft(await moveToTrash(`/drafts/${id}`, toTrash));
@@ -945,6 +999,10 @@ async function deleteOne(
   }
   if (isEntityResource(resource)) {
     await request(`/documents/${id}`, { method: "DELETE" });
+    return { id };
+  }
+  if (resource === "notes") {
+    await request(`/notes/${id}`, { method: "DELETE" });
     return { id };
   }
   if (resource === "drafts") {

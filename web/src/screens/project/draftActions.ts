@@ -5,9 +5,10 @@ import {
   useUpdate,
 } from "@refinedev/core";
 
-import type { Draft, Entity, EntityKind, NewDraft } from "@/data/model";
+import type { Draft, Entity, EntityKind, NewDraft, Note } from "@/data/model";
 
 import { useEntityActions } from "./entityActions";
+import { useNoteActions } from "./noteActions";
 import type { ProjectData } from "./ProjectContext";
 
 const quiet = { successNotification: false, errorNotification: false } as const;
@@ -58,13 +59,27 @@ export function useDraftActions(data: Pick<ProjectData, "project">) {
 
 /** A document of the story trash. */
 export type TrashItem =
-  { kind: EntityKind; x: Entity } | { kind: "draft"; x: Draft };
+  | { kind: EntityKind; x: Entity }
+  | { kind: "note"; x: Note }
+  | { kind: "draft"; x: Draft };
+
+export const trashName = (i: TrashItem) =>
+  i.kind === "note" ? i.x.title : i.x.name;
+
+/** The confirmation of «Очистить корзину»: notes go for every draft of the story. */
+export function emptyTrashText(items: TrashItem[]): string {
+  const notes = items.filter((i) => i.kind === "note").length;
+  const shared =
+    notes === 0 ? "" : ` Заметки (${notes}) удалятся для всех драфтов.`;
+  return `Документы из корзины (${items.length}) удалятся без возможности восстановления.${shared}`;
+}
 
 export function trashItems(trash: ProjectData["trash"]): TrashItem[] {
   return [
     ...(["char", "loc", "world"] as const).flatMap((kind) =>
       trash[kind].map((x): TrashItem => ({ kind, x })),
     ),
+    ...trash.note.map((x): TrashItem => ({ kind: "note", x })),
     ...trash.draft.map((x): TrashItem => ({ kind: "draft", x })),
   ];
 }
@@ -73,14 +88,19 @@ export function trashItems(trash: ProjectData["trash"]): TrashItem[] {
 export function useTrashActions(data: ProjectData) {
   const entities = useEntityActions(data.draft.id);
   const drafts = useDraftActions(data);
+  const notes = useNoteActions(data.project.id);
   return {
     restore: (i: TrashItem) =>
       i.kind === "draft"
         ? drafts.trash(i.x.id, false)
-        : entities.trash(i.kind, i.x.id, false),
+        : i.kind === "note"
+          ? notes.trash(i.x.id, false)
+          : entities.trash(i.kind, i.x.id, false),
     purge: (i: TrashItem) =>
       i.kind === "draft"
         ? drafts.purge(i.x.id)
-        : entities.purge(i.kind, i.x.id),
+        : i.kind === "note"
+          ? notes.purge(i.x.id)
+          : entities.purge(i.kind, i.x.id),
   };
 }

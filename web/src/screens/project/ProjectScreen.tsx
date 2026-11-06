@@ -10,7 +10,13 @@ import {
   SheetDescription,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useDrafts, useEntities, useProject, useScript } from "@/data/hooks";
+import {
+  useDrafts,
+  useEntities,
+  useNotes,
+  useProject,
+  useScript,
+} from "@/data/hooks";
 import type { Character, Location, Script, World } from "@/data/model";
 import { useSaveActions } from "@/data/saves";
 import type { ScreenplayDoc } from "@/editor/document.ts";
@@ -47,6 +53,8 @@ export function ProjectScreen() {
   const trashWorlds = useEntities("world", draftId, true);
   const drafts = useDrafts(projectId);
   const trashDrafts = useDrafts(projectId, true);
+  const notes = useNotes(projectId);
+  const trashNotes = useNotes(projectId, true);
   const narrow = useMediaQuery("(max-width: 900px)");
   const [navOpen, setNavOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -85,6 +93,8 @@ export function ProjectScreen() {
     trashWorlds.query,
     drafts.query,
     trashDrafts.query,
+    notes.query,
+    trashNotes.query,
   ];
   if ([pq, ...lists].some((q) => q.isError && q.error?.statusCode === 404))
     return <NotFoundScreen />;
@@ -124,6 +134,12 @@ export function ProjectScreen() {
       return <NotFoundScreen />;
     }
   }
+  if (ref.kind === "note" && !notes.notes.some((n) => n.id === ref.id)) {
+    // A note just added is missing until its list refetches; only then is it «Не найдено».
+    if (notes.query.isFetching)
+      return <MessageScreen loading title="Открываем заметку…" />;
+    return <NotFoundScreen />;
+  }
   const base = {
     project,
     draft,
@@ -132,11 +148,13 @@ export function ProjectScreen() {
     locs: locs.items,
     worlds: worlds.items,
     drafts: drafts.drafts,
+    notes: notes.notes,
     trash: {
       char: trashChars.items,
       loc: trashLocs.items,
       world: trashWorlds.items,
       draft: trashDrafts.drafts,
+      note: trashNotes.notes,
     },
   };
   const data: ProjectData = {

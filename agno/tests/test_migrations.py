@@ -13,7 +13,7 @@ from core.documents import create_documents, document_row
 from core.documents import update_document as change
 from core.projects import create_project
 from core.saves import create_point, restore_point, restore_version
-from core.tables import SCHEMA, document_versions, documents, draft_points, metadata, projects, users
+from core.tables import SCHEMA, document_versions, documents, draft_points, metadata, notes, projects, users
 
 
 def _current_revision(engine: Engine) -> str | None:
@@ -68,6 +68,7 @@ def test_drafts_migration_clears_stories_and_keeps_users(engine: Engine, alembic
     head = ScriptDirectory.from_config(alembic_config).get_current_head()
     subject = f"test-{uuid.uuid4()}"
     with engine.begin() as connection:
+        connection.execute(text("DROP TABLE authorled.notes"))
         connection.execute(text("TRUNCATE authorled.document_versions, authorled.draft_points, authorled.draft_opens"))
         connection.execute(
             text("DROP TABLE authorled.document_versions, authorled.draft_points, authorled.draft_opens")
@@ -158,6 +159,7 @@ def test_script_fields_migration_keeps_stories_and_rollback(engine: Engine, alem
             )
             .returning(document_versions.c.id)
         ).scalars()
+        connection.execute(text("DROP TABLE authorled.notes"))
         connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0006_drafts_and_saves'"))
 
     command.upgrade(alembic_config, "head")
@@ -189,3 +191,25 @@ def test_script_fields_migration_keeps_stories_and_rollback(engine: Engine, alem
 
         connection.execute(delete(projects).where(projects.c.id.in_((project.id, no_parts.id))))
         assert connection.execute(delete(users).where(users.c.id == owner)).rowcount == 1
+
+
+def test_notes_migration_keeps_stories(engine: Engine, alembic_config: Config) -> None:
+    """Applied from 0007 on a database with a story; the new table comes empty."""
+    subject = f"test-{uuid.uuid4()}"
+    with engine.begin() as connection:
+        owner = connection.execute(
+            insert(users)
+            .values(auth_subject=subject, email="notes@authorled.test", display_name="Автор")
+            .returning(users.c.id)
+        ).scalar_one()
+        story, _, script = create_project(connection, owner, "Маяк")
+        connection.execute(text("DROP TABLE authorled.notes"))
+        connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0007_script_fields'"))
+
+    command.upgrade(alembic_config, "head")
+
+    with engine.begin() as connection:
+        assert connection.execute(select(func.count()).select_from(notes)).scalar_one() == 0
+        assert document_row(connection, script).project_id == story.id
+        connection.execute(delete(projects).where(projects.c.id == story.id))
+        connection.execute(delete(users).where(users.c.id == owner))

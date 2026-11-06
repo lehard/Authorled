@@ -12,6 +12,7 @@ from starlette.routing import Mount
 
 from app.api.files import router as files_router
 from app.api.me import router as me_router
+from app.api.notes import router as notes_router
 from app.api.problems import install_problem_handlers
 from app.api.review import router as review_router
 from app.api.saves import router as saves_router
@@ -29,6 +30,7 @@ def attach_api(app: FastAPI) -> None:
     start = len(routes)
     app.include_router(me_router)
     app.include_router(stories_router)
+    app.include_router(notes_router)
     app.include_router(review_router)
     app.include_router(saves_router)
     app.include_router(files_router)

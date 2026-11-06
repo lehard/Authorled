@@ -11,20 +11,18 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { EntityKind } from "@/data/model";
-
-import { ENTITY_WORDS } from "./docRef";
-
-const KINDS: EntityKind[] = ["char", "loc", "world"];
+import { DOC_WORDS, type DocKind } from "./docRef";
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  initialKind: EntityKind;
-  onSubmit: (kind: EntityKind, name: string) => Promise<void>;
+  /** What can be added: a locked draft takes only notes. */
+  kinds: DocKind[];
+  initialKind: DocKind;
+  onSubmit: (kind: DocKind, name: string) => Promise<void>;
 };
 
-/** «Добавить документ»: only structured entities, no free documents or folders. */
+/** «Добавить документ»: structured entities and notes, no other free documents or folders. */
 export function AddDocumentDialog({ open, ...props }: Props) {
   return (
     <Dialog open={open} onOpenChange={props.onOpenChange}>
@@ -38,11 +36,12 @@ export function AddDocumentDialog({ open, ...props }: Props) {
 
 function AddDocumentForm({
   onOpenChange,
+  kinds,
   initialKind,
   onSubmit,
 }: Omit<Props, "open">) {
   const id = useId();
-  const [kind, setKind] = useState<EntityKind>(initialKind);
+  const [kind, setKind] = useState<DocKind>(initialKind);
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -66,29 +65,33 @@ function AddDocumentForm({
       <DialogHeader>
         <DialogTitle className="text-heading-2">Добавить документ</DialogTitle>
         <DialogDescription>
-          Персонаж, локация или мир — у каждого свой профиль.
+          {kinds.length === 1
+            ? "Драфт заперт, но заметки общие для всей истории: их можно добавлять."
+            : "Персонаж, локация, мир или заметка для всей истории."}
         </DialogDescription>
       </DialogHeader>
-      <div
-        role="radiogroup"
-        aria-label="Что добавить"
-        className="grid grid-cols-3 gap-1 rounded-full bg-muted p-1"
-      >
-        {KINDS.map((k) => (
-          <button
-            key={k}
-            type="button"
-            role="radio"
-            aria-checked={kind === k}
-            onClick={() => setKind(k)}
-            className="h-8 rounded-full text-sm aria-checked:bg-paper aria-checked:font-medium aria-checked:shadow-panel"
-          >
-            {ENTITY_WORDS[k].one}
-          </button>
-        ))}
-      </div>
+      {kinds.length > 1 && (
+        <div
+          role="radiogroup"
+          aria-label="Что добавить"
+          className="grid grid-cols-4 gap-1 rounded-full bg-muted p-1"
+        >
+          {kinds.map((k) => (
+            <button
+              key={k}
+              type="button"
+              role="radio"
+              aria-checked={kind === k}
+              onClick={() => setKind(k)}
+              className="h-8 rounded-full text-sm aria-checked:bg-paper aria-checked:font-medium aria-checked:shadow-panel"
+            >
+              {DOC_WORDS[k].one}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="grid gap-2">
-        <Label htmlFor={id}>{ENTITY_WORDS[kind].nameLabel}</Label>
+        <Label htmlFor={id}>{DOC_WORDS[kind].nameLabel}</Label>
         <Input
           id={id}
           value={name}
