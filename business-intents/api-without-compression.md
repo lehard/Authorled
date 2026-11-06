@@ -1,6 +1,6 @@
 # Бизнес-интент: истории работают на сервере за обратным прокси
 
-Статус: решения согласованы с владельцем 2026-11-06; OpenSpec change: `openspec/changes/api-without-compression/`
+Статус: решения согласованы с владельцем 2026-11-06; change `api-without-compression` реализован и архивирован 2026-11-06 (`openspec/changes/archive/2026-11-06-api-without-compression/`), проверен на сервере в релизе v0.1.3. Владелец: lehard. Обновлено: 2026-11-06.
 Рамки: спека `runtime` («Обратный прокси», пока в change `deploy-on-release`); `api/stories` и `web/workspace` не меняются
 
 ## Why
