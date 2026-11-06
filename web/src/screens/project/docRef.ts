@@ -4,7 +4,6 @@ import type { EntityKind, ScriptPart } from "@/data/model";
 
 export type DocRef =
   | { kind: "info" }
-  | { kind: "sp" }
   | { kind: "part"; part: ScriptPart }
   | { kind: "group"; entity: EntityKind }
   | { kind: "entity"; entity: EntityKind; id: string }
@@ -48,9 +47,10 @@ export const ENTITY_WORDS: Record<
 
 /** Parses the segment; null means «Не найдено». */
 export function parseDoc(doc: string): DocRef | null {
-  if (doc === "info" || doc === "sp" || doc === "trash") return { kind: doc };
+  if (doc === "info" || doc === "trash") return { kind: doc };
   if (
     doc === "title" ||
+    doc === "logline" ||
     doc === "synopsis" ||
     doc === "treatment" ||
     doc === "text"

@@ -23,8 +23,6 @@ export function docTitle(
   switch (ref.kind) {
     case "info":
       return data.project.title;
-    case "sp":
-      return data.script.name;
     case "part":
       return SCRIPT_PARTS[ref.part];
     case "group":

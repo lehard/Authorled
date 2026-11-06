@@ -14,6 +14,7 @@ from sqlalchemy import Connection, delete, func, insert, select, update
 from core import drafts
 from core.engine import get_engine
 from core.errors import Conflict, Invalid, NotFound
+from core.fields import SCRIPT_NAME
 from core.tables import documents, projects, users
 from core.texts import add_text, new_screenplay
 from core.users import AccountDeleted, AccountNotFound
@@ -144,7 +145,7 @@ def create_project(
             project_id=row.id,
             draft_id=draft_id,
             kind="script",
-            name=row.title,
+            name=SCRIPT_NAME,
             position=0,
             fields={},
             updated_by=owner_id,

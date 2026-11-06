@@ -81,7 +81,6 @@ def _text(doc: Item, threads: dict[str, uuid.UUID]) -> Item:
 
 def _passport(script: Item) -> Item:
     return {
-        "tagline": script["tagline"],
         "logline": script["logline"],
         "show": script["show"],
         "title_page": script["titlePage"],

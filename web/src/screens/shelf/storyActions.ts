@@ -35,7 +35,13 @@ export function useStoryActions() {
       story = await files.createFromFile(title, file);
     }
     const script: Pick<Script, "show" | "titlePage"> = {
-      show: { title: true, synopsis: true, treatment: true, text: true },
+      show: {
+        title: true,
+        logline: true,
+        synopsis: true,
+        treatment: true,
+        text: true,
+      },
       titlePage: {
         title,
         genre: "Полнометражный сценарий",

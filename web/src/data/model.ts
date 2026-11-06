@@ -21,6 +21,7 @@ export type Project = {
 
 export const SCRIPT_PARTS = {
   title: "Титульная страница",
+  logline: "Логлайн",
   synopsis: "Синопсис",
   treatment: "Поэпизодник",
   text: "Текст сценария",
@@ -39,8 +40,6 @@ export type TitlePage = {
 export type Script = {
   id: string;
   draftId: string;
-  name: string;
-  tagline: string;
   logline: string;
   show: Record<ScriptPart, boolean>;
   titlePage: TitlePage;

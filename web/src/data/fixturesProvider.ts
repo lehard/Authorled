@@ -145,11 +145,10 @@ function fieldsContent(resource: string, row: Row): Record<string, unknown> {
   if (resource === "scripts") {
     const s = row as unknown as Script;
     return {
-      name: s.name,
+      name: "Сценарий",
       role: null,
       summary: "",
       fields: {
-        tagline: s.tagline,
         logline: s.logline,
         synopsis: s.synopsis,
         title_page: s.titlePage,
@@ -434,10 +433,14 @@ export const fixturesProvider: DataProvider = {
       const script: Script = {
         id: draftId,
         draftId,
-        name: project.title,
-        tagline: "",
         logline: "",
-        show: { title: true, synopsis: true, treatment: true, text: true },
+        show: {
+          title: true,
+          logline: true,
+          synopsis: true,
+          treatment: true,
+          text: true,
+        },
         titlePage: {
           title: "",
           genre: "",

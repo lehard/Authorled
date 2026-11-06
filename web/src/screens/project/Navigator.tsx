@@ -9,9 +9,9 @@ import {
   Clapperboard,
   FileText,
   Globe,
-  Home,
   MapPin,
   Plus,
+  Quote,
   SortAsc,
   Trash2,
   User,
@@ -62,6 +62,7 @@ const ITEM_ICON: Record<EntityKind, LucideIcon> = {
 };
 const PART_ICON: Record<ScriptPart, LucideIcon> = {
   title: BookOpen,
+  logline: Quote,
   synopsis: AlignLeft,
   treatment: ListOrdered,
   text: FileText,
@@ -69,7 +70,8 @@ const PART_ICON: Record<ScriptPart, LucideIcon> = {
 
 type Row = {
   key: string;
-  to: string;
+  /** A row without an address only opens and closes. */
+  to?: string;
   icon: LucideIcon;
   label: string;
   count?: number;
@@ -190,20 +192,13 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
   );
 
   const rows: Row[] = [
-    {
-      key: "info",
-      to: path({ kind: "info" }),
-      icon: Home,
-      label: project.title,
-    },
     group("char", data.chars),
     group("loc", data.locs),
     group("world", data.worlds),
     {
       key: "sp",
-      to: path({ kind: "sp" }),
       icon: Clapperboard,
-      label: script.name,
+      label: "Сценарий",
       kids: [
         ...parts.map((p) => ({
           key: p,
@@ -234,6 +229,24 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
   function node(row: Row, depth: number): ReactNode {
     const expandable = row.kids !== undefined && row.kids.length > 0;
     const isOpen = open.has(row.key);
+    const toggle = () =>
+      setOpen((s) => {
+        const next = new Set(s);
+        if (isOpen) next.delete(row.key);
+        else next.add(row.key);
+        return next;
+      });
+    const item = (
+      <>
+        <row.icon className="size-4 shrink-0" />
+        <span className="min-w-0 flex-1 truncate">{row.label}</span>
+        {row.count !== undefined && row.count > 0 && (
+          <span className="text-xs text-muted-foreground">{row.count}</span>
+        )}
+      </>
+    );
+    const itemClass = `tree-item ${row.drill === true && row.menu !== undefined ? "pr-16" : "pr-8"}`;
+    const itemStyle = { paddingLeft: depth * 14 + 24 };
     const link = (
       <>
         {expandable ? (
@@ -245,35 +258,36 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
               isOpen ? `Свернуть: ${row.label}` : `Развернуть: ${row.label}`
             }
             aria-expanded={isOpen}
-            onClick={() =>
-              setOpen((s) => {
-                const next = new Set(s);
-                if (isOpen) next.delete(row.key);
-                else next.add(row.key);
-                return next;
-              })
-            }
+            onClick={toggle}
           >
             <ChevronRight
               className={`size-3.5 transition-transform ${isOpen ? "rotate-90" : ""}`}
             />
           </button>
         ) : null}
-        <Link
-          to={row.to}
-          onClick={onNavigate}
-          className={`tree-item ${row.drill === true && row.menu !== undefined ? "pr-16" : "pr-8"}`}
-          style={{ paddingLeft: depth * 14 + 24 }}
-          aria-current={
-            docSegment === row.to.split("/").pop() ? "page" : undefined
-          }
-        >
-          <row.icon className="size-4 shrink-0" />
-          <span className="min-w-0 flex-1 truncate">{row.label}</span>
-          {row.count !== undefined && row.count > 0 && (
-            <span className="text-xs text-muted-foreground">{row.count}</span>
-          )}
-        </Link>
+        {row.to === undefined ? (
+          <button
+            type="button"
+            className={itemClass}
+            style={itemStyle}
+            aria-expanded={isOpen}
+            onClick={toggle}
+          >
+            {item}
+          </button>
+        ) : (
+          <Link
+            to={row.to}
+            onClick={onNavigate}
+            className={itemClass}
+            style={itemStyle}
+            aria-current={
+              docSegment === row.to.split("/").pop() ? "page" : undefined
+            }
+          >
+            {item}
+          </Link>
+        )}
         {row.drill === true && (
           <button
             type="button"
@@ -318,7 +332,8 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
       <Link
         to={path({ kind: "info" })}
         onClick={onNavigate}
-        className="flex items-center gap-3 px-4 pt-2 pb-2 text-left"
+        className="story-head mx-2 mb-1 flex items-center gap-3 rounded-xl px-2 py-1.5 text-left"
+        aria-current={docSegment === "info" ? "page" : undefined}
       >
         <span
           className={project.cover ? "book-mini art" : "book-mini"}

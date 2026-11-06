@@ -39,12 +39,7 @@ function documentText(data: ProjectData): { title: string; text: string } {
     case "info":
       return {
         title: "История",
-        text: `Название: ${project.title}\nОписание: ${project.desc}`,
-      };
-    case "sp":
-      return {
-        title: "Сценарий",
-        text: `Название: ${script.name}\nТэглайн: ${script.tagline}\nЛоглайн: ${script.logline}`,
+        text: `Название: ${project.title}\nТэглайн: ${project.desc}`,
       };
     case "part":
       if (doc.part === "title") {
@@ -56,8 +51,8 @@ function documentText(data: ProjectData): { title: string; text: string } {
             .join("\n"),
         };
       }
-      if (doc.part === "synopsis")
-        return { title: SCRIPT_PARTS.synopsis, text: script.synopsis };
+      if (doc.part === "logline" || doc.part === "synopsis")
+        return { title: SCRIPT_PARTS[doc.part], text: script[doc.part] };
       return {
         title: SCRIPT_PARTS[doc.part],
         text: paragraphs(data.text)

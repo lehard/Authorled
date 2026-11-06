@@ -7,9 +7,13 @@ from alembic.autogenerate import compare_metadata
 from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
-from sqlalchemy import Connection, Engine, delete, func, insert, select, text
+from sqlalchemy import Connection, Engine, delete, func, insert, select, text, update
 
-from core.tables import SCHEMA, documents, metadata, projects, users
+from core.documents import create_documents, document_row
+from core.documents import update_document as change
+from core.projects import create_project
+from core.saves import create_point, restore_point, restore_version
+from core.tables import SCHEMA, document_versions, documents, draft_points, metadata, projects, users
 
 
 def _current_revision(engine: Engine) -> str | None:
@@ -112,4 +116,76 @@ def test_drafts_migration_clears_stories_and_keeps_users(engine: Engine, alembic
     with engine.begin() as connection:
         assert connection.execute(select(func.count()).select_from(projects)).scalar_one() == 0
         assert connection.execute(select(func.count()).select_from(documents)).scalar_one() == 0
+        assert connection.execute(delete(users).where(users.c.id == owner)).rowcount == 1
+
+
+def test_script_fields_migration_keeps_stories_and_rollback(engine: Engine, alembic_config: Config) -> None:
+    """Applied from 0006 on states of the old form; the migration changes data only."""
+    subject = f"test-{uuid.uuid4()}"
+    show = {"title": True, "synopsis": False, "treatment": True, "text": True}
+    old = {"tagline": "Фраза", "logline": "О воде", "show": show}
+    with engine.begin() as connection:
+        owner = connection.execute(
+            insert(users)
+            .values(auth_subject=subject, email=f"{subject}@authorled.test", display_name="Автор")
+            .returning(users.c.id)
+        ).scalar_one()
+        project, draft, script = create_project(connection, owner, "Маяк")
+        no_parts, _, plain = create_project(connection, owner, "Паром")
+        (vera,) = create_documents(
+            connection,
+            draft,
+            [{"kind": "character", "name": "Вера", "role": "main", "fields": {"fear": "вода"}}],
+            owner,
+        )
+        connection.execute(update(documents).where(documents.c.id == script).values(name="Маяк", fields=old))
+        connection.execute(update(documents).where(documents.c.id == plain).values(fields={"tagline": "Рейс"}))
+        point = create_point(connection, draft, "До правки", owner)
+        version, vera_version = connection.execute(
+            insert(document_versions)
+            .values(
+                [
+                    {
+                        "document_id": document,
+                        "part": "fields",
+                        "content": {"name": name, "role": None, "summary": "", "fields": fields},
+                        "reason": "auto",
+                        "saved_by": owner,
+                        "saved_at": func.now(),
+                    }
+                    for document, name, fields in ((script, "Маяк", old), (vera.id, "Вера", {"tagline": "чужое"}))
+                ]
+            )
+            .returning(document_versions.c.id)
+        ).scalars()
+        connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0006_drafts_and_saves'"))
+
+    command.upgrade(alembic_config, "head")
+
+    new = {"logline": "О воде", "show": {**show, "logline": True}}
+    with engine.begin() as connection:
+        document = document_row(connection, script)
+        assert (document.name, document.fields, document.revision) == ("Сценарий", new, 1)
+        assert document_row(connection, plain).fields == {}
+        assert document_row(connection, vera.id).fields == {"fear": "вода"}
+
+        def saved(version_id: uuid.UUID) -> dict[str, object]:
+            query = select(document_versions.c.content).where(document_versions.c.id == version_id)
+            return connection.execute(query).scalar_one()
+
+        assert (saved(version)["name"], saved(version)["fields"]) == ("Сценарий", new)
+        assert saved(vera_version)["fields"] == {"tagline": "чужое"}
+        content = connection.execute(select(draft_points.c.content).where(draft_points.c.id == point.id)).scalar_one()
+        states = {state["kind"]: state for state in content["documents"]}
+        assert states["script"]["fields"] == new and states["character"]["name"] == "Вера"
+
+        restored = restore_version(connection, version, 1, owner)
+        assert (
+            change(connection, script, restored, {"fields": {"logline": "Новый"}}, owner).fields["logline"] == "Новый"
+        )
+        restore_point(connection, point.id, owner)
+        revision = document_row(connection, script).revision
+        assert change(connection, script, revision, {"fields": {"logline": "После"}}, owner).name == "Сценарий"
+
+        connection.execute(delete(projects).where(projects.c.id.in_((project.id, no_parts.id))))
         assert connection.execute(delete(users).where(users.c.id == owner)).rowcount == 1

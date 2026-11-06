@@ -4,8 +4,7 @@ import { EntityDoc } from "./EntityDoc";
 import { GroupDoc } from "./GroupDoc";
 import { InfoDoc } from "./InfoDoc";
 import { LockBanner } from "./LockBanner";
-import { ScriptDoc } from "./ScriptDoc";
-import { SynopsisDoc } from "./SynopsisDoc";
+import { ProseDoc } from "./ProseDoc";
 import { TextDoc } from "./TextDoc";
 import { TitleDoc } from "./TitleDoc";
 
@@ -22,9 +21,11 @@ export function DocView() {
     >
       <LockBanner />
       {doc.kind === "info" && <InfoDoc />}
-      {doc.kind === "sp" && <ScriptDoc />}
       {doc.kind === "part" && doc.part === "title" && <TitleDoc />}
-      {doc.kind === "part" && doc.part === "synopsis" && <SynopsisDoc />}
+      {doc.kind === "part" &&
+        (doc.part === "logline" || doc.part === "synopsis") && (
+          <ProseDoc part={doc.part} />
+        )}
       {doc.kind === "part" && doc.part === "treatment" && (
         <TextDoc mode="outline" />
       )}

@@ -430,6 +430,7 @@ function entityChanges(values: Partial<Character & World>): Json {
 
 const ALL_PARTS: Script["show"] = {
   title: true,
+  logline: true,
   synopsis: true,
   treatment: true,
   text: true,
@@ -448,8 +449,6 @@ function toScript(draftId: string, d: Doc, t: Text): Script {
   return {
     id: draftId,
     draftId,
-    name: d.name,
-    tagline: text(what, d.fields, "tagline"),
     logline: text(what, d.fields, "logline"),
     // Not set yet: every part is shown, as in a new story of the screens.
     show: show === undefined ? ALL_PARTS : (show as Script["show"]),
@@ -475,10 +474,6 @@ function scriptChanges(values: Partial<Script>): {
   for (const [key, value] of Object.entries(values)) {
     if (value === undefined) continue;
     switch (key) {
-      case "name":
-        doc.name = value;
-        break;
-      case "tagline":
       case "logline":
       case "synopsis":
       case "show":

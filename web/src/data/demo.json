@@ -3,7 +3,7 @@
     {
       "id": "water",
       "title": "Тихая вода",
-      "desc": "Дочь возвращается в посёлок у озера и узнаёт, что брат матери утонул не случайно.",
+      "desc": "Двадцать лет никто не подходил к воде.",
       "cover": true,
       "updatedAt": "2026-10-30T09:00:00.000Z",
       "deletedAt": null
@@ -11,7 +11,7 @@
     {
       "id": "ferry",
       "title": "Последний паром",
-      "desc": "Паромщик готовится к последнему рейсу перед тем, как переправу закроют.",
+      "desc": "Мост открыли. Рейс остался один.",
       "cover": false,
       "updatedAt": "2026-10-30T09:00:00.000Z",
       "deletedAt": null
@@ -29,11 +29,10 @@
     {
       "id": "water-1",
       "draftId": "water-1",
-      "name": "Тихая вода",
-      "tagline": "Двадцать лет никто не подходил к воде.",
       "logline": "Аня приезжает к матери в посёлок у озера и выясняет, что гибель её дяди в 1998 году не была несчастным случаем.",
       "show": {
         "title": true,
+        "logline": true,
         "synopsis": true,
         "treatment": true,
         "text": true
@@ -602,11 +601,10 @@
     {
       "id": "water-2",
       "draftId": "water-2",
-      "name": "Тихая вода",
-      "tagline": "Двадцать лет никто не подходил к воде.",
       "logline": "Аня приезжает к матери в посёлок у озера и выясняет, что гибель её дяди в 1998 году не была несчастным случаем.",
       "show": {
         "title": true,
+        "logline": true,
         "synopsis": true,
         "treatment": true,
         "text": true
@@ -1207,11 +1205,10 @@
     {
       "id": "ferry-1",
       "draftId": "ferry-1",
-      "name": "Последний паром",
-      "tagline": "Мост открыли. Рейс остался один.",
       "logline": "Паромщик везёт последних пассажиров перед закрытием переправы.",
       "show": {
         "title": true,
+        "logline": true,
         "synopsis": true,
         "treatment": true,
         "text": true
@@ -1575,11 +1572,10 @@
     {
       "id": "untitled-1",
       "draftId": "untitled-1",
-      "name": "Без названия",
-      "tagline": "",
       "logline": "",
       "show": {
         "title": true,
+        "logline": true,
         "synopsis": true,
         "treatment": true,
         "text": true

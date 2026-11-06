@@ -69,9 +69,9 @@ def test_copy_has_the_cards_and_the_passport_outside_the_trash(connection: Conne
     second = create_draft(connection, project, " После читки ", first, owner)
     assert (second.name, second.forked_from_id, second.forked_from_name) == ("После читки", first, FIRST_DRAFT)
     tree = {d.name: d for d in list_documents(connection, second.id)}
-    assert sorted(tree) == ["Вера", "Маяк"]
+    assert sorted(tree) == ["Вера", "Сценарий"]
     assert tree["Вера"].fields == vera.fields and tree["Вера"].id != vera.id
-    assert tree["Маяк"].fields == {"logline": "О воде"}
+    assert tree["Сценарий"].fields == {"logline": "О воде"}
 
 
 def test_drafts_are_independent(connection: Connection) -> None:

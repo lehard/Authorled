@@ -47,6 +47,18 @@ def test_field_of_another_kind_is_named() -> None:
     assert error.value.field == "fields.age"
 
 
+def test_screenplay_has_no_tagline() -> None:
+    with pytest.raises(Invalid) as error:
+        validate_fields("script", {"tagline": "Фраза"})
+    assert error.value.field == "fields.tagline"
+
+
+def test_parts_need_the_logline() -> None:
+    with pytest.raises(Invalid) as error:
+        validate_fields("script", {"show": {"title": True, "synopsis": True, "treatment": True, "text": True}})
+    assert error.value.field == "fields.show.logline"
+
+
 def test_wrong_type_is_named() -> None:
     with pytest.raises(Invalid) as error:
         validate_fields("world", {"overview": 5})
@@ -71,7 +83,7 @@ def test_new_story_has_one_screenplay_with_a_scene(connection: Connection) -> No
     project, draft, script_id = create_project(connection, _owner(connection), "  Маяк ")
     assert project.title == "Маяк"
     tree = list_documents(connection, draft)
-    assert [(d.kind, d.name) for d in tree] == [("script", "Маяк")]
+    assert [(d.kind, d.name) for d in tree] == [("script", "Сценарий")]
     blocks = get_text(connection, script_id).content["content"]
     assert blocks[0]["type"] == "sceneHeading" and blocks[0]["attrs"]["uid"]
 
@@ -133,6 +145,15 @@ def test_batch_is_all_or_nothing(connection: Connection) -> None:
             _owner(connection),
         )
     assert [d.kind for d in list_documents(connection, draft)] == ["script"]
+
+
+def test_screenplay_has_one_name(connection: Connection) -> None:
+    owner = _owner(connection)
+    _, draft, script = create_project(connection, owner, "Маяк")
+    assert [d.name for d in list_documents(connection, draft)] == ["Сценарий"]
+    with pytest.raises(Invalid) as error:
+        update_document(connection, script, 1, {"name": "Маяк"}, owner)
+    assert error.value.field == "name"
 
 
 def test_screenplay_is_not_created_by_hand(connection: Connection) -> None:
@@ -200,7 +221,7 @@ def test_trash_of_the_story(connection: Connection) -> None:
         delete_document(connection, vera.id)
     trash_document(connection, pier.id)
     empty_trash(connection, draft)
-    assert sorted(d.name for d in list_documents(connection, draft)) == ["Вера", "Маяк"]
+    assert sorted(d.name for d in list_documents(connection, draft)) == ["Вера", "Сценарий"]
 
 
 # --- access
