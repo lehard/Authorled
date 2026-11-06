@@ -19,7 +19,7 @@
 
 - `scripts/dev.sh`: команда `seed` и её отказы.
 - Новый пакет `agno/demo/`: загрузчик и вход `python -m demo`.
-- `web/src/data/demo.json` и `web/src/data/fixtures.ts`: общий контент.
+- `web/src/data/demo.json` и `web/src/data/fixtures.ts`: общий контент; из `web/src/data/fixturesProvider.ts` уходит встроенный драфт «После читки», его место занимает второй драфт из файла.
 - `agno/pyproject.toml`: пакет `demo*`.
 - Тест загрузки на настоящей PostgreSQL; проверка экрана под `writer` и `editor`.
 - `README.md`, `AGENTS.md`, мастер-спека `runtime`.
@@ -42,6 +42,6 @@
 
 ## Impact
 
-- Код: `scripts/dev.sh`, `agno/demo/`, `agno/pyproject.toml`, `agno/tests/test_demo.py`, `web/src/data/fixtures.ts`, `web/src/data/demo.json`.
+- Код: `scripts/dev.sh`, `agno/demo/`, `agno/pyproject.toml`, `agno/tests/test_demo.py`, `web/src/data/fixtures.ts`, `web/src/data/fixturesProvider.ts`, `web/src/data/demo.json`.
 - Схема базы, маршруты и рабочий сервер не меняются. Новых зависимостей нет.
 - Команда работает на хосте и читает файл из `web/`, поэтому в образ API её не добавляем.

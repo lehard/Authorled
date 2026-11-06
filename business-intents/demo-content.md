@@ -1,6 +1,6 @@
 # Бизнес-интент: демо-контент для пользователей разработки
 
-Статус: решение загружать демо-контент постоянной командой принято lehard 2026-11-06; OpenSpec change: `openspec/changes/demo-content`. Владелец: lehard. Обновлено: 2026-11-06.
+Статус: решение загружать демо-контент постоянной командой принято lehard 2026-11-06; OpenSpec change: `openspec/changes/archive/2026-11-06-demo-content` (реализовано и заархивировано 2026-11-06). Владелец: lehard. Обновлено: 2026-11-06.
 Рамки: `openspec/context/01-product-context.md`, `openspec/context/07-anti-patterns.md`; мастер-спеки `api/stories`, `core/database`, `auth` («Пользователи для разработки»).
 
 ## Why
