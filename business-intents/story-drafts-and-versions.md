@@ -1,6 +1,6 @@
 # Бизнес-интент: равноправные драфты истории и сохранения внутри драфта
 
-Статус: решения согласованы с владельцем и Львом 2026-11-05; OpenSpec change: `openspec/changes/story-drafts-and-saves`. Начинается после архивации change `starc-import`. Владелец: lehard. Обновлено: 2026-11-05.
+Статус: решения согласованы с владельцем и Львом 2026-11-05; change `story-drafts-and-saves` реализован и архивирован 2026-11-06 (`openspec/changes/archive/2026-11-06-story-drafts-and-saves/`). Начинается после архивации change `starc-import`. Владелец: lehard. Обновлено: 2026-11-05.
 Рамки: ADR-002, ADR-004, ADR-006, `openspec/context/01-product-context.md`, `openspec/context/03-architecture.md` (инвариант 5), `openspec/context/07-anti-patterns.md`; мастер-спеки `api/stories`, `api/agents`, `api/story-import`, `core/database`, `web/workspace`, `web/screenplay-editor`.
 
 ## Why
