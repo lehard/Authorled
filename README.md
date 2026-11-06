@@ -60,7 +60,7 @@ Open `.env` and fill the Required block: `LITELLM_MASTER_KEY`, `LITELLM_API_KEY`
 of the database role `agentos` the API connects with), and the block of the
 [auth module](#module-auth): `AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`,
 `AUTHENTIK_BOOTSTRAP_EMAIL`, `AUTHENTIK_BOOTSTRAP_PASSWORD`, `AUTH_FRONTEND_CLIENT_ID`,
-`AUTH_FRONTEND_REDIRECT_URI`, `AUTH_DEV_SERVICE_TOKEN`, `AUTH_BRAND_DOMAIN` and `AUTH_ISSUER`. The CA bundle for
+`AUTH_FRONTEND_REDIRECT_URI`, `AUTH_DEV_SERVICE_TOKEN`, `AUTH_BRAND_DOMAIN`, `AUTH_ALLOWED_EMAILS` and `AUTH_ISSUER`. The CA bundle for
 GigaChat (the Russian Trusted CA) ships in `agno/litellm/certs/ca-bundle.pem` (see [Models](#models)). Then start the platform:
 
 ```sh
@@ -251,7 +251,7 @@ existing database the same step makes `agentos` the owner of schema `ai` and its
 Fill the auth block of `.env` (see [Module auth](#module-auth)): strong values for
 `AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`, `AUTHENTIK_BOOTSTRAP_PASSWORD` and
 `AUTH_DEV_SERVICE_TOKEN`, the real redirect URI of the frontend in
-`AUTH_FRONTEND_REDIRECT_URI`, `AUTH_BRAND_DOMAIN` (the Authentik host name) and `AUTH_ISSUER` set to the public address of Authentik plus
+`AUTH_FRONTEND_REDIRECT_URI`, `AUTH_BRAND_DOMAIN` (the Authentik host name), `AUTH_ALLOWED_EMAILS` (who may sign up) and `AUTH_ISSUER` set to the public address of Authentik plus
 `/application/o/authorled/`. Authentik listens on `127.0.0.1:9000`: publish it on its own
 HTTPS domain through the reverse proxy of the host (set `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS`
 for the proxy's address range). The Authentik data lives in the `authentik` schema of the same
@@ -295,6 +295,70 @@ docker compose -f compose.yaml -f compose.prod.yaml down
 ```
 
 `down` keeps the database volume. Adding `-v` deletes it and all stored data.
+
+### Deploy by release
+
+A published GitHub release from `main` goes to the server by itself
+(`.github/workflows/deploy.yml`). Pushes to `main` do not touch the server. The workflow checks the
+tag with `./scripts/validate.sh`, builds the frontend, sends it to the server and runs
+`deploy/deploy.sh`: database copy, code of the tag, `up -d --build`, the new frontend, Caddy reload.
+Then it checks the public `/os/health` and that `/os/agents` refuses a request without a token.
+It never loads demo stories or development users. A failed step leaves the run red and rolls nothing back.
+
+Release a version, or go back to an earlier one by running the same steps with its tag:
+
+```sh
+gh release create v0.1.0 --target main --generate-notes
+gh workflow run deploy.yml -f tag=v0.1.0
+```
+
+The rollback does not touch the database. If the newer release had migrations, restore the copy from
+before it. This loses what was written after the copy:
+
+```sh
+cd /srv/authorled/app
+docker compose -p authorled -f compose.yaml -f compose.prod.yaml stop agentos-api authentik-server authentik-worker
+docker compose -p authorled -f compose.yaml -f compose.prod.yaml exec -T agentos-db \
+  pg_restore -U ai -d ai --clean --if-exists --exit-on-error < /srv/authorled/backups/<copy>.dump
+docker compose -p authorled -f compose.yaml -f compose.prod.yaml up -d
+```
+
+The last 10 copies stay in `/srv/authorled/backups`, on the same disk as the database.
+
+#### Prepare the server once
+
+Docker, Caddy, git and rsync must be installed. As root, with the settings already in
+`/etc/authorled/authorled.env` (the `.env` of the server, outside the repository):
+
+```sh
+adduser --disabled-password --gecos '' deploy
+usermod -aG docker deploy
+install -d -o deploy -g deploy -m 755 /srv/authorled /srv/authorled/web /srv/authorled/web/incoming
+install -d -o deploy -g deploy -m 700 /srv/authorled/backups
+sudo -u deploy git clone https://github.com/lehard/Authorled.git /srv/authorled/app
+chown root:deploy /etc/authorled /etc/authorled/authorled.env
+chmod 750 /etc/authorled
+chmod 640 /etc/authorled/authorled.env
+sudo -u deploy ln -s /etc/authorled/authorled.env /srv/authorled/app/.env
+echo 'deploy ALL=(root) NOPASSWD: /usr/bin/systemctl reload caddy' > /etc/sudoers.d/deploy-caddy
+chmod 440 /etc/sudoers.d/deploy-caddy
+echo 'import /srv/authorled/app/deploy/Caddyfile' > /etc/caddy/Caddyfile
+```
+
+`deploy/Caddyfile` must already be in the clone. Give `deploy` an SSH key of its own, used only by GitHub.
+Membership in the group `docker` is nearly root, so keep this key only in the GitHub secret.
+
+Create the GitHub Environment `production`, allow it only for tags `v*` and the branch `main`, and fill it.
+A missing value stops the run with its name before the server is touched.
+
+| Name | Kind | Value |
+| --- | --- | --- |
+| `DEPLOY_HOST` | secret | Address of the server |
+| `DEPLOY_SSH_KEY` | secret | Private key of the user `deploy` |
+| `DEPLOY_KNOWN_HOSTS` | secret | Host key lines of the server, from `ssh-keyscan` |
+| `PUBLIC_URL` | variable | Public address of the frontend, without a trailing slash |
+| `AUTH_ISSUER`, `AUTH_FRONTEND_CLIENT_ID`, `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_FRONTEND_LOGOUT_URI` | variable | The same values as in the settings of the server |
+| `VITE_DATA_SOURCE` | variable | `api` |
 
 ### Sandbox storage
 
@@ -468,8 +532,10 @@ add the others when you need them. Docker Compose reads `.env` for both local an
 | `AUTH_FRONTEND_CLIENT_ID`, `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_FRONTEND_LOGOUT_URI` | Client ID of the Authentik application (also the expected token audience), the frontend's redirect URI after sign-in and its sign-in screen after sign-out (required). |
 | `AUTH_DEV_SERVICE_TOKEN` | Secret of the development service account `sa-dev` (required). |
 | `AUTH_BRAND_DOMAIN` | Host of Authentik as users open it, with the port if the address has one (locally `localhost:9000`); the product sign-in flow applies to this host (required). |
+| `AUTH_ALLOWED_EMAILS` | Who may sign up: e-mail addresses separated by commas, case-insensitive, or `*` for everyone (required). Other addresses are refused before an account or an e-mail is created. Keep real addresses out of the repository. A new value takes effect after `docker compose up -d authentik-server authentik-worker`; removing an address does not block an existing account. |
 | `AUTHENTIK_EMAIL__HOST`, `__PORT`, `__USERNAME`, `__PASSWORD`, `__USE_TLS`, `__USE_SSL`, `__FROM` | Outgoing mail of Authentik (sign-in codes); locally Mailpit (required; `USERNAME` and `PASSWORD` may be empty). |
 | `AUTHENTIK_COOKIE_DOMAIN` | Production only: parent domain of the product, so the session set through the frontend reaches Authentik (required by `compose.prod.yaml`). |
+| `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS` | Production only: address range of the reverse proxy as Authentik sees it (required by `compose.prod.yaml`). A proxy on the host comes through the Docker gateway: `172.16.0.0/12`. |
 | `AUTH_DEV_USER_PASSWORD` | Development only: password of the development users and the quick sign-in (`./scripts/dev.sh auth-users`). |
 | `VITE_DATA_SOURCE` | Data source of the web frontend: `api` (stories in the core) or `fixtures` (sample data in page memory); required by the frontend. |
 | `AUTH_ISSUER` | Issuer of the tokens: the address clients use to reach Authentik plus `/application/o/authorled/` (required). |

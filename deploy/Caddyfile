@@ -1,0 +1,31 @@
+# Reverse proxy of the production server (openspec/specs/runtime, «Обратный прокси»).
+# /etc/caddy/Caddyfile imports this file; deploy/deploy.sh reloads Caddy on each release.
+
+coauthor.glavai.ru {
+	encode gzip
+
+	# AgentOS: the frontend reaches it on its own origin under /os/.
+	handle_path /os/* {
+		reverse_proxy 127.0.0.1:8000
+	}
+
+	# The sign-in API of Authentik on the frontend's origin (openspec/specs/auth, «Вход фронтенда»).
+	# Authentik chooses the brand by host, so it gets its own host, as with the proxy of the dev server.
+	@authentik path /api/v3/flows/executor/* /flows/-/cancel/* /application/o/revoke/*
+	handle @authentik {
+		reverse_proxy 127.0.0.1:9000 {
+			header_up Host auth.coauthor.glavai.ru
+		}
+	}
+
+	# The frontend of the current release; addresses of screens open index.html.
+	handle {
+		root * /srv/authorled/web/current
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+auth.coauthor.glavai.ru {
+	reverse_proxy 127.0.0.1:9000
+}

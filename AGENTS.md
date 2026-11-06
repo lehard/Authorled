@@ -96,7 +96,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 - `agno/evals/`: application cases and the Agno eval CLI entrypoint.
 - `agno/demo/`: `python -m demo`, the loader of the demo stories through the core; `./scripts/dev.sh seed` runs it. Their
   content is `web/src/data/demo.json`, shared with the `fixtures` data source.
-- `scripts/`: local setup, validation and builds. Deployment files: `compose.prod.yaml`.
+- `scripts/`: local setup, validation and builds. Deployment files: `compose.prod.yaml`, `deploy/` (the release
+  script, the check of the frontend build and the Caddy configuration) and `.github/workflows/deploy.yml`.
 - `web/`: the frontend (Vite + React + TypeScript, thin client without its own database, ADR-001/ADR-004).
   `web/src/design-system/`: tokens, themes, fonts and base components; screens use only its
   semantic tokens (`./web/scripts/check_web_tokens.sh` rejects raw colors). `web/src/components/ui/`:
