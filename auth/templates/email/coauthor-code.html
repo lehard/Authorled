@@ -1,0 +1,27 @@
+{% extends "email/coauthor-base.html" %}
+
+{% comment %}
+Sign-in code (stage authenticator_email, auth/blueprints/30-authentication-flow.yaml).
+10 minutes is token_expiry of that stage; expires|timeuntil would say 9.
+{% endcomment %}
+{% block title %}Код для входа в CoAuthor{% endblock %}
+
+{% block content %}
+<tr>
+  <td align="center" style="font-family: Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 30px; color: #1a222f;">
+    Код для входа
+  </td>
+</tr>
+<tr>
+  <td align="center" style="padding: 20px 0; font-family: -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 34px; line-height: 40px; font-weight: 700; letter-spacing: 6px; color: #1a222f;">
+    {{ token }}
+  </td>
+</tr>
+<tr>
+  <td align="center" style="font-family: -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 15px; line-height: 22px; color: #62594f;">
+    Код действует 10 минут.
+  </td>
+</tr>
+{% endblock %}
+
+{% block footer %}Если вы не входили в CoAuthor, просто удалите это письмо.{% endblock %}
