@@ -327,7 +327,8 @@ file_contents = Table(
 
 # Subscriptions of users to plans (openspec/specs/core/subscriptions). Plans are data (core/plans.toml), so `plan`
 # holds a code, not a key. A user has at most one active subscription; ended ones stay as history.
-SUBSCRIPTION_SOURCES = ("granted",)
+# Sources: granted (free, renews itself) and tochka (paid, renewed only by a confirmed payment, core/billing.py).
+SUBSCRIPTION_SOURCES = ("granted", "tochka")
 SUBSCRIPTION_STATUSES = ("active", "ended")
 
 subscriptions = Table(
@@ -346,7 +347,7 @@ subscriptions = Table(
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     CheckConstraint("plan <> ''", name="plan_not_empty"),
-    CheckConstraint("source IN ('granted')", name="source_known"),
+    CheckConstraint("source IN ('granted', 'tochka')", name="source_known"),
     CheckConstraint("status IN ('active', 'ended')", name="status_known"),
     CheckConstraint("period_end > period_start", name="period_forward"),
     CheckConstraint("(ended_at IS NOT NULL) = (status = 'ended')", name="ended_at_when_ended"),
@@ -388,4 +389,58 @@ usage_records = Table(
     CheckConstraint("cost_rub >= 0", name="cost_not_negative"),
     Index("ix_usage_records_subscription_id_occurred_at", "subscription_id", "occurred_at"),
     Index("ix_usage_records_user_id", "user_id"),
+)
+
+# Checkouts of a paid plan in the internet acquiring of Tochka (openspec/specs/api/billing): one monthly subscription
+# in Tochka each. `id` is the order number Tochka gets (paymentLinkId), so a payment finds its checkout by it.
+# `subscription_id` is the subscription of ours its latest payment opened. No card data.
+CHECKOUT_STATUSES = ("created", "active", "cancelled", "failed", "expired")
+
+billing_checkouts = Table(
+    "billing_checkouts",
+    metadata,
+    Column("id", Uuid, primary_key=True),
+    Column("user_id", Uuid, ForeignKey(users.c.id, ondelete="RESTRICT"), nullable=False),
+    Column("plan", Text, nullable=False),
+    Column("amount_rub", Numeric(12, 2), nullable=False),
+    Column("operation_id", Text, nullable=False, unique=True),
+    Column("payment_link", Text, nullable=False),
+    Column("status", Text, nullable=False),
+    Column("subscription_id", Uuid, ForeignKey(subscriptions.c.id, ondelete="RESTRICT")),
+    Column("link_expires_at", DateTime(timezone=True), nullable=False),
+    Column("cancelled_at", DateTime(timezone=True)),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    CheckConstraint("plan <> '' AND operation_id <> '' AND payment_link <> ''", name="fields_not_empty"),
+    CheckConstraint("amount_rub > 0", name="amount_positive"),
+    CheckConstraint("status IN ('created', 'active', 'cancelled', 'failed', 'expired')", name="status_known"),
+    CheckConstraint("(cancelled_at IS NOT NULL) = (status = 'cancelled')", name="cancelled_at_when_cancelled"),
+    CheckConstraint(
+        "status NOT IN ('active', 'cancelled', 'failed') OR subscription_id IS NOT NULL", name="paid_has_subscription"
+    ),
+    Index("ix_billing_checkouts_user_id", "user_id"),
+)
+
+# Charges of Tochka counted for a checkout: one row per charge (an `approval` order of an operation), whichever way
+# it was reported. The pair of operation and order is unique, so a repeated report adds nothing. No card data.
+payments = Table(
+    "payments",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=text("gen_random_uuid()")),
+    Column("checkout_id", Uuid, ForeignKey(billing_checkouts.c.id, ondelete="RESTRICT"), nullable=False),
+    Column("user_id", Uuid, ForeignKey(users.c.id, ondelete="RESTRICT"), nullable=False),
+    Column("subscription_id", Uuid, ForeignKey(subscriptions.c.id, ondelete="RESTRICT"), nullable=False),
+    Column("operation_id", Text, nullable=False),
+    Column("order_id", Text, nullable=False),
+    Column("amount_rub", Numeric(12, 2), nullable=False),
+    Column("paid_at", DateTime(timezone=True), nullable=False),
+    Column("period_start", DateTime(timezone=True), nullable=False),
+    Column("period_end", DateTime(timezone=True), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    UniqueConstraint("operation_id", "order_id", name="uq_payments_operation_id_order_id"),
+    CheckConstraint("operation_id <> '' AND order_id <> ''", name="ids_not_empty"),
+    CheckConstraint("amount_rub > 0", name="amount_positive"),
+    CheckConstraint("period_end > period_start", name="period_forward"),
+    Index("ix_payments_user_id", "user_id"),
+    Index("ix_payments_checkout_id", "checkout_id"),
 )

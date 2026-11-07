@@ -28,7 +28,8 @@ from core.tables import (
 
 
 def _drop_subscriptions(connection: Connection) -> None:
-    """Undo 0009 before a test rewinds the schema to an older revision."""
+    """Undo 0010 and 0009 before a test rewinds the schema to an older revision."""
+    connection.execute(text("DROP TABLE authorled.payments, authorled.billing_checkouts"))
     connection.execute(text("DROP TABLE authorled.usage_records, authorled.subscriptions"))
 
 

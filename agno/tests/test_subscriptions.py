@@ -137,8 +137,8 @@ def test_set_plan_keeps_the_period(connection: Connection) -> None:
 
 
 def test_unknown_source() -> None:
-    with pytest.raises(ValueError, match="'tochka'"):
-        start_subscription(None, uuid.uuid4(), "beta", "tochka", _at(2027, 1, 1))  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="'stripe'"):
+        start_subscription(None, uuid.uuid4(), "beta", "stripe", _at(2027, 1, 1))  # type: ignore[arg-type]
 
 
 def _row(user_id: uuid.UUID, **changes: object) -> dict[str, object]:
@@ -168,7 +168,7 @@ def test_one_active_per_user(connection: Connection) -> None:
         ({"period_end": _at(2026, 12, 1)}, "ck_subscriptions_period_forward"),
         ({"status": "ended"}, "ck_subscriptions_ended_at_when_ended"),
         ({"ended_at": _at(2027, 1, 2)}, "ck_subscriptions_ended_at_when_ended"),
-        ({"source": "tochka"}, "ck_subscriptions_source_known"),
+        ({"source": "stripe"}, "ck_subscriptions_source_known"),
         ({"status": "paused"}, "ck_subscriptions_status_known"),
         ({"plan": ""}, "ck_subscriptions_plan_not_empty"),
     ],
