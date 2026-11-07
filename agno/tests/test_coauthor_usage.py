@@ -22,11 +22,12 @@ from agents.coauthor_usage import (
     CHECK_FAILED,
     LIMIT_REACHED,
     RECORD_FAILED,
+    SUBSCRIPTION_ENDED,
     check_usage_limit,
     limit_message,
     record_usage,
 )
-from core.subscriptions import start_subscription
+from core.subscriptions import Subscription, SubscriptionEnded, start_subscription
 from core.tables import subscriptions, usage_records, user_settings, users
 from core.usage import ModelUsage, RunUsage, record_run
 
@@ -218,3 +219,31 @@ def test_agno_refuses_the_run_before_the_model(engine: Engine, author: Callable[
     assert output.status == RunStatus.error
     assert str(output.content).startswith("Лимит соавтора на этот период исчерпан. Он обновится ")
     assert [row.run_id for row in _journal(engine, subject)] == [big.run_id]
+
+
+def test_pre_hook_names_an_ended_subscription(engine: Engine, author: Callable[[], str]) -> None:
+    """A subscription that does not renew by itself (payments-tochka) ends with its own reason."""
+    subject = author()
+    with engine.begin() as connection:
+        ids = select(users.c.id).where(users.c.auth_subject == subject).scalar_subquery()
+        row = connection.execute(select(subscriptions).where(subscriptions.c.user_id.in_(ids))).one()
+    ended = SubscriptionEnded(
+        Subscription(
+            row.id, row.user_id, row.plan, "tochka", row.status, row.started_at, row.period_start, row.period_end
+        )
+    )
+
+    def refuse(*_: Any) -> None:
+        raise ended
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr("agents.coauthor_usage.check_limit", refuse)
+        with pytest.raises(InputCheckError) as refused:
+            check_usage_limit(_context(subject), AgentSession(session_id=SESSION, user_id=subject, runs=[]))
+    assert refused.value.additional_data == {
+        "reason": SUBSCRIPTION_ENDED,
+        "subscription_id": str(row.id),
+        "plan": "beta",
+        "period_end": row.period_end.isoformat(),
+    }
+    assert refused.value.__cause__ is ended

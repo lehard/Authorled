@@ -192,5 +192,20 @@ def test_other_source_does_not_renew_itself(connection: Connection) -> None:
     connection.execute(text("ALTER TABLE authorled.subscriptions DROP CONSTRAINT ck_subscriptions_source_known"))
     connection.execute(update(subscriptions).where(subscriptions.c.id == started.id).values(source="tochka"))
     assert current_subscription(connection, user_id, _at(2027, 1, 15)).source == "tochka"
-    with pytest.raises(SubscriptionEnded, match="'tochka'"):
+    with pytest.raises(SubscriptionEnded, match="'tochka'") as ended:
         current_subscription(connection, user_id, _at(2027, 2, 1))
+    assert ended.value.subscription.id == started.id
+    assert ended.value.subscription.period_end == _at(2027, 2, 1)
+    stored = connection.execute(select(subscriptions).where(subscriptions.c.id == started.id)).one()
+    assert (stored.period_start, stored.period_end, stored.status) == (_at(2027, 1, 1), _at(2027, 2, 1), "active")
+
+
+def test_start_in_the_past_catches_up(connection: Connection) -> None:
+    """Moving to the free plan from the end of a paid period months ago: periods follow until now, one row."""
+    user_id = _user(connection)
+    start_subscription(connection, user_id, "beta", "granted", _at(2027, 6, 1))
+    started = start_subscription(connection, user_id, "beta", "granted", _at(2027, 1, 31))
+    assert (started.period_start, started.period_end) == (_at(2027, 1, 31), _at(2027, 2, 28))
+    current = current_subscription(connection, user_id, _at(2027, 6, 15))
+    assert current.id == started.id
+    assert (current.period_start, current.period_end) == (_at(2027, 5, 31), _at(2027, 6, 30))

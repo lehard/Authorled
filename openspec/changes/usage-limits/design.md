@@ -93,6 +93,7 @@
 
 9. **Хуки соавтора (`agno/agents/coauthor_usage.py`).**
    - **pre-hook `check_usage_limit(run_context, session)`**: в одной транзакции (a) дописывает в журнал прошлые запуски этой беседы, которых там нет (`completed`, `error`, `cancelled`, у которых есть `details["model"]`; текущий `run_id` пропускается), (b) проверяет лимит. Лимит исчерпан (`расход >= limit_rub`) → `InputCheckError("Лимит соавтора на этот период исчерпан. Он обновится 7 декабря.", CheckTrigger.INPUT_NOT_ALLOWED, additional_data={"reason": "usage_limit_reached", "renews_at": <ISO>})`. Дата — день `period_end` по Москве (UTC+3, без перехода на летнее время), месяц словами в родительном падеже.
+   - `SubscriptionEnded` (период подписки другого источника кончился; ядро бросает его до изменений в базе и кладёт в него подписку) → `InputCheckError("Подписка закончилась. Соавтор снова заработает после продления.", additional_data={"reason": "subscription_ended", "subscription_id", "plan", "period_end"})`. Без перевода Agno проглотил бы его, поэтому отдельная причина, а не `usage_check_failed`: её разберёт `payments-tochka`.
    - Любое другое исключение pre-hook (нет аккаунта, нет подписки, неизвестный тариф, база) пишется в лог с типом и идентификаторами и превращается в `InputCheckError("Не удалось проверить лимит соавтора. Напишите в поддержку.", additional_data={"reason": "usage_check_failed"})` с исходным исключением в `__cause__`. Это не запасной путь: запуск не идёт, ошибка видна. Без перевода Agno проглотил бы её и пустил запуск без лимита.
    - **post-hook `record_usage(run_output, run_context)`**: пишет запуск в журнал. Нет `details["model"]` у завершённого запуска — ошибка «нет токенов». Любая ошибка записи превращается в `OutputCheckError("Не удалось записать расход соавтора. Напишите в поддержку.")`: запуск получает статус `ERROR` и событие ошибки, а не молчаливую запись в лог. Запуск с метриками остаётся в сессии, и следующий pre-hook допишет его.
    - Дозапись прошлых запусков закрывает недоучёт упавших и отменённых запусков в той же беседе. Запуск, после которого автор больше не писал в эту беседу, остаётся неучтённым — принятый риск беты.
@@ -120,7 +121,8 @@ SOURCES = ("granted",); STATUSES = ("active", "ended")
 def start_subscription(connection, user_id, plan: str, source: str, start: datetime) -> Subscription
     # заканчивает действующую (status=ended, ended_at=start) и создаёт новую с первым периодом от start
 def current_subscription(connection, user_id, now: datetime) -> Subscription
-    # FOR UPDATE; продлевает выданную; NoSubscription, UnknownPlan, SubscriptionEnded (источник не granted, период истёк)
+    # FOR UPDATE; выданную продлевает период за периодом до now (и после start в прошлом); NoSubscription, UnknownPlan,
+    # SubscriptionEnded(subscription) — источник не granted, период истёк; бросается до изменений в базе
 def next_period(connection, subscription_id) -> Subscription
     # сдвигает период на один вперёд от period_end; ядро вызывает её при продлении выданной, оплата — после подтверждённого платежа
 def set_plan(connection, user_id, plan: str) -> Subscription

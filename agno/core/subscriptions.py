@@ -22,10 +22,6 @@ class NoSubscription(Exception):
     """The user has no active subscription."""
 
 
-class SubscriptionEnded(Exception):
-    """The period of a subscription that does not renew by itself is over."""
-
-
 @dataclass(frozen=True)
 class Subscription:
     id: uuid.UUID
@@ -36,6 +32,17 @@ class Subscription:
     started_at: datetime
     period_start: datetime
     period_end: datetime
+
+
+class SubscriptionEnded(Exception):
+    """The period of a subscription that does not renew by itself is over; nothing was changed in the database."""
+
+    def __init__(self, subscription: Subscription) -> None:
+        super().__init__(
+            f"Subscription {subscription.id} of source {subscription.source!r} on plan {subscription.plan!r} "
+            f"ended at {subscription.period_end.isoformat()}"
+        )
+        self.subscription = subscription
 
 
 def _aware(moment: datetime, name: str) -> datetime:
@@ -130,10 +137,7 @@ def current_subscription(connection: Connection, user_id: uuid.UUID, now: dateti
     if now < subscription.period_end:
         return subscription
     if subscription.source != "granted":
-        raise SubscriptionEnded(
-            f"Subscription {subscription.id} of source {subscription.source!r} ended at "
-            f"{subscription.period_end.isoformat()}"
-        )
+        raise SubscriptionEnded(subscription)
     start, end = subscription.period_start, subscription.period_end
     while now >= end:
         start, end = end, _next_end(subscription, end)

@@ -93,3 +93,20 @@ def test_unknown_plan_and_model() -> None:
 def test_price_missing_field() -> None:
     with pytest.raises(DataFileError, match=r"models\.m: missing field output_rub"):
         parse_prices({"models": {"m": {"input_rub": 1, "cache_read_rub": 1}}}, "prices.toml")
+
+
+def test_money_is_exact() -> None:
+    """Fractions in the file arrive as Decimal (tomllib parse_float), never as float."""
+    import tomllib
+
+    text = 'signup_plan = "beta"\n[plans.beta]\nname = "Бета"\nprice_rub = 990.90\nperiod_months = 1\n'
+    text += "limit_rub = 500.10\npurchasable = false\n"
+    plan = parse_plans(tomllib.loads(text, parse_float=Decimal), "plans.toml").signup
+    assert (plan.price_rub, plan.limit_rub) == (Decimal("990.90"), Decimal("500.10"))
+    assert isinstance(plan.limit_rub, Decimal)
+
+
+@pytest.mark.parametrize("field", ["price_rub", "limit_rub"])
+def test_float_is_refused(field: str) -> None:
+    with pytest.raises(DataFileError, match=rf"plans\.beta\.{field} must be a number"):
+        parse_plans(_plans(**{field: 500.1}), "plans.toml")

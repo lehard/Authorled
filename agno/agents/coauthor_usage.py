@@ -22,11 +22,13 @@ from agno.utils.log import log_exception
 
 from app.auth import run_principal
 from core.engine import get_engine
+from core.subscriptions import SubscriptionEnded
 from core.usage import LimitReached, ModelUsage, NoTokens, RunUsage, check_limit, record_run, recorded_run_ids
 
 LIMIT_REACHED = "usage_limit_reached"
 CHECK_FAILED = "usage_check_failed"
 RECORD_FAILED = "usage_record_failed"
+SUBSCRIPTION_ENDED = "subscription_ended"
 
 # Moscow keeps UTC+3 all year: the date the author sees in the message.
 MOSCOW = timezone(timedelta(hours=3), "MSK")
@@ -132,6 +134,20 @@ def check_usage_limit(run_context: RunContext, session: AgentSession) -> None:
             except LimitReached as error:
                 # Leave the transaction normally: the runs written above and a renewed period stay.
                 reached = error
+    except SubscriptionEnded as ended:
+        # Not swallowed by Agno and not a run without a limit: a refusal that names the subscription, so the
+        # renewal by payment (payments-tochka) can tell it from a failed check.
+        subscription = ended.subscription
+        raise InputCheckError(
+            "Подписка закончилась. Соавтор снова заработает после продления.",
+            check_trigger=CheckTrigger.INPUT_NOT_ALLOWED,
+            additional_data={
+                "reason": SUBSCRIPTION_ENDED,
+                "subscription_id": str(subscription.id),
+                "plan": subscription.plan,
+                "period_end": subscription.period_end.isoformat(),
+            },
+        ) from ended
     except Exception as error:
         log_exception(f"Usage check of run {run_context.run_id} failed: {type(error).__name__}: {error}")
         raise InputCheckError(
