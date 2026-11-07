@@ -29,7 +29,7 @@ from core.projects import (
     update_project,
     user_id_of,
 )
-from core.tables import projects, user_settings, users
+from core.tables import projects, subscriptions, user_settings, users
 from core.texts import get_text
 from core.users import AccountNotFound, get_or_create_user
 
@@ -257,6 +257,7 @@ def test_access_source_reads_committed_stories(engine: Engine) -> None:
         with engine.begin() as connection:
             connection.execute(delete(projects).where(projects.c.id == project.id))
             owner = user_id_of(connection, subject)
+            connection.execute(delete(subscriptions).where(subscriptions.c.user_id == owner))
             connection.execute(delete(user_settings).where(user_settings.c.user_id == owner))
             connection.execute(delete(users).where(users.c.id == owner))
 

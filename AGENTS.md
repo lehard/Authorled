@@ -79,23 +79,29 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 - `agno/app/sandbox.py`: providers, repository URL/branch and checkpoint paths.
 - `agno/agents/`: application agents, including the Claude engineer (Claude Code on DeepSeek) and the co-author
   with its tools (`coauthor_tools.py`: read the story of the conversation, propose an edit; in-process functions
-  that call the core).
+  that call the core) and its hooks (`coauthor_usage.py`: the limit check before a run, the usage journal after it).
   `agno/skills/<agent_id>/SKILL.md`: an agent's prompt as an Anthropic Agent Skill (`name` equals the id,
   the body is the prompt), loaded by `agents/prompts.py`; restart the API after editing it.
   `agno/teams/`: user-defined teams; no Engineering team ships by default.
 - `agno/db/`: cached OS database and distinct knowledge content adapters.
 - `agno/core/`: the product core, independent of Agno: `connection.py` (database URL from `DB_*`),
-  `tables.py` (tables of schema `authorled`: users and settings, stories, drafts, documents, texts, notes, snapshots and points, review, files),
+  `tables.py` (tables of schema `authorled`: users and settings, stories, drafts, documents, texts, notes, snapshots and points, review, files,
+  subscriptions and the usage journal),
   `engine.py` (the core's own connection pool), `users.py` (account operations), `projects.py`, `drafts.py`,
   `documents.py`, `fields.py`, `texts.py`, `notes.py`, `snapshots.py`, `saves.py`, `review.py`, `files.py`, `imports.py` and
   `importers/` (stories, their equal drafts and the documents of a draft, the editor text with revisions, notes of a story, snapshots
   of a document and points of a draft, comments and suggestions, uploads, manuscript import), `clamav.py` (antivirus
-  client), `errors.py` (refusals the routes answer with). `agno/migrations/` and `agno/alembic.ini`: Alembic for
+  client), `errors.py` (refusals the routes answer with), `plans.py` with the data files `plans.toml` and
+  `model_prices.toml` (plans and model prices in rubles; a broken file or a co-author model without a price stops
+  startup), `subscriptions.py` (one active subscription per user, its periods and renewal) and `usage.py` (the usage
+  journal, the limit check and the report). `agno/migrations/` and `agno/alembic.ini`: Alembic for
   schema `authorled` only, forward-only, one head; never migrate Agno or Authentik schemas there.
   `agno/tests/`: pytest for the core on real PostgreSQL (`./scripts/dev.sh test`).
 - `agno/evals/`: application cases and the Agno eval CLI entrypoint.
 - `agno/demo/`: `python -m demo`, the loader of the demo stories through the core; `./scripts/dev.sh seed` runs it. Their
   content is `web/src/data/demo.json`, shared with the `fixtures` data source.
+- `agno/admin/`: `python -m admin report|set-plan <e-mail> <plan>`, the administrator's commands over the core;
+  `./scripts/usage.sh local|prod` runs them in the API container.
 - `scripts/`: local setup, validation and builds. Deployment files: `compose.prod.yaml`, `deploy/` (the release
   script, the check of the frontend build and the Caddy configuration) and `.github/workflows/deploy.yml`.
 - `web/`: the frontend (Vite + React + TypeScript, thin client without its own database, ADR-001/ADR-004).
