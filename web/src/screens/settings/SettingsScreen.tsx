@@ -1,6 +1,6 @@
 import { useLogout } from "@refinedev/core";
 import { Check, ChevronLeft } from "lucide-react";
-import { useId, useState, type FormEvent, type ReactNode } from "react";
+import { useId, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router";
 
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,15 @@ import { applyAccountTheme, type Theme } from "@/design-system/theme";
 import { TopBar } from "@/screens/shelf/TopBar";
 import { MessageScreen } from "@/screens/system/MessageScreen";
 
-// Settings, the personal cabinet (openspec/specs/web/workspace, «Настройки», «Тема в настройках»),
+import { Row, Section } from "./parts";
+import { PlanSection } from "./PlanSection";
+
+// Settings, the personal cabinet (openspec/specs/web/workspace, «Настройки», «Тариф в настройках», «Тема в настройках»),
 // after the screen #settings of mockup v1.
 
 const SECTIONS = [
   { id: "profile", title: "Профиль" },
+  { id: "plan", title: "Тариф" },
   { id: "appearance", title: "Внешний вид" },
 ] as const;
 
@@ -92,6 +96,8 @@ function Settings({ me }: { me: Account }) {
                 </Row>
               </Section>
               <hr className="border-border" />
+              <PlanSection />
+              <hr className="border-border" />
               <Section id="appearance" title="Внешний вид">
                 <ThemeRow me={me} />
               </Section>
@@ -99,59 +105,6 @@ function Settings({ me }: { me: Account }) {
           </div>
         </article>
       </main>
-    </div>
-  );
-}
-
-function Section({
-  id,
-  title,
-  children,
-}: {
-  id: string;
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <section
-      id={id}
-      aria-labelledby={`${id}-title`}
-      className="grid scroll-mt-6 gap-6"
-    >
-      <h2 id={`${id}-title`} className="font-heading text-heading-1">
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
-}
-
-function Row({
-  label,
-  hint,
-  labelFor,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  labelFor?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="grid gap-2 sm:grid-cols-[180px_1fr] sm:gap-6">
-      <div className="grid content-start gap-0.5">
-        {labelFor === undefined ? (
-          <span className="font-semibold">{label}</span>
-        ) : (
-          <label htmlFor={labelFor} className="font-semibold">
-            {label}
-          </label>
-        )}
-        {hint !== undefined && (
-          <span className="text-caption text-muted-foreground">{hint}</span>
-        )}
-      </div>
-      <div className="min-w-0">{children}</div>
     </div>
   );
 }

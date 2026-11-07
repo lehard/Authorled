@@ -4,6 +4,10 @@ import { CallbackScreen } from "@/auth/CallbackScreen";
 import { LoginScreen } from "@/auth/LoginScreen";
 import { OpenDraft } from "@/screens/project/OpenDraft";
 import { ProjectScreen } from "@/screens/project/ProjectScreen";
+import {
+  BillingFailScreen,
+  BillingReturnScreen,
+} from "@/screens/settings/BillingReturnScreen";
 import { SettingsScreen } from "@/screens/settings/SettingsScreen";
 import { ProjectTrashScreen } from "@/screens/shelf/ProjectTrashScreen";
 import { ShelfScreen } from "@/screens/shelf/ShelfScreen";
@@ -28,6 +32,11 @@ export function createRouter(dataSource: DataSource) {
             { path: "/", element: <ShelfScreen /> },
             { path: "/trash", element: <ProjectTrashScreen /> },
             { path: "/settings", element: <SettingsScreen /> },
+            {
+              path: "/settings/billing/return",
+              element: <BillingReturnScreen />,
+            },
+            { path: "/settings/billing/fail", element: <BillingFailScreen /> },
             { path: "/p/:projectId", element: <OpenDraft /> },
             { path: "/p/:projectId/:doc", element: <OpenDraft /> },
             {
