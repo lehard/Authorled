@@ -15,8 +15,9 @@ generic manager behavior belongs in Agno. `CLAUDE.md` links to this file.
   under `/api/v1/`, added by `attach_api` to the app that `agent_os.get_app()` returns, before the
   MCP mount at the root (see `openspec/context/ADR/ADR-002-own-routes-via-base-app.md`). Do not pass
   `base_app`: with it Agno drops its error handlers for its own routes. Every other API surface stays
-  with Agno; today the own routes are `/api/v1/me` and the story routes (stories, documents, texts,
-  drafts, notes, comments, suggestions, saves, files, import).
+  with Agno; today the own routes are `/api/v1/me`, the story routes (stories, documents, texts,
+  drafts, notes, comments, suggestions, saves, files, import) and the billing routes (`/api/v1/billing`: the plan,
+  checkout, check and cancel; the notice of Tochka, the only route without a user token).
 - Check framework behavior against the Agno version pinned in `agno/pyproject.toml`.
   Do not bypass framework rejections or add compatibility adapters to this template.
 - Keep the starter lean. Add abstractions, tests and infrastructure only for a concrete
@@ -61,7 +62,9 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 ## Where changes belong
 
 - `agno/app/main.py`: AgentOS registration, shared database, OS Manager, Company and queue.
-- `agno/app/api/`: own product routes (`me.py`; `stories.py`, `notes.py`, `review.py`, `saves.py`, `files.py` for stories) and their
+- `agno/app/api/`: own product routes (`me.py`; `stories.py`, `notes.py`, `review.py`, `saves.py`, `files.py` for stories;
+  `billing.py` for the plan and the notices of Tochka, exempted from the token check by `PUBLIC_ROUTES` in
+  `app/auth/authorization.py`) and their
   `application/problem+json` errors, handled only for the product's own exception types (`Problem`, `core/errors.py`).
   `body.py`: JSON body, `If-Match`, the caller and the project access check every story route does first.
 - `agno/app/auth/` and `auth/`: the auth module. `agno/app/auth/` is the only code that reads JWT
@@ -79,22 +82,26 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 - `agno/app/sandbox.py`: providers, repository URL/branch and checkpoint paths.
 - `agno/agents/`: application agents, including the Claude engineer (Claude Code on DeepSeek) and the co-author
   with its tools (`coauthor_tools.py`: read the story of the conversation, propose an edit; in-process functions
-  that call the core) and its hooks (`coauthor_usage.py`: the limit check before a run, the usage journal after it).
+  that call the core) and its hooks (`coauthor_usage.py`: an ended paid period settled with Tochka, the limit check
+  before a run, the usage journal after it).
   `agno/skills/<agent_id>/SKILL.md`: an agent's prompt as an Anthropic Agent Skill (`name` equals the id,
   the body is the prompt), loaded by `agents/prompts.py`; restart the API after editing it.
   `agno/teams/`: user-defined teams; no Engineering team ships by default.
 - `agno/db/`: cached OS database and distinct knowledge content adapters.
 - `agno/core/`: the product core, independent of Agno: `connection.py` (database URL from `DB_*`),
   `tables.py` (tables of schema `authorled`: users and settings, stories, drafts, documents, texts, notes, snapshots and points, review, files,
-  subscriptions and the usage journal),
+  subscriptions and the usage journal, checkouts and payments of Tochka),
   `engine.py` (the core's own connection pool), `users.py` (account operations), `projects.py`, `drafts.py`,
   `documents.py`, `fields.py`, `texts.py`, `notes.py`, `snapshots.py`, `saves.py`, `review.py`, `files.py`, `imports.py` and
   `importers/` (stories, their equal drafts and the documents of a draft, the editor text with revisions, notes of a story, snapshots
   of a document and points of a draft, comments and suggestions, uploads, manuscript import), `clamav.py` (antivirus
   client), `errors.py` (refusals the routes answer with), `plans.py` with the data files `plans.toml` and
   `model_prices.toml` (plans and model prices in rubles; a broken file or a co-author model without a price stops
-  startup), `subscriptions.py` (one active subscription per user, its periods and renewal) and `usage.py` (the usage
-  journal, the limit check and the report). `agno/migrations/` and `agno/alembic.ini`: Alembic for
+  startup), `subscriptions.py` (one active subscription per user, its periods and renewal), `usage.py` (the usage
+  journal, the limit check and the report), `tochka.py` (client of the internet acquiring of Tochka: the `TOCHKA_*`
+  settings, a monthly subscription with a receipt, cancellation, operations, the signature of notices with the key in
+  `tochka_webhook_key.json`) and `billing.py` (paid plans: checkout, a payment counted only when the API of Tochka
+  returns it as `APPROVED`, monthly charges, cancellation, settlement of an ended paid period). `agno/migrations/` and `agno/alembic.ini`: Alembic for
   schema `authorled` only, forward-only, one head; never migrate Agno or Authentik schemas there.
   `agno/tests/`: pytest for the core on real PostgreSQL (`./scripts/dev.sh test`).
 - `agno/evals/`: application cases and the Agno eval CLI entrypoint.
