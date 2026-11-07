@@ -1,0 +1,21 @@
+# Цены моделей в рублях за миллион токенов (openspec/specs/core/subscriptions, «Цены моделей как данные»).
+# Ключ — псевдоним LiteLLM (agno/litellm/config.yaml). Без цены модели соавтора API не стартует.
+#
+#   input_rub       вход без кэша
+#   cache_read_rub  вход из кэша
+#   output_rub      выход (вместе с рассуждением)
+#
+# Курс 100 ₽ за доллар, без наценки (владелец, 2026-11-07). Долларовые цены — полный прайс DeepSeek, пиковые часы:
+# https://api-docs.deepseek.com/quick_start/pricing/ (журнал изменений от 2026-10-17).
+
+# deepseek/deepseek-flash: $0.30 вход, $0.006 кэш, $1.20 выход.
+[models.deepseek-fast]
+input_rub = 30
+cache_read_rub = 0.6
+output_rub = 120
+
+# deepseek/deepseek-v4-pro: $1.32 вход, $0.044 кэш, $3.96 выход.
+[models.deepseek-thinking]
+input_rub = 132
+cache_read_rub = 4.4
+output_rub = 396

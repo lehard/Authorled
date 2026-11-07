@@ -8,6 +8,8 @@ from typing import Final, Literal
 from sqlalchemy import Connection, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 
+from core.plans import plans
+from core.subscriptions import start_subscription
 from core.tables import user_settings, users
 
 Theme = Literal["light", "sepia", "dark"]
@@ -50,19 +52,32 @@ def _account(connection: Connection, subject: str) -> Account:
     return Account(id=row.id, email=row.email, display_name=row.display_name, theme=row.theme)
 
 
+def active_user_id(connection: Connection, subject: str) -> uuid.UUID:
+    """The id of the account of the token subject; a missing or deleted account is an error."""
+    row = connection.execute(
+        select(users.c.id, users.c.deleted_at).where(users.c.auth_subject == subject)
+    ).one_or_none()
+    if row is None:
+        raise AccountNotFound(f"No account for subject {subject!r}")
+    if row.deleted_at is not None:
+        raise AccountDeleted(f"Account {row.id} is deleted")
+    return row.id
+
+
 def get_or_create_user(connection: Connection, subject: str, email: str, name: str) -> Account:
     """Return the account of the token subject, creating it with its settings on the first call.
 
     The name of the token is used only on creation; later the user changes it. The e-mail and
     last_seen_at follow every call. Run inside one transaction: concurrent first calls of one
-    subject meet at the unique auth_subject and create one row.
+    subject meet at the unique auth_subject and create one row. A new account gets a subscription to the plan of
+    new accounts with its period from the creation (openspec/specs/api/me).
     """
     inserted = connection.execute(
         insert(users)
         .values(auth_subject=subject, email=email, display_name=name)
         .on_conflict_do_nothing(index_elements=[users.c.auth_subject])
-        .returning(users.c.id)
-    ).scalar_one_or_none()
+        .returning(users.c.id, users.c.created_at)
+    ).one_or_none()
     if inserted is None:
         row = connection.execute(
             select(users.c.id, users.c.email, users.c.deleted_at)
@@ -77,7 +92,8 @@ def get_or_create_user(connection: Connection, subject: str, email: str, name: s
         connection.execute(update(users).where(users.c.id == row.id).values(**changes))
         user_id = row.id
     else:
-        user_id = inserted
+        user_id = inserted.id
+        start_subscription(connection, user_id, plans().signup.code, "granted", inserted.created_at)
     connection.execute(
         insert(user_settings).values(user_id=user_id).on_conflict_do_nothing(index_elements=[user_settings.c.user_id])
     )

@@ -7,7 +7,7 @@ from collections.abc import Iterator
 import pytest
 from sqlalchemy import Connection, Engine, delete, func, select, update
 
-from core.tables import user_settings, users
+from core.tables import subscriptions, usage_records, user_settings, users
 from core.users import AccountDeleted, AccountNotFound, get_or_create_user, update_account
 
 EMAIL = "anna@example.com"
@@ -117,6 +117,8 @@ def subject(engine: Engine) -> Iterator[str]:
     yield subject
     with engine.begin() as connection:
         ids = select(users.c.id).where(users.c.auth_subject == subject).scalar_subquery()
+        connection.execute(delete(usage_records).where(usage_records.c.user_id.in_(ids)))
+        connection.execute(delete(subscriptions).where(subscriptions.c.user_id.in_(ids)))
         connection.execute(delete(user_settings).where(user_settings.c.user_id.in_(ids)))
         connection.execute(delete(users).where(users.c.auth_subject == subject))
 

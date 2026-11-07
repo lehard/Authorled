@@ -7,14 +7,20 @@ import { activeUser } from "@/auth/userManager";
 export const COAUTHOR_ID = "coauthor";
 const OS = "/os";
 
-/** A chat failure the chat shows with its reason. */
+/** A chat failure the chat shows with its reason; a notice (the limit of the period) is not an error. */
 export class ChatError extends Error {
   readonly status: number | null;
+  readonly tone: "error" | "notice";
 
-  constructor(message: string, status: number | null = null) {
+  constructor(
+    message: string,
+    status: number | null = null,
+    tone: "error" | "notice" = "error",
+  ) {
     super(message);
     this.name = "ChatError";
     this.status = status;
+    this.tone = tone;
   }
 }
 
