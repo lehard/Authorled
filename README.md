@@ -57,7 +57,9 @@ cp example.env .env
 
 Open `.env` and fill the Required block: `LITELLM_MASTER_KEY`, `LITELLM_API_KEY`,
 `DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`, `SBER500_API_BASE`, `SBER500_API_KEY`, `EMBEDDINGS_MODEL` and `AGENTOS_DB_PASSWORD` (password
-of the database role `agentos` the API connects with), and the block of the
+of the database role `agentos` the API connects with), the `TOCHKA_*` settings of payments (the sandbox of Tochka is
+filled in; choose `TOCHKA_TAX_SYSTEM`, `TOCHKA_VAT_TYPE` and `TOCHKA_PAYMENT_METHOD`, see
+[Payments through Tochka](#payments-through-tochka)), and the block of the
 [auth module](#module-auth): `AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`,
 `AUTHENTIK_BOOTSTRAP_EMAIL`, `AUTHENTIK_BOOTSTRAP_PASSWORD`, `AUTH_FRONTEND_CLIENT_ID`,
 `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_DEV_SERVICE_TOKEN`, `AUTH_BRAND_DOMAIN`, `AUTH_ALLOWED_EMAILS` and `AUTH_ISSUER`. The CA bundle for
@@ -232,7 +234,8 @@ to port 8000 on your host. Use a reverse proxy on the host or an HTTPS tunnel.
 
 Production Compose reads `.env`. Fill the Required block (`LITELLM_MASTER_KEY`,
 `LITELLM_API_KEY`, `DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`, `SBER500_API_BASE`,
-`SBER500_API_KEY`, `EMBEDDINGS_MODEL`),
+`SBER500_API_KEY`, `EMBEDDINGS_MODEL`, the `TOCHKA_*` settings of
+[Payments through Tochka](#payments-through-tochka)),
 place `agno/litellm/certs/ca-bundle.pem`, and set `AGENTOS_URL` to your public HTTPS URL,
 a strong `DB_PASS` (password of the bootstrap superuser of PostgreSQL, used only by the init
 services and administration), a strong `AGENTOS_DB_PASSWORD` (the role `agentos` the API
@@ -468,7 +471,36 @@ in the running API container:
 ```
 
 `local` instead of `prod` runs the same commands on the local stand. A new plan or price is a change of the data file
-and a release; there are no limits of individual users.
+and a release; there are no limits of individual users. `report` also shows the source of the subscription and the
+end of a paid period; it asks Tochka about a paid period that is over, like the page «Тариф».
+
+### Payments through Tochka
+
+Paid plans are sections of `plans.toml` with `purchasable = true`, a price above 0 and `period_months = 1`; the
+release has none until the owner decides them. A user buys one on the page «Тариф» of `/settings`: the core creates a
+monthly subscription with a 54-FZ receipt in the internet acquiring of Tochka (`agno/core/tochka.py`, facts and links
+in `openspec/changes/payments-tochka/design.md`), the user pays on the page of Tochka, and only an operation that the
+API of Tochka returns as `APPROVED` gives or renews the plan. Card data never reaches the server.
+
+The API does not start without the `TOCHKA_*` settings of `.env`: the address (sandbox or production), the JWT key,
+`customerCode`, `merchantId`, the tax system, VAT and payment method of the receipt and the two return pages.
+Development uses the public sandbox of Tochka: its answers are fixed and nothing can be paid there.
+
+To connect production (the owner, in the internet bank of Tochka):
+
+1. Apply for internet acquiring and choose the partner that issues receipts; publish the offer, the privacy policy
+   and the requisites on the site.
+2. Create a JWT key with the permissions `MakeAcquiringOperation`, `ReadAcquiringData`, `ReadCustomerData` and
+   `ManageWebhookData`; put it, `customerCode` (`GET /open-banking/v1.0/customers`, the `Business` entry) and the
+   `merchantId` of the retail point (`GET /acquiring/v1.0/retailers`, status `REG`) into `/etc/authorled/authorled.env`
+   with `TOCHKA_API_URL=https://enter.tochka.com/uapi/`, then release.
+3. Register the notice: `PUT https://enter.tochka.com/uapi/webhook/v1.0/<client_id>` with
+   `{"webhooksList":["acquiringInternetPayment"],"url":"https://coauthor.glavai.ru/api/v1/billing/tochka/webhook"}`
+   (`client_id` is shown next to the key). Tochka sends a test notice and keeps the address only if it answers 200.
+4. Check a real payment, the receipt, a cancellation and a monthly charge (`tmp/VERIFY.md`, «Не проверено без
+   настоящей Точки»).
+
+A reissued JWT key changes `client_id`: put the new key into the env file and register the notice again.
 
 ## Module auth
 
@@ -557,6 +589,9 @@ add the others when you need them. Docker Compose reads `.env` for both local an
 | `VITE_DATA_SOURCE` | Data source of the web frontend: `api` (stories in the core) or `fixtures` (sample data in page memory); required by the frontend. |
 | `AUTH_ISSUER` | Issuer of the tokens: the address clients use to reach Authentik plus `/application/o/authorled/` (required). |
 | `JWT_JWKS_FILE` | Public keys of Authentik, the only source of token verification keys. Compose writes the file at start and sets the path; set it yourself when the API or `python -m evals` runs on the host (`dev.sh api` does for the API). |
+| `TOCHKA_API_URL`, `TOCHKA_JWT`, `TOCHKA_CUSTOMER_CODE`, `TOCHKA_MERCHANT_ID` | Internet acquiring of Tochka: the sandbox `https://enter.tochka.com/sandbox/v2/` or production `https://enter.tochka.com/uapi/`, its JWT key, the 9-character `customerCode` and the 15-digit `merchantId` (required by the API; see [Payments through Tochka](#payments-through-tochka)). |
+| `TOCHKA_TAX_SYSTEM`, `TOCHKA_VAT_TYPE`, `TOCHKA_PAYMENT_METHOD` | Receipt of the sole proprietor: tax system (`osn`, `usn_income`, `usn_income_outcome`, `esn`, `patent`), VAT (`none` or a rate of Tochka) and payment method (`full_prepayment`, `full_payment`); required, no default. |
+| `TOCHKA_REDIRECT_URL`, `TOCHKA_FAIL_REDIRECT_URL` | Pages the buyer returns to after paying, `https` only: `/settings/billing/return` and `/settings/billing/fail` of the site (required). |
 | `CLAMAV_HOST`, `CLAMAV_PORT` | Address of the antivirus that checks uploaded files (required by the API). Compose sets `clamav:3310`, `./scripts/dev.sh` sets `127.0.0.1:3310`; set them yourself for other host processes such as `python -m evals`. |
 | `AGENTOS_URL` | Public URL used by scheduled jobs and MCP. Set it to your public HTTPS URL. |
 | `MCP_CONNECT_SECRET` | Connect browser MCP clients. Generate it before deployment. |

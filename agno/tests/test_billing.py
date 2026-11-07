@@ -568,3 +568,23 @@ def test_two_confirmations_wait_for_each_other(engine: Engine, committed_user: t
     with engine.begin() as connection:
         assert confirm_operation(connection, operation_id, tochka) == 0
         assert len(_payments(connection, user_id)) == 1
+
+
+# The administrator's report
+
+
+def test_report_settles_and_shows_the_source(connection: Connection, tochka: FakeTochka) -> None:
+    from core.billing import settled_subscription
+    from core.usage import report
+
+    user_id, operation_id = _paid(connection, tochka)
+    email = connection.execute(select(users.c.email).where(users.c.id == user_id)).scalar_one()
+
+    def read(c: Connection, who: uuid.UUID, at: datetime):  # type: ignore[no-untyped-def]
+        return settled_subscription(c, who, at, tochka)
+
+    (row,) = [row for row in report(connection, _at(1, 10), read) if row.email == email]
+    assert (row.plan, row.source, row.period_end) == ("pro", "tochka", _at(2, 5))
+    tochka.fail_charges(operation_id)
+    (row,) = [row for row in report(connection, _at(2, 10), read) if row.email == email]
+    assert (row.plan, row.source) == ("beta", "granted")

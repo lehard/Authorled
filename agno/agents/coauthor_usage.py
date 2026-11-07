@@ -7,6 +7,8 @@ Agno 3.1.10 logs and swallows any exception of a hook except InputCheckError and
 letting it go without a limit, and a failed record ends the run with an error instead of a line in the log.
 Agno does not call post-hooks of failed or cancelled runs; the pre-hook writes such runs of the conversation
 when the author writes into it again.
+A paid subscription whose period is over is settled with Tochka first (core/billing.py): renewed by a charge, or moved
+to the plan of new accounts, so the author keeps working without opening the page «Тариф».
 """
 
 from dataclasses import dataclass
@@ -21,9 +23,12 @@ from agno.session import AgentSession
 from agno.utils.log import log_exception
 
 from app.auth import run_principal
+from core.billing import settled_subscription
 from core.engine import get_engine
 from core.subscriptions import SubscriptionEnded
+from core.tochka import TochkaClient, connect, tochka_settings
 from core.usage import LimitReached, ModelUsage, NoTokens, RunUsage, check_limit, record_run, recorded_run_ids
+from core.users import active_user_id
 
 LIMIT_REACHED = "usage_limit_reached"
 CHECK_FAILED = "usage_check_failed"
@@ -117,13 +122,19 @@ def _earlier_runs(session: AgentSession, subject: str, run_id: str | None) -> li
     return found
 
 
+def tochka_client() -> TochkaClient:
+    """The client of Tochka for one hook call; it sends nothing unless a paid period is over. Tests replace it."""
+    return connect(tochka_settings())
+
+
 def check_usage_limit(run_context: RunContext, session: AgentSession) -> None:
     """Pre-hook: write the unrecorded finished runs of this conversation, then refuse the run over the limit."""
     reached: LimitReached | None = None
     try:
         subject = run_principal(run_context).user_id
         now = datetime.now(UTC)
-        with get_engine().begin() as connection:
+        with get_engine().begin() as connection, tochka_client() as tochka:
+            settled_subscription(connection, active_user_id(connection, subject), now, tochka)
             earlier = _earlier_runs(session, subject, run_context.run_id)
             known = recorded_run_ids(connection, [usage.run_id for usage in earlier])
             for usage in earlier:
@@ -169,8 +180,10 @@ def record_usage(run_output: RunOutput, run_context: RunContext) -> None:
         usage = run_usage(run_output, "completed")
         if usage is None:
             raise NoTokens(f"Run {run_output.run_id} finished without token counts")
-        with get_engine().begin() as connection:
-            record_run(connection, run_principal(run_context).user_id, usage, datetime.now(UTC))
+        subject, now = run_principal(run_context).user_id, datetime.now(UTC)
+        with get_engine().begin() as connection, tochka_client() as tochka:
+            settled_subscription(connection, active_user_id(connection, subject), now, tochka)
+            record_run(connection, subject, usage, now)
     except Exception as error:
         log_exception(f"Usage record of run {run_output.run_id} failed: {type(error).__name__}: {error}")
         raise OutputCheckError(

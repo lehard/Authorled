@@ -83,6 +83,12 @@ class FakeTochka:
         self.unavailable = False
         self._orders = itertools.count(1)
 
+    def __enter__(self) -> FakeTochka:
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        return None
+
     def _check(self) -> None:
         if self.unavailable:
             raise TochkaUnavailable("Точка недоступна: ConnectError.")

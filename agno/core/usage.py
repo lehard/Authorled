@@ -5,6 +5,7 @@ Spending of a period is the sum of `cost_rub` of the subscription's rows that st
 """
 
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
@@ -139,6 +140,8 @@ def check_limit(connection: Connection, subject: str, now: datetime) -> Allowanc
 class ReportRow:
     email: str
     plan: str
+    # granted, or tochka: paid until period_end.
+    source: str
     period_start: datetime
     period_end: datetime
     runs: int
@@ -152,17 +155,22 @@ class ReportRow:
     provider_cost_usd: Decimal | None
 
 
-def report(connection: Connection, now: datetime) -> list[ReportRow]:
+SubscriptionReader = Callable[[Connection, uuid.UUID, datetime], Subscription]
+
+
+def report(connection: Connection, now: datetime, read: SubscriptionReader) -> list[ReportRow]:
     """Spending of every account outside the trash in its current period, by e-mail.
 
-    Reading the current subscription moves an ended granted period forward, as a run of the co-author would.
+    `read` gives the current subscription as a run of the co-author would see it: it moves an ended granted period
+    forward, and the administrator's command passes the reading that settles an ended paid period with Tochka
+    (core/billing.py, which builds on this module).
     """
     accounts = connection.execute(
         select(users.c.id, users.c.email).where(users.c.deleted_at.is_(None)).order_by(users.c.email, users.c.id)
     ).all()
     rows = []
     for account in accounts:
-        subscription = current_subscription(connection, account.id, now)
+        subscription = read(connection, account.id, now)
         plan = plans().get(subscription.plan)
         totals = connection.execute(
             select(
@@ -179,6 +187,7 @@ def report(connection: Connection, now: datetime) -> list[ReportRow]:
             ReportRow(
                 email=account.email,
                 plan=plan.code,
+                source=subscription.source,
                 period_start=subscription.period_start,
                 period_end=subscription.period_end,
                 runs=totals[0],

@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 
 from app.auth import MissingIdentityClaim
 from core.errors import Conflict, Forbidden, Invalid, NotFound, PreconditionRequired, ScannerUnavailable, TooLarge
+from core.tochka import TochkaError, TochkaUnavailable
 from core.users import AccountDeleted, AccountNotFound
 
 PROBLEM_JSON = "application/problem+json"
@@ -55,6 +56,9 @@ _CORE: dict[type[Exception], tuple[int, str]] = {
     Forbidden: (403, "Forbidden"),
     TooLarge: (413, "Content Too Large"),
     ScannerUnavailable: (503, "Service Unavailable"),
+    # Tochka did not answer, or refused: the payment page and the plan stay as they were.
+    TochkaUnavailable: (503, "Service Unavailable"),
+    TochkaError: (502, "Bad Gateway"),
 }
 
 

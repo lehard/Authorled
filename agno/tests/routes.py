@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, delete, select
 
 from app.api import attach_api
-from core.tables import projects, subscriptions, usage_records, user_settings, users
+from core.tables import billing_checkouts, payments, projects, subscriptions, usage_records, user_settings, users
 
 PROBLEM = "application/problem+json"
 
@@ -95,6 +95,8 @@ def authors(client: TestClient, engine: Engine) -> Iterator[Any]:
         ids = select(users.c.id).where(users.c.auth_subject.in_(made)).scalar_subquery()
         connection.execute(delete(projects).where(projects.c.owner_id.in_(ids)))
         connection.execute(delete(usage_records).where(usage_records.c.user_id.in_(ids)))
+        connection.execute(delete(payments).where(payments.c.user_id.in_(ids)))
+        connection.execute(delete(billing_checkouts).where(billing_checkouts.c.user_id.in_(ids)))
         connection.execute(delete(subscriptions).where(subscriptions.c.user_id.in_(ids)))
         connection.execute(delete(user_settings).where(user_settings.c.user_id.in_(ids)))
         connection.execute(delete(users).where(users.c.auth_subject.in_(made)))

@@ -9,14 +9,17 @@ import sys
 from datetime import UTC, datetime
 from decimal import Decimal
 
+from core.billing import settled_subscription
 from core.engine import get_engine
 from core.plans import UnknownPlan
 from core.subscriptions import NoSubscription, set_plan
+from core.tochka import connect, tochka_settings
 from core.usage import ReportRow, report, user_id_by_email
 
 _COLUMNS = (
     "почта",
     "тариф",
+    "оплачено до",
     "период (UTC)",
     "запросы",
     "вход",
@@ -37,6 +40,7 @@ def _cells(row: ReportRow) -> tuple[str, ...]:
     return (
         row.email,
         row.plan,
+        f"{row.period_end:%Y-%m-%d %H:%M}" if row.source == "tochka" else "—",
         f"{row.period_start:%Y-%m-%d %H:%M} — {row.period_end:%Y-%m-%d %H:%M}",
         str(row.runs),
         str(row.input_tokens),
@@ -67,8 +71,9 @@ def main(argv: list[str]) -> int:
 
     now = datetime.now(UTC)
     if args.command == "report":
-        with get_engine().begin() as connection:
-            rows = report(connection, now)
+        # An ended paid period is settled with Tochka first, as the page «Тариф» would do.
+        with get_engine().begin() as connection, connect(tochka_settings()) as tochka:
+            rows = report(connection, now, lambda c, user_id, at: settled_subscription(c, user_id, at, tochka))
         print_report(rows)
         return 0
     try:

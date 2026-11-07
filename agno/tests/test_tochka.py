@@ -508,3 +508,15 @@ def test_notice_keeps_no_card_data() -> None:
     notice = read_notice(DOC_NOTICE, webhook_key())
     shown = repr(notice)
     assert "4080" not in shown and "MIR" not in shown and "tokenCardId" not in shown
+
+
+def test_main_checks_tochka_at_startup() -> None:
+    """The API stops at startup without the settings of Tochka, with a plan for sale that does not fit, or without
+    the key of the notices (openspec/specs/integrations, «Обязательные настройки Точки»)."""
+    import ast
+
+    main = ast.parse((Path(__file__).resolve().parents[1] / "app" / "main.py").read_text())
+    called = {
+        ast.unparse(node.value) for node in main.body if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call)
+    }
+    assert {"connect(tochka_settings()).close()", "check_plans()", "webhook_key()"} <= called

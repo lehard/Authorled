@@ -18,8 +18,10 @@ from app.interfaces import attach_interfaces, mcp_auth
 from app.paths import REPO_ROOT
 from app.registry import registry, shared_knowledge, shared_learning
 from app.settings import manager_model
+from core.billing import check_plans
 from core.clamav import scanner_address
 from core.projects import ProjectAccess
+from core.tochka import connect, tochka_settings, webhook_key
 from db import get_postgres_db
 
 
@@ -65,6 +67,11 @@ agent_os = AgentOS(
 attach_interfaces(agent_os)
 # Every uploaded file goes through the antivirus: no address, no API (openspec/specs/runtime).
 scanner_address()
+# Payments go through the internet acquiring of Tochka: no settings, no API; plans for sale must fit a monthly
+# subscription of Tochka, and the key of its notices must load (openspec/specs/integrations).
+connect(tochka_settings()).close()
+check_plans()
+webhook_key()
 # Who may open a story: the product core answers for the auth module (only the owner).
 set_project_access_source(ProjectAccess())
 app = agent_os.get_app()

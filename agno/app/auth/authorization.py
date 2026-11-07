@@ -25,6 +25,10 @@ _USER_SCOPES = (
 # would open the platform agents (OS Manager, claude-engineer) that run commands on the server.
 _AUTHOR_SCOPES = (*_USER_SCOPES, "agents:coauthor:run")
 
+# Routes reached without a token of a user. Only the notices of Tochka: their body is signed by Tochka and the
+# core confirms every operation by asking Tochka (openspec/specs/api/billing, «Уведомления Точки»).
+PUBLIC_ROUTES = ("/api/v1/billing/tochka/webhook",)
+
 GROUP_SCOPES: dict[str, tuple[str, ...]] = {
     "admins": ("agent_os:admin",),
     "editors": _AUTHOR_SCOPES,
@@ -58,6 +62,7 @@ def build_authorization(db: BaseDb) -> Authorization:
         audience=_required_env("AUTH_FRONTEND_CLIENT_ID"),
         verify_audience=True,
         roles_claim="groups",
+        excluded_route_paths=list(PUBLIC_ROUTES),
     )
     # The code owns role scopes: a change here replaces what is stored on the next start.
     for group, scopes in GROUP_SCOPES.items():

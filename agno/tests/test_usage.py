@@ -16,7 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from admin.__main__ import main as admin_main
 from core import plans as plans_module
 from core.plans import UnknownModel
-from core.subscriptions import NoSubscription, set_plan, start_subscription
+from core.subscriptions import NoSubscription, current_subscription, set_plan, start_subscription
 from core.tables import subscriptions, usage_records, users
 from core.usage import (
     LimitReached,
@@ -172,8 +172,8 @@ def test_report(connection: Connection) -> None:
     record_run(connection, subject, _run(), NOW)
     record_run(connection, subject, _run(), NOW)
     record_run(connection, subject, _run(occurred_at=START - timedelta(days=1)), NOW)
-    (row,) = [row for row in report(connection, NOW) if row.email == "report@example.com"]
-    assert (row.plan, row.runs, row.period_start) == ("beta", 2, START)
+    (row,) = [row for row in report(connection, NOW, current_subscription) if row.email == "report@example.com"]
+    assert (row.plan, row.source, row.runs, row.period_start) == ("beta", "granted", 2, START)
     assert (row.input_tokens, row.cache_read_tokens, row.output_tokens) == (20_000, 8_000, 4_000)
     assert row.spent_rub == Decimal("0.8448")
     assert row.remaining_rub == Decimal(500) - Decimal("0.8448")

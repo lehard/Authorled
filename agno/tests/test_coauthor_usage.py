@@ -3,7 +3,7 @@
 
 import uuid
 from collections.abc import Callable, Iterator
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import Any
 
@@ -27,11 +27,24 @@ from agents.coauthor_usage import (
     limit_message,
     record_usage,
 )
+from core.billing import cancel, checkout, confirm_operation
 from core.subscriptions import Subscription, SubscriptionEnded, start_subscription
-from core.tables import subscriptions, usage_records, user_settings, users
+from core.tables import billing_checkouts, payments, subscriptions, usage_records, user_settings, users
+from core.tochka import TochkaUnavailable
 from core.usage import ModelUsage, RunUsage, record_run
+from tests.billing_fake import FakeTochka, paid_plans
+
+__all__ = ["paid_plans"]
 
 SESSION = "p:d:c"
+
+
+@pytest.fixture(autouse=True)
+def tochka(monkeypatch: pytest.MonkeyPatch) -> FakeTochka:
+    """Tochka of the hooks; it is asked only when a paid period is over."""
+    fake = FakeTochka()
+    monkeypatch.setattr("agents.coauthor_usage.tochka_client", lambda: fake)
+    return fake
 
 
 @pytest.fixture
@@ -55,6 +68,8 @@ def author(engine: Engine) -> Iterator[Callable[[], str]]:
     with engine.begin() as connection:
         ids = select(users.c.id).where(users.c.auth_subject.in_(made)).scalar_subquery()
         connection.execute(delete(usage_records).where(usage_records.c.user_id.in_(ids)))
+        connection.execute(delete(payments).where(payments.c.user_id.in_(ids)))
+        connection.execute(delete(billing_checkouts).where(billing_checkouts.c.user_id.in_(ids)))
         connection.execute(delete(subscriptions).where(subscriptions.c.user_id.in_(ids)))
         connection.execute(delete(user_settings).where(user_settings.c.user_id.in_(ids)))
         connection.execute(delete(users).where(users.c.auth_subject.in_(made)))
@@ -247,3 +262,54 @@ def test_pre_hook_names_an_ended_subscription(engine: Engine, author: Callable[[
         "period_end": row.period_end.isoformat(),
     }
     assert refused.value.__cause__ is ended
+
+
+def _paid_and_cancelled(engine: Engine, subject: str, tochka: FakeTochka, paid_at: datetime) -> None:
+    """The author bought `pro` at `paid_at` and cancelled it."""
+    with engine.begin() as connection:
+        user_id = connection.execute(select(users.c.id).where(users.c.auth_subject == subject)).scalar_one()
+        checkout(connection, user_id, "pro", paid_at, tochka)
+        operation_id = connection.execute(
+            select(billing_checkouts.c.operation_id).where(billing_checkouts.c.user_id == user_id)
+        ).scalar_one()
+        tochka.charge(operation_id, paid_at)
+        confirm_operation(connection, operation_id, tochka)
+        cancel(connection, user_id, paid_at, tochka)
+
+
+@pytest.mark.usefixtures("paid_plans")
+def test_pre_hook_moves_an_ended_paid_subscription_to_the_signup_plan(
+    engine: Engine, author: Callable[[], str], tochka: FakeTochka
+) -> None:
+    """After the end of a cancelled paid period the author works on the plan of new accounts at once."""
+    subject = author()
+    _paid_and_cancelled(engine, subject, tochka, datetime.now(UTC) - timedelta(days=40))
+    check_usage_limit(_context(subject), AgentSession(session_id=SESSION, user_id=subject, runs=[]))
+    with engine.begin() as connection:
+        ids = select(users.c.id).where(users.c.auth_subject == subject).scalar_subquery()
+        active = connection.execute(
+            select(subscriptions).where(subscriptions.c.user_id.in_(ids), subscriptions.c.status == "active")
+        ).one()
+    assert (active.plan, active.source) == ("beta", "granted")
+    assert active.period_start <= datetime.now(UTC) < active.period_end
+
+
+@pytest.mark.usefixtures("paid_plans")
+def test_pre_hook_refuses_when_tochka_is_down_at_the_end(
+    engine: Engine, author: Callable[[], str], tochka: FakeTochka
+) -> None:
+    subject = author()
+    with engine.begin() as connection:
+        user_id = connection.execute(select(users.c.id).where(users.c.auth_subject == subject)).scalar_one()
+        paid_at = datetime.now(UTC) - timedelta(days=40)
+        checkout(connection, user_id, "pro", paid_at, tochka)
+        operation_id = connection.execute(
+            select(billing_checkouts.c.operation_id).where(billing_checkouts.c.user_id == user_id)
+        ).scalar_one()
+        tochka.charge(operation_id, paid_at)
+        confirm_operation(connection, operation_id, tochka)
+    tochka.unavailable = True
+    with pytest.raises(InputCheckError) as refused:
+        check_usage_limit(_context(subject), AgentSession(session_id=SESSION, user_id=subject, runs=[]))
+    assert refused.value.additional_data == {"reason": CHECK_FAILED}
+    assert isinstance(refused.value.__cause__, TochkaUnavailable)
