@@ -453,6 +453,23 @@ them automatically. When you upload a file, pass the reader explicitly: `reader_
 `chunker` with `chunk_size=1200`. Without it, Agno 3.1.10 reads the file with its default
 reader and 5000-character chunks, which exceed that limit.
 
+### Spending and plans
+
+Every run of the co-author is checked against the limit of the user's subscription before the model is called and
+written to the usage journal of the core after it (`authorled.usage_records`, costs in rubles by
+[agno/core/model_prices.toml](agno/core/model_prices.toml)). Plans are data in [agno/core/plans.toml](agno/core/plans.toml):
+new accounts get `beta` (free, a month from sign-up, 500 ₽ a period, renews by itself). A broken data file or a
+co-author model without a price stops the API at startup. The administrator reads the spending and changes plans
+in the running API container:
+
+```sh
+./scripts/usage.sh prod report                       # on the server, from /srv/authorled/app
+./scripts/usage.sh prod set-plan anna@example.com beta
+```
+
+`local` instead of `prod` runs the same commands on the local stand. A new plan or price is a change of the data file
+and a release; there are no limits of individual users.
+
 ## Module auth
 
 Authentication and authorization are a module of this repository: [Authentik](https://goauthentik.io)

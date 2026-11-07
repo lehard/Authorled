@@ -81,6 +81,14 @@ type Props = {
   onClose?: () => void;
 };
 
+/** The reason the backend put into the data of a refused run (agents/coauthor_usage.py). */
+function limitReason(rawEvent: unknown): unknown {
+  if (typeof rawEvent !== "object" || rawEvent === null) return undefined;
+  const data = (rawEvent as { additional_data?: unknown }).additional_data;
+  if (typeof data !== "object" || data === null) return undefined;
+  return (data as { reason?: unknown }).reason;
+}
+
 function textOf(m: Message): string {
   return typeof m.content === "string" ? m.content : "";
 }
@@ -104,7 +112,10 @@ export function CoauthorChat({
     ],
   });
   const [draft, setDraft] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{
+    text: string;
+    tone: "error" | "notice";
+  } | null>(null);
   const [view, setView] = useState<"messages" | "history">("messages");
   const [history, setHistory] = useState<Conversation[] | null>(null);
   const feed = useRef<HTMLDivElement>(null);
@@ -148,9 +159,14 @@ export function CoauthorChat({
         failure = error;
       },
       onRunErrorEvent: ({ event }) => {
-        failure = new ChatError(
-          `Соавтор не смог ответить: ${event.message}. Попробуйте ещё раз.`,
-        );
+        // The limit of the period is not a failure: the backend's message is shown as it is
+        // (openspec/specs/web/workspace, «Чат с соавтором»).
+        failure =
+          limitReason(event.rawEvent) === "usage_limit_reached"
+            ? new ChatError(event.message, null, "notice")
+            : new ChatError(
+                `Соавтор не смог ответить: ${event.message}. Попробуйте ещё раз.`,
+              );
       },
     });
     try {
@@ -258,7 +274,10 @@ export function CoauthorChat({
         );
         return;
       }
-      setError(e instanceof Error ? e.message : String(e));
+      setError({
+        text: e instanceof Error ? e.message : String(e),
+        tone: e instanceof ChatError ? e.tone : "error",
+      });
       // The question and its files stay in the field, so they can be sent again.
       agent.setMessages(agent.messages.filter((m) => m.id !== id));
       setDraft(question);
@@ -297,7 +316,10 @@ export function CoauthorChat({
     try {
       setHistory(await listConversations(openDraft));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError({
+        text: e instanceof Error ? e.message : String(e),
+        tone: "error",
+      });
       setView("messages");
     }
   }
@@ -310,7 +332,10 @@ export function CoauthorChat({
       switchThread(agent, c.id, loaded);
       setView("messages");
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError({
+        text: e instanceof Error ? e.message : String(e),
+        tone: "error",
+      });
     }
   }
 
@@ -474,10 +499,10 @@ export function CoauthorChat({
           )}
           {error !== null && (
             <p
-              role="alert"
-              className="rounded-xl bg-muted px-3 py-2 text-caption text-destructive"
+              role={error.tone === "error" ? "alert" : "status"}
+              className={`rounded-xl bg-muted px-3 py-2 text-caption ${error.tone === "error" ? "text-destructive" : "text-foreground"}`}
             >
-              {error}
+              {error.text}
             </p>
           )}
         </div>

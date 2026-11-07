@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, delete, func, select, update
 
 from app.api import attach_api
-from core.tables import user_settings, users
+from core.tables import subscriptions, usage_records, user_settings, users
 
 PROBLEM = "application/problem+json"
 
@@ -52,6 +52,8 @@ def subjects(engine: Engine) -> Iterator[list[str]]:
     yield created
     with engine.begin() as connection:
         ids = select(users.c.id).where(users.c.auth_subject.in_(created)).scalar_subquery()
+        connection.execute(delete(usage_records).where(usage_records.c.user_id.in_(ids)))
+        connection.execute(delete(subscriptions).where(subscriptions.c.user_id.in_(ids)))
         connection.execute(delete(user_settings).where(user_settings.c.user_id.in_(ids)))
         connection.execute(delete(users).where(users.c.auth_subject.in_(created)))
 
@@ -86,6 +88,17 @@ def test_repeated_call_returns_the_same_id(client: TestClient, subjects: list[st
     headers = _claims(subjects)
     first = client.get("/api/v1/me", headers=headers).json()
     assert client.get("/api/v1/me", headers=headers).json()["id"] == first["id"]
+
+
+def test_first_call_starts_one_beta_subscription(client: TestClient, subjects: list[str], engine: Engine) -> None:
+    headers = _claims(subjects)
+    user_id = client.get("/api/v1/me", headers=headers).json()["id"]
+    client.get("/api/v1/me", headers=headers)
+    with engine.connect() as connection:
+        rows = connection.execute(select(subscriptions).where(subscriptions.c.user_id == uuid.UUID(user_id))).all()
+        created = connection.execute(select(users.c.created_at).where(users.c.id == uuid.UUID(user_id))).scalar_one()
+    assert [(row.plan, row.source, row.status) for row in rows] == [("beta", "granted", "active")]
+    assert rows[0].period_start == created
 
 
 def test_patch_name_is_trimmed(client: TestClient, subjects: list[str]) -> None:

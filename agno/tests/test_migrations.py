@@ -1,6 +1,7 @@
 """Migrations of schema authorled (openspec/specs/core/database)."""
 
 import uuid
+from datetime import UTC, datetime
 
 from alembic import command
 from alembic.autogenerate import compare_metadata
@@ -13,7 +14,22 @@ from core.documents import create_documents, document_row
 from core.documents import update_document as change
 from core.projects import create_project
 from core.saves import create_point, restore_point, restore_version
-from core.tables import SCHEMA, document_versions, documents, draft_points, metadata, notes, projects, users
+from core.tables import (
+    SCHEMA,
+    document_versions,
+    documents,
+    draft_points,
+    metadata,
+    notes,
+    projects,
+    subscriptions,
+    users,
+)
+
+
+def _drop_subscriptions(connection: Connection) -> None:
+    """Undo 0009 before a test rewinds the schema to an older revision."""
+    connection.execute(text("DROP TABLE authorled.usage_records, authorled.subscriptions"))
 
 
 def _current_revision(engine: Engine) -> str | None:
@@ -68,6 +84,7 @@ def test_drafts_migration_clears_stories_and_keeps_users(engine: Engine, alembic
     head = ScriptDirectory.from_config(alembic_config).get_current_head()
     subject = f"test-{uuid.uuid4()}"
     with engine.begin() as connection:
+        _drop_subscriptions(connection)
         connection.execute(text("DROP TABLE authorled.notes"))
         connection.execute(text("TRUNCATE authorled.document_versions, authorled.draft_points, authorled.draft_opens"))
         connection.execute(
@@ -117,6 +134,7 @@ def test_drafts_migration_clears_stories_and_keeps_users(engine: Engine, alembic
     with engine.begin() as connection:
         assert connection.execute(select(func.count()).select_from(projects)).scalar_one() == 0
         assert connection.execute(select(func.count()).select_from(documents)).scalar_one() == 0
+        connection.execute(delete(subscriptions).where(subscriptions.c.user_id == owner))
         assert connection.execute(delete(users).where(users.c.id == owner)).rowcount == 1
 
 
@@ -159,6 +177,7 @@ def test_script_fields_migration_keeps_stories_and_rollback(engine: Engine, alem
             )
             .returning(document_versions.c.id)
         ).scalars()
+        _drop_subscriptions(connection)
         connection.execute(text("DROP TABLE authorled.notes"))
         connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0006_drafts_and_saves'"))
 
@@ -190,6 +209,7 @@ def test_script_fields_migration_keeps_stories_and_rollback(engine: Engine, alem
         assert change(connection, script, revision, {"fields": {"logline": "После"}}, owner).name == "Сценарий"
 
         connection.execute(delete(projects).where(projects.c.id.in_((project.id, no_parts.id))))
+        connection.execute(delete(subscriptions).where(subscriptions.c.user_id == owner))
         assert connection.execute(delete(users).where(users.c.id == owner)).rowcount == 1
 
 
@@ -203,6 +223,7 @@ def test_notes_migration_keeps_stories(engine: Engine, alembic_config: Config) -
             .returning(users.c.id)
         ).scalar_one()
         story, _, script = create_project(connection, owner, "Маяк")
+        _drop_subscriptions(connection)
         connection.execute(text("DROP TABLE authorled.notes"))
         connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0007_script_fields'"))
 
@@ -211,5 +232,37 @@ def test_notes_migration_keeps_stories(engine: Engine, alembic_config: Config) -
     with engine.begin() as connection:
         assert connection.execute(select(func.count()).select_from(notes)).scalar_one() == 0
         assert document_row(connection, script).project_id == story.id
+        connection.execute(delete(subscriptions).where(subscriptions.c.user_id == owner))
         connection.execute(delete(projects).where(projects.c.id == story.id))
         connection.execute(delete(users).where(users.c.id == owner))
+
+
+def test_subscriptions_migration_gives_users_beta(engine: Engine, alembic_config: Config) -> None:
+    """Applied from 0008: every user outside the trash gets beta with the first period from the creation."""
+    subject, gone = f"test-{uuid.uuid4()}", f"test-{uuid.uuid4()}"
+    created = datetime(2026, 10, 31, 10, tzinfo=UTC)
+    with engine.begin() as connection:
+        _drop_subscriptions(connection)
+        connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0008_notes'"))
+        owner = connection.execute(
+            insert(users)
+            .values(auth_subject=subject, email="old@authorled.test", display_name="Автор", created_at=created)
+            .returning(users.c.id)
+        ).scalar_one()
+        deleted = connection.execute(
+            insert(users)
+            .values(auth_subject=gone, email="gone@authorled.test", display_name="Автор", deleted_at=created)
+            .returning(users.c.id)
+        ).scalar_one()
+
+    command.upgrade(alembic_config, "head")
+
+    with engine.begin() as connection:
+        rows = connection.execute(select(subscriptions).where(subscriptions.c.user_id.in_([owner, deleted]))).all()
+        assert [(row.user_id, row.plan, row.source, row.status) for row in rows] == [
+            (owner, "beta", "granted", "active")
+        ]
+        assert (rows[0].started_at, rows[0].period_start) == (created, created)
+        assert rows[0].period_end == datetime(2026, 11, 30, 10, tzinfo=UTC)
+        connection.execute(delete(subscriptions).where(subscriptions.c.user_id == owner))
+        connection.execute(delete(users).where(users.c.id.in_([owner, deleted])))
