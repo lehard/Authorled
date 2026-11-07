@@ -2,7 +2,7 @@
 
 ## 1. Данные и база
 
-- [x] 1.1 Добавить `agno/core/plans.toml` (тариф `beta`, `signup_plan`) и `agno/core/model_prices.toml` (`deepseek-fast`, `deepseek-thinking` по решению владельца о ценах), `agno/core/plans.py` с проверкой файлов и расчётом стоимости; тесты: формат, пропущенное и лишнее поле, неизвестный тариф и модель, расчёт 0,4224 ₽
+- [x] 1.1 Добавить `agno/core/plans.toml` (тариф `beta`, `signup_plan`) и `agno/core/model_prices.toml` (`deepseek-fast`, `deepseek-thinking`: пиковые цены DeepSeek, утверждены владельцем 2026-11-07), `agno/core/plans.py` с проверкой файлов и расчётом стоимости; тесты: формат, пропущенное и лишнее поле, неизвестный тариф и модель, расчёт 0,4224 ₽
 - [x] 1.2 Описать `subscriptions` и `usage_records` в `agno/core/tables.py`, написать миграцию `0009_subscriptions_usage` с подписками для существующих пользователей; тесты: совпадение с базой, ограничения таблиц, миграция с 0008 на базе с пользователем
 
 ## 2. Подписки и журнал в ядре

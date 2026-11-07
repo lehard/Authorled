@@ -6,7 +6,7 @@
 #   output_rub      выход (вместе с рассуждением)
 #
 # Курс 100 ₽ за доллар, без наценки (владелец, 2026-11-07). Долларовые цены — полный прайс DeepSeek, пиковые часы:
-# https://api-docs.deepseek.com/quick_start/pricing/ (журнал изменений от 2026-10-17).
+# https://api-docs.deepseek.com/quick_start/pricing/ (журнал изменений от 2026-10-17); утверждены владельцем 2026-11-07.
 
 # deepseek/deepseek-flash: $0.30 вход, $0.006 кэш, $1.20 выход.
 [models.deepseek-fast]
