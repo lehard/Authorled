@@ -12,8 +12,10 @@ dependencies = [
   "alembic",
   "anthropic",
   "cel-python",
+  "httpx",
   "openai",
   "parallel-web",
+  "pyjwt[crypto]",
   "python-dotenv",
 ]
 

@@ -122,6 +122,7 @@ httpcore2==2.16.0
     # via httpx2
 httpx==0.28.1
     # via
+    #   agentos-docker (agno/pyproject.toml)
     #   agno
     #   agnoctl
     #   parallel-web
@@ -286,6 +287,7 @@ pygments==2.21.0
     #   rich-rst
 pyjwt==2.15.1
     # via
+    #   agentos-docker (agno/pyproject.toml)
     #   agno
     #   mcp
 pypdf==6.21.2
