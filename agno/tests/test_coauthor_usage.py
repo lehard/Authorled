@@ -247,3 +247,15 @@ def test_pre_hook_names_an_ended_subscription(engine: Engine, author: Callable[[
         "period_end": row.period_end.isoformat(),
     }
     assert refused.value.__cause__ is ended
+
+
+def test_pre_hook_unknown_plan_refuses_and_names_it(engine: Engine, author: Callable[[], str]) -> None:
+    """The log line carries the text of the cause, which names the plan."""
+    subject = author()
+    with engine.begin() as connection:
+        ids = select(users.c.id).where(users.c.auth_subject == subject).scalar_subquery()
+        connection.execute(update(subscriptions).where(subscriptions.c.user_id.in_(ids)).values(plan="old"))
+    with pytest.raises(InputCheckError) as refused:
+        check_usage_limit(_context(subject), AgentSession(session_id=SESSION, user_id=subject, runs=[]))
+    assert refused.value.additional_data == {"reason": CHECK_FAILED}
+    assert "'old'" in str(refused.value.__cause__)

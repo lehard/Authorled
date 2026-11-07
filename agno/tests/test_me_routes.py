@@ -90,6 +90,17 @@ def test_repeated_call_returns_the_same_id(client: TestClient, subjects: list[st
     assert client.get("/api/v1/me", headers=headers).json()["id"] == first["id"]
 
 
+def test_first_call_starts_one_beta_subscription(client: TestClient, subjects: list[str], engine: Engine) -> None:
+    headers = _claims(subjects)
+    user_id = client.get("/api/v1/me", headers=headers).json()["id"]
+    client.get("/api/v1/me", headers=headers)
+    with engine.connect() as connection:
+        rows = connection.execute(select(subscriptions).where(subscriptions.c.user_id == uuid.UUID(user_id))).all()
+        created = connection.execute(select(users.c.created_at).where(users.c.id == uuid.UUID(user_id))).scalar_one()
+    assert [(row.plan, row.source, row.status) for row in rows] == [("beta", "granted", "active")]
+    assert rows[0].period_start == created
+
+
 def test_patch_name_is_trimmed(client: TestClient, subjects: list[str]) -> None:
     headers = _claims(subjects)
     client.get("/api/v1/me", headers=headers)
