@@ -1,6 +1,6 @@
 # Бизнес-интент: `dev.sh` называет сбой `docker compose`, а не «сервис не запущен»
 
-Статус: решения согласованы с владельцем 2026-11-08; ждёт `/opsx:propose`. Владелец: lehard. Обновлено: 2026-11-08.
+Статус: решения согласованы с владельцем 2026-11-08; change `dev-sh-compose-errors` создан 2026-11-08 (`openspec/changes/dev-sh-compose-errors/`), ждёт `/opsx:apply`. Владелец: lehard. Обновлено: 2026-11-08.
 Рамки: спека `runtime` («`scripts/dev.sh`», «Демо-контент»), спека `auth` («Пользователи для разработки»), `openspec/context/07-anti-patterns.md` (п. 26: fallback-и).
 
 ## Why
