@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type DragEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { GrowingTextarea } from "@/design-system";
 import {
   MARK_COLORS,
   scenes,
@@ -319,9 +319,11 @@ function ScenePanel({
         </Field>
         <Field label="Биты" hint="Каждая строка — отдельный бит.">
           {(id) => (
-            <Textarea
+            <GrowingTextarea
+              variant="field"
+              minRows={4}
+              limit="none"
               id={id}
-              rows={4}
               value={beats}
               onChange={(e) => {
                 setBeats(e.target.value);

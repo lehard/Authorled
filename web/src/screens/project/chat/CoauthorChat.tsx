@@ -28,7 +28,7 @@ import { useNavigate } from "react-router";
 
 import { Button } from "@/components/ui/button";
 import { useStoryFiles } from "@/data/files";
-import { InkLoader } from "@/design-system";
+import { GrowingTextarea, InkLoader } from "@/design-system";
 
 import { useProjectData } from "../ProjectContext";
 import { ActionLines } from "./ActionLines";
@@ -648,15 +648,17 @@ export function CoauthorChat({
           >
             <Paperclip />
           </Button>
-          <textarea
-            rows={1}
+          <GrowingTextarea
+            variant="bare"
+            minRows={1}
+            limit={{ screen: 1 / 3 }}
             value={draft}
             placeholder="Напишите соавтору"
             aria-label="Сообщение соавтору"
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={onKeyDown}
             onPaste={onPaste}
-            className="field-sizing-content max-h-40 min-h-6 flex-1 bg-transparent py-1.5 outline-none placeholder:text-muted-foreground"
+            className="min-w-0 flex-1 py-1.5"
           />
           <Button
             size="icon"
