@@ -11,13 +11,13 @@ import {
   DENY,
   decisionOf,
   describeAction,
-  doneOf,
   parseArgs,
   targetRef,
   toolMessages,
   type ToolName,
 } from "./actions";
 import type { Answer, Confirmations } from "./confirmations";
+import { readOutcome } from "./outcome";
 
 // The changing calls of the co-author under its answer (openspec/specs/web/workspace,
 // «Сделанное соавтором в чате») and the card of a call waiting for the author («Подтверждение
@@ -41,17 +41,31 @@ export function Line({
   );
 }
 
-export function Outcome({ content }: { content: string }) {
+export function Outcome({
+  callId,
+  content,
+}: {
+  callId: string;
+  content: string;
+}) {
   const data = useProjectData();
-  const done = doneOf(content);
-  if (done === null) return <Line tone="refused">{content}</Line>;
+  const outcome = readOutcome(content);
+  if (outcome.kind === "refused")
+    return <Line tone="refused">{outcome.text}</Line>;
+  if (outcome.kind === "unreadable") {
+    console.error(
+      `The result of the co-author's call ${callId} is neither done nor a refusal:`,
+      content,
+    );
+    return <Line tone="refused">Не удалось прочитать результат действия</Line>;
+  }
   return (
     <Line tone="done">
       <Link
-        to={docPath(data.draft, targetRef(done.target))}
+        to={docPath(data.draft, targetRef(outcome.target))}
         className="text-foreground underline underline-offset-2 hover:text-ai"
       >
-        {done.done}
+        {outcome.done}
       </Link>
     </Line>
   );
@@ -113,7 +127,7 @@ export function ActionLines({
     const outcome =
       outcomes.get(call.id) ?? answers.find((c) => decisionOf(c) === null);
     if (outcome !== undefined)
-      return <Outcome key={call.id} content={outcome} />;
+      return <Outcome key={call.id} callId={call.id} content={outcome} />;
     const { title, detail } = describeAction(
       call.function.name as ToolName,
       parseArgs(call.function.arguments),
