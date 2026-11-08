@@ -141,3 +141,23 @@ updated: 2026-11-08
 **Решение:** lehard 2026-11-06, при разборе Sudowrite и NovelAI: сохранить на будущее, сейчас не делать.
 **Источник:** [плагины Sudowrite](https://sudowrite.com/features/plugins), [как их создавать](https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/how-do-i-build-plugins/a3iVxJb4UZLKfSxf8BG3mY), [конструктор плагинов](https://sudowrite.com/blog/sudowrite-plugin-builder/).
 **Связано:** запись «Быстрые действия над выделенным» выше.
+
+## Сервер и домен
+
+### Подключение чат-приложений к MCP по OAuth
+**Что:** коннектор Claude или ChatGPT к `https://app.soavtor.app/os/mcp` сейчас не подключается. Agno строит адреса OAuth из `AGENTOS_URL=https://app.soavtor.app/os`, а `/.well-known/...` по RFC 9728 и RFC 8414 стоит сразу после домена. Caddy отправляет на API только `/os/*`, поэтому три шага уходят на фронтенд:
+- метаданные ресурса `/.well-known/oauth-protected-resource/os/mcp` отдают HTML;
+- метаданные сервера авторизации `/.well-known/oauth-authorization-server/os` тоже HTML;
+- форма согласия отправляется на `POST /mcp-auth/consent` и получает 405 (`agno/os/mcp_auth_builtin.py`, путь без префикса).
+
+Рекомендация: отдельный домен `mcp.soavtor.app` целиком на API, без префикса, плюс своя переменная окружения с адресом сервера авторизации MCP без пути. `AGENTOS_URL` с `/os` остаётся для планировщика. Понадобятся запись DNS, блок Caddy и правка `agno/app/interfaces.py` и `agno/app/main.py`. Вариант «три маршрута в Caddy» держится на внутренних путях Agno, поэтому его не берём.
+**Зачем:** владелец сможет работать с сервером из чата Claude или ChatGPT: агенты, задачи Company, инженер. Авторам сценариев не нужно.
+**Решение:** найдено 2026-11-08 при переезде на домен (change `domain-soavtor-app`, проверка 5.4). Было так и на `coauthor.glavai.ru`. Владелец пока не решил, нужен ли MCP.
+**Источник:** разбор в сессии «Почини OAuth-адрес метаданных MCP за прокси» 2026-11-08: запросы к серверу и порядок поиска адресов в MCP SDK (`build_protected_resource_metadata_discovery_urls`, `build_oauth_authorization_server_metadata_discovery_urls`). Документация Agno требует, чтобы `AGENTOS_URL` был «exact public origin».
+**Связано:** `deploy/Caddyfile`, `agno/app/interfaces.py`, спека `api/mcp`, `README.md` (`AGENTOS_URL`).
+
+### Убрать старый адрес coauthor.glavai.ru
+**Что:** после 2027-05-08 удалить из `deploy/Caddyfile` переадресацию `coauthor.glavai.ru` → `app.soavtor.app`, а из зоны `glavai.ru` — записи `coauthor` и `auth.coauthor`, включая записи Resend `resend._domainkey.coauthor`, `send.coauthor` и `rsend.coauthor`. Домен `coauthor.glavai.ru` удалить и в Resend.
+**Зачем:** старые ссылки и закладки за полгода перестанут быть нужны, а лишний домен — это лишний сертификат и записи.
+**Решение:** интент `business-intents/domain-soavtor-app.md`: держать переадресацию не меньше полугода.
+**Связано:** change `domain-soavtor-app`, спека `runtime` («Обратный прокси»).

@@ -1,6 +1,6 @@
 # Бизнес-интент: переезд сервиса на домен soavtor.app
 
-Статус: решения согласованы с владельцем 2026-11-08 (схема адресов — из `product-site`: сайт в корне, сервис и вход на поддоменах; письма с `noreply@soavtor.app`); DNS-записи внесены и домен проверен в Resend 2026-11-08 (см. «Что уже сделано»); предложен change `domain-soavtor-app` (`openspec/changes/domain-soavtor-app/`), ждёт `/opsx:apply`. Владелец: lehard. Обновлено: 2026-11-08.
+Статус: решения согласованы с владельцем 2026-11-08 (схема адресов — из `product-site`: сайт в корне, сервис и вход на поддоменах; письма с `noreply@soavtor.app`); DNS-записи внесены и домен проверен в Resend 2026-11-08 (см. «Что уже сделано»); change `domain-soavtor-app` реализован и выпущен в v0.3.1 2026-11-08 (вход, письма и переадресации проверены на сервере); открыты 5.4 (MCP, перенесено в бэклог) и 5.5 (удаление старого бренда Authentik); не архивирован. Владелец: lehard. Обновлено: 2026-11-08.
 Рамки: мастер-спека `runtime` («Обратный прокси»), `auth` (вход фронтенда, издатель токенов); интент `product-site` (этот интент — его Non-goal «переезд, когда будет домен»); `deploy/Caddyfile`, `auth/blueprints/20-oidc.yaml`, `auth/blueprints/30-authentication-flow.yaml`, `.github/workflows/deploy.yml`.
 
 ## Why
@@ -17,6 +17,7 @@
 2. **Старые адреса.** `coauthor.glavai.ru` постоянно (301) переводит на `https://app.soavtor.app` с тем же путём и параметрами, чтобы старые ссылки и закладки работали. Держим не меньше полугода. Блок `auth.coauthor.glavai.ru` из прокси убирается: адрес входа переадресацией не заменить, у токенов другой издатель.
 3. **Вход.** Издатель токенов `https://auth.soavtor.app/application/o/authorled/`, адреса возврата `https://app.soavtor.app/auth/callback` и `https://app.soavtor.app/login`, cookie Authentik на `.soavtor.app`. Blueprint создаёт бренд для домена `auth.soavtor.app` (бренд ищется по домену). Старый бренд `auth.coauthor.glavai.ru` после проверки удаляется вручную в админке Authentik.
 4. **Письма** уходят с `CoAuthor <noreply@soavtor.app>` через Resend. Домен `coauthor.glavai.ru` в Resend удаляется после проверки письма с нового адреса.
+   Имя отправителя меняется на «Соавтор» следующим релизом, в change `rename-soavtor` (`business-intents/rename-soavtor.md`).
 5. **Настройки, которые меняются** (значения не секретные):
    - сервер, `/etc/authorled/authorled.env`: `AGENTOS_URL`, `AUTH_BRAND_DOMAIN`, `AUTH_ISSUER`, `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_FRONTEND_LOGOUT_URI`, `AUTHENTIK_COOKIE_DOMAIN`, `AUTHENTIK_EMAIL__FROM`;
    - GitHub, окружение `production`: `PUBLIC_URL`, `AUTH_ISSUER`, `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_FRONTEND_LOGOUT_URI`.
