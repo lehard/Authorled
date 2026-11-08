@@ -7,7 +7,7 @@ import time
 from email.message import Message
 from pathlib import Path
 from typing import Any
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 
 import jwt
 import pytest
@@ -97,8 +97,9 @@ def test_verified_token_gives_the_run_its_caller() -> None:
         (_token(_claims(groups=None)), "no valid groups claim"),
         (_token(_claims(email=None)), "no email claim"),
         (_token(_claims(name="  ")), "no name claim"),
+        (_token(_claims(scopes={"agents": "run"})), "invalid scopes claim"),
     ],
-    ids=["signature", "issuer", "audience", "expired", "groups", "email", "name"],
+    ids=["signature", "issuer", "audience", "expired", "groups", "email", "name", "scopes"],
 )
 def test_token_that_fails_is_refused(token: str, reason: str) -> None:
     with pytest.raises(DevCallerError, match=reason):
@@ -154,3 +155,21 @@ def test_refusal_of_authentik_names_it_without_the_secret(monkeypatch: pytest.Mo
     assert "HTTP 400" in text and "invalid_grant" in text
     assert SECRET not in text
     assert error.value.__suppress_context__
+
+
+def test_refusal_with_a_body_that_is_not_json(monkeypatch: pytest.MonkeyPatch) -> None:
+    def refuse(request: Any, timeout: float) -> None:
+        raise HTTPError(request.full_url, 502, "Bad Gateway", Message(), io.BytesIO(b"<html>proxy</html>"))
+
+    monkeypatch.setattr(module, "urlopen", refuse)
+    with pytest.raises(DevCallerError, match="HTTP 502, a body that is not JSON"):
+        dev_writer_caller(FastAPI())
+
+
+def test_unreachable_authentik_is_named(monkeypatch: pytest.MonkeyPatch) -> None:
+    def unreachable(request: Any, timeout: float) -> None:
+        raise URLError(ConnectionRefusedError(61, "Connection refused"))
+
+    monkeypatch.setattr(module, "urlopen", unreachable)
+    with pytest.raises(DevCallerError, match="Cannot reach Authentik at http://localhost:9000/application/o/token/"):
+        dev_writer_caller(FastAPI())

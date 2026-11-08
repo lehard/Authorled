@@ -69,11 +69,14 @@ def verified_caller(app: Any, token: str) -> DevCaller:
     groups = payload.get("groups")
     if not isinstance(groups, list) or not all(isinstance(group, str) for group in groups):
         raise DevCallerError(f"The token of {WRITER} has no valid groups claim")
-    scopes = payload.get("scopes", [])
-    if isinstance(scopes, str):
-        scopes = [scopes]
-    elif not isinstance(scopes, list):
+    # Authentik tokens carry no scopes claim: the scopes of a run come from its groups, as for a request.
+    scopes = payload.get("scopes")
+    if scopes is None:
         scopes = []
+    elif isinstance(scopes, str):
+        scopes = [scopes]
+    elif not isinstance(scopes, list) or not all(isinstance(scope, str) for scope in scopes):
+        raise DevCallerError(f"The token of {WRITER} has an invalid scopes claim")
     identity = Identity(email=_text_claim(payload, "email"), name=_text_claim(payload, "name"))
     authority = restore_authorization(
         app,
@@ -108,12 +111,15 @@ def _writer_token() -> str:
         with urlopen(request, timeout=_TOKEN_TIMEOUT_SECONDS) as response:
             answer = json.load(response)
     except HTTPError as error:
+        raw = error.read()
         try:
-            reason = json.load(error).get("error")
+            refusal = json.loads(raw)
         except ValueError:
-            reason = None
+            reason = f"a body that is not JSON ({len(raw)} bytes)"
+        else:
+            reason = f"error {refusal.get('error')!r}" if isinstance(refusal, dict) else "a JSON body without error"
         raise DevCallerError(
-            f"Authentik at {url} refused a token for {WRITER}: HTTP {error.code}, error {reason!r}; "
+            f"Authentik at {url} refused a token for {WRITER}: HTTP {error.code}, {reason}; "
             "check AUTH_DEV_WRITER_TOKEN and run ./scripts/dev.sh auth-users"
         ) from None
     except (URLError, TimeoutError) as error:
