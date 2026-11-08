@@ -1,7 +1,7 @@
 # Reverse proxy of the production server (openspec/specs/runtime, «Обратный прокси»).
 # /etc/caddy/Caddyfile imports this file; deploy/deploy.sh reloads Caddy on each release.
 
-coauthor.glavai.ru {
+app.soavtor.app {
 	# AgentOS: the frontend reaches it on its own origin under /os/.
 	handle_path /os/* {
 		reverse_proxy 127.0.0.1:8000
@@ -12,7 +12,7 @@ coauthor.glavai.ru {
 	@authentik path /api/v3/flows/executor/* /flows/-/cancel/* /application/o/revoke/*
 	handle @authentik {
 		reverse_proxy 127.0.0.1:9000 {
-			header_up Host auth.coauthor.glavai.ru
+			header_up Host auth.soavtor.app
 		}
 	}
 
@@ -26,6 +26,20 @@ coauthor.glavai.ru {
 	}
 }
 
-auth.coauthor.glavai.ru {
+auth.soavtor.app {
 	reverse_proxy 127.0.0.1:9000
+}
+
+# Temporary (302) until the product site (change product-site) takes the root of the domain.
+soavtor.app {
+	redir https://app.soavtor.app{uri} 302
+}
+
+www.soavtor.app {
+	redir https://soavtor.app{uri} permanent
+}
+
+# The old address of the service: links and bookmarks keep working.
+coauthor.glavai.ru {
+	redir https://app.soavtor.app{uri} permanent
 }
