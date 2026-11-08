@@ -69,6 +69,12 @@ export const paginationPlugin = new Plugin<DecorationSet>({
         }
       }
 
+      // The last page is padded to its full height, also when the breaks stay the same:
+      // typing on the last page changes what is left of it.
+      const padding = `${MARGIN_BOTTOM + Math.max(0, CONTENT_H - accumulated)}px`;
+      if (editorView.dom.style.paddingBottom !== padding)
+        editorView.dom.style.paddingBottom = padding;
+
       const json = JSON.stringify(breaks);
       if (json === lastJson) return;
       lastJson = json;
@@ -96,8 +102,6 @@ export const paginationPlugin = new Plugin<DecorationSet>({
         );
       });
 
-      // The last page is padded to its full height.
-      editorView.dom.style.paddingBottom = `${MARGIN_BOTTOM + Math.max(0, CONTENT_H - accumulated)}px`;
       const tr = state.tr.setMeta(
         paginationKey,
         DecorationSet.create(state.doc, decorations),
@@ -117,11 +121,21 @@ export const paginationPlugin = new Plugin<DecorationSet>({
     requestAnimationFrame(schedule);
     void document.fonts.ready.then(schedule);
 
+    // Heights change without an edit of the document too: suggested text shown in the line,
+    // paragraphs hidden by beats or «only this scene», the width of the continuous sheet. Each
+    // of them changes the height of the sheet, so one observer catches them all
+    // (web/screenplay-editor, «Разрывы страниц по показанным высотам»). The callback only plans
+    // a frame. New breaks and padding change the height again, but the next measure gives the
+    // same breaks: they stand between paragraphs and do not change their heights.
+    const sheet = new ResizeObserver(schedule);
+    sheet.observe(editorView.dom);
+
     return {
       update(view, prevState) {
         if (view.state.doc !== prevState.doc) schedule();
       },
       destroy() {
+        sheet.disconnect();
         if (frame !== null) cancelAnimationFrame(frame);
       },
     };

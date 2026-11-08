@@ -2,8 +2,10 @@
  *
  * The page follows the industry layout at 96 dpi: US Letter 8.5" × 11", 12pt monospace,
  * margins 1.5" left, 1" right, top and bottom. Colours, fonts and shadows are design-system
- * tokens, so the editor follows data-theme on <html>. Narrower than the page, the editor
- * becomes one continuous sheet without page breaks.
+ * tokens, so the editor follows data-theme on <html>. Narrower than the page, the page is shown
+ * whole at a smaller scale (`transform: scale`, down to 60%) with the same geometry; narrower
+ * still, the editor becomes one continuous sheet without page breaks (web/screenplay-editor,
+ * «Масштаб листа»). Print and export are built from the document and never see the scale.
  */
 
 .pw-editor {
@@ -38,6 +40,13 @@
 }
 
 /* --- The page ----------------------------------------------------------- */
+
+/* A scene, a comment or a suggestion scrolled to stays below the sticky toolbar: the editor
+   sets the toolbar's height in `--pw-scroll-top` (web/screenplay-editor, «Каретка ниже панели
+   инструментов»). 0 before the first measure, when nothing has been scrolled to yet. */
+.pw-editor .ProseMirror * {
+  scroll-margin-top: var(--pw-scroll-top, 0px);
+}
 
 .pw-editor .ProseMirror {
   font-family: var(--pw-font);
@@ -275,9 +284,14 @@
   box-shadow: 0 0 0 2px var(--ring);
 }
 
-/* --- Scene numbers ------------------------------------------------------- */
+/* --- Scene numbers ---------------------------------------------------------
+ * The left number is a widget before the text of the heading; the right one is the `::after`
+ * of the heading, from its `data-scene-number`: a widget after the caret of an empty heading
+ * made WebKit lose what was typed (plugins/sceneNumbers.ts).
+ */
 
-.pw-scene-number {
+.pw-scene-number,
+.pw-editor .ProseMirror p.pm-scene-heading[data-scene-number]::after {
   font-weight: bold;
   pointer-events: none;
   user-select: none;
@@ -288,7 +302,8 @@
 .pw-scene-number-left {
   right: calc(100% + 16px);
 }
-.pw-scene-number-right {
+.pw-editor .ProseMirror p.pm-scene-heading[data-scene-number]::after {
+  content: attr(data-scene-number);
   left: calc(var(--pw-content-w) + 16px);
 }
 
@@ -327,9 +342,12 @@
   right: var(--pw-margin-right);
 }
 
-/* --- Placeholders of empty paragraphs ------------------------------------ */
+/* --- Placeholders of empty paragraphs ------------------------------------
+ * An empty scene heading shows it with `::before`: its `::after` is the right scene number.
+ */
 
-.pw-editor .ProseMirror p[data-placeholder]:has(> br:only-child)::after {
+.pw-editor .ProseMirror p[data-placeholder]:has(> br:only-child)::after,
+.pw-editor .ProseMirror p.pw-empty-heading[data-placeholder]::before {
   content: attr(data-placeholder);
   color: var(--pw-muted);
   opacity: 0.6;
@@ -443,71 +461,85 @@
   }
 }
 
-/* --- Narrower than the page: one continuous sheet ------------------------- */
+/* --- Narrower than 60% of the page: one continuous sheet ---------------------
+ * `ScreenplayEditorView` measures the container: from 60% of the page width it scales the page
+ * (class `pw-paged`), below that it sets `pw-continuous` (web/screenplay-editor, «Масштаб листа»).
+ */
 
-@container (max-width: 840px) {
-  .pw-editor .ProseMirror {
-    width: 100%;
-    min-height: 60vh;
-    padding: 40px 32px 56px 48px !important;
-    font-size: 11pt;
-  }
-  .pw-editor .ProseMirror::before,
-  .pw-page-separator,
-  .pw-scene-number {
-    display: none !important;
-  }
-  .pm-scene-heading,
-  .pm-scene-characters,
-  .pm-action,
-  .pm-unformatted,
-  .pm-shot,
-  .pm-inline-note,
-  .pm-beat,
-  .pm-transition,
-  .pm-act,
-  .pm-sequence {
-    width: 100%;
-  }
-  .pm-character {
-    margin-left: 36%;
-    width: 64%;
-  }
-  .pm-dialogue,
-  .pm-lyrics {
-    margin-left: 16%;
-    width: 68%;
-  }
-  .pm-parenthetical {
-    margin-left: 26%;
-    width: 50%;
-  }
+.pw-editor.pw-continuous .ProseMirror {
+  width: 100%;
+  min-height: 60vh;
+  padding: 40px 32px 56px 48px !important;
+  font-size: 11pt;
+}
+.pw-editor.pw-continuous .ProseMirror::before,
+.pw-editor.pw-continuous .pw-page-separator,
+.pw-editor.pw-continuous .pw-scene-number,
+.pw-editor.pw-continuous
+  .ProseMirror
+  p.pm-scene-heading[data-scene-number]::after {
+  display: none !important;
+}
+.pw-editor.pw-continuous
+  :is(
+    .pm-scene-heading,
+    .pm-scene-characters,
+    .pm-action,
+    .pm-unformatted,
+    .pm-shot,
+    .pm-inline-note,
+    .pm-beat,
+    .pm-transition,
+    .pm-act,
+    .pm-sequence
+  ) {
+  width: 100%;
+}
+.pw-editor.pw-continuous .pm-character {
+  margin-left: 36%;
+  width: 64%;
+}
+.pw-editor.pw-continuous :is(.pm-dialogue, .pm-lyrics) {
+  margin-left: 16%;
+  width: 68%;
+}
+.pw-editor.pw-continuous .pm-parenthetical {
+  margin-left: 26%;
+  width: 50%;
 }
 @container (max-width: 560px) {
-  .pw-editor .ProseMirror {
+  .pw-editor.pw-continuous .ProseMirror {
     padding: 28px 18px 48px !important;
   }
-  .pm-character {
+  .pw-editor.pw-continuous .pm-character {
     margin-left: 28%;
     width: 72%;
   }
-  .pm-dialogue,
-  .pm-lyrics {
+  .pw-editor.pw-continuous :is(.pm-dialogue, .pm-lyrics) {
     margin-left: 10%;
     width: 80%;
   }
-  .pm-parenthetical {
+  .pw-editor.pw-continuous .pm-parenthetical {
     margin-left: 18%;
     width: 64%;
   }
-  .pw-bubble-menu {
-    position: fixed;
-    bottom: 8px;
-    left: 8px !important;
-    right: 8px;
-    top: auto !important;
+  .pw-editor.pw-continuous .pw-bubble-menu {
+    max-width: calc(100% - 8px);
     justify-content: center;
     flex-wrap: wrap;
+  }
+  /* A phone or tablet (the narrow window of the story): the menu docks at the bottom of the
+     screen. A narrow middle column of a desktop keeps it over the selection, so it does not
+     cover the navigator and the chat. */
+  @media (max-width: 900px) {
+    .pw-editor.pw-continuous .pw-bubble-menu {
+      position: fixed;
+      bottom: 8px;
+      left: 8px !important;
+      right: 8px;
+      top: auto !important;
+      max-width: none;
+    }
   }
 }
 
@@ -521,4 +553,12 @@
   text-decoration: underline 2px var(--deco-insert);
   text-underline-offset: 0.2em;
   background: color-mix(in oklch, var(--deco-insert) 12%, transparent);
+}
+
+/* --- Gap under a paragraph for a card (web/workspace, «Карточки у текста») ------------ */
+
+.pw-editor .ProseMirror .pw-card-gap {
+  display: block;
+  user-select: none;
+  pointer-events: none;
 }

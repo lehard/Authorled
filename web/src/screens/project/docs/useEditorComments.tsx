@@ -4,7 +4,7 @@ import {
   useInvalidate,
   useUpdate,
 } from "@refinedev/core";
-import { useEffect, useState, type CSSProperties, type RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
 
 import { useComments } from "@/data/hooks";
 import type { CommentThread, NewReply } from "@/data/model";
@@ -15,7 +15,7 @@ import type {
 } from "@/editor/ScreenplayEditor";
 import { ConfirmDialog } from "@/screens/shared/ConfirmDialog";
 
-import { cardPlace } from "./cardPlace";
+import { useCardPlace } from "./cardPlace";
 import { CommentList, ThreadCard } from "./CommentViews";
 
 // Comments on fragments of the screenplay (openspec/specs/web/workspace, «Комментарий к
@@ -45,7 +45,7 @@ export function useEditorComments(
   const [active, setActive] = useState<string | null>(null);
   // The thread being written: its mark is in the text, its record is not yet.
   const [draft, setDraft] = useState<string | null>(null);
-  const [style, setStyle] = useState<CSSProperties>({});
+  const spot = useCardPlace(editor);
   const [quotes, setQuotes] = useState<ReadonlyMap<string, string>>(new Map());
   const [deleting, setDeleting] = useState<CommentThread | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +70,11 @@ export function useEditorComments(
     editor.current.placeComments(JSON.parse(anchors) as SuggestionAnchor[]);
   }, [editor, anchors, readOnly]);
 
+  // A closed card gives its gap back to the text, whichever way it closed.
+  useEffect(() => {
+    if (active === null) spot.release();
+  });
+
   const saved = (id: string) => threads.some((t) => t.id === id);
   const unsavedDraft = draft !== null && !saved(draft) ? draft : null;
   const thread = threads.find((t) => t.id === active) ?? null;
@@ -78,7 +83,7 @@ export function useEditorComments(
     onOpened();
     setError(null);
     setActive(id);
-    setStyle(cardPlace(view().commentAnchor(id)));
+    spot.place(id, view().commentAnchor(id));
   }
 
   function close() {
@@ -178,7 +183,8 @@ export function useEditorComments(
     active === null || (thread === null && active !== unsavedDraft) ? null : (
       <ThreadCard
         key={active}
-        style={style}
+        style={spot.style}
+        onHeight={spot.fit}
         thread={thread}
         readOnly={readOnly}
         quote={quotes.get(active)}

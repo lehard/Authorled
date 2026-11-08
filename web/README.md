@@ -46,6 +46,9 @@ third-party fonts and assets.
   `ScreenplayEditor.tsx` is its React wrapper. It only exports (Fountain, FDX, print); the core
   imports manuscripts. `anchors.ts` puts co-author suggestions in the text by their anchor (scene
   `uid` and the exact words); `plugins/sceneUids.ts` gives every scene heading a lasting `uid`.
+  The page fits the width of its column: narrower than US Letter, it is scaled down to 60%
+  (`transform: scale`) with the same geometry (pages, scene numbers); narrower still, it becomes
+  one continuous sheet.
 - `scripts/check-contrast.ts` — WCAG contrast of token pairs in every theme.
 - `scripts/check-editor.ts` — Tab/Enter, type keys, colour marks, scene `uid`s and suggestion anchors
   of the editor; the export samples the core import tests read (`agno/tests/fixtures/import/all-types.*`)

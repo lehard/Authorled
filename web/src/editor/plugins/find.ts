@@ -145,6 +145,26 @@ export function setFind(meta: FindMeta): Command {
   };
 }
 
+/**
+ * Ends the search: the query is cleared, and the current match, when it is what is selected,
+ * becomes the caret after it, so a closed search leaves no selection behind (the chat would
+ * take it as the author's). A selection of the author's own stays.
+ */
+export function closeFind(): Command {
+  return (state, dispatch) => {
+    if (dispatch) {
+      const find = findState(state);
+      const match = find.matches[find.current];
+      const tr = state.tr.setMeta(findKey, { query: "" });
+      const { from, to } = state.selection;
+      if (match !== undefined && match.from === from && match.to === to)
+        tr.setSelection(TextSelection.create(tr.doc, to));
+      dispatch(tr);
+    }
+    return true;
+  };
+}
+
 /** Replaces the current match. */
 export function replaceCurrent(text: string): Command {
   return (state, dispatch) => {

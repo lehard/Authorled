@@ -53,6 +53,7 @@ import {
   ELEMENTS,
   FIND_SCOPES,
   ScreenplayEditorView,
+  type CardGapPlace,
   type CommentAnchor,
   type EditorMode,
   type EditorSnapshot,
@@ -77,6 +78,9 @@ export type ScreenplayEditorHandle = {
   /** Removes every place of a comment thread from the text, outside undo. */
   removeComment(id: string): void;
   commentAnchor(id: string): CommentAnchor | null;
+  /** A gap under the paragraph of comment or suggestion `id` for its card (web/workspace, «Карточки у текста»). */
+  showCardGap(id: string, height: number): CardGapPlace | null;
+  hideCardGap(id: string): void;
   scrollToComment(id: string): boolean;
   /** Marks open suggestions without a place by their anchors (web/workspace, «Предложение по якорю»). */
   placeSuggestions(anchors: SuggestionAnchor[]): void;
@@ -157,6 +161,7 @@ export function ScreenplayEditor({
   ref?: Ref<ScreenplayEditorHandle>;
 }) {
   const host = useRef<HTMLDivElement>(null);
+  const toolbar = useRef<HTMLDivElement>(null);
   const findInput = useRef<HTMLInputElement>(null);
   const editor = useRef<ScreenplayEditorView | null>(null);
   const [snap, setSnap] = useState<EditorSnapshot | null>(null);
@@ -212,6 +217,20 @@ export function ScreenplayEditor({
       view.destroy();
       editor.current = null;
     };
+  }, []);
+
+  // The toolbar wraps on a narrow column and grows with the find bar: the editor keeps the
+  // scrolled-to line below its current height.
+  useEffect(() => {
+    const view = editor.current;
+    const bar = toolbar.current;
+    if (view === null || bar === null)
+      throw new Error(
+        "ScreenplayEditor: нет редактора или панели инструментов",
+      );
+    const inset = new ResizeObserver(() => view.setTopInset(bar.offsetHeight));
+    inset.observe(bar);
+    return () => inset.disconnect();
   }, []);
 
   useEffect(() => {
@@ -295,6 +314,8 @@ export function ScreenplayEditor({
       goToScene: (number) => view().goToScene(number),
       removeComment: (id) => view().removeComment(id),
       commentAnchor: (id) => view().commentAnchor(id),
+      showCardGap: (id, height) => view().showCardGap(id, height),
+      hideCardGap: (id) => view().hideCardGap(id),
       scrollToComment: (id) => view().scrollToComment(id),
       placeSuggestions: (anchors) => view().placeSuggestions(anchors),
       placeComments: (anchors) => view().placeComments(anchors),
@@ -310,18 +331,24 @@ export function ScreenplayEditor({
 
   function closeFind() {
     setFindOpen(false);
-    editor.current?.find({ query: "" });
+    editor.current?.closeFind();
     editor.current?.focus();
   }
 
   return (
     <TooltipProvider delayDuration={500}>
       <div className="grid gap-3">
-        <div className="sticky top-2 z-10 mx-auto grid w-full max-w-[816px] gap-1 rounded-2xl bg-panel px-1.5 py-1 shadow-panel">
+        {/* Stuck at the very top of the scrolling column: with a gap above, the text scrolled
+            past showed through it. */}
+        <div
+          ref={toolbar}
+          className="sticky top-0 z-10 mx-auto grid w-full max-w-[816px] gap-1 rounded-2xl bg-panel px-1.5 py-1 shadow-panel"
+        >
           <div
             role="toolbar"
             aria-label="Инструменты текста"
-            className="flex min-w-0 items-center gap-0.5"
+            // A narrow column wraps the tools instead of cutting off the paragraph type or «⋯».
+            className="flex min-w-0 flex-wrap items-center gap-0.5"
           >
             <Tool
               icon={Undo2}
@@ -347,7 +374,7 @@ export function ScreenplayEditor({
                       size="sm"
                       disabled={readOnly || element === null}
                       aria-label={`Тип абзаца: ${element === null ? "нет" : ELEMENTS[element].label}`}
-                      className="min-w-0 shrink justify-start gap-1.5 px-2"
+                      className="max-w-full min-w-0 shrink-0 justify-start gap-1.5 px-2"
                     >
                       <Pilcrow className="text-muted-foreground" />
                       <span className="truncate">
@@ -420,12 +447,10 @@ export function ScreenplayEditor({
                 })
               }
             />
-            {(tools !== undefined || menu !== undefined) && (
-              <span className="flex-1" />
-            )}
-            {tools}
-            {menu !== undefined && (
-              <>
+            {/* The review tools and «⋯» stay together at the right and wrap as one group. */}
+            <div className="ml-auto flex shrink-0 items-center gap-0.5">
+              {tools}
+              {menu !== undefined && (
                 <DropdownMenu>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -445,8 +470,8 @@ export function ScreenplayEditor({
                     {menu}
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </>
-            )}
+              )}
+            </div>
           </div>
           {findOpen && snap !== null && (
             <FindBar
@@ -653,7 +678,7 @@ function SuggestList({
     <div
       role="listbox"
       aria-label={list.head}
-      className="absolute z-20 grid w-64 gap-0.5 rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-panel"
+      className="absolute z-20 grid w-72 gap-0.5 rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-panel"
       style={{ left: list.left, top: list.bottom + 4 }}
       // The caret stays in the text: picking with the mouse does not take focus.
       onMouseDown={(e) => e.preventDefault()}

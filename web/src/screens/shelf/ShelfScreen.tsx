@@ -79,10 +79,13 @@ export function ShelfScreen() {
         </h1>
         <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-[repeat(auto-fill,240px)] sm:gap-x-[26px] sm:gap-y-8">
           {projects.map((p) => (
-            <div key={p.id} className="group/card relative grid gap-3.5">
+            <div
+              key={p.id}
+              className="group/card relative grid content-start gap-3.5"
+            >
               <Link
                 to={`/p/${p.id}/text`}
-                className="grid gap-3.5 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="grid content-start gap-3.5 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
               >
                 <span className={p.cover ? "book art" : "book"}>{p.title}</span>
                 <span className="grid gap-0.5 px-0.5">

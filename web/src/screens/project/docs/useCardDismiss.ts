@@ -28,7 +28,16 @@ export function useCardDismiss(
       if (!inside(e.target)) latestClose.current();
     };
     const key = (e: KeyboardEvent) => {
-      if (e.key !== "Escape" || e.defaultPrevented) return;
+      if (e.key !== "Escape") return;
+      // ProseMirror prevents every Escape typed in the text; there it closes the card unless
+      // the list of suggestions is open (that Escape closes the list only).
+      const inText =
+        e.target instanceof Element &&
+        e.target.closest(".ProseMirror") !== null;
+      // The editor's list of suggestions stands next to its host `.pw-editor`.
+      const listOpen =
+        document.querySelector(".pw-editor ~ [role='listbox']") !== null;
+      if (e.defaultPrevented && !(inText && !listOpen)) return;
       if (
         document.querySelector("[role='menu'], [role='alertdialog']") !== null
       )

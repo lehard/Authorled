@@ -42,6 +42,8 @@ export function useAutosave<T extends object>(resource: string, id: string) {
   const [status, setStatus] = useState<SaveStatus>("idle");
   const pending = useRef<Partial<T>>({});
   const timer = useRef<number | null>(null);
+  // Saves sent and not answered yet: «Сохранено» only when none is left and none is waiting.
+  const sending = useRef(0);
   // The edit the core refused, with what was typed after it.
   const conflict = useRef<Partial<T> | null>(null);
 
@@ -50,6 +52,7 @@ export function useAutosave<T extends object>(resource: string, id: string) {
     const values = pending.current;
     pending.current = {};
     setStatus("saving");
+    sending.current += 1;
     try {
       await mutateAsync({
         resource,
@@ -58,8 +61,15 @@ export function useAutosave<T extends object>(resource: string, id: string) {
         successNotification: false,
         errorNotification: false,
       });
-      if (conflict.current === null) setStatus("saved");
+      sending.current -= 1;
+      if (
+        conflict.current === null &&
+        sending.current === 0 &&
+        timer.current === null
+      )
+        setStatus("saved");
     } catch (e) {
+      sending.current -= 1;
       // A save that was already on its way after a conflict joins the waiting edit.
       if (isConflict(e) || conflict.current !== null) {
         if (timer.current !== null) window.clearTimeout(timer.current);
@@ -101,15 +111,22 @@ export function useAutosave<T extends object>(resource: string, id: string) {
     setStatus("idle");
   }, []);
 
-  // Leaving the document saves what was typed instead of dropping it.
+  // Leaving the document (or the record) saves what was typed instead of dropping it. Keyed
+  // on the record, not on `flush`: Refine's `mutateAsync` is a new function on every render,
+  // and a cleanup keyed on it sent every keystroke at once. The cleanup reads the `flush` of
+  // the record being left: effect cleanups of a commit run before its effects update the ref.
+  const flushLatest = useRef(flush);
+  useEffect(() => {
+    flushLatest.current = flush;
+  });
   useEffect(
     () => () => {
       if (timer.current !== null) {
         window.clearTimeout(timer.current);
-        void flush();
+        void flushLatest.current();
       }
     },
-    [flush],
+    [resource, id],
   );
 
   return { save, status, discard };

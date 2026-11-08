@@ -29,6 +29,7 @@ import {
   type EntityKind,
   type ScriptPart,
 } from "@/data/model";
+import { TruncatedText } from "@/design-system";
 import { scenes, screenTime } from "@/editor/document.ts";
 import {
   castFromText,
@@ -283,7 +284,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
     const item = (
       <>
         <row.icon className="size-4 shrink-0" />
-        <span className="min-w-0 flex-1 truncate">{row.label}</span>
+        <TruncatedText className="min-w-0 flex-1">{row.label}</TruncatedText>
         {row.count !== undefined && row.count > 0 && (
           <span className="text-xs text-muted-foreground">{row.count}</span>
         )}
@@ -384,9 +385,9 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
           aria-hidden
         />
         <span className="min-w-0">
-          <b className="font-heading block truncate text-lg leading-tight font-semibold">
+          <TruncatedText className="font-heading block text-lg leading-tight font-semibold">
             {project.title}
-          </b>
+          </TruncatedText>
           <small className="text-caption text-muted-foreground">
             полный метр
           </small>
@@ -567,14 +568,14 @@ function SceneList({
                   />
                 )}
                 <span className="flex items-baseline gap-2">
-                  <span className="min-w-0 flex-1 truncate font-medium">
+                  <TruncatedText className="min-w-0 flex-1 font-medium">
                     {s.number}.{" "}
                     {s.params.alt !== ""
                       ? s.params.alt
                       : s.heading.trim() === ""
                         ? "Без заголовка"
                         : s.heading}
-                  </span>
+                  </TruncatedText>
                   <time className="text-xs text-muted-foreground tabular-nums">
                     {screenTime(s.chars)}
                   </time>
