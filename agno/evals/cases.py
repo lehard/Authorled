@@ -4,6 +4,7 @@ from agno.eval import Case
 
 from agents.coauthor import coauthor
 from app.main import agent_os
+from evals.caller import writer_setup, writer_teardown
 
 CASES = (
     Case(
@@ -39,7 +40,8 @@ CASES = (
         expected_tool_calls=("read_file",),
         tags=("smoke",),
     ),
-    # The chat appends the AG-UI context to the question in this form (agno AG-UI interface).
+    # The chat appends the AG-UI context to the question in this form (agno AG-UI interface). The case runs as the
+    # verified development user writer, like a run of the chat (evals/caller.py).
     Case(
         name="coauthor_uses_context",
         agent=coauthor,
@@ -50,5 +52,7 @@ CASES = (
         criteria="Отвечает по-русски, что Вера боится, что Аня узнает правду и уйдёт; опирается на "
         "присланный профиль и не выдумывает других страхов как факт; не утверждает, что изменил текст.",
         tags=("coauthor",),
+        setup=writer_setup,
+        teardown=writer_teardown,
     ),
 )

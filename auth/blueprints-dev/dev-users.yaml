@@ -2,12 +2,14 @@
 # Not under /blueprints, so Authentik never applies this file by itself; ./scripts/dev.sh
 # auth-users applies it with AUTH_DEV_USER_PASSWORD from .env and then gives each user a
 # confirmed e-mail code device (blueprints cannot set `confirmed`), so sign-in goes straight to
-# the code, which arrives in Mailpit.
+# the code, which arrives in Mailpit. `writer` also gets an app password from AUTH_DEV_WRITER_TOKEN: the eval
+# of the co-author takes its token with it (openspec/specs/runtime, «Eval соавтора от имени пользователя разработки»).
 version: 1
 metadata:
   name: Authorled development users
 entries:
   - model: authentik_core.user
+    id: user-writer
     identifiers:
       username: writer
     attrs:
@@ -27,3 +29,11 @@ entries:
       password: !Env AUTH_DEV_USER_PASSWORD
       groups:
         - !Find [authentik_core.group, [name, editors]]
+  - model: authentik_core.token
+    identifiers:
+      identifier: writer-dev-token
+    attrs:
+      user: !KeyOf user-writer
+      intent: app_password
+      key: !Env AUTH_DEV_WRITER_TOKEN
+      expiring: false

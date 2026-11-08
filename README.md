@@ -405,6 +405,21 @@ Add your own cases in [agno/evals/cases.py](agno/evals/cases.py), or use
 `--json-output tmp/evals.json`. To run one case, use `--name CASE_NAME`.
 Evals use your application's database and workspace; agents can call tools during a test.
 
+#### Evals of the co-author
+
+`python -m evals --tag coauthor` runs the co-author as `writer@authorled.test`, like a run of the chat: the co-author
+refuses a run without a verified user. Before the run the case takes a token of `writer` from the local Authentik with
+the app password `AUTH_DEV_WRITER_TOKEN`, checks it like the API does, creates the account of `writer` in the core if
+there is none and binds `writer` to the run. The usage limit is checked as usual and the run is written to the usage
+journal of `writer`; when the limit is spent, the case fails with the limit message
+(`./scripts/usage.sh local set-plan writer@authorled.test <plan>` raises it).
+
+It needs `RUNTIME_ENV=dev`, a running local stand with Authentik, `AUTH_DEV_WRITER_TOKEN` in `.env` and
+`./scripts/dev.sh auth-users` after setting it. Run it on the host: inside the API container the address of Authentik
+in `AUTH_ISSUER` (`localhost:9000`) does not reach Authentik, and the case stops with an error naming that address.
+Without the variable, with a refused token or outside `dev` the case fails before the model is called. The `smoke`
+cases run without a user and need none of this.
+
 ### Frontend
 
 The writer's interface lives in [web/](web/). Install [Node.js](https://nodejs.org/) 24
@@ -502,7 +517,9 @@ on are the token contract in `openspec/specs/auth`. The API accepts only tokens 
   Production does not run Mailpit; put a real SMTP server in `.env`.
 - **Development users.** `./scripts/dev.sh auth-users` creates `writer@authorled.test`
   (`screenwriters`) and `editor@authorled.test` (`editors`) with the password
-  `AUTH_DEV_USER_PASSWORD` and a confirmed e-mail code device. In the dev server the sign-in
+  `AUTH_DEV_USER_PASSWORD` and a confirmed e-mail code device. `writer` also gets the app password
+  `AUTH_DEV_WRITER_TOKEN`, with which the eval of the co-author takes a token of `writer`
+  ([Evals of the co-author](#evals-of-the-co-author)); without the variable the command stops and names it. In the dev server the sign-in
   screen has «Войти как Сценарист» and «Войти как Редактор»: they walk the same flow and take
   the code from Mailpit. Production builds do not contain these buttons.
 - **Demo stories.** `./scripts/dev.sh seed` loads the stories of `web/src/data/demo.json` into the
@@ -557,6 +574,7 @@ add the others when you need them. Docker Compose reads `.env` for both local an
 | `AUTHENTIK_COOKIE_DOMAIN` | Production only: parent domain of the product, so the session set through the frontend reaches Authentik (required by `compose.prod.yaml`). |
 | `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS` | Production only: address range of the reverse proxy as Authentik sees it (required by `compose.prod.yaml`). A proxy on the host comes through the Docker gateway: `172.16.0.0/12`. |
 | `AUTH_DEV_USER_PASSWORD` | Development only: password of the development users and the quick sign-in (`./scripts/dev.sh auth-users`). |
+| `AUTH_DEV_WRITER_TOKEN` | Development only: app password of `writer@authorled.test`, set by `./scripts/dev.sh auth-users` and used by `python -m evals --tag coauthor` to take a token of `writer` (required by both; generate with `openssl rand -hex 24`). Compose does not need it. |
 | `VITE_DATA_SOURCE` | Data source of the web frontend: `api` (stories in the core) or `fixtures` (sample data in page memory); required by the frontend. |
 | `AUTH_ISSUER` | Issuer of the tokens: the address clients use to reach Authentik plus `/application/o/authorled/` (required). |
 | `JWT_JWKS_FILE` | Public keys of Authentik, the only source of token verification keys. Compose writes the file at start and sets the path; set it yourself when the API or `python -m evals` runs on the host (`dev.sh api` does for the API). |

@@ -66,7 +66,7 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   `body.py`: JSON body, `If-Match`, the caller and the project access check every story route does first.
 - `agno/app/auth/` and `auth/`: the auth module. `agno/app/auth/` is the only code that reads JWT
   or claims (other code uses `Principal`, `current_principal`, `run_principal` for agent tools, `Identity`,
-  `current_identity` and `can_access_project`; the core registers the project access source in `app/main.py`);
+  `current_identity`, `can_access_project` and, for the co-author eval on the local stand, `dev_writer_caller`; the core registers the project access source in `app/main.py`);
   `auth/` holds the Authentik blueprints, database init, key export and its services in
   `auth/compose.yaml`, which `compose.yaml` includes; Authentik runs as separate
   containers. `./scripts/check_auth_boundary.sh` (part of `validate.sh`) enforces the boundary
@@ -262,9 +262,12 @@ custom isolation, scorers or cleanup machinery by default.
 
 - `python -m evals --tag smoke`: runs the three application cases and spends model calls.
   Uses the application's `.env`, database and workspace; sessions and results persist
-  for the AgentOS UI. The CLI defaults to `dev` unless configured otherwise and does not
+  for the AgentOS UI. The CLI requires `RUNTIME_ENV` (`dev` or `prd`, no default) and does not
   start the API or scheduler. Even `--help` and `--list` require PostgreSQL because the
   application initializes knowledge storage on import.
+- `python -m evals --tag coauthor`: runs the co-author case as the verified development user `writer`
+  (`agno/evals/caller.py` over `dev_writer_caller` of the auth module); on the host only, after
+  `./scripts/dev.sh auth-users` with `AUTH_DEV_WRITER_TOKEN`. It spends the limit of `writer`.
 - Inspect answers, tool results and judge reasons. Additional tool calls are allowed;
   these cases do not enforce read-only execution. Use owned fixtures for mutating cases.
 - `./scripts/mcp_check.sh`: initializes MCP and checks required tools without model calls.
