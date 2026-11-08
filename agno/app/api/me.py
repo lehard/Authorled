@@ -10,13 +10,23 @@ from app.api.body import read_object
 from app.api.problems import Problem
 from app.auth import Identity, Principal, current_identity, current_principal
 from core.engine import get_engine
-from core.users import UNSET, Account, AccountDeleted, AccountNotFound, Theme, get_or_create_user, update_account
+from core.users import (
+    UNSET,
+    Account,
+    AccountDeleted,
+    AccountNotFound,
+    CoauthorMode,
+    Theme,
+    get_or_create_user,
+    update_account,
+)
 
 router = APIRouter(prefix="/api/v1", tags=["Account"])
 
 
 class Settings(BaseModel):
     theme: Theme | None
+    coauthor_mode: CoauthorMode
 
 
 class Me(BaseModel):
@@ -27,12 +37,21 @@ class Me(BaseModel):
 
 
 class MeChanges(BaseModel):
-    """Body of PATCH: at least one field; a theme of null follows the system setting."""
+    """Body of PATCH: at least one field; a theme of null follows the system setting, a mode has no null."""
 
     model_config = ConfigDict(extra="forbid")
 
     display_name: str | None = None
     theme: Theme | None = None
+    # None only marks "not passed": a null in the body is refused by the validator below.
+    coauthor_mode: CoauthorMode | None = None
+
+    @field_validator("coauthor_mode")
+    @classmethod
+    def _mode_not_null(cls, value: CoauthorMode | None) -> CoauthorMode:
+        if value is None:
+            raise ValueError("Режим соавтора должен быть ask или auto.")
+        return value
 
     @field_validator("display_name")
     @classmethod
@@ -44,7 +63,7 @@ class MeChanges(BaseModel):
     @model_validator(mode="after")
     def _something_to_change(self) -> MeChanges:
         if not self.model_fields_set:
-            raise ValueError("Передайте display_name или theme.")
+            raise ValueError("Передайте display_name, theme или coauthor_mode.")
         return self
 
 
@@ -53,7 +72,7 @@ def _me(account: Account) -> Me:
         id=account.id,
         email=account.email,
         display_name=account.display_name,
-        settings=Settings(theme=account.theme),
+        settings=Settings(theme=account.theme, coauthor_mode=account.coauthor_mode),
     )
 
 
@@ -77,6 +96,7 @@ def _update(principal: Principal, changes: MeChanges) -> Account:
                 principal.user_id,
                 display_name=changes.display_name if "display_name" in fields and changes.display_name else UNSET,
                 theme=changes.theme if "theme" in fields else UNSET,
+                coauthor_mode=changes.coauthor_mode if "coauthor_mode" in fields and changes.coauthor_mode else UNSET,
             )
     except AccountDeleted as error:
         raise _GONE from error
@@ -106,7 +126,7 @@ def get_me(
 @router.patch(
     "/me",
     response_model=Me,
-    summary="Change the caller's name or theme",
+    summary="Change the caller's name, theme or co-author mode",
     openapi_extra={
         "requestBody": {
             "required": True,

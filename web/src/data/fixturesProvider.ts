@@ -326,12 +326,13 @@ async function out<T>(resource: string, row: Row): Promise<T> {
   const t = row as unknown as FixtureThread;
   const own = (m: FixtureMessage) => {
     const { email: author, ...rest } = m;
-    return { ...rest, own: author === email };
+    return { ...rest, kind: "user" as const, own: author === email };
   };
   const thread: CommentThread = {
     ...own(t),
     draftId: t.draftId,
     quote: t.quote,
+    sceneUid: null,
     resolved: t.resolved,
     replies: t.replies.map(own),
   };

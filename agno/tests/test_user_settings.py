@@ -19,7 +19,7 @@ def _user(connection: Connection) -> uuid.UUID:
 
 def test_columns(connection: Connection) -> None:
     columns = [column["name"] for column in inspect(connection).get_columns("user_settings", schema=SCHEMA)]
-    assert columns == ["user_id", "theme", "updated_at"]
+    assert columns == ["user_id", "theme", "updated_at", "coauthor_mode"]
 
 
 def test_defaults(connection: Connection) -> None:
@@ -28,6 +28,7 @@ def test_defaults(connection: Connection) -> None:
     row = connection.execute(select(user_settings)).one()
     assert row.theme is None
     assert row.updated_at is not None
+    assert row.coauthor_mode == "ask"
 
 
 @pytest.mark.parametrize("theme", ["light", "sepia", "dark"])
@@ -60,3 +61,17 @@ def test_user_with_settings_cannot_be_deleted(connection: Connection) -> None:
     connection.execute(insert(user_settings).values(user_id=user_id))
     with pytest.raises(IntegrityError, match="fk_user_settings_user_id_users"):
         connection.execute(users.delete().where(users.c.id == user_id))
+
+
+@pytest.mark.parametrize("mode", ["ask", "auto"])
+def test_known_coauthor_modes(connection: Connection, mode: str) -> None:
+    user_id = _user(connection)
+    connection.execute(insert(user_settings).values(user_id=user_id, coauthor_mode=mode))
+
+
+@pytest.mark.parametrize("mode", ["always", None])
+def test_unknown_coauthor_mode_is_rejected(connection: Connection, mode: str | None) -> None:
+    user_id = _user(connection)
+    connection.execute(insert(user_settings).values(user_id=user_id))
+    with pytest.raises(IntegrityError, match="ck_user_settings_coauthor_mode_known|coauthor_mode"):
+        connection.execute(update(user_settings).values(coauthor_mode=mode))

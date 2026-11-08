@@ -80,6 +80,8 @@ export type ScreenplayEditorHandle = {
   scrollToComment(id: string): boolean;
   /** Marks open suggestions without a place by their anchors (web/workspace, «Предложение по якорю»). */
   placeSuggestions(anchors: SuggestionAnchor[]): void;
+  /** Marks co-author comments without a place by their anchors (web/workspace, «Комментарий соавтора по якорю»). */
+  placeComments(anchors: SuggestionAnchor[]): void;
   acceptSuggestion(id: string, text: string): boolean;
   rejectSuggestion(id: string): boolean;
   suggestionAnchor(id: string): CommentAnchor | null;
@@ -295,6 +297,7 @@ export function ScreenplayEditor({
       commentAnchor: (id) => view().commentAnchor(id),
       scrollToComment: (id) => view().scrollToComment(id),
       placeSuggestions: (anchors) => view().placeSuggestions(anchors),
+      placeComments: (anchors) => view().placeComments(anchors),
       acceptSuggestion: (id, text) => view().acceptSuggestion(id, text),
       rejectSuggestion: (id) => view().rejectSuggestion(id),
       suggestionAnchor: (id) => view().suggestionAnchor(id),

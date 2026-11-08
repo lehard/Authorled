@@ -12,7 +12,11 @@ import {
   type EditorMode,
   type ElementName,
 } from "./elements.ts";
-import { placeAnchors, type SuggestionAnchor } from "./anchors.ts";
+import {
+  placeAnchors,
+  placeCommentAnchors,
+  type SuggestionAnchor,
+} from "./anchors.ts";
 import {
   ensureSceneUids,
   toJSON,
@@ -370,6 +374,17 @@ export class ScreenplayEditorView {
     const tr = this.view.state.tr;
     placeAnchors(tr, anchors);
     if (tr.docChanged) this.view.dispatch(tr);
+  }
+
+  /**
+   * Marks open comment threads of the co-author that have no place in the text yet by their
+   * anchor, outside the undo history, as a new comment of the author is; the rest stay without
+   * a mark (web/workspace, «Комментарий соавтора по якорю»).
+   */
+  placeComments(anchors: SuggestionAnchor[]): void {
+    const tr = this.view.state.tr;
+    placeCommentAnchors(tr, anchors);
+    if (tr.docChanged) this.view.dispatch(tr.setMeta("addToHistory", false));
   }
 
   /** «Отклонить»: the text stays; false when the suggestion is not in the text. */

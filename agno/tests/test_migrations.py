@@ -16,6 +16,8 @@ from core.projects import create_project
 from core.saves import create_point, restore_point, restore_version
 from core.tables import (
     SCHEMA,
+    comment_messages,
+    comment_threads,
     document_versions,
     documents,
     draft_points,
@@ -23,12 +25,35 @@ from core.tables import (
     notes,
     projects,
     subscriptions,
+    user_settings,
     users,
 )
 
 
+def _undo_coauthor_actions(connection: Connection) -> None:
+    """Undo 0010 before a test rewinds the schema to an older revision."""
+    connection.execute(text("ALTER TABLE authorled.user_settings DROP COLUMN coauthor_mode"))
+    connection.execute(text("ALTER TABLE authorled.comment_threads DROP COLUMN scene_uid"))
+    connection.execute(text("DELETE FROM authorled.comment_messages WHERE author_kind = 'coauthor'"))
+    connection.execute(text("ALTER TABLE authorled.comment_messages DROP COLUMN author_kind"))
+    connection.execute(text("ALTER TABLE authorled.comment_messages ALTER COLUMN author_id SET NOT NULL"))
+    connection.execute(text("DELETE FROM authorled.document_versions WHERE reason = 'coauthor'"))
+    connection.execute(
+        text("ALTER TABLE authorled.document_versions DROP CONSTRAINT ck_document_versions_reason_known")
+    )
+    connection.execute(
+        text(
+            # The name 0006 gave it: Alembic prefixed the full name once more by the naming convention.
+            "ALTER TABLE authorled.document_versions ADD CONSTRAINT "
+            "ck_document_versions_ck_document_versions_reason_known "
+            "CHECK (reason IN ('auto', 'suggestion', 'import', 'restore'))"
+        )
+    )
+
+
 def _drop_subscriptions(connection: Connection) -> None:
-    """Undo 0009 before a test rewinds the schema to an older revision."""
+    """Undo 0010 and 0009 before a test rewinds the schema to an older revision."""
+    _undo_coauthor_actions(connection)
     connection.execute(text("DROP TABLE authorled.usage_records, authorled.subscriptions"))
 
 
@@ -266,3 +291,50 @@ def test_subscriptions_migration_gives_users_beta(engine: Engine, alembic_config
         assert rows[0].period_end == datetime(2026, 11, 30, 10, tzinfo=UTC)
         connection.execute(delete(subscriptions).where(subscriptions.c.user_id == owner))
         connection.execute(delete(users).where(users.c.id.in_([owner, deleted])))
+
+
+def test_coauthor_actions_migration_keeps_settings_and_comments(engine: Engine, alembic_config: Config) -> None:
+    """Applied from 0009: settings so far get `ask`, messages so far are written by users."""
+    subject = f"test-{uuid.uuid4()}"
+    with engine.begin() as connection:
+        _undo_coauthor_actions(connection)
+        connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0009_subscriptions_usage'"))
+        owner = connection.execute(
+            insert(users)
+            .values(auth_subject=subject, email="mode@authorled.test", display_name="Автор")
+            .returning(users.c.id)
+        ).scalar_one()
+        connection.execute(text("INSERT INTO authorled.user_settings (user_id) VALUES (:id)"), {"id": owner})
+        story, _, script = create_project(connection, owner, "Маяк")
+        thread = uuid.uuid4()
+        connection.execute(
+            text("INSERT INTO authorled.comment_threads (id, document_id, quote) VALUES (:id, :doc, 'Вера')"),
+            {"id": thread, "doc": script},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO authorled.comment_messages (thread_id, author_id, author_role, body) "
+                "VALUES (:thread, :owner, '', 'Слишком прямо')"
+            ),
+            {"thread": thread, "owner": owner},
+        )
+
+    command.upgrade(alembic_config, "head")
+
+    with engine.begin() as connection:
+        assert (
+            connection.execute(
+                select(user_settings.c.coauthor_mode).where(user_settings.c.user_id == owner)
+            ).scalar_one()
+            == "ask"
+        )
+        message = connection.execute(select(comment_messages).where(comment_messages.c.thread_id == thread)).one()
+        assert (message.author_kind, message.author_id) == ("user", owner)
+        assert (
+            connection.execute(select(comment_threads.c.scene_uid).where(comment_threads.c.id == thread)).scalar_one()
+            is None
+        )
+        connection.execute(delete(projects).where(projects.c.id == story.id))
+        connection.execute(delete(user_settings).where(user_settings.c.user_id == owner))
+        connection.execute(delete(subscriptions).where(subscriptions.c.user_id == owner))
+        connection.execute(delete(users).where(users.c.id == owner))

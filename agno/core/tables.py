@@ -61,6 +61,8 @@ users = Table(
 
 # Themes of the design system (web/src/design-system/theme.ts); NULL follows the system setting.
 THEMES = ("light", "sepia", "dark")
+# Modes of the co-author: `ask` waits for the author before each change, `auto` makes it at once.
+COAUTHOR_MODES = ("ask", "auto")
 
 # Settings of a user, one row per user. Each new setting is a column added by its own migration.
 user_settings = Table(
@@ -69,7 +71,10 @@ user_settings = Table(
     Column("user_id", Uuid, ForeignKey(users.c.id, ondelete="RESTRICT"), primary_key=True),
     Column("theme", Text),
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    # The mode a new user starts with is `ask` (business-intents/coauthor-actions.md).
+    Column("coauthor_mode", Text, nullable=False, server_default="ask"),
     CheckConstraint("theme IN ('light', 'sepia', 'dark')", name="theme_known"),
+    CheckConstraint("coauthor_mode IN ('ask', 'auto')", name="coauthor_mode_known"),
 )
 
 # Stories of the authors (openspec/specs/api/stories). MVP: one format, the feature film; one owner.
@@ -187,7 +192,7 @@ screenplay_texts = Table(
 )
 
 VERSION_PARTS = ("text", "fields")
-VERSION_REASONS = ("auto", "suggestion", "import", "restore")
+VERSION_REASONS = ("auto", "suggestion", "import", "restore", "coauthor")
 
 # A snapshot of a part of a document as it was: `saved_by` and `saved_at` tell who saved that state,
 # `created_at` when the snapshot was taken. Full copies, no diffs (design of story-drafts-and-saves).
@@ -203,7 +208,7 @@ document_versions = Table(
     Column("saved_at", DateTime(timezone=True), nullable=False),
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     CheckConstraint("part IN ('text', 'fields')", name="part_known"),
-    CheckConstraint("reason IN ('auto', 'suggestion', 'import', 'restore')", name="reason_known"),
+    CheckConstraint("reason IN ('auto', 'suggestion', 'import', 'restore', 'coauthor')", name="reason_known"),
     CheckConstraint("jsonb_typeof(content) = 'object'", name="content_object"),
     Index("ix_document_versions_document_id_part_created_at", "document_id", "part", "created_at"),
 )
@@ -238,16 +243,19 @@ draft_opens = Table(
 )
 
 # A comment thread on a fragment; its id is the id of the `comment` mark in the text.
+# A thread of the co-author also keeps the scene of its quote: the browser places its mark by them.
 comment_threads = Table(
     "comment_threads",
     metadata,
     Column("id", Uuid, primary_key=True),
     Column("document_id", Uuid, ForeignKey(documents.c.id, ondelete="CASCADE"), nullable=False),
     Column("quote", Text, nullable=False),
+    Column("scene_uid", Text),
     Column("resolved_at", DateTime(timezone=True)),
     Column("resolved_by", Uuid, ForeignKey(users.c.id, ondelete="RESTRICT")),
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     CheckConstraint("(resolved_at IS NULL) = (resolved_by IS NULL)", name="resolved_together"),
+    CheckConstraint("scene_uid <> ''", name="scene_uid_not_empty"),
     Index("ix_comment_threads_document_id", "document_id"),
 )
 
@@ -256,13 +264,17 @@ comment_messages = Table(
     metadata,
     Column("id", Uuid, primary_key=True, server_default=text("gen_random_uuid()")),
     Column("thread_id", Uuid, ForeignKey(comment_threads.c.id, ondelete="CASCADE"), nullable=False),
-    Column("author_id", Uuid, ForeignKey(users.c.id, ondelete="RESTRICT"), nullable=False),
+    # `user`: a person of the story, `author_id` names them; `coauthor`: the co-author, who is no user.
+    Column("author_kind", Text, nullable=False),
+    Column("author_id", Uuid, ForeignKey(users.c.id, ondelete="RESTRICT")),
     # Role of the author in the story team when writing, «редактор»; empty when the token has none.
     Column("author_role", Text, nullable=False),
     Column("body", Text, nullable=False),
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     Column("edited_at", DateTime(timezone=True)),
     CheckConstraint("body <> ''", name="body_not_empty"),
+    CheckConstraint("author_kind IN ('user', 'coauthor')", name="author_kind_known"),
+    CheckConstraint("(author_kind = 'user') = (author_id IS NOT NULL)", name="author_of_kind"),
     Index("ix_comment_messages_thread_id", "thread_id"),
 )
 

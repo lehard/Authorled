@@ -1,10 +1,11 @@
-// Places of co-author suggestions by their anchor (openspec/specs/web/workspace, «Предложение по
-// якорю»; design of story-data-web, decision 5): the co-author names a scene by its `uid` and the
-// exact words to replace; the text screen puts the `suggestion` mark there. No DOM here:
-// check:editor runs these in Node.
+// Places of co-author suggestions and comments by their anchor (openspec/specs/web/workspace,
+// «Предложение по якорю», «Комментарий соавтора по якорю»; design of story-data-web, decision 5):
+// the co-author names a scene by its `uid` and the exact words; the text screen puts the
+// `suggestion` or `comment` mark there. No DOM here: check:editor runs these in Node.
 import type { Node } from "prosemirror-model";
 import type { Transform } from "prosemirror-transform";
 
+import { commentRanges } from "./plugins/comments.ts";
 import { suggestionRanges } from "./plugins/suggestions.ts";
 import { schema } from "./schema/index.ts";
 
@@ -60,6 +61,27 @@ export function placeAnchors(
       place.to,
       schema.marks.suggestion.create({ id: a.id }),
     );
+  }
+  return missing;
+}
+
+/**
+ * Marks the place of every comment anchor that has no mark in the text yet, in `tr`; returns the
+ * ids without a place (no scene or no words). Comments may cover the same words as others.
+ */
+export function placeCommentAnchors(
+  tr: Transform,
+  anchors: SuggestionAnchor[],
+): string[] {
+  const missing: string[] = [];
+  for (const a of anchors) {
+    if (commentRanges(tr.doc, a.id).length > 0) continue;
+    const place = findAnchor(tr.doc, a.sceneUid, a.quote);
+    if (place === null) {
+      missing.push(a.id);
+      continue;
+    }
+    tr.addMark(place.from, place.to, schema.marks.comment.create({ id: a.id }));
   }
   return missing;
 }

@@ -30,6 +30,7 @@ const REASONS: Record<VersionReason, string> = {
   suggestion: "Перед принятием предложения соавтора",
   import: "Перед импортом",
   restore: "Перед откатом",
+  coauthor: "Перед правкой соавтора",
 };
 
 const when = new Intl.DateTimeFormat("ru", {

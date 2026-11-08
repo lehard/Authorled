@@ -16,7 +16,10 @@ import type {
 import demo from "./demo.json";
 
 /** A message as the sample keeps it: whose it is follows from the signed-in e-mail. */
-export type FixtureMessage = Omit<CommentMessage, "own"> & { email: string };
+// Every comment of the samples is written by a person: the co-author comments only through the core.
+export type FixtureMessage = Omit<CommentMessage, "own" | "kind"> & {
+  email: string;
+};
 export type FixtureThread = Omit<CommentThread, "own" | "replies"> & {
   email: string;
   replies: FixtureMessage[];

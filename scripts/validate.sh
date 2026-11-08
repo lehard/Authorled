@@ -22,9 +22,30 @@ DIM='\033[2m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-if [[ -z "${VIRTUAL_ENV:-}" ]]; then
-  echo -e "${RED}Warning:${NC} no virtualenv active. Run: ${BOLD}source agno/.venv/bin/activate${NC}"
-  echo ""
+# The Python tools come from one environment of the project: agno/.venv locally, the Python of the
+# runner in CI (no venv there, so VIRTUAL_ENV is not required). A tool found elsewhere on PATH, such
+# as a global ruff of another version, is refused before any check runs (openspec/specs/runtime,
+# «Проверки кода»).
+env_hint="Activate the project environment: ${BOLD}source agno/.venv/bin/activate${NC} (create it first with ${BOLD}./agno/scripts/venv_setup.sh${NC})."
+if ! python_path="$(command -v python)"; then
+  echo -e "${RED}Python environment:${NC} command python not found. ${env_hint}"
+  exit 1
+fi
+env_dir="$(cd "$(dirname "${python_path}")" && pwd -P)"
+for tool in ruff mypy alembic; do
+  if ! tool_path="$(command -v "${tool}")"; then
+    echo -e "${RED}Python environment:${NC} command ${tool} not found next to ${python_path}. ${env_hint}"
+    exit 1
+  fi
+  tool_dir="$(cd "$(dirname "${tool_path}")" && pwd -P)"
+  if [[ "${tool_dir}" != "${env_dir}" ]]; then
+    echo -e "${RED}Python environment:${NC} ${tool} is taken from ${tool_dir}, python from ${env_dir}. ${env_hint}"
+    exit 1
+  fi
+done
+if ! python -c 'import agno, alembic, mypy' 2> /dev/null; then
+  echo -e "${RED}Python environment:${NC} ${python_path} cannot import the project dependencies (agno, alembic, mypy). ${env_hint}"
+  exit 1
 fi
 
 echo ""

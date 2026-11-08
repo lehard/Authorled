@@ -28,7 +28,7 @@ def _count(connection: Connection, subject: str) -> tuple[int, int]:
 
 def test_first_call_creates_user_and_settings(connection: Connection) -> None:
     account = get_or_create_user(connection, "s1", EMAIL, NAME)
-    assert (account.email, account.display_name, account.theme) == (EMAIL, NAME, None)
+    assert (account.email, account.display_name, account.theme, account.coauthor_mode) == (EMAIL, NAME, None, "ask")
     assert _count(connection, "s1") == (1, 1)
 
 
@@ -86,6 +86,13 @@ def test_update_changes_only_passed_fields(connection: Connection) -> None:
     assert update_account(connection, "s1", theme="sepia").display_name == NAME
     assert update_account(connection, "s1", display_name="Анна П.").theme == "sepia"
     assert update_account(connection, "s1", theme=None).theme is None
+
+
+def test_coauthor_mode_changes_alone(connection: Connection) -> None:
+    get_or_create_user(connection, "s1", EMAIL, NAME)
+    update_account(connection, "s1", theme="sepia")
+    account = update_account(connection, "s1", coauthor_mode="auto")
+    assert (account.coauthor_mode, account.theme, account.display_name) == ("auto", "sepia", NAME)
 
 
 def test_update_touches_updated_at_of_its_table(connection: Connection) -> None:

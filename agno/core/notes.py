@@ -122,6 +122,26 @@ def update_note(
     return _note(row)
 
 
+def update_note_by_coauthor(
+    connection: Connection, note_id: uuid.UUID, changes: dict[str, Any], user_id: uuid.UUID
+) -> Note:
+    """A change of the co-author on the current revision: the title, the text, or `append` to the end of the text.
+
+    `append` goes on a new line after the text; it cannot come together with `body`.
+    """
+    if "append" in changes:
+        if "body" in changes:
+            raise Invalid("Передайте либо новый текст, либо то, что дописать, но не оба.", "append")
+        addition = _body(changes["append"])
+        if not addition.strip():
+            raise Invalid("Дописать можно только непустой текст.", "append")
+    note = note_row(connection, note_id, for_update=True)
+    values = {key: value for key, value in changes.items() if key != "append"}
+    if "append" in changes:
+        values["body"] = f"{note.body}\n{addition}" if note.body else addition
+    return update_note(connection, note_id, note.revision, values, user_id)
+
+
 def trash_note(connection: Connection, note_id: uuid.UUID) -> Note:
     note = note_row(connection, note_id, for_update=True)
     ensure_project_open(connection, note.project_id)

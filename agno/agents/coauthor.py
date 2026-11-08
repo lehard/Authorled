@@ -2,7 +2,10 @@
 
 It talks about the writer's story using what the frontend sends in the AG-UI context (the story,
 the open document, the selected fragment), the conversation history and the story it reads with the
-tools of the core (agents/coauthor_tools.py); its only change is a suggestion the author decides on.
+tools of the core (agents/coauthor_tools.py). It changes the screenplay text only by suggestions the author decides
+on; notes, documents and comments it changes by the author's request, and every such call pauses the run until the
+chat answers it: the author in the co-author mode `ask`, the chat itself at once in `auto` (openspec/specs/api/agents,
+«Режим соавтора», «Подтверждение действия»).
 No user memory: the work itself belongs to the core, not to Agno (openspec/specs/api/agents,
 «Соавтор»). The prompt is agno/skills/coauthor/SKILL.md. Each run is checked against the user's limit before the
 model is called and written to the usage journal of the core after it (agents/coauthor_usage.py).
@@ -23,6 +26,7 @@ model = default_model()
 # Startup stops when the plans file is broken or the model of the co-author has no price.
 plans()
 prices().get(model.id)
+
 
 coauthor = Agent(
     id=COAUTHOR_ID,

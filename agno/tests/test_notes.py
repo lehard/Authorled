@@ -17,6 +17,7 @@ from core.notes import (
     restore_note,
     trash_note,
     update_note,
+    update_note_by_coauthor,
 )
 from core.projects import create_project, delete_project, trash_project
 from core.saves import create_point, list_points, list_versions, restore_point, restore_version
@@ -112,6 +113,56 @@ def test_refused_changes(
     note = create_note(connection, story[0], "Финал", "", owner)
     with pytest.raises(Invalid, match=message):
         update_note(connection, note.id, 1, changes, owner)
+
+
+def test_coauthor_appends_to_the_end(
+    connection: Connection, owner: uuid.UUID, story: tuple[uuid.UUID, uuid.UUID]
+) -> None:
+    note = create_note(connection, story[0], "Финал", "Вера уходит к воде.", owner)
+    changed = update_note_by_coauthor(connection, note.id, {"append": "Аня идёт за ней."}, owner)
+    assert changed.body == "Вера уходит к воде.\nАня идёт за ней."
+    assert changed.revision == note.revision + 1
+    empty = create_note(connection, story[0], "Пусто", "", owner)
+    assert update_note_by_coauthor(connection, empty.id, {"append": "Начало"}, owner).body == "Начало"
+
+
+def test_coauthor_changes_on_the_current_revision(
+    connection: Connection, owner: uuid.UUID, story: tuple[uuid.UUID, uuid.UUID]
+) -> None:
+    note = create_note(connection, story[0], "Финал", "", owner)
+    update_note(connection, note.id, note.revision, {"body": "Вода"}, owner)
+    changed = update_note_by_coauthor(connection, note.id, {"title": "Финал истории"}, owner)
+    assert (changed.title, changed.body) == ("Финал истории", "Вода")
+
+
+@pytest.mark.parametrize(
+    ("changes", "field"), [({"body": "a", "append": "b"}, "append"), ({"append": "  "}, "append"), ({}, None)]
+)
+def test_coauthor_refused_changes(
+    connection: Connection,
+    owner: uuid.UUID,
+    story: tuple[uuid.UUID, uuid.UUID],
+    changes: dict[str, object],
+    field: str | None,
+) -> None:
+    note = create_note(connection, story[0], "Финал", "Вода", owner)
+    with pytest.raises(Invalid) as error:
+        update_note_by_coauthor(connection, note.id, changes, owner)
+    assert error.value.field == field
+    assert note_row(connection, note.id).body == "Вода"
+
+
+def test_coauthor_change_in_the_trash(
+    connection: Connection, owner: uuid.UUID, story: tuple[uuid.UUID, uuid.UUID]
+) -> None:
+    note = create_note(connection, story[0], "Финал", "", owner)
+    trash_note(connection, note.id)
+    with pytest.raises(Conflict):
+        update_note_by_coauthor(connection, note.id, {"append": "Вода"}, owner)
+    other = create_note(connection, story[0], "Начало", "", owner)
+    trash_project(connection, story[0])
+    with pytest.raises(Conflict):
+        update_note_by_coauthor(connection, other.id, {"append": "Вода"}, owner)
 
 
 def test_trash_keeps_the_note(connection: Connection, owner: uuid.UUID, story: tuple[uuid.UUID, uuid.UUID]) -> None:

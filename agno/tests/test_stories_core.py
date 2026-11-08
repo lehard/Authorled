@@ -5,7 +5,7 @@ import uuid
 from pathlib import Path
 
 import pytest
-from sqlalchemy import Connection, Engine, delete
+from sqlalchemy import Connection, Engine, delete, select, update
 
 from core.documents import (
     create_documents,
@@ -14,9 +14,10 @@ from core.documents import (
     restore_document,
     trash_document,
     update_document,
+    update_document_by_coauthor,
 )
 from core.drafts import empty_trash
-from core.errors import Conflict, Invalid
+from core.errors import Conflict, Invalid, Locked
 from core.fields import merge_fields, validate_fields
 from core.projects import (
     ProjectAccess,
@@ -29,7 +30,7 @@ from core.projects import (
     update_project,
     user_id_of,
 )
-from core.tables import projects, subscriptions, user_settings, users
+from core.tables import document_versions, drafts, projects, subscriptions, user_settings, users
 from core.texts import get_text
 from core.users import AccountNotFound, get_or_create_user
 
@@ -178,6 +179,53 @@ def test_old_revision_is_refused(connection: Connection) -> None:
     assert first.revision == vera.revision + 1
     with pytest.raises(Conflict):
         update_document(connection, vera.id, vera.revision, {"fields": {"fear": "огонь"}}, _owner(connection))
+
+
+def test_coauthor_change_keeps_a_snapshot_every_time(connection: Connection) -> None:
+    """A change of the co-author is always preceded by a snapshot `coauthor`, even right after another one."""
+    owner = _owner(connection)
+    project, draft, _ = create_project(connection, owner, "Маяк")
+    (vera,) = create_documents(connection, draft, [{"kind": "character", "name": "Вера", "role": "main"}], owner)
+    update_document(connection, vera.id, vera.revision, {"fields": {"fear": "Остаться одной"}}, owner)
+    changed = update_document_by_coauthor(connection, vera.id, {"fields": {"fear": "Что Аня узнает правду"}}, owner)
+    assert changed.fields["fear"] == "Что Аня узнает правду"
+    assert changed.revision == vera.revision + 2
+    kept = connection.execute(
+        select(document_versions.c.reason, document_versions.c.content)
+        .where(document_versions.c.document_id == vera.id)
+        .order_by(document_versions.c.created_at)
+    ).all()
+    assert kept[-1].reason == "coauthor"
+    assert kept[-1].content["fields"]["fear"] == "Остаться одной"
+
+
+def test_coauthor_does_not_reorder(connection: Connection) -> None:
+    owner = _owner(connection)
+    project, draft, _ = create_project(connection, owner, "Маяк")
+    (vera,) = create_documents(connection, draft, [{"kind": "character", "name": "Вера", "role": "main"}], owner)
+    with pytest.raises(Invalid) as error:
+        update_document_by_coauthor(connection, vera.id, {"position": 0}, owner)
+    assert error.value.field == "position"
+
+
+def test_coauthor_change_in_a_locked_draft_or_the_trash(connection: Connection) -> None:
+    owner = _owner(connection)
+    project, draft, _ = create_project(connection, owner, "Маяк")
+    vera, anna = create_documents(
+        connection,
+        draft,
+        [{"kind": "character", "name": "Вера", "role": "main"}, {"kind": "character", "name": "Аня", "role": "main"}],
+        owner,
+    )
+    trash_document(connection, anna.id)
+    with pytest.raises(Conflict):
+        update_document_by_coauthor(connection, anna.id, {"summary": "Сестра"}, owner)
+    with pytest.raises(Invalid) as error:
+        update_document_by_coauthor(connection, vera.id, {"fields": {"wings": "две"}}, owner)
+    assert error.value.field == "fields.wings"
+    connection.execute(update(drafts).where(drafts.c.id == draft).values(locked=True))
+    with pytest.raises(Locked):
+        update_document_by_coauthor(connection, vera.id, {"summary": "Сестра"}, owner)
 
 
 def test_positions_stay_without_gaps(connection: Connection) -> None:
