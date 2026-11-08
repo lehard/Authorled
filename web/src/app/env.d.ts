@@ -6,6 +6,9 @@ declare const __AUTH_CONFIG__: {
   AUTH_FRONTEND_LOGOUT_URI: string | null;
 };
 
+// Address of the product site (SITE_ORIGIN, shared with site/); null when unset.
+declare const __SITE_ORIGIN__: string | null;
+
 // Password of the development users in `vite serve`; null in production builds.
 declare const __DEV_USER_PASSWORD__: string | null;
 

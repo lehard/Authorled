@@ -300,9 +300,12 @@ docker compose -f compose.yaml -f compose.prod.yaml down
 
 A published GitHub release from `main` goes to the server by itself
 (`.github/workflows/deploy.yml`). Pushes to `main` do not touch the server. The workflow checks the
-tag with `./scripts/validate.sh`, builds the frontend, sends it to the server and runs
-`deploy/deploy.sh`: database copy, code of the tag, `up -d --build`, the new frontend, Caddy reload.
-Then it checks the public `/os/health` and that `/os/agents` refuses a request without a token.
+tag with `./scripts/validate.sh`, builds the frontend and the product site (`site/`), sends both to the
+server and runs `deploy/deploy.sh`: database copy, code of the tag, `up -d --build`, the new frontend and
+site, Caddy reload. Then it checks the public `/os/health`, that `/os/agents` refuses a request without a
+token, and the site with `deploy/check_site.sh` (the home page, the policy, a 404 and an empty beta request
+that the API refuses). The site is served on `soavtor.app` as static files; of the API only
+`/os/api/v1/beta-requests` is reachable there.
 It never loads demo stories or development users. A failed step leaves the run red and rolls nothing back.
 
 Release a version, or go back to an earlier one by running the same steps with its tag:
@@ -311,6 +314,10 @@ Release a version, or go back to an earlier one by running the same steps with i
 gh release create v0.1.0 --target main --generate-notes
 gh workflow run deploy.yml -f tag=v0.1.0
 ```
+
+Releases before `v0.3.5` have no `site/`, so the current workflow cannot build them. To go back to one of
+them, run the workflow of that tag itself: `gh workflow run deploy.yml --ref v0.3.4 -f tag=v0.3.4`. Such a
+release brings back its own Caddy configuration, where `soavtor.app` redirects to the service.
 
 The rollback does not touch the database. If the newer release had migrations, restore the copy from
 before it. This loses what was written after the copy:
@@ -334,6 +341,7 @@ Docker, Caddy, git and rsync must be installed. As root, with the settings alrea
 adduser --disabled-password --gecos '' deploy
 usermod -aG docker deploy
 install -d -o deploy -g deploy -m 755 /srv/authorled /srv/authorled/web /srv/authorled/web/incoming
+install -d -o deploy -g deploy -m 755 /srv/authorled/site /srv/authorled/site/incoming
 install -d -o deploy -g deploy -m 700 /srv/authorled/backups
 sudo -u deploy git clone https://github.com/lehard/Authorled.git /srv/authorled/app
 chown root:deploy /etc/authorled /etc/authorled/authorled.env
@@ -359,6 +367,8 @@ A missing value stops the run with its name before the server is touched.
 | `PUBLIC_URL` | variable | Public address of the frontend, without a trailing slash |
 | `AUTH_ISSUER`, `AUTH_FRONTEND_CLIENT_ID`, `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_FRONTEND_LOGOUT_URI` | variable | The same values as in the settings of the server |
 | `VITE_DATA_SOURCE` | variable | `api` |
+| `SITE_ORIGIN` | variable | Public address of the product site, `https://soavtor.app`; the frontend links to it from the sign-in screen |
+| `SITE_APP_URL` | variable | Address of the service that «Войти» of the site opens, `https://app.soavtor.app` |
 
 ### Sandbox storage
 

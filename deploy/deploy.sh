@@ -4,7 +4,8 @@
 #
 #   ssh deploy@host bash -s -- v0.1.0 < deploy/deploy.sh
 #
-# The frontend of the release must already be in /srv/authorled/web/incoming/<tag>.
+# The frontend and the product site of the release must already be in
+# /srv/authorled/web/incoming/<tag> and /srv/authorled/site/incoming/<tag>.
 # Any failed step stops the script; nothing is rolled back on its own.
 
 set -euo pipefail
@@ -12,6 +13,7 @@ set -euo pipefail
 readonly ROOT=/srv/authorled
 readonly APP="${ROOT}/app"
 readonly WEB="${ROOT}/web"
+readonly SITE="${ROOT}/site"
 readonly BACKUPS="${ROOT}/backups"
 readonly KEEP_BACKUPS=10
 readonly VOLUME=authorled_pgdata
@@ -29,6 +31,7 @@ check_inputs() {
     [[ -r "${APP}/.env" ]] || fail "${APP}/.env is missing or unreadable"
     [[ -d "${BACKUPS}" ]] || fail "${BACKUPS} is missing"
     [[ -f "${WEB}/incoming/$1/index.html" ]] || fail "frontend of $1 is missing in ${WEB}/incoming"
+    [[ -f "${SITE}/incoming/$1/index.html" ]] || fail "site of $1 is missing in ${SITE}/incoming"
 }
 
 fetch_tag() {
@@ -65,13 +68,16 @@ backup_database() {
     fi
 }
 
-switch_frontend() {
-    rm -rf -- "${WEB:?}/$1"
-    mv "${WEB}/incoming/$1" "${WEB}/$1"
-    ln -sfn "${WEB}/$1" "${WEB}/current"
+# Static files of a release (the frontend or the site): incoming/<tag> becomes <tag>, `current`
+# points to it, other versions go away.
+switch_release() {
+    local base="$1" tag="$2"
+    rm -rf -- "${base:?}/${tag}"
+    mv "${base}/incoming/${tag}" "${base}/${tag}"
+    ln -sfn "${base}/${tag}" "${base}/current"
     local dir
-    for dir in "${WEB}"/v*; do
-        if [[ "${dir}" != "${WEB}/$1" ]]; then
+    for dir in "${base}"/v*; do
+        if [[ "${dir}" != "${base}/${tag}" ]]; then
             rm -rf -- "${dir}"
         fi
     done
@@ -102,7 +108,8 @@ main() {
     git checkout --quiet --detach "refs/tags/${tag}"
     "${COMPOSE[@]}" up -d --build
     apply_blueprints
-    switch_frontend "${tag}"
+    switch_release "${WEB}" "${tag}"
+    switch_release "${SITE}" "${tag}"
 
     caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
     sudo -n systemctl reload caddy

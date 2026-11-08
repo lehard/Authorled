@@ -10,6 +10,7 @@ export type AppConfig = {
   redirectUri: string;
   logoutUri: string;
   dataSource: DataSource;
+  siteOrigin: string;
 };
 
 export class ConfigError extends Error {
@@ -87,6 +88,14 @@ export function loadConfig(): AppConfig {
       `Источник данных «${dataSource}» не поддерживается. Допустимые значения: ${DATA_SOURCES.join(", ")}.`,
     );
   }
+  const siteOrigin = required("SITE_ORIGIN", __SITE_ORIGIN__);
+  const site = url("SITE_ORIGIN", siteOrigin);
+  if (site.protocol !== "http:" && site.protocol !== "https:") {
+    throw new ConfigError(
+      "SITE_ORIGIN",
+      `SITE_ORIGIN (${siteOrigin}) должен быть адресом http или https.`,
+    );
+  }
   // OIDC state lives in sessionStorage of one origin, so sign-in only works on the redirect origin.
   if (window.location.origin !== redirect.origin) {
     throw new ConfigError(
@@ -94,6 +103,13 @@ export function loadConfig(): AppConfig {
       `Приложение открыто по адресу ${window.location.origin}, а вход возвращает на ${redirect.origin}. Откройте ${redirect.origin}.`,
     );
   }
-  loaded = { issuer, clientId, redirectUri, logoutUri, dataSource };
+  loaded = {
+    issuer,
+    clientId,
+    redirectUri,
+    logoutUri,
+    dataSource,
+    siteOrigin,
+  };
   return loaded;
 }

@@ -42,6 +42,8 @@ export default defineConfig(({ command, mode }) => {
     envDir: REPO_ROOT,
     define: {
       __AUTH_CONFIG__: JSON.stringify(auth),
+      // The product site that the sign-in screen links to; checked at start by src/app/config.ts.
+      __SITE_ORIGIN__: JSON.stringify(env.SITE_ORIGIN ?? null),
       // Test password of the development users, for the quick sign-in of `vite serve` only;
       // a production build never carries it.
       __DEV_USER_PASSWORD__: JSON.stringify(

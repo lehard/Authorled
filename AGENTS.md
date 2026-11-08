@@ -108,7 +108,7 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 - `agno/admin/`: `python -m admin report|set-plan <e-mail> <plan>`, the administrator's commands over the core;
   `./scripts/usage.sh local|prod` runs them in the API container.
 - `scripts/`: local setup, validation and builds. Deployment files: `compose.prod.yaml`, `deploy/` (the release
-  script, the check of the frontend build and the Caddy configuration) and `.github/workflows/deploy.yml`.
+  script, the checks of the frontend build and of the deployed site, and the Caddy configuration) and `.github/workflows/deploy.yml`.
 - `web/`: the frontend (Vite + React + TypeScript, thin client without its own database, ADR-001/ADR-004).
   `web/src/design-system/`: tokens, themes, fonts and base components; screens use only its
   semantic tokens (`./web/scripts/check_web_tokens.sh` rejects raw colors). `web/src/components/ui/`:
@@ -122,8 +122,9 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   `web/src/design-system` (so its build needs `web/node_modules`) and takes `SITE_ORIGIN` and `SITE_APP_URL` from
   `.env`. Its beta request form posts to `/os/api/v1/beta-requests` on its own origin: the route `app/api/beta.py`,
   the only product route without a token (`PUBLIC_ROUTES` in `app/auth/authorization.py`), stores requests in the
-  core (`core/beta_requests.py`); `./scripts/usage.sh local|prod beta-requests` lists them. Not deployed until the
-  product has its own domain. Landing skills: `landing-page-design`, `copywriting`, `unslop`; motion — `design-to-motion` (existing frames), `stageshow` (faux UI); Russian copy — `chukovsky`.
+  core (`core/beta_requests.py`); `./scripts/usage.sh local|prod beta-requests` lists them. A release deploys it to
+  `soavtor.app` (`deploy/Caddyfile`: static files, of the API only the beta request route; `deploy/check_site.sh`
+  checks it); the sign-in screen of `web/` links to it through `SITE_ORIGIN`. Landing skills: `landing-page-design`, `copywriting`, `unslop`; motion — `design-to-motion` (existing frames), `stageshow` (faux UI); Russian copy — `chukovsky`.
 - `compose.yaml`: local PostgreSQL, the LiteLLM proxy, the antivirus ClamAV (`clamav`, required by the API through
   `CLAMAV_HOST` and `CLAMAV_PORT`) and development API. The API connects
   as the non-superuser role `agentos` (`AGENTOS_DB_PASSWORD`), prepared by `agentos-db-init`

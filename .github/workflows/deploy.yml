@@ -67,6 +67,7 @@ jobs:
       TAG: ${{ needs.resolve.outputs.tag }}
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
       PUBLIC_URL: ${{ vars.PUBLIC_URL }}
+      SITE_ORIGIN: ${{ vars.SITE_ORIGIN }}
     steps:
       - name: Check the settings
         env:
@@ -77,10 +78,12 @@ jobs:
           AUTH_FRONTEND_REDIRECT_URI: ${{ vars.AUTH_FRONTEND_REDIRECT_URI }}
           AUTH_FRONTEND_LOGOUT_URI: ${{ vars.AUTH_FRONTEND_LOGOUT_URI }}
           VITE_DATA_SOURCE: ${{ vars.VITE_DATA_SOURCE }}
+          SITE_APP_URL: ${{ vars.SITE_APP_URL }}
         run: |
           missing=0
           for name in DEPLOY_HOST DEPLOY_SSH_KEY DEPLOY_KNOWN_HOSTS PUBLIC_URL AUTH_ISSUER \
-              AUTH_FRONTEND_CLIENT_ID AUTH_FRONTEND_REDIRECT_URI AUTH_FRONTEND_LOGOUT_URI VITE_DATA_SOURCE; do
+              AUTH_FRONTEND_CLIENT_ID AUTH_FRONTEND_REDIRECT_URI AUTH_FRONTEND_LOGOUT_URI VITE_DATA_SOURCE \
+              SITE_ORIGIN SITE_APP_URL; do
             if [[ -z "${!name}" ]]; then
               echo "::error::$name is not set in the GitHub Environment production"
               missing=1
@@ -101,7 +104,9 @@ jobs:
         with:
           node-version-file: web/.nvmrc
           cache: npm
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: |
+            web/package-lock.json
+            site/package-lock.json
 
       - name: Build the frontend
         env:
@@ -114,6 +119,14 @@ jobs:
           npm ci --prefix web
           npm run build --prefix web
           deploy/check_web_build.sh web/dist
+
+      # The product site (openspec/specs/web/site); its build ends with scripts/check-build.mjs.
+      - name: Build the site
+        env:
+          SITE_APP_URL: ${{ vars.SITE_APP_URL }}
+        run: |
+          npm ci --prefix site
+          npm run build --prefix site
 
       - name: Set up SSH
         env:
@@ -129,6 +142,12 @@ jobs:
           rsync -rlt --delete --chmod=D755,F644 \
             -e 'ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes' \
             web/dist/ "deploy@$DEPLOY_HOST:/srv/authorled/web/incoming/$TAG/"
+
+      - name: Send the site
+        run: |
+          rsync -rlt --delete --chmod=D755,F644 \
+            -e 'ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes' \
+            site/dist/ "deploy@$DEPLOY_HOST:/srv/authorled/site/incoming/$TAG/"
 
       - name: Deploy on the server
         run: |
@@ -154,3 +173,7 @@ jobs:
             echo "::error::/os/agents without a token answered $status instead of 401"
             exit 1
           fi
+
+      # The product site and its beta request route; the empty body is refused, nothing is stored.
+      - name: Check the site
+        run: deploy/check_site.sh "$SITE_ORIGIN"
