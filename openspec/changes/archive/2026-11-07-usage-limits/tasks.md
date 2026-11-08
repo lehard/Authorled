@@ -28,5 +28,5 @@
 
 ## Workflow follow-up
 
-- После релиза: на сервере `./scripts/usage.sh prod report` и сверка токенов с `ai.agno_runs`.
-- `/opsx:verify` и `/opsx:archive` — по решению владельца.
+- После релиза: на сервере `./scripts/usage.sh prod report` и сверка токенов с `ai.agno_runs` — сделано 2026-11-08 на v0.2.0, токены и расход сходятся.
+- `/opsx:verify` и `/opsx:archive` — сделаны 2026-11-07 по решению владельца.
