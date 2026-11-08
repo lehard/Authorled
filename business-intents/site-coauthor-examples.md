@@ -1,6 +1,6 @@
 # Бизнес-интент: примеры работы соавтора ниже первого экрана сайта
 
-Статус: согласовано владельцем 2026-11-09. Это следующий шаг после `site-hero-contradiction` (раздел Non-goals: варианты Б, В и Г ниже по странице, отдельным change). Change ещё не создан; его запускает владелец (`/opsx:propose`). Опирается на ветку `claude/site-hero-contradiction` (на 2026-11-09 не влита в `main`): change надо начинать после её слияния. Владелец: lehard. Обновлено: 2026-11-09.
+Статус: согласовано владельцем 2026-11-09. Это следующий шаг после `site-hero-contradiction` (раздел Non-goals: варианты Б, В и Г ниже по странице, отдельным change). Change ещё не создан; его запускает владелец (`/opsx:propose`). Опирается на первый экран из `site-hero-contradiction` (влит в `main` 2026-11-09, PR #31). Владелец: lehard. Обновлено: 2026-11-09.
 Рамки: мастер-спека `web/site` («Главная страница», «Правда на главной», «Песочница „Спросите соавтора“», «Бета вкладками», «Крупная фраза о видении», «Движение на сайте»), интент `business-intents/site-hero-contradiction.md`, `AGENTS.md` (тексты и картинки `site/` без OpenSpec, новые блоки и их поведение через OpenSpec).
 
 ## Why
@@ -87,7 +87,7 @@
 
 ## References
 
-- `business-intents/site-hero-contradiction.md` (Non-goals, Risks); ветка `claude/site-hero-contradiction`, архив `openspec/changes/archive/2026-11-09-site-hero-contradiction/`.
+- `business-intents/site-hero-contradiction.md` (Non-goals, Risks); PR #31, архив `openspec/changes/archive/2026-11-09-site-hero-contradiction/`.
 - `site/src/blocks/Sandbox.tsx`, `BetaTabs.tsx`, `Vision.tsx`; `site/src/content/demo.ts`, `sandbox.ts`, `copy.ts`.
 - `web/src/data/demo.json`: драфт `water-1`, правки `s1` и `s2`, карточки Миши и дяди Коли.
 - `openspec/specs/web/site/spec.md`.
