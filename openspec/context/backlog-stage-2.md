@@ -141,3 +141,16 @@ updated: 2026-11-08
 **Решение:** lehard 2026-11-06, при разборе Sudowrite и NovelAI: сохранить на будущее, сейчас не делать.
 **Источник:** [плагины Sudowrite](https://sudowrite.com/features/plugins), [как их создавать](https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/how-do-i-build-plugins/a3iVxJb4UZLKfSxf8BG3mY), [конструктор плагинов](https://sudowrite.com/blog/sudowrite-plugin-builder/).
 **Связано:** запись «Быстрые действия над выделенным» выше.
+
+### Jev как вариант оркестратора на экзамене маршрутизации
+**Что:** добавить в экзамен маршрутизации (`agno/evals/routing/`) четвёртый вариант — выбор доменов моделью решений Jev (TypeSafe, через OpenRouter, Decisions API): на каждый домен вопрос «касается ли сообщение этого домена» (Noul), все вопросы в одном запросе, история беседы — в контексте `state`. Прогнать оба состава (4 и 12 доменов) и сравнить с тремя вариантами на DeepSeek.
+**Зачем:** Jev не пишет текст, а только выбирает: около $0,0001 за запрос (весь рабочий набор из 413 случаев — около $0,04) и медиана 175 мс против 3–8 секунд и 0,04–0,13 ₽ у выбора домена на DeepSeek. Если на русском он не хуже, маршрутизация станет почти бесплатной и быстрой. Не проверено: русский язык (не заявлен), продолжения беседы (поля для истории нет), альфа-версия API, условия хранения данных; для продукта нужен путь в обход LiteLLM (ADR-003) и решение о передаче текстов авторов в OpenRouter.
+**Решение:** lehard 2026-11-08, при разборе итогов экзамена: записать на будущее; взять, когда вернёмся к оркестратору (признаки — `business-intents/coauthor-quality-eval.md`).
+**Источник:** [Jev в OpenRouter Labs](https://openrouter.ai/labs/jev), [руководство](https://openrouter.ai/docs/guides/community/jev), [сравнение с Claude Opus 5 на Banking77](https://openrouter.ai/blog/insights/jev-vs-claude-opus-5-classification/) (81,0% против 84,4%, один английский набор).
+**Связано:** `business-intents/coauthor-orchestrator-domains.md`, `openspec/changes/coauthor-orchestrator-domains/`, отчёт https://claude.ai/artifact/3MxWHJXYCXz8pKyGsWChju.
+
+### Предупреждение о балансе провайдера моделей
+**Что:** регулярно проверять баланс DeepSeek (`GET https://api.deepseek.com/user/balance`) и заранее предупреждать владельца, когда он подходит к нулю; при `is_available: false` — сразу.
+**Зачем:** 2026-11-08 баланс кончился, и соавтор перестал отвечать и локально, и в `app.soavtor.app` (ключ один на оба стенда); владелец узнал об этом по ошибке в чате. После `coauthor-chat-errors` автор видит только «соавтор недоступен», и без такой проверки сбой заметен лишь по логам.
+**Решение:** lehard 2026-11-08, при разборе сбоя соавтора: записать на будущее (`business-intents/coauthor-chat-errors.md`, Non-goals).
+**Связано:** `agno/litellm/config.yaml` (`deepseek-fast`, `deepseek-thinking`), `DEEPSEEK_API_KEY` в `.env` и `/etc/authorled/authorled.env`.
