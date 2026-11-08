@@ -42,6 +42,8 @@ The flow from discussion to code:
    `tasks.md` and ask the user to run `/opsx:update` when the plan must change.
 - Exempt: typos, formatting, comments, edits under `openspec/` itself, and read-only
   questions or investigation (`/opsx:explore`). If unsure whether a request is exempt, ask.
+- Also exempt: texts and images of the product site in `site/` (owner, 2026-11-08). New pages,
+  forms, the build of `site/` and anything that touches the core go through OpenSpec; a doubtful edit too.
 
 ## Workflows
 
@@ -115,6 +117,13 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   the routes `/api/v1` of the core with revisions for `If-Match`) or `fixturesProvider.ts` (sample data), chosen by
   `VITE_DATA_SOURCE`. `web/src/editor/`: the screenplay editor; it exports only, the core imports manuscripts;
   `anchors.ts` places co-author suggestions by scene `uid` and quote.
+- `site/`: the product site (openspec/specs/web/site): static pages prerendered to HTML (`scripts/prerender.mjs`,
+  checked by `scripts/check-build.mjs`), no server and no data of its own. It imports the tokens and fonts of
+  `web/src/design-system` (so its build needs `web/node_modules`) and takes `SITE_ORIGIN` and `SITE_APP_URL` from
+  `.env`. Its beta request form posts to `/os/api/v1/beta-requests` on its own origin: the route `app/api/beta.py`,
+  the only product route without a token (`PUBLIC_ROUTES` in `app/auth/authorization.py`), stores requests in the
+  core (`core/beta_requests.py`); `./scripts/usage.sh local|prod beta-requests` lists them. Not deployed until the
+  product has its own domain. Landing skills: `landing-page-design`, `copywriting`, `unslop`; motion — `design-to-motion` (existing frames), `stageshow` (faux UI); Russian copy — `chukovsky`.
 - `compose.yaml`: local PostgreSQL, the LiteLLM proxy, the antivirus ClamAV (`clamav`, required by the API through
   `CLAMAV_HOST` and `CLAMAV_PORT`) and development API. The API connects
   as the non-superuser role `agentos` (`AGENTOS_DB_PASSWORD`), prepared by `agentos-db-init`
@@ -157,9 +166,17 @@ npm ci --prefix web
 npm run dev --prefix web
 ```
 
+The product site (needs `web/node_modules`, `SITE_ORIGIN`, `SITE_APP_URL` and, for the dev server, `AGENTOS_URL`
+in `.env`; it serves on `127.0.0.1:5174`):
+
+```sh
+npm ci --prefix site
+npm run dev --prefix site
+```
+
 `validate.sh` stops before any check unless `python`, `ruff`, `mypy` and `alembic` come from one project environment
-(activate `agno/.venv`; CI uses the runner's Python). It also checks the frontend and fails while `web/node_modules` is missing. `web/package.json`
-pins exact versions; commit `web/package-lock.json`.
+(activate `agno/.venv`; CI uses the runner's Python). It also checks the frontend and the site and fails while `web/node_modules` or `site/node_modules` is missing. `web/package.json`
+pins exact versions; commit `web/package-lock.json`; the same for `site/`.
 
 `agno/pyproject.toml` declares dependencies. Regenerate `agno/requirements.txt` with
 `./agno/scripts/generate_requirements.sh`; do not add `uv.lock`. Use `uv run --no-project`

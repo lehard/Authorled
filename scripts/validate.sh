@@ -115,6 +115,36 @@ else
   done
 fi
 
+# Product site (site/, openspec/specs/web/site): its own dependencies, and the design system of web/,
+# whose Tailwind must be the same pinned version.
+SITE_DIR="${REPO_ROOT}/site"
+echo ""
+if [[ ! -d "${SITE_DIR}/node_modules" ]]; then
+  echo -e "${RED}site/node_modules is missing.${NC} Install the site dependencies: ${BOLD}npm ci --prefix site${NC}"
+  failed=1
+else
+  web_tailwind="$(node -p "require('${WEB_DIR}/package.json').devDependencies.tailwindcss ?? require('${WEB_DIR}/package.json').dependencies.tailwindcss")"
+  site_tailwind="$(node -p "require('${SITE_DIR}/package.json').devDependencies.tailwindcss")"
+  if [[ "${web_tailwind}" != "${site_tailwind}" ]]; then
+    echo -e "${RED}tailwindcss differs:${NC} web ${web_tailwind}, site ${site_tailwind}; the site builds the tokens of web/."
+    failed=1
+  fi
+
+  echo -e "${DIM}> npm run format:check --prefix site${NC}"
+  if ! npm run --silent format:check --prefix "${SITE_DIR}"; then
+    echo -e "${RED}Fix with:${NC} ${BOLD}./scripts/format.sh${NC}"
+    failed=1
+  fi
+
+  for step in lint typecheck build; do
+    echo ""
+    echo -e "${DIM}> npm run ${step} --prefix site${NC}"
+    if ! npm run --silent "${step}" --prefix "${SITE_DIR}"; then
+      failed=1
+    fi
+  done
+fi
+
 echo ""
 echo -e "${DIM}> check_web_tokens${NC}"
 if ! "${WEB_DIR}/scripts/check_web_tokens.sh"; then

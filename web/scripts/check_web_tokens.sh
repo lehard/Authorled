@@ -2,12 +2,12 @@
 
 ############################################################################
 #
-#    Design token check for web/
+#    Design token check for web/ and site/
 #
 #    Usage: ./web/scripts/check_web_tokens.sh
 #
 #    Colours live only in web/src/design-system/tokens.css. Everywhere else in
-#    web/src code uses semantic tokens (openspec/specs/web/design-system):
+#    web/src, web/index.html and site/src code uses semantic tokens (openspec/specs/web/design-system, web/site):
 #    no hex colours, no colour functions, no Tailwind palette classes, and no
 #    layer-1 primitives such as var(--blue-9) outside the showcase page.
 #
@@ -30,7 +30,14 @@ PATTERN="#[0-9a-fA-F]{3,8}\\b|\\b(rgba?|hsla?|oklch|oklab|lab|lch|hwb|color)\\(|
 
 hits="$(grep -rnE "${PATTERN}" \
     --include='*.ts' --include='*.tsx' --include='*.css' \
-    web/src 2> /dev/null | grep -v "^${TOKENS_FILE}:" || true)"
+    web/src site/src 2> /dev/null | grep -v "^${TOKENS_FILE}:" || true)"
+# The splash of the app lives in web/index.html and uses the same tokens (web/design-system).
+if [[ ! -f web/index.html ]]; then
+    echo "check_web_tokens: web/index.html not found" >&2
+    exit 1
+fi
+index_hits="$(grep -nHE "${PATTERN}" web/index.html || true)"
+hits="$(printf '%s\n%s' "${hits}" "${index_hits}" | sed '/^$/d')"
 
 failed=0
 if [[ -n "${hits}" ]]; then
@@ -49,7 +56,7 @@ if [[ -z "${scales}" ]]; then
 fi
 primitive_hits="$(grep -rnE -- "--(${scales})-[0-9]+\b" \
     --include='*.ts' --include='*.tsx' --include='*.css' \
-    web/src 2> /dev/null | grep -v -e "^${TOKENS_FILE}:" -e "^${SHOWCASE_DIR}/" || true)"
+    web/src site/src 2> /dev/null | grep -v -e "^${TOKENS_FILE}:" -e "^${SHOWCASE_DIR}/" || true)"
 if [[ -n "${primitive_hits}" ]]; then
     echo "check_web_tokens: layer-1 primitives outside ${TOKENS_FILE} and ${SHOWCASE_DIR}/; use layer 2-3 tokens:" >&2
     echo "${primitive_hits}" >&2

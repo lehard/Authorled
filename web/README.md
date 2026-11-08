@@ -51,6 +51,11 @@ third-party fonts and assets.
   of the editor; the export samples the core import tests read (`agno/tests/fixtures/import/all-types.*`)
   must equal the current export. `npm run samples:export` (`scripts/samples.ts`) writes them again.
 - `scripts/check-native-ui.ts` — no native tooltips, checkboxes, radio buttons or selects.
+- `scripts/check-bundle.mjs` — part of `npm run build`: the scripts of the first screen (sign-in,
+  shelf) stay within 300 KB gzip, and the story window and the showcase stay separate parts loaded
+  when opened (`src/app/screens.ts`; the shelf preloads the story window). `index.html` shows a
+  splash on the tokens until the app mounts, and «Не удалось загрузить Соавтор» if a script or
+  style does not load (`openspec/specs/web/app`, «Заставка и отказ загрузки»).
 
 Checks run from the repository root with `./scripts/validate.sh`.
 

@@ -27,9 +27,151 @@
         });
       })();
     </script>
+    <script>
+      // A script or style of the app that fails to load before the app mounts replaces the
+      // splash with an explicit message (openspec/specs/web/app, «Заставка и отказ загрузки»).
+      // Resource errors do not bubble, so the listener runs in the capture phase. After the app
+      // mounts (event soavtor:mounted from src/main.tsx) failed parts are reported by the app.
+      (function () {
+        function failedUrl(element) {
+          if (element instanceof HTMLScriptElement) return element.src;
+          if (
+            element instanceof HTMLLinkElement &&
+            /(^|\s)(stylesheet|modulepreload)(\s|$)/.test(element.rel)
+          ) {
+            return element.href;
+          }
+          return null;
+        }
+        function show() {
+          var root = document.getElementById("root");
+          var template = document.getElementById("load-error");
+          if (root === null || template === null) {
+            throw new Error("index.html has no #root or #load-error");
+          }
+          root.replaceChildren(template.content.cloneNode(true));
+          root.querySelector("button").addEventListener("click", function () {
+            window.location.reload();
+          });
+        }
+        function onError(event) {
+          var url = failedUrl(event.target);
+          if (url === null || new URL(url).origin !== window.location.origin) {
+            return;
+          }
+          if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", show, { once: true });
+          } else {
+            show();
+          }
+        }
+        window.addEventListener("error", onError, true);
+        window.addEventListener(
+          "soavtor:mounted",
+          function () {
+            window.removeEventListener("error", onError, true);
+          },
+          { once: true },
+        );
+      })();
+    </script>
+    <!-- Tokens load from the page itself, so the splash has the colours of the theme in dev too. -->
+    <link rel="stylesheet" href="/src/design-system/tokens.css" />
+    <style>
+      /* Splash and load error before the app (openspec/specs/web/design-system, «Заставка в теме
+         автора»): semantic tokens only; the ink line is .ink-loader of typography.css. */
+      .boot {
+        display: grid;
+        min-height: 100dvh;
+        place-items: center;
+        padding: 1rem;
+        font-family: var(--font-ui);
+        color: var(--foreground);
+      }
+      .boot-mark {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.25rem;
+      }
+      .boot-brand {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        font-family: var(--font-heading);
+        font-size: 19px;
+      }
+      .boot-brand::before {
+        content: "";
+        display: inline-block;
+        width: 1.75rem;
+        height: 1.75rem;
+        border-radius: 0.5rem;
+        background: var(--primary);
+      }
+      .boot-card {
+        display: grid;
+        width: 100%;
+        max-width: 28rem;
+        justify-items: center;
+        gap: 1rem;
+        padding: 2rem;
+        border-radius: var(--radius-panel);
+        background: var(--paper);
+        color: var(--paper-foreground);
+        box-shadow: var(--shadow-paper);
+        text-align: center;
+      }
+      .boot-card h1 {
+        margin: 0;
+        font-family: var(--font-heading);
+        font-size: var(--text-heading-2);
+        font-weight: 400;
+      }
+      .boot-card p {
+        margin: 0;
+        color: var(--muted-foreground);
+      }
+      .boot-card button {
+        padding: 0.5rem 1.25rem;
+        border: 0;
+        border-radius: 9999px;
+        background: var(--primary);
+        color: var(--primary-foreground);
+        font: inherit;
+        font-weight: 500;
+        cursor: pointer;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main class="boot">
+        <div class="boot-mark" role="status">
+          <span class="boot-brand">Соавтор</span>
+          <svg viewBox="0 0 96 28" aria-hidden="true" class="ink-loader">
+            <path class="ink-loader-rule" d="M4 24 H92" pathLength="1" />
+            <path
+              class="ink-loader-ink"
+              d="M4 18 C 12 4, 20 4, 24 14 S 34 26, 42 14 S 54 2, 60 12 S 72 26, 80 14 S 88 6, 92 10"
+              pathLength="1"
+            />
+          </svg>
+        </div>
+      </main>
+    </div>
+    <template id="load-error">
+      <main class="boot">
+        <div class="boot-card" role="alert">
+          <h1>Не удалось загрузить Соавтор</h1>
+          <p>
+            Часть приложения не пришла. Проверьте соединение и обновите
+            страницу.
+          </p>
+          <button type="button">Обновить</button>
+        </div>
+      </main>
+    </template>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

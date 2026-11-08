@@ -37,6 +37,26 @@ async def read_object(request: Request) -> dict[str, Any]:
     return body
 
 
+async def read_small_object(request: Request, limit: int) -> dict[str, Any]:
+    """A JSON object of at most `limit` bytes, checked by Content-Length and by the bytes actually read."""
+    too_large = Problem(413, "Content Too Large", f"Тело запроса больше {limit // 1024} КБ.")
+    length = request.headers.get("content-length")
+    if length is not None and length.isdigit() and int(length) > limit:
+        raise too_large
+    raw = bytearray()
+    async for chunk in request.stream():
+        raw.extend(chunk)
+        if len(raw) > limit:
+            raise too_large
+    try:
+        body = json.loads(raw)
+    except (json.JSONDecodeError, UnicodeDecodeError) as error:
+        raise Problem(422, "Unprocessable Content", "Тело запроса — не JSON.") from error
+    if not isinstance(body, dict):
+        raise Problem(422, "Unprocessable Content", "Тело запроса должно быть объектом JSON.")
+    return body
+
+
 def if_match(request: Request) -> int:
     """The revision the change is based on: `If-Match: 7` (an ETag in quotes is accepted too)."""
     value = request.headers.get("If-Match")

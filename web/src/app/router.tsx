@@ -3,15 +3,14 @@ import { createBrowserRouter } from "react-router";
 import { CallbackScreen } from "@/auth/CallbackScreen";
 import { LoginScreen } from "@/auth/LoginScreen";
 import { OpenDraft } from "@/screens/project/OpenDraft";
-import { ProjectScreen } from "@/screens/project/ProjectScreen";
 import { SettingsScreen } from "@/screens/settings/SettingsScreen";
 import { ProjectTrashScreen } from "@/screens/shelf/ProjectTrashScreen";
 import { ShelfScreen } from "@/screens/shelf/ShelfScreen";
 import { NotFoundScreen } from "@/screens/system/NotFoundScreen";
-import { Showcase } from "@/showcase/Showcase";
 
 import type { DataSource } from "./config";
 import { RefineRoot, RequireAuth } from "./RefineRoot";
+import { projectScreen, showcaseScreen } from "./screens";
 
 // Addresses of the screens (openspec/specs/web/workspace, «Адреса экранов»).
 export function createRouter(dataSource: DataSource) {
@@ -19,7 +18,7 @@ export function createRouter(dataSource: DataSource) {
     {
       element: <RefineRoot dataSource={dataSource} />,
       children: [
-        { path: "/showcase", element: <Showcase /> },
+        { path: "/showcase", element: <showcaseScreen.Screen /> },
         { path: "/login", element: <LoginScreen /> },
         { path: "/auth/callback", element: <CallbackScreen /> },
         {
@@ -32,7 +31,7 @@ export function createRouter(dataSource: DataSource) {
             { path: "/p/:projectId/:doc", element: <OpenDraft /> },
             {
               path: "/p/:projectId/d/:draftId/:doc",
-              element: <ProjectScreen />,
+              element: <projectScreen.Screen />,
             },
             { path: "*", element: <NotFoundScreen /> },
           ],

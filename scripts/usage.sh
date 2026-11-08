@@ -18,7 +18,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 usage() {
-    echo 'Usage: ./scripts/usage.sh local|prod report | set-plan <e-mail> <plan>'
+    echo 'Usage: ./scripts/usage.sh local|prod report | set-plan <e-mail> <plan> | beta-requests'
 }
 
 [[ $# -ge 2 ]] || { usage >&2; exit 2; }
@@ -32,6 +32,7 @@ esac
 case "$1" in
     report) [[ $# -eq 1 ]] || { usage >&2; exit 2; } ;;
     set-plan) [[ $# -eq 3 ]] || { usage >&2; exit 2; } ;;
+    beta-requests) [[ $# -eq 1 ]] || { usage >&2; exit 2; } ;;
     *) usage >&2; exit 2 ;;
 esac
 
