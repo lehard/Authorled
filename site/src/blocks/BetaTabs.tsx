@@ -3,9 +3,11 @@ import { useRef, useState, type KeyboardEvent } from "react";
 import { Shot } from "../components/ui";
 import { BETA } from "../content/copy";
 import { useInView } from "../motion/hooks";
+import { OneAction } from "./OneAction";
 
 // What works in the beta, as tabs (openspec/specs/web/site, «Бета вкладками»; design D6): the ARIA tabs
 // pattern; every panel is in the prerendered HTML, the inactive ones with `hidden`.
+// Under the panels: the «one action» cards of the co-author (OneAction.tsx).
 
 const TABS = [
   {
@@ -132,6 +134,7 @@ export function BetaTabs() {
             <Shot name={tab.shot} alt={tab.alt} caption={BETA.caption} />
           </div>
         ))}
+        <OneAction />
       </div>
     </section>
   );

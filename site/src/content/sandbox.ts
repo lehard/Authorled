@@ -2,11 +2,16 @@
 // The first two follow what the co-author does in the beta (a real answer about contradictions, the real
 // suggestion on scene 5); the third needs the future timeline and is marked as a concept.
 
+/** A link of an answer to a quoted line of the sandbox fragment: scene 5 (Kolya) or scene 6 (Anya). */
+export type SceneLink = { label: string; line: "kolya" | "anya" };
+
 export type SandboxAnswer = {
   id: string;
   question: string;
   concept: boolean;
   paragraphs: string[];
+  /** Links to the scenes the answer speaks of, shown once it is typed out (design D1 of site-coauthor-examples). */
+  links?: SceneLink[];
 };
 
 export const ANSWERS: SandboxAnswer[] = [
@@ -20,6 +25,10 @@ export const ANSWERS: SandboxAnswer[] = [
       "2. В сценах 2 и 6 Аня помечена «(З.К.)», но в сцене 6 она входит на кухню раньше своей реплики. Пометьте иначе, например «(из коридора)».",
       "3. Коле 60, в 1998-м ему было 32 — «сорок лет чинит моторы» сходится.",
       "Что из этого задумано?",
+    ],
+    links: [
+      { label: "Сц. 5", line: "kolya" },
+      { label: "Сц. 6", line: "anya" },
     ],
   },
   {

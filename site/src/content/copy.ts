@@ -42,12 +42,49 @@ export const SANDBOX = {
   concept: "Концепт",
   chatTitle: "Соавтор",
   chatSees: "Видит: Текст сценария",
+  /** Scene links under the answer about contradictions (design D1 of site-coauthor-examples). */
+  linksLabel: "Где это в тексте:",
+  linksConcept:
+    "В бете соавтор называет сцены, но перейти к ним из чата пока нельзя.",
 };
 
 export const BETA = {
   title: "Что уже работает в бете",
   lead: "Всё для полнометражного сценария в одном окне — и соавтор, который видит то же, что и вы.",
   caption: "Экран беты на демонстрационной истории «Тихая вода».",
+};
+
+/** The «one action» cards under the beta tabs (design D3 of site-coauthor-examples); quotes in `demo.ts`. */
+export const ONE_ACTION = {
+  title: "Что соавтор умеет в бете",
+  caption: "Примеры на демо-истории беты «Тихая вода».",
+  scene: "Сцена",
+  line: {
+    label: "Линия героя",
+    source: "Карточка Миши",
+    note: "В сценах 1–7 об этом ни слова. Линия Миши потерялась?",
+  },
+  suggestion: {
+    label: "Правка",
+    group: "Соавтор предлагает правку",
+    accept: "Принять",
+    reject: "Отклонить",
+    accepted: "Правка принята.",
+    rejected: "Правка отклонена, текст прежний.",
+    undo: "Вернуть предложение",
+  },
+  comment: {
+    label: "Комментарий",
+    text: "Аня впервые не отвечает матери. Вернуть этот жест в финале?",
+  },
+};
+
+/** The hero's card next to the vision phrase (design D4 of site-coauthor-examples); facts in `demo.ts`. */
+export const VISION_CARD = {
+  badge: "Концепт",
+  notYet: "В бете карточка героя пока не ссылается на сцены.",
+  scene: "сц.",
+  label: "Карточка героя",
 };
 
 export const PATH = {

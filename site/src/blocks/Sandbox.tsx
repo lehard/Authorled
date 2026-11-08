@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 
 import { SANDBOX } from "../content/copy";
-import { AFTER, SCENE, SUGGESTION } from "../content/demo";
-import { ANSWERS } from "../content/sandbox";
+import { AFTER, SCENE, SCENE_6, SUGGESTION } from "../content/demo";
+import { ANSWERS, type SceneLink } from "../content/sandbox";
 import { prefersReducedMotion, useInView, useOnScreen } from "../motion/hooks";
 
 // The sandbox «Спросите соавтора» (openspec/specs/web/site; design D5): prepared answers are typed word by
-// word into a chat that looks like the co-author panel of the beta. No request leaves the page.
+// word into a chat that looks like the co-author panel of the beta. No request leaves the page. The fragment holds
+// scenes 5 and 6; the answer about contradictions links to both, and a link lights its line (design D1–D2 of
+// site-coauthor-examples).
 
 const WORDS_PER_SECOND = 32;
 
@@ -27,6 +29,20 @@ function cut(paragraphs: string[], count: number): string[] {
   return out;
 }
 
+const DIALOGUE = "pr-[12%] pl-[18%]";
+const CHARACTER = "mt-3 pl-[34%] uppercase";
+
+/** A quoted line of the fragment: lit while its scene link is pressed (the same look as on the first screen). */
+function Quote({ text, lit }: { text: string; lit: boolean }) {
+  return (
+    <mark
+      className={`rounded-sm px-0.5 text-inherit transition-colors duration-300 ease-base ${lit ? "bg-ai-subtle ring-1 ring-ai-border" : "bg-transparent"}`}
+    >
+      {text}
+    </mark>
+  );
+}
+
 export function Sandbox() {
   const ref = useRef<HTMLDivElement>(null);
   const onScreen = useOnScreen(ref);
@@ -34,6 +50,8 @@ export function Sandbox() {
   const [active, setActive] = useState(ANSWERS[0].id);
   // Words shown of the active answer; null — the whole answer (the prerendered state).
   const [shown, setShown] = useState<number | null>(null);
+  // The line lit by a scene link of the answer.
+  const [lit, setLit] = useState<SceneLink["line"] | null>(null);
 
   const answer = ANSWERS.find((item) => item.id === active);
   if (answer === undefined) throw new Error(`Sandbox: no answer ${active}`);
@@ -62,6 +80,7 @@ export function Sandbox() {
 
   function ask(id: string) {
     setActive(id);
+    setLit(null);
     setShown(prefersReducedMotion() ? null : 0);
   }
 
@@ -101,19 +120,28 @@ export function Sandbox() {
                 {line.text}
               </p>
             ))}
-            <p className="pr-[12%] pl-[18%]">{SUGGESTION.before}</p>
+            <p className={DIALOGUE}>
+              <Quote text={SUGGESTION.before} lit={lit === "kolya"} />
+            </p>
             {AFTER.map((line, index) => (
               <p
                 key={index}
-                className={
-                  line.kind === "character"
-                    ? "mt-3 pl-[34%] uppercase"
-                    : "pr-[12%] pl-[18%]"
-                }
+                className={line.kind === "character" ? CHARACTER : DIALOGUE}
               >
                 {line.text}
               </p>
             ))}
+            <p aria-hidden="true" className="mt-3 text-muted-foreground">
+              …
+            </p>
+            <p className="mt-3 font-bold uppercase">{SCENE_6.heading}</p>
+            <p aria-hidden="true" className="text-muted-foreground">
+              …
+            </p>
+            <p className={CHARACTER}>{SCENE_6.character}</p>
+            <p className={DIALOGUE}>
+              {SCENE_6.lead} <Quote text={SCENE_6.quote} lit={lit === "anya"} />
+            </p>
           </div>
           <div className="flex min-h-[420px] flex-col rounded-2xl bg-card ring-1 ring-border">
             <div className="border-b border-border px-5 py-3">
@@ -168,6 +196,35 @@ export function Sandbox() {
                         {text}
                       </p>
                     ))}
+                    {item.links !== undefined &&
+                    (!isActive || shown === null || shown >= total) ? (
+                      <div className="flex flex-col gap-2 border-t border-border pt-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="body-6 text-muted-foreground">
+                            {SANDBOX.linksLabel}
+                          </span>
+                          {item.links.map((link) => (
+                            <button
+                              key={link.line}
+                              type="button"
+                              aria-pressed={isActive && lit === link.line}
+                              onClick={() =>
+                                setLit(lit === link.line ? null : link.line)
+                              }
+                              className="rounded-full bg-paper px-3 py-1 caption-1 text-ai ring-1 ring-ai-border transition-colors duration-300 ease-base hover:bg-ai-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-pressed:bg-ai-subtle"
+                            >
+                              {link.label}
+                            </button>
+                          ))}
+                          <span className="rounded-full bg-paper px-2 py-0.5 caption-3 text-muted-foreground ring-1 ring-border">
+                            {SANDBOX.concept}
+                          </span>
+                        </div>
+                        <p className="caption-3 font-normal text-muted-foreground">
+                          {SANDBOX.linksConcept}
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
                 );
               })}

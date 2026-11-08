@@ -5,6 +5,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 
+import { ONE_ACTION, SANDBOX, VISION_CARD } from "../src/content/copy.ts";
+import {
+  CONTRADICTION,
+  KOLYA,
+  ONE_ACTION_QUOTES,
+  SCENE_6,
+} from "../src/content/demo.ts";
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dist = path.join(root, "dist");
 const problems = [];
@@ -58,6 +66,54 @@ if (problems.length === 0) {
       fail(`section ${id} does not say the beta has none of it yet`);
   }
   const count = (html, needle) => html.split(needle).length - 1;
+  // React splits text around expressions with <!-- --> in the prerender; compare without those markers.
+  const plain = (html) => html.replaceAll("<!-- -->", "");
+  // Examples of the co-author below the first screen (design D5 of site-coauthor-examples), texts from content/.
+  const sandbox = plain(section("sandbox-title"));
+  for (const text of [
+    SCENE_6.heading,
+    SCENE_6.lead,
+    SCENE_6.quote,
+    "Сц. 5",
+    "Сц. 6",
+  ]) {
+    if (!sandbox.includes(text)) fail(`the sandbox has no «${text}»`);
+  }
+  if (!sandbox.includes(SANDBOX.linksConcept))
+    fail("the scene links of the sandbox are not marked as a concept");
+  const beta = plain(section("beta-tabs-title"));
+  const cards = beta.slice(beta.indexOf(ONE_ACTION.title));
+  if (!beta.includes(ONE_ACTION.title))
+    fail("the beta block has no row of «one action» cards");
+  for (const text of [
+    ONE_ACTION.caption,
+    ONE_ACTION_QUOTES.mishaGoal,
+    ONE_ACTION_QUOTES.suggestion.before,
+    ONE_ACTION_QUOTES.suggestion.after,
+    ONE_ACTION_QUOTES.comment.quote,
+    ONE_ACTION.comment.text,
+  ]) {
+    if (!cards.includes(text)) fail(`the «one action» cards have no «${text}»`);
+  }
+  if (cards.includes("Концепт"))
+    fail("the «one action» cards must not be marked «Концепт»");
+  for (const line of [CONTRADICTION.first.line, CONTRADICTION.second.line]) {
+    if (cards.includes(line))
+      fail(`the «one action» cards repeat the first screen: «${line}»`);
+  }
+  const vision = plain(section("vision-title"));
+  if (!vision) fail("index.html has no section vision-title");
+  for (const text of [
+    KOLYA.name,
+    ...KOLYA.facts.map((fact) => fact.text),
+    ...KOLYA.facts
+      .filter((fact) => fact.scene !== null)
+      .map((fact) => `${VISION_CARD.scene} ${fact.scene}`),
+    VISION_CARD.badge,
+    VISION_CARD.notYet,
+  ]) {
+    if (!vision.includes(text)) fail(`the hero card has no «${text}»`);
+  }
   if (count(section("sandbox-title"), "пример ответа") < 3)
     fail("the sandbox must have at least three answers marked «пример ответа»");
   if (count(home, 'role="tabpanel"') < 5)

@@ -77,6 +77,34 @@ try {
         `${name}px: the ${which} tab has ${room}px of room in its row, its ring is cut`,
       );
     }
+    // The hero card of the vision block: next to the phrase on a wide screen, under it on a phone.
+    const placement = await page.evaluate(() => {
+      const phrase = document
+        .getElementById("vision-title")
+        .getBoundingClientRect();
+      const card = document
+        .querySelector("section[aria-labelledby='vision-title'] aside")
+        .getBoundingClientRect();
+      return {
+        below: card.top >= phrase.bottom,
+        beside: card.left >= phrase.right,
+      };
+    });
+    check(
+      width < 1024 ? placement.below : placement.beside,
+      `${name}px: the hero card is not ${width < 1024 ? "under" : "next to"} the vision phrase`,
+    );
+    // The «one action» cards stand in a column on a phone and in a row on a wide screen.
+    const columns = await page
+      .locator("section[aria-labelledby='beta-tabs-title'] ul > li")
+      .evaluateAll(
+        (cards) =>
+          new Set(cards.map((card) => card.getBoundingClientRect().left)).size,
+      );
+    check(
+      columns === (width < 1024 ? 1 : 3),
+      `${name}px: the «one action» cards stand in ${columns} columns`,
+    );
     await scrollThrough(page);
     const overflow = await page.evaluate(
       () =>
@@ -170,6 +198,73 @@ try {
   check(
     requests.length === 0,
     `sandbox: requests were sent: ${requests.join(", ")}`,
+  );
+
+  // The scene links of the answer about contradictions light one quoted line of the fragment each.
+  await questions.first().click();
+  await page.waitForTimeout(2500);
+  // The highlight fades in and out over 300 ms; read it once the transition is over.
+  const litLines = () =>
+    page
+      .waitForTimeout(400)
+      .then(() =>
+        sandbox
+          .locator("mark")
+          .evaluateAll((marks) =>
+            marks
+              .filter(
+                (mark) =>
+                  getComputedStyle(mark).backgroundColor !== "rgba(0, 0, 0, 0)",
+              )
+              .map((mark) => mark.textContent),
+          ),
+      );
+  await sandbox.getByRole("button", { name: "Сц. 6" }).click();
+  let lines = await litLines();
+  check(
+    lines.length === 1 && lines[0].includes("Миша утонул не случайно"),
+    `sandbox: «Сц. 6» lit ${JSON.stringify(lines)}, not Anya's line`,
+  );
+  await sandbox.getByRole("button", { name: "Сц. 5" }).focus();
+  await page.keyboard.press("Enter");
+  lines = await litLines();
+  check(
+    lines.length === 1 && lines[0] === "Он утонул. Всё.",
+    `sandbox: Enter on «Сц. 5» lit ${JSON.stringify(lines)}, not Kolya's line`,
+  );
+  await questions.nth(1).click();
+  check(
+    (await litLines()).length === 0,
+    "sandbox: another question left a line lit",
+  );
+
+  // The suggestion card under the beta tabs: accept, bring back, reject from the keyboard, bring back.
+  const suggestion = page
+    .locator("section[aria-labelledby='beta-tabs-title'] li")
+    .filter({
+      has: page.getByRole("group", { name: "Соавтор предлагает правку" }),
+    });
+  const after = "Чашка давно чистая — Вера всё равно её трёт.";
+  const before = "Чашка давно чистая. Она всё равно трёт её губкой.";
+  await suggestion.getByRole("button", { name: "Принять" }).click();
+  check(
+    (await suggestion.locator("del").count()) === 0 &&
+      (await suggestion.innerText()).includes(after) &&
+      !(await suggestion.innerText()).includes(before),
+    "suggestion: «Принять» did not show the new line alone",
+  );
+  await suggestion.getByRole("button", { name: "Вернуть предложение" }).click();
+  await suggestion.getByRole("button", { name: "Отклонить" }).focus();
+  await page.keyboard.press("Enter");
+  check(
+    (await suggestion.innerText()).includes(before) &&
+      !(await suggestion.innerText()).includes(after),
+    "suggestion: Enter on «Отклонить» did not keep the old line",
+  );
+  await suggestion.getByRole("button", { name: "Вернуть предложение" }).click();
+  check(
+    await suggestion.getByRole("button", { name: "Принять" }).isVisible(),
+    "suggestion: «Вернуть предложение» did not bring the suggestion back",
   );
 
   // Beta tabs: the arrow key opens the next tab.
