@@ -87,6 +87,11 @@ export default defineConfig(({ command, mode }) => {
         },
       },
     },
+    // The manifest lets scripts/check-bundle.mjs measure the first screen (openspec/specs/web/app,
+    // «Бюджет первого экрана»).
+    build: {
+      manifest: true,
+    },
     preview: {
       host: "127.0.0.1",
       strictPort: true,

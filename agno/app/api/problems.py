@@ -17,11 +17,12 @@ PROBLEM_JSON = "application/problem+json"
 class Problem(Exception):
     """A refusal of a product route with its HTTP status and a reason for a person."""
 
-    def __init__(self, status: int, title: str, detail: str) -> None:
+    def __init__(self, status: int, title: str, detail: str, headers: dict[str, str] | None = None) -> None:
         super().__init__(detail)
         self.status = status
         self.title = title
         self.detail = detail
+        self.headers = headers or {}
 
 
 def problem_response(problem: Problem) -> JSONResponse:
@@ -30,7 +31,7 @@ def problem_response(problem: Problem) -> JSONResponse:
         status_code=problem.status,
         content={"type": "about:blank", "title": problem.title, "status": problem.status, "detail": problem.detail},
         media_type=PROBLEM_JSON,
-        headers={"Cache-Control": "no-store"},
+        headers={**problem.headers, "Cache-Control": "no-store"},
     )
 
 

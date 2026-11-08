@@ -1,7 +1,8 @@
 import { MoreHorizontal, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
+import { projectScreen } from "@/app/screens";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -47,6 +48,12 @@ export function ShelfScreen() {
   const { createStory, renameStory, trashStory } = useStoryActions();
   const [creating, setCreating] = useState(false);
   const [renaming, setRenaming] = useState<Project | null>(null);
+  // The stories are on screen: the story window loads in the background, so opening a story
+  // does not wait for it (openspec/specs/web/app, «Фоновая подгрузка окна истории»).
+  const shown = query.isSuccess && trashQuery.isSuccess;
+  useEffect(() => {
+    if (shown) projectScreen.preload();
+  }, [shown]);
 
   const failed = [query, trashQuery].find((q) => q.isError);
   if (failed?.error)

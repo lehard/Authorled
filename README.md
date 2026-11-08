@@ -382,8 +382,8 @@ source agno/.venv/bin/activate
 python -m evals --tag smoke
 ```
 
-The repository has three modules: the backend in `agno/`, the frontend in `web/` and the
-Authentik configuration in `auth/`; the root holds what they share (`compose.yaml`, `.env`,
+The repository has four modules: the backend in `agno/`, the frontend in `web/`, the
+Authentik configuration in `auth/` and the product site in `site/`; the root holds what they share (`compose.yaml`, `.env`,
 `openspec/`, `scripts/`). The Python environment lives in `agno/.venv`. If you still have a
 `.venv` at the repository root from before the backend moved to `agno/`, delete it and run
 `./agno/scripts/venv_setup.sh` again.
@@ -432,6 +432,22 @@ npm run dev --prefix web
 
 The dev server opens the design-system showcase at http://127.0.0.1:5173.
 `./scripts/validate.sh` checks the frontend too, so install its dependencies first.
+
+### Product site
+
+The public site of the product lives in [site/](site/): the main page, the policy for personal data and the request
+for the closed beta. It is prerendered to static HTML and takes the tokens and fonts of `web/`, so install both:
+
+```sh
+npm ci --prefix web
+npm ci --prefix site
+npm run dev --prefix site    # http://127.0.0.1:5174
+```
+
+`.env` needs `SITE_ORIGIN` (the site's own address), `SITE_APP_URL` (the service «Войти» opens) and, for the dev
+server, `AGENTOS_URL`: the form posts to `/os/api/v1/beta-requests` on the site's origin and the dev server passes it
+to the API. `npm run build --prefix site` writes `site/dist/` and checks it (texts of the blocks, «Концепт» marks, images, scripts of the main page ≤ 120 KB gzip). The behaviour of the page (live edit, sandbox, tabs, path, impact, keyboard, no JavaScript, reduced motion, 390 px) is checked in a real browser against `npm run preview --prefix site`: `SITE_URL=http://127.0.0.1:5174 CHROMIUM_PATH=<Chromium> npm run check:behaviour --prefix site` — a local check, not part of `validate.sh`. The site is not deployed until the product
+has its own domain. The requests are listed by `./scripts/usage.sh local|prod beta-requests`.
 
 Change dependencies in `agno/pyproject.toml`, then run `./agno/scripts/generate_requirements.sh`.
 Commit the updated `agno/requirements.txt` and rebuild the API and any sandbox image you use.
@@ -483,6 +499,7 @@ in the running API container:
 ```sh
 ./scripts/usage.sh prod report                       # on the server, from /srv/authorled/app
 ./scripts/usage.sh prod set-plan anna@example.com beta
+./scripts/usage.sh prod beta-requests                # requests for the beta from the site
 ```
 
 `local` instead of `prod` runs the same commands on the local stand. A new plan or price is a change of the data file

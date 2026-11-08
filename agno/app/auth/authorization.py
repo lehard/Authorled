@@ -33,6 +33,14 @@ GROUP_SCOPES: dict[str, tuple[str, ...]] = {
 }
 
 
+# Paths Agno 3.1.10 leaves without a token check by default (JWTMiddleware._get_default_excluded_routes).
+# Passing excluded paths replaces that list, so it is repeated here; a test compares it with the pinned Agno.
+AGNO_DEFAULT_EXCLUDED_ROUTES = ("/", "/health", "/info", "/docs", "/redoc", "/openapi.json", "/docs/oauth2-redirect")
+# Product routes without a token, each exactly, never a pattern (openspec/specs/auth, «Маршруты без токена»).
+PUBLIC_ROUTES = ("/api/v1/beta-requests",)
+EXCLUDED_ROUTES = (*AGNO_DEFAULT_EXCLUDED_ROUTES, *PUBLIC_ROUTES)
+
+
 def _required_env(name: str) -> str:
     value = environ.get(name)
     if not value:
@@ -58,6 +66,7 @@ def build_authorization(db: BaseDb) -> Authorization:
         audience=_required_env("AUTH_FRONTEND_CLIENT_ID"),
         verify_audience=True,
         roles_claim="groups",
+        excluded_route_paths=list(EXCLUDED_ROUTES),
     )
     # The code owns role scopes: a change here replaces what is stored on the next start.
     for group, scopes in GROUP_SCOPES.items():

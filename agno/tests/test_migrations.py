@@ -51,8 +51,14 @@ def _undo_coauthor_actions(connection: Connection) -> None:
     )
 
 
+def _undo_beta_requests(connection: Connection) -> None:
+    """Undo 0011 before a test rewinds the schema to an older revision."""
+    connection.execute(text("DROP TABLE authorled.beta_requests"))
+
+
 def _drop_subscriptions(connection: Connection) -> None:
-    """Undo 0010 and 0009 before a test rewinds the schema to an older revision."""
+    """Undo 0011, 0010 and 0009 before a test rewinds the schema to an older revision."""
+    _undo_beta_requests(connection)
     _undo_coauthor_actions(connection)
     connection.execute(text("DROP TABLE authorled.usage_records, authorled.subscriptions"))
 
@@ -297,6 +303,7 @@ def test_coauthor_actions_migration_keeps_settings_and_comments(engine: Engine, 
     """Applied from 0009: settings so far get `ask`, messages so far are written by users."""
     subject = f"test-{uuid.uuid4()}"
     with engine.begin() as connection:
+        _undo_beta_requests(connection)
         _undo_coauthor_actions(connection)
         connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0009_subscriptions_usage'"))
         owner = connection.execute(
