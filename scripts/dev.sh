@@ -14,7 +14,8 @@
 #      ./scripts/dev.sh reset-db --yes  Delete the agentos-db container and volume
 #      ./scripts/dev.sh psql            Open psql inside agentos-db
 #      ./scripts/dev.sh auth-users      Create the development users writer@authorled.test and
-#                                       editor@authorled.test in the local Authentik
+#                                       editor@authorled.test in the local Authentik, with the app
+#                                       password AUTH_DEV_WRITER_TOKEN of writer
 #      ./scripts/dev.sh seed            Load the demo stories for these two users into the database ai
 #
 #    Needs Docker with Compose and a filled .env (compose.yaml requires the
@@ -34,7 +35,8 @@ usage() {
     echo '  stop          stop agentos-api, litellm, clamav, Authentik and agentos-db; data is kept'
     echo '  reset-db      delete the agentos-db container and its volume, with the Authentik data (requires --yes)'
     echo '  psql          open psql inside agentos-db'
-    echo '  auth-users    create or update the development users of the local Authentik (password AUTH_DEV_USER_PASSWORD)'
+    echo '  auth-users    create or update the development users of the local Authentik (password AUTH_DEV_USER_PASSWORD,'
+    echo '                app password of writer AUTH_DEV_WRITER_TOKEN)'
     echo '  seed          load the demo stories for the development users into the database ai; refuses if they are there'
 }
 
@@ -144,10 +146,13 @@ case "${command}" in
         dev_password="$(sed -n 's/^AUTH_DEV_USER_PASSWORD=//p' .env | tail -n 1)"
         [[ -n "${dev_password}" && "${dev_password}" != "***" ]] \
             || fail "AUTH_DEV_USER_PASSWORD is not set in .env (password of the development users)."
+        writer_token="$(sed -n 's/^AUTH_DEV_WRITER_TOKEN=//p' .env | tail -n 1)"
+        [[ -n "${writer_token}" && "${writer_token}" != "***" ]] \
+            || fail "AUTH_DEV_WRITER_TOKEN is not set in .env (app password of writer for the co-author eval)."
         [[ -n "$(docker compose ps -q --status running mailpit)" ]] \
             || fail "mailpit is not running: auth-users needs the local stand (docker compose up -d)."
-        docker compose exec -T -e AUTH_DEV_USER_PASSWORD="${dev_password}" authentik-worker \
-            ak apply_blueprint /blueprints-dev/dev-users.yaml
+        docker compose exec -T -e AUTH_DEV_USER_PASSWORD="${dev_password}" -e AUTH_DEV_WRITER_TOKEN="${writer_token}" \
+            authentik-worker ak apply_blueprint /blueprints-dev/dev-users.yaml
         # A confirmed e-mail device per user: without it the first sign-in sets one up, and an
         # unfinished setup leaves an unconfirmed device that blocks the next sign-in.
         docker compose exec -T authentik-worker ak shell -c '
