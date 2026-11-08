@@ -1,4 +1,11 @@
-import { Check, Ellipsis, MessageSquare, RotateCcw, X } from "lucide-react";
+import {
+  Check,
+  Ellipsis,
+  MessageSquare,
+  RotateCcw,
+  Sparkles,
+  X,
+} from "lucide-react";
 import {
   useEffect,
   useRef,
@@ -33,7 +40,17 @@ import { useCardDismiss } from "./useCardDismiss";
 
 // The card of a comment thread and the list of threads (screenplay-comments, decisions 6 and 7).
 
-function Avatar({ name }: { name: string }) {
+function Avatar({ name, coauthor }: { name: string; coauthor: boolean }) {
+  // The co-author signs with its mark, as in the chat.
+  if (coauthor)
+    return (
+      <span
+        aria-hidden
+        className="grid size-7 shrink-0 place-items-center rounded-full bg-ai-subtle text-ai"
+      >
+        <Sparkles className="size-4" />
+      </span>
+    );
   return (
     <span
       aria-hidden
@@ -61,7 +78,7 @@ function Message({
   return (
     <li className="grid gap-1">
       <div className="flex items-center gap-2">
-        <Avatar name={m.author} />
+        <Avatar name={m.author} coauthor={m.kind === "coauthor"} />
         <span className="min-w-0 flex-1">
           <b className="block truncate text-[13.5px] font-semibold">
             {m.author}

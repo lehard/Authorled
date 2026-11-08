@@ -135,6 +135,10 @@
 
 Скрипт MUST завершаться ненулевым кодом при любой ошибке. Если зависимости фронтенда не установлены (`web/node_modules` отсутствует), скрипт MUST завершиться ошибкой с подсказкой `npm ci --prefix web` и MUST NOT пропускать проверки фронтенда.
 
+До первой проверки скрипт MUST убедиться, что Python-инструменты взяты из одного окружения проекта: команда `python` находится, `ruff`, `mypy` и `alembic` лежат в том же каталоге, что и она, и `python` импортирует зависимости проекта. Иначе скрипт MUST завершиться кодом `1`, MUST NOT запускать ни одной проверки и MUST назвать недостающую команду или каталог, из которого она взята, с подсказкой `source agno/.venv/bin/activate` (или `./agno/scripts/venv_setup.sh`, если venv нет). Требовать активный venv (`VIRTUAL_ENV`) скрипт MUST NOT: CI ставит зависимости в системный Python.
+
+`scripts/check_auth_boundary.sh` MUST проверять файлы репозитория и MUST NOT искать конфигурацию и сервисы Authentik в `.claude/` (локальные файлы агентов разработки, в том числе их рабочие копии в `.claude/worktrees/`).
+
 CI (`.github/workflows/validate.yml`, Python 3.14, Node.js из `web/.nvmrc`) MUST ставить зависимости бэкенда по `agno/requirements.txt` и `agno/pyproject.toml`, ставить зависимости фронтенда через `npm ci` и выполнять тот же скрипт.
 
 `scripts/format.sh` MUST выполнять `ruff check --select I --fix` и `ruff format` по `agno/` и `prettier --write` для `web/`.
@@ -153,6 +157,21 @@ CI (`.github/workflows/validate.yml`, Python 3.14, Node.js из `web/.nvmrc`) MU
 - GIVEN в истории миграций схемы `authorled` две головы
 - WHEN выполняется `./scripts/validate.sh`
 - THEN скрипт MUST вернуть ненулевой код с сообщением, называющим головы
+
+#### Scenario: Нет окружения проекта
+- GIVEN venv не активирован, и команды `python` или `mypy` нет в `PATH`
+- WHEN выполняется `./scripts/validate.sh`
+- THEN скрипт MUST вернуть `1` до первой проверки, назвать недостающую команду и подсказать `source agno/.venv/bin/activate`
+
+#### Scenario: Инструмент из другого окружения
+- GIVEN `python` из `agno/.venv`, а `ruff` находится в глобальном Python в другом каталоге
+- WHEN выполняется `./scripts/validate.sh`
+- THEN скрипт MUST вернуть `1` до первой проверки и назвать каталог, из которого взят `ruff`
+
+#### Scenario: Рабочие копии агентов
+- GIVEN в `.claude/worktrees/<имя>/auth/blueprints/` лежат blueprints Authentik, а в файлах репозитория вне `auth/` их нет
+- WHEN выполняется `./scripts/check_auth_boundary.sh`
+- THEN проверка границы модуля `auth` MUST пройти
 
 ### Requirement: Окружение Python
 `agno/scripts/venv_setup.sh` MUST создавать `agno/.venv` на Python 3.14 через `uv` и ставить `agno/requirements.txt` и проект `-e agno[dev]` с ограничениями `agno/requirements.txt`; при активном venv или без `uv` MUST завершаться кодом `1`. `agno/scripts/generate_requirements.sh` MUST компилировать `agno/requirements.txt` из `agno/pyproject.toml` через `uv pip compile` в режимах standard, `upgrade` и обновления отдельных пакетов.

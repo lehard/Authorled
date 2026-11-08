@@ -19,6 +19,9 @@ cd "${REPO_ROOT}"
 
 failed=0
 
+# The searches below look at the files of the repository: .claude/ holds local files of the coding
+# agents, among them their working copies in .claude/worktrees/ with a copy of auth/ (openspec/specs/runtime).
+
 # agno/app/auth/ is excluded by its path, so a directory named auth elsewhere is still checked.
 python_hits="$(grep -rniE 'jwt|authentik|state\.(claims|scopes)|claims\[' \
     --include='*.py' --exclude-dir='.venv*' --exclude-dir='tmp' \
@@ -31,7 +34,7 @@ fi
 
 blueprint_hits="$(grep -rlI 'blueprints.goauthentik.io' \
     --exclude-dir='.venv*' --exclude-dir='.git' --exclude-dir='tmp' --exclude-dir='node_modules' \
-    --exclude-dir='openspec' --exclude-dir='business-intents' \
+    --exclude-dir='openspec' --exclude-dir='business-intents' --exclude-dir='.claude' \
     --exclude='check_auth_boundary.sh' . 2> /dev/null | grep -v '^\./auth/' || true)"
 if [[ -n "${blueprint_hits}" ]]; then
     echo "check_auth_boundary: Authentik blueprints outside auth/:" >&2
@@ -40,7 +43,7 @@ if [[ -n "${blueprint_hits}" ]]; then
 fi
 
 service_hits="$(grep -rlI 'goauthentik/server' --include='compose*.yaml' \
-    --exclude-dir='.venv*' --exclude-dir='.git' --exclude-dir='tmp' --exclude-dir='node_modules' \
+    --exclude-dir='.venv*' --exclude-dir='.git' --exclude-dir='tmp' --exclude-dir='node_modules' --exclude-dir='.claude' \
     . 2> /dev/null | grep -vx './auth/compose.yaml' || true)"
 if [[ -n "${service_hits}" ]]; then
     echo "check_auth_boundary: Authentik services declared outside auth/compose.yaml:" >&2

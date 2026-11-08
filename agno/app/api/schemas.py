@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -107,7 +107,9 @@ class PointOut(_Out):
 
 class MessageOut(BaseModel):
     id: uuid.UUID
-    author_id: uuid.UUID
+    # `user` or `coauthor`; the co-author is no user: its author_id is null, its name «Соавтор».
+    author_kind: Literal["user", "coauthor"]
+    author_id: uuid.UUID | None
     author_name: str
     author_role: str
     body: str
@@ -120,6 +122,8 @@ class ThreadOut(BaseModel):
     id: uuid.UUID
     document_id: uuid.UUID
     quote: str
+    # The scene of the quote of a co-author thread, by which the browser places its mark; null for the author's.
+    scene_uid: str | None
     resolved_at: datetime | None
     created_at: datetime
     messages: list[MessageOut]

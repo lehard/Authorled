@@ -176,10 +176,53 @@ def test_messages_go_with_their_thread(connection: Connection) -> None:
     connection.execute(insert(comment_threads).values(id=thread, document_id=script, quote="Вера"))
     for body in ("Слишком прямо", "Согласен"):
         connection.execute(
-            insert(comment_messages).values(thread_id=thread, author_id=owner, author_role="", body=body)
+            insert(comment_messages).values(
+                thread_id=thread, author_kind="user", author_id=owner, author_role="", body=body
+            )
         )
     connection.execute(delete(comment_threads).where(comment_threads.c.id == thread))
     assert connection.execute(select(func.count()).select_from(comment_messages)).scalar_one() == 0
+
+
+def test_message_of_the_coauthor_has_no_user(connection: Connection) -> None:
+    owner = _user(connection)
+    script = _document(connection, _project(connection, owner), "script")
+    thread = uuid.uuid4()
+    connection.execute(insert(comment_threads).values(id=thread, document_id=script, quote="Вера", scene_uid="s3"))
+    connection.execute(
+        insert(comment_messages).values(thread_id=thread, author_kind="coauthor", author_role="", body="Пауза")
+    )
+    with pytest.raises(IntegrityError, match="ck_comment_messages_author_of_kind"):
+        connection.execute(
+            insert(comment_messages).values(
+                thread_id=thread, author_kind="coauthor", author_id=owner, author_role="", body="Пауза"
+            )
+        )
+
+
+def test_message_of_a_user_names_the_user(connection: Connection) -> None:
+    owner = _user(connection)
+    script = _document(connection, _project(connection, owner), "script")
+    thread = uuid.uuid4()
+    connection.execute(insert(comment_threads).values(id=thread, document_id=script, quote="Вера"))
+    with pytest.raises(IntegrityError, match="ck_comment_messages_author_of_kind"):
+        connection.execute(
+            insert(comment_messages).values(thread_id=thread, author_kind="user", author_role="", body="Пауза")
+        )
+
+
+@pytest.mark.parametrize(("kind", "scene"), [("robot", None), ("user", "")])
+def test_unknown_author_kind_and_empty_scene_are_rejected(connection: Connection, kind: str, scene: str | None) -> None:
+    owner = _user(connection)
+    script = _document(connection, _project(connection, owner), "script")
+    thread = uuid.uuid4()
+    with pytest.raises(IntegrityError, match="ck_comment_"):
+        connection.execute(insert(comment_threads).values(id=thread, document_id=script, quote="Вера", scene_uid=scene))
+        connection.execute(
+            insert(comment_messages).values(
+                thread_id=thread, author_kind=kind, author_id=owner, author_role="", body="Пауза"
+            )
+        )
 
 
 def test_story_deletion_cascades(connection: Connection) -> None:
@@ -192,7 +235,11 @@ def test_story_deletion_cascades(connection: Connection) -> None:
     )
     thread = uuid.uuid4()
     connection.execute(insert(comment_threads).values(id=thread, document_id=script, quote="Вера"))
-    connection.execute(insert(comment_messages).values(thread_id=thread, author_id=owner, author_role="", body="Да"))
+    connection.execute(
+        insert(comment_messages).values(
+            thread_id=thread, author_kind="user", author_id=owner, author_role="", body="Да"
+        )
+    )
     connection.execute(
         insert(suggestions).values(
             document_id=script, scene_uid="s1", quote="Вера", text="Вера Андреевна", why="", session_id=f"{project}:1"
@@ -297,6 +344,12 @@ def test_unknown_reason_is_rejected(connection: Connection) -> None:
     script = _document(connection, _project(connection, owner), "script")
     with pytest.raises(IntegrityError, match="ck_document_versions_reason_known"):
         _version(connection, script, owner, "manual")
+
+
+def test_snapshot_before_a_change_of_the_coauthor(connection: Connection) -> None:
+    owner = _user(connection)
+    script = _document(connection, _project(connection, owner), "script")
+    _version(connection, script, owner, "coauthor")
 
 
 def test_snapshots_go_with_their_document(connection: Connection) -> None:

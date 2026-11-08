@@ -1,4 +1,5 @@
-"""Tools of the co-author (openspec/specs/api/agents: «Инструменты соавтора», «Предложение правки соавтором»)."""
+"""Tools of the co-author (openspec/specs/api/agents: «Инструменты соавтора», «Предложение правки соавтором»,
+«Действия соавтора», «Режим соавтора», «Комментарий соавтором»)."""
 
 import json
 import uuid
@@ -7,14 +8,26 @@ from typing import Any
 
 import pytest
 from agno.run import RunContext
+from agno.tools.function import Function
 
+from agents import coauthor_tools as tools
 from agents.coauthor_tools import (
+    CHANGING_TOOLS,
+    COAUTHOR_TOOLS,
+    READING_TOOLS,
     STORY_NOT_FOUND,
+    comment_on_screenplay,
+    create_story_document,
+    create_story_note,
     list_story_documents,
+    list_story_notes,
     read_chat_file,
     read_screenplay,
     read_story_document,
+    read_story_note,
     suggest_edit,
+    update_story_document,
+    update_story_note,
 )
 from app.auth import run_principal
 
@@ -177,3 +190,133 @@ def test_draft_of_another_story_is_refused(authors: Any) -> None:
     _, other_draft, _ = _story_with_vera(author)
     run = _run(author.subject, f"{project_id}:{other_draft}:{uuid.uuid4()}")
     assert list_story_documents(run) == STORY_NOT_FOUND
+
+
+# --- actions of the co-author
+
+
+def _done(answer: str) -> dict[str, Any]:
+    assert not answer.startswith("Отказ"), answer
+    found: dict[str, Any] = json.loads(answer)
+    return found
+
+
+def test_notes_of_the_story(authors: Any) -> None:
+    author = authors()
+    project_id, draft_id, _ = _story_with_vera(author)
+    run = _run(author.subject, f"{project_id}:{draft_id}:{uuid.uuid4()}")
+    created = _done(create_story_note(run, "Финал", "Вера уходит к воде."))
+    assert created["target"]["type"] == "note"
+    note_id = created["target"]["id"]
+    assert [n["title"] for n in json.loads(list_story_notes(run))] == ["Финал"]
+    _done(update_story_note(run, note_id, append="Аня идёт за ней."))
+    assert json.loads(read_story_note(run, note_id))["body"] == "Вера уходит к воде.\nАня идёт за ней."
+    assert update_story_note(run, note_id, body="Другое", append="Ещё").startswith("Отказ")
+    (note,) = author.get(f"/api/v1/projects/{project_id}/notes").json()
+    assert note["body"] == "Вера уходит к воде.\nАня идёт за ней."
+
+
+def test_note_of_another_story_is_not_found(authors: Any) -> None:
+    author = authors()
+    project_id, draft_id, _ = _story_with_vera(author)
+    other_project, other_draft, _ = _story_with_vera(author)
+    other = _run(author.subject, f"{other_project}:{other_draft}:{uuid.uuid4()}")
+    note_id = _done(create_story_note(other, "Чужая"))["target"]["id"]
+    run = _run(author.subject, f"{project_id}:{draft_id}:{uuid.uuid4()}")
+    assert read_story_note(run, note_id) == "Отказ: заметка не найдена."
+    assert update_story_note(run, note_id, append="Вода") == "Отказ: заметка не найдена."
+    assert read_story_note(run, "not-an-id") == "Отказ: заметка не найдена."
+
+
+def test_new_character_and_its_fields(authors: Any) -> None:
+    author = authors()
+    project_id, draft_id, _ = _story_with_vera(author)
+    run = _run(author.subject, f"{project_id}:{draft_id}:{uuid.uuid4()}")
+    created = _done(create_story_document(run, "character", "Пётр", role="secondary", summary="Брат Веры"))
+    assert created["target"]["kind"] == "character"
+    tree = author.get(f"/api/v1/drafts/{draft_id}/documents").json()
+    characters = [d["name"] for d in tree if d["kind"] == "character"]
+    assert characters[-1] == "Пётр"
+    vera = next(d for d in tree if d["name"] == "Вера")
+    _done(update_story_document(run, vera["id"], fields={"fear": "Остаться одной"}))
+    assert author.get(f"/api/v1/documents/{vera['id']}").json()["fields"]["fear"] == "Остаться одной"
+    versions = author.get(f"/api/v1/documents/{vera['id']}/versions?part=fields").json()
+    assert any(v["reason"] == "coauthor" for v in versions)
+    refused = update_story_document(run, vera["id"], fields={"wings": "две"})
+    assert refused.startswith("Отказ") and "wings" in refused
+
+
+def test_document_of_another_draft_is_not_changed(authors: Any) -> None:
+    author = authors()
+    project_id, draft_id, _ = _story_with_vera(author)
+    second = _second_draft(author, project_id, draft_id)
+    copy = next(d for d in author.get(f"/api/v1/drafts/{second}/documents").json() if d["name"] == "Вера")
+    run = _run(author.subject, f"{project_id}:{draft_id}:{uuid.uuid4()}")
+    assert update_story_document(run, copy["id"], summary="Сестра") == "Отказ: документ не найден."
+
+
+def test_comment_of_the_coauthor(authors: Any) -> None:
+    author = authors()
+    project_id, draft_id, script_id = _story_with_vera(author)
+    run = _run(author.subject, f"{project_id}:{draft_id}:{uuid.uuid4()}")
+    assert "Цитата не найдена в сцене" in comment_on_screenplay(run, "s3", "Вода холодная", "Холодно")
+    created = _done(comment_on_screenplay(run, "s3", "Вера молчит", "Здесь пауза важнее реплики"))
+    assert created["target"]["type"] == "comment"
+    (thread,) = author.get(f"/api/v1/documents/{script_id}/comments").json()
+    assert (thread["id"], thread["scene_uid"], thread["messages"][0]["author_kind"]) == (
+        created["target"]["id"],
+        "s3",
+        "coauthor",
+    )
+    assert author.get(f"/api/v1/documents/{script_id}/text").json()["revision"] == 2
+
+
+def test_locked_draft_refuses_every_change(authors: Any) -> None:
+    author = authors()
+    project_id, draft_id, script_id = _story_with_vera(author)
+    vera = next(d for d in author.get(f"/api/v1/drafts/{draft_id}/documents").json() if d["name"] == "Вера")
+    author.patch(f"/api/v1/drafts/{draft_id}", json={"locked": True})
+    run = _run(author.subject, f"{project_id}:{draft_id}:{uuid.uuid4()}")
+    assert create_story_document(run, "character", "Пётр", role="main").startswith("Отказ")
+    assert update_story_document(run, vera["id"], summary="Сестра").startswith("Отказ")
+    assert comment_on_screenplay(run, "s3", "Вера молчит", "Пауза").startswith("Отказ")
+    names = [d["name"] for d in author.get(f"/api/v1/drafts/{draft_id}/documents").json()]
+    assert "Пётр" not in names
+    assert author.get(f"/api/v1/documents/{script_id}/comments").json() == []
+
+
+def test_foreign_story_is_not_changed(authors: Any) -> None:
+    owner, stranger = authors(), authors()
+    project_id, draft_id, _ = _story_with_vera(owner)
+    run = _run(stranger.subject, f"{project_id}:{draft_id}:{uuid.uuid4()}")
+    assert create_story_note(run, "Чужая") == STORY_NOT_FOUND
+    assert create_story_document(run, "character", "Пётр", role="main") == STORY_NOT_FOUND
+    assert owner.get(f"/api/v1/projects/{project_id}/notes").json() == []
+
+
+def test_no_tool_deletes_trashes_or_decides() -> None:
+    names = {tool.__name__ for tool in READING_TOOLS + CHANGING_TOOLS}
+    assert not {n for n in names if any(word in n for word in ("delete", "trash", "restore", "decide", "resolve"))}
+    assert {tool.__name__ for tool in CHANGING_TOOLS} == {
+        "create_story_note",
+        "update_story_note",
+        "create_story_document",
+        "update_story_document",
+        "comment_on_screenplay",
+    }
+    assert tools.suggest_edit in READING_TOOLS
+
+
+# --- the pause before every change
+
+
+def test_every_change_waits_for_an_answer() -> None:
+    """Changing tools pause the run in every mode; reading ones and suggestions never do (design, decision 1)."""
+    waits = {
+        (tool.name if isinstance(tool, Function) else tool.__name__): isinstance(tool, Function)
+        and tool.requires_confirmation is True
+        for tool in COAUTHOR_TOOLS
+    }
+    assert {name for name, waiting in waits.items() if waiting} == {tool.__name__ for tool in CHANGING_TOOLS}
+    assert waits["suggest_edit"] is False and waits["read_screenplay"] is False
+    assert len(waits) == len(READING_TOOLS) + len(CHANGING_TOOLS)

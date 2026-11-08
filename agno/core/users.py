@@ -13,6 +13,8 @@ from core.subscriptions import start_subscription
 from core.tables import user_settings, users
 
 Theme = Literal["light", "sepia", "dark"]
+# Mode of the co-author (business-intents/coauthor-actions.md): `ask` waits for the author before each change.
+CoauthorMode = Literal["ask", "auto"]
 
 
 class _Unset(Enum):
@@ -29,6 +31,7 @@ class Account:
     email: str
     display_name: str
     theme: Theme | None
+    coauthor_mode: CoauthorMode
 
 
 class AccountDeleted(Exception):
@@ -41,7 +44,14 @@ class AccountNotFound(Exception):
 
 def _account(connection: Connection, subject: str) -> Account:
     row = connection.execute(
-        select(users.c.id, users.c.email, users.c.display_name, users.c.deleted_at, user_settings.c.theme)
+        select(
+            users.c.id,
+            users.c.email,
+            users.c.display_name,
+            users.c.deleted_at,
+            user_settings.c.theme,
+            user_settings.c.coauthor_mode,
+        )
         .join(user_settings, user_settings.c.user_id == users.c.id)
         .where(users.c.auth_subject == subject)
     ).one_or_none()
@@ -49,7 +59,9 @@ def _account(connection: Connection, subject: str) -> Account:
         raise AccountNotFound(f"No account for subject {subject!r}")
     if row.deleted_at is not None:
         raise AccountDeleted(f"Account {row.id} is deleted")
-    return Account(id=row.id, email=row.email, display_name=row.display_name, theme=row.theme)
+    return Account(
+        id=row.id, email=row.email, display_name=row.display_name, theme=row.theme, coauthor_mode=row.coauthor_mode
+    )
 
 
 def active_user_id(connection: Connection, subject: str) -> uuid.UUID:
@@ -105,8 +117,9 @@ def update_account(
     subject: str,
     display_name: str | _Unset = UNSET,
     theme: Theme | None | _Unset = UNSET,
+    coauthor_mode: CoauthorMode | _Unset = UNSET,
 ) -> Account:
-    """Change the name and/or the theme; fields left UNSET stay as they are."""
+    """Change the name, the theme and/or the co-author mode; fields left UNSET stay as they are."""
     account = _account(connection, subject)
     if display_name is not UNSET:
         connection.execute(
@@ -117,5 +130,11 @@ def update_account(
             update(user_settings)
             .where(user_settings.c.user_id == account.id)
             .values(theme=theme, updated_at=func.now())
+        )
+    if coauthor_mode is not UNSET:
+        connection.execute(
+            update(user_settings)
+            .where(user_settings.c.user_id == account.id)
+            .values(coauthor_mode=coauthor_mode, updated_at=func.now())
         )
     return _account(connection, subject)

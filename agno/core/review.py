@@ -1,7 +1,8 @@
 """Review of the screenplay text of a draft: comment threads and co-author suggestions (openspec/specs/api/review).
 
 The place of a thread or a suggestion is a mark in the text; the threads, messages and suggestions live here,
-apart from the text. The co-author creates suggestions (its tool), the author decides on them.
+apart from the text. The co-author creates suggestions and comment threads (its tools) anchored by a scene and
+a quote; the browser places their marks. The author decides on suggestions and resolves threads.
 """
 
 import uuid
@@ -16,11 +17,15 @@ from core.errors import Conflict, Forbidden, Invalid, NotFound
 from core.tables import SUGGESTION_STATUSES, comment_messages, comment_threads, suggestions, users
 from core.texts import block_text, get_text, keep_text, scenes
 
+# The name the co-author signs its messages with; it is no user and has no display name.
+COAUTHOR_NAME = "Соавтор"
+
 
 @dataclass(frozen=True)
 class Message:
     id: uuid.UUID
-    author_id: uuid.UUID
+    author_kind: str
+    author_id: uuid.UUID | None
     author_name: str
     author_role: str
     body: str
@@ -33,6 +38,7 @@ class Thread:
     id: uuid.UUID
     document_id: uuid.UUID
     quote: str
+    scene_uid: str | None
     resolved_at: datetime | None
     created_at: datetime
     messages: list[Message]
@@ -91,14 +97,24 @@ def document_of_suggestion(connection: Connection, suggestion_id: uuid.UUID) -> 
 def _messages(connection: Connection, thread_ids: list[uuid.UUID]) -> dict[uuid.UUID, list[Message]]:
     rows = connection.execute(
         select(comment_messages, users.c.display_name)
-        .join(users, users.c.id == comment_messages.c.author_id)
+        .outerjoin(users, users.c.id == comment_messages.c.author_id)
         .where(comment_messages.c.thread_id.in_(thread_ids))
         .order_by(comment_messages.c.created_at, comment_messages.c.id)
     ).all()
     found: dict[uuid.UUID, list[Message]] = {thread_id: [] for thread_id in thread_ids}
     for row in rows:
+        name = COAUTHOR_NAME if row.author_kind == "coauthor" else row.display_name
         found[row.thread_id].append(
-            Message(row.id, row.author_id, row.display_name, row.author_role, row.body, row.created_at, row.edited_at)
+            Message(
+                row.id,
+                row.author_kind,
+                row.author_id,
+                name,
+                row.author_role,
+                row.body,
+                row.created_at,
+                row.edited_at,
+            )
         )
     return found
 
@@ -112,7 +128,8 @@ def list_threads(connection: Connection, document_id: uuid.UUID) -> list[Thread]
     ).all()
     messages = _messages(connection, [row.id for row in rows])
     return [
-        Thread(row.id, row.document_id, row.quote, row.resolved_at, row.created_at, messages[row.id]) for row in rows
+        Thread(row.id, row.document_id, row.quote, row.scene_uid, row.resolved_at, row.created_at, messages[row.id])
+        for row in rows
     ]
 
 
@@ -142,8 +159,43 @@ def create_thread(
         insert(comment_messages).values(
             created_at=func.clock_timestamp(),
             thread_id=thread_id,
+            author_kind="user",
             author_id=author_id,
             author_role=author_role,
+            body=text,
+        )
+    )
+    return get_thread(connection, thread_id)
+
+
+def _scene_of_quote(connection: Connection, document_id: uuid.UUID, scene_uid: str, quote: str) -> None:
+    """The scene is in the text of the screenplay, and the quote is inside one of its paragraphs."""
+    if not quote:
+        raise Invalid("Цитата не может быть пустой.", "quote")
+    scene = next((s for s in scenes(get_text(connection, document_id).content) if s.uid == scene_uid), None)
+    if scene is None:
+        raise NotFound(f"Сцены {scene_uid} нет в тексте сценария.")
+    if not any(quote in block_text(block) for block in scene.blocks):
+        raise Invalid(f"Цитата не найдена в сцене {scene.number}.", "quote")
+
+
+def create_coauthor_thread(
+    connection: Connection, document_id: uuid.UUID, scene_uid: str, quote: str, body: object
+) -> Thread:
+    """A thread of the co-author anchored by a scene and an exact quote; the browser places its mark later."""
+    ensure_open(connection, _screenplay(connection, document_id))
+    _scene_of_quote(connection, document_id, scene_uid, quote)
+    text = _body(body)
+    thread_id = uuid.uuid4()
+    connection.execute(
+        insert(comment_threads).values(id=thread_id, document_id=document_id, quote=quote, scene_uid=scene_uid)
+    )
+    connection.execute(
+        insert(comment_messages).values(
+            created_at=func.clock_timestamp(),
+            thread_id=thread_id,
+            author_kind="coauthor",
+            author_role="",
             body=text,
         )
     )
@@ -159,6 +211,7 @@ def add_reply(
         insert(comment_messages).values(
             created_at=func.clock_timestamp(),
             thread_id=thread_id,
+            author_kind="user",
             author_id=author_id,
             author_role=author_role,
             body=_body(body),
@@ -167,17 +220,35 @@ def add_reply(
     return get_thread(connection, thread_id)
 
 
-def _own_message(connection: Connection, thread_id: uuid.UUID, message_id: uuid.UUID, author_id: uuid.UUID) -> None:
+def _message_author(
+    connection: Connection, thread_id: uuid.UUID, message_id: uuid.UUID
+) -> tuple[str, uuid.UUID | None]:
     _, document_id = _thread_row(connection, thread_id)
     ensure_open(connection, document_row(connection, document_id))
-    owner = connection.execute(
-        select(comment_messages.c.author_id).where(
+    row = connection.execute(
+        select(comment_messages.c.author_kind, comment_messages.c.author_id).where(
             comment_messages.c.id == message_id, comment_messages.c.thread_id == thread_id
         )
-    ).scalar_one_or_none()
-    if owner is None:
+    ).one_or_none()
+    if row is None:
         raise NotFound(f"Сообщения {message_id} нет.")
+    return row.author_kind, row.author_id
+
+
+def _own_message(connection: Connection, thread_id: uuid.UUID, message_id: uuid.UUID, author_id: uuid.UUID) -> None:
+    kind, owner = _message_author(connection, thread_id, message_id)
+    if kind == "coauthor":
+        raise Forbidden("Сообщение соавтора не меняется.")
     if owner != author_id:
+        raise Forbidden("Менять и удалять можно только свои сообщения.")
+
+
+def _removable_message(
+    connection: Connection, thread_id: uuid.UUID, message_id: uuid.UUID, author_id: uuid.UUID
+) -> None:
+    """An own message, or one of the co-author: it works for the author, who removes its thread like their own."""
+    kind, owner = _message_author(connection, thread_id, message_id)
+    if kind != "coauthor" and owner != author_id:
         raise Forbidden("Менять и удалять можно только свои сообщения.")
 
 
@@ -194,8 +265,11 @@ def edit_message(
 
 
 def delete_message(connection: Connection, thread_id: uuid.UUID, message_id: uuid.UUID, author_id: uuid.UUID) -> bool:
-    """Delete an own message; deleting the first message deletes the whole thread. True when the thread is gone."""
-    _own_message(connection, thread_id, message_id, author_id)
+    """Delete an own message or one of the co-author; deleting the first message deletes the whole thread.
+
+    True when the thread is gone.
+    """
+    _removable_message(connection, thread_id, message_id, author_id)
     first = connection.execute(
         select(comment_messages.c.id)
         .where(comment_messages.c.thread_id == thread_id)
@@ -239,13 +313,7 @@ def create_suggestion(
     The saved text does not change: the browser places the suggestion mark when it gets the suggestion.
     """
     ensure_open(connection, _screenplay(connection, document_id))
-    if not quote:
-        raise Invalid("Цитата не может быть пустой.", "quote")
-    scene = next((s for s in scenes(get_text(connection, document_id).content) if s.uid == scene_uid), None)
-    if scene is None:
-        raise NotFound(f"Сцены {scene_uid} нет в тексте сценария.")
-    if not any(quote in block_text(block) for block in scene.blocks):
-        raise Invalid(f"Цитата не найдена в сцене {scene.number}.", "quote")
+    _scene_of_quote(connection, document_id, scene_uid, quote)
     row = connection.execute(
         insert(suggestions)
         .values(

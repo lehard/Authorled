@@ -243,9 +243,18 @@ def fields_state(document: Any) -> dict[str, Any]:
 
 
 def update_document(
-    connection: Connection, document_id: uuid.UUID, expected_revision: int, changes: dict[str, Any], user_id: uuid.UUID
+    connection: Connection,
+    document_id: uuid.UUID,
+    expected_revision: int,
+    changes: dict[str, Any],
+    user_id: uuid.UUID,
+    snapshot_reason: str | None = None,
 ) -> Document:
-    """Change name, role, summary, fields or position if the revision is still `expected_revision`."""
+    """Change name, role, summary, fields or position if the revision is still `expected_revision`.
+
+    Without `snapshot_reason` the state before the change is kept only when the last snapshot is old enough;
+    with it, always.
+    """
     document = document_row(connection, document_id, for_update=True)
     ensure_open(connection, document)
     if document.revision != expected_revision:
@@ -288,7 +297,13 @@ def update_document(
         _compact(connection, document.draft_id, document.kind, group)
     if values:
         snapshots.keep(
-            connection, document_id, "fields", fields_state(document), document.updated_by, document.updated_at
+            connection,
+            document_id,
+            "fields",
+            fields_state(document),
+            document.updated_by,
+            document.updated_at,
+            snapshot_reason,
         )
     row = connection.execute(
         update(documents)
@@ -298,6 +313,16 @@ def update_document(
     ).one()
     touch_draft(connection, document.draft_id)
     return _document(row)
+
+
+def update_document_by_coauthor(
+    connection: Connection, document_id: uuid.UUID, changes: dict[str, Any], user_id: uuid.UUID
+) -> Document:
+    """A change of the co-author: on the current revision, never the position, always after a snapshot `coauthor`."""
+    if "position" in changes:
+        raise Invalid("Порядок документов меняет только автор.", "position")
+    document = document_row(connection, document_id, for_update=True)
+    return update_document(connection, document_id, document.revision, changes, user_id, "coauthor")
 
 
 def restore_fields(

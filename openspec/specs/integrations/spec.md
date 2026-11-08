@@ -58,18 +58,23 @@ Product `this-agentos` MUST содержать Source `website` `https://github.
 - WHEN в `shared-knowledge` строится векторный индекс
 - THEN эмбеддинги MUST запрашиваться у прокси псевдонимом `gigachat-embeddings` и иметь 1024 измерения
 
-### Requirement: Эмбеддинги через шлюз Sber500
-Система MUST предоставлять эмбеддинги шлюза Sber500 (OpenAI-совместимый API) через псевдонимы прокси `giga-embeddings` (`giga-embeddings-instruct-480m`), `bge-m3-embeddings` (`bge-m3`) и `qwen3-embeddings` (`qwen3-embedding-0.6b`); все три MUST иметь 1024 измерения. Адрес шлюза `SBER500_API_BASE` и ключ `SBER500_API_KEY` MUST задаваться только прокси. Соединение со шлюзом MUST проверять TLS-сертификат; отключение проверки MUST NOT использоваться.
+### Requirement: Эмбеддинги через Cloud.ru Foundation Models
+Система MUST предоставлять эмбеддинги Cloud.ru Foundation Models (OpenAI-совместимый API) через псевдонимы прокси `giga-embeddings` (`ai-sage/Giga-Embeddings-instruct-480M`), `bge-m3-embeddings` (`BAAI/bge-m3`) и `qwen3-embeddings` (`Qwen/Qwen3-Embedding-0.6B`); все три MUST иметь 1024 измерения. Ключ `CLOUDRU_API_KEY` MUST задаваться только прокси. Соединение MUST проверять TLS-сертификат; отключение проверки MUST NOT использоваться.
 
-#### Scenario: Эмбеддинг знаний через шлюз
+#### Scenario: Эмбеддинг знаний через Cloud.ru
 - GIVEN `EMBEDDINGS_MODEL=giga-embeddings`
 - WHEN в `shared-knowledge` строится векторный индекс
 - THEN эмбеддинги MUST запрашиваться у прокси псевдонимом `giga-embeddings` и иметь 1024 измерения
 
-#### Scenario: Недоступный шлюз
-- GIVEN выбран псевдоним шлюза Sber500, а шлюз отвечает ошибкой или отклоняет ключ
+#### Scenario: Каждый псевдоним Cloud.ru отдаёт 1024 измерения
+- GIVEN прокси запущен с рабочим `CLOUDRU_API_KEY`
+- WHEN к прокси приходит запрос эмбеддинга с псевдонимом `giga-embeddings`, `bge-m3-embeddings` или `qwen3-embeddings`
+- THEN ответ MUST содержать вектор из 1024 чисел
+
+#### Scenario: Cloud.ru отказывает
+- GIVEN выбран псевдоним Cloud.ru, а Cloud.ru отвечает ошибкой (нет денег на балансе, ключ отклонён или отозван)
 - WHEN в `shared-knowledge` загружается контент
-- THEN загрузка MUST завершиться ошибкой со статусом контента `failed`, без перехода на другой псевдоним эмбеддингов
+- THEN загрузка MUST завершиться ошибкой со статусом контента `failed`, без перехода на другой псевдоним или провайдер эмбеддингов
 
 ### Requirement: Выбор модели эмбеддингов
 Система MUST использовать для эмбеддингов ровно один псевдоним, заданный обязательной переменной `EMBEDDINGS_MODEL`, без значения по умолчанию. Допустимы только псевдонимы с 1024 измерениями: `gigachat-embeddings`, `giga-embeddings`, `bge-m3-embeddings`, `qwen3-embeddings`. API MUST завершаться ошибкой, называющей `EMBEDDINGS_MODEL`, если переменная не задана или содержит иное значение. Если размерность полученного вектора не равна 1024, система MUST завершить запрос ошибкой. При ошибке выбранного псевдонима система MUST NOT переходить на другой. Векторы разных моделей MUST NOT смешиваться в одной таблице знаний: смена значения требует пересоздания `shared_knowledge` и повторной загрузки документов.

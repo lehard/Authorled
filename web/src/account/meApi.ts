@@ -11,9 +11,18 @@ export type Account = {
   email: string;
   /** null: as the system. */
   theme: Theme | null;
+  /** «Спрашивать» (`ask`) or «Сам» (`auto`): how the co-author makes changes. */
+  coauthorMode: CoauthorMode;
 };
 
-export type AccountChanges = { display_name?: string; theme?: Theme | null };
+export const COAUTHOR_MODES = ["ask", "auto"] as const;
+export type CoauthorMode = (typeof COAUTHOR_MODES)[number];
+
+export type AccountChanges = {
+  display_name?: string;
+  theme?: Theme | null;
+  coauthor_mode?: CoauthorMode;
+};
 
 /** A refused or failed account request, with its reason for a person. */
 export class AccountError extends Error {
@@ -39,25 +48,39 @@ function isTheme(value: unknown): value is Theme {
   return typeof value === "string" && THEMES.includes(value as Theme);
 }
 
+function isCoauthorMode(value: unknown): value is CoauthorMode {
+  return (
+    typeof value === "string" && COAUTHOR_MODES.includes(value as CoauthorMode)
+  );
+}
+
 function account(body: unknown): Account {
   const b = body as {
     id?: unknown;
     email?: unknown;
     display_name?: unknown;
-    settings?: { theme?: unknown };
+    settings?: { theme?: unknown; coauthor_mode?: unknown };
   };
   const theme = b.settings?.theme;
+  const coauthorMode = b.settings?.coauthor_mode;
   if (
     typeof b.id !== "string" ||
     typeof b.email !== "string" ||
     typeof b.display_name !== "string" ||
-    (theme !== null && !isTheme(theme))
+    (theme !== null && !isTheme(theme)) ||
+    !isCoauthorMode(coauthorMode)
   ) {
     throw new AccountError(
       `Сервер вернул аккаунт в неизвестном виде: ${JSON.stringify(body)}`,
     );
   }
-  return { id: b.id, email: b.email, name: b.display_name, theme };
+  return {
+    id: b.id,
+    email: b.email,
+    name: b.display_name,
+    theme,
+    coauthorMode,
+  };
 }
 
 async function request(init: RequestInit = {}): Promise<Account> {
@@ -88,9 +111,20 @@ async function request(init: RequestInit = {}): Promise<Account> {
   return account(await response.json());
 }
 
+// Reads that run at the same time share one request (web/workspace, «Загрузка окна истории»).
+let reading: Promise<Account> | null = null;
+
 /** The account of the signed-in user; the first call creates it on the backend. */
 export function getMe(): Promise<Account> {
-  return request();
+  if (reading === null) {
+    const started = request();
+    reading = started;
+    void started.then(
+      () => (reading = null),
+      () => (reading = null),
+    );
+  }
+  return reading;
 }
 
 export function patchMe(changes: AccountChanges): Promise<Account> {

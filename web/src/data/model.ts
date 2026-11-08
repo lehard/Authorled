@@ -83,7 +83,9 @@ export type NewNote = Pick<Note, "projectId" | "title">;
 /** A message of a comment thread; `own`: written by the signed-in user (the data source decides). */
 export type CommentMessage = {
   id: string;
+  /** «Соавтор» for a message of the co-author, which is nobody's own and is not edited. */
   author: string;
+  kind: "user" | "coauthor";
   own: boolean;
   /** Role in the story team, «редактор»; empty when the token has none. */
   role: string;
@@ -100,6 +102,8 @@ export type CommentThread = CommentMessage & {
   draftId: string;
   /** The commented words when the thread was opened. */
   quote: string;
+  /** The scene of the quote of a co-author thread, by which its mark is placed; null for the author's. */
+  sceneUid: string | null;
   replies: CommentMessage[];
   resolved: boolean;
 };
@@ -159,7 +163,8 @@ export type Draft = {
 export type NewDraft = { projectId: string; name: string; baseId: string };
 
 export type VersionPart = "text" | "fields";
-export type VersionReason = "auto" | "suggestion" | "import" | "restore";
+export type VersionReason =
+  "auto" | "suggestion" | "import" | "restore" | "coauthor";
 
 /** What a history belongs to: a part of the screenplay of a draft, or a card. */
 export type VersionTarget =

@@ -74,7 +74,7 @@ def test_first_call_creates_the_account(client: TestClient, subjects: list[str],
     assert (body["email"], body["display_name"], body["settings"]) == (
         "anna@example.com",
         "Анна Петрова",
-        {"theme": None},
+        {"theme": None, "coauthor_mode": "ask"},
     )
     uuid.UUID(body["id"])
     with engine.connect() as connection:
@@ -118,12 +118,23 @@ def test_patch_theme_keeps_the_name(client: TestClient, subjects: list[str]) -> 
     assert client.patch("/api/v1/me", headers=headers, json={"theme": None}).json()["settings"]["theme"] is None
 
 
+def test_patch_coauthor_mode_keeps_the_theme(client: TestClient, subjects: list[str]) -> None:
+    headers = _claims(subjects)
+    client.get("/api/v1/me", headers=headers)
+    client.patch("/api/v1/me", headers=headers, json={"theme": "dark"})
+    body = client.patch("/api/v1/me", headers=headers, json={"coauthor_mode": "auto"}).json()
+    assert body["settings"] == {"theme": "dark", "coauthor_mode": "auto"}
+    assert client.get("/api/v1/me", headers=headers).json()["settings"]["coauthor_mode"] == "auto"
+
+
 @pytest.mark.parametrize(
     ("body", "field"),
     [
         ({"display_name": "   "}, "display_name"),
         ({"display_name": None}, "display_name"),
         ({"theme": "blue"}, "theme"),
+        ({"coauthor_mode": "always"}, "coauthor_mode"),
+        ({"coauthor_mode": None}, "coauthor_mode"),
         ({"email": "other@example.com"}, "email"),
         ({}, None),
     ],
@@ -139,7 +150,11 @@ def test_patch_rejects_bad_bodies(
     if field is not None:
         assert field in response.json()["detail"]
     me = client.get("/api/v1/me", headers=headers).json()
-    assert (me["email"], me["display_name"], me["settings"]["theme"]) == ("anna@example.com", "Анна Петрова", None)
+    assert (me["email"], me["display_name"], me["settings"]) == (
+        "anna@example.com",
+        "Анна Петрова",
+        {"theme": None, "coauthor_mode": "ask"},
+    )
 
 
 def test_patch_rejects_non_json(client: TestClient, subjects: list[str]) -> None:
@@ -202,7 +217,7 @@ def test_only_own_record_changes(client: TestClient, subjects: list[str]) -> Non
 def test_openapi_publishes_the_patch_body(client: TestClient) -> None:
     operation = client.get("/openapi.json").json()["paths"]["/api/v1/me"]["patch"]
     schema = operation["requestBody"]["content"]["application/json"]["schema"]
-    assert set(schema["properties"]) == {"display_name", "theme"}
+    assert set(schema["properties"]) == {"display_name", "theme", "coauthor_mode"}
 
 
 def test_routes_come_before_a_root_mount(subjects: list[str]) -> None:

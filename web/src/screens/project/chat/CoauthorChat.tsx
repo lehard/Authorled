@@ -31,6 +31,10 @@ import { useStoryFiles } from "@/data/files";
 import { InkLoader } from "@/design-system";
 
 import { useProjectData } from "../ProjectContext";
+import { ActionLines } from "./ActionLines";
+import { changedResources, firstChangingCalls, toolText } from "./actions";
+import { useConfirmations } from "./confirmations";
+import { useAccount } from "@/account/useAccount";
 import {
   ChatError,
   COAUTHOR_ID,
@@ -43,6 +47,7 @@ import {
   type Conversation,
 } from "./api";
 import { coauthorContext } from "./docContext";
+import { ModeSwitch } from "./ModeSwitch";
 
 const SUGGESTIONS = [
   "О чём эта история?",
@@ -93,6 +98,10 @@ function textOf(m: Message): string {
   return typeof m.content === "string" ? m.content : "";
 }
 
+function callsOf(m: Message) {
+  return m.role === "assistant" ? (m.toolCalls ?? []) : [];
+}
+
 /** Chat with the co-author (openspec/specs/web/workspace, «Чат с соавтором»). */
 export function CoauthorChat({
   sees,
@@ -112,6 +121,13 @@ export function CoauthorChat({
     ],
   });
   const [draft, setDraft] = useState("");
+  // A turn of the author, from sending to the end of the co-author's answer, including the time
+  // a confirmation card waits for the author: no other message goes meanwhile.
+  const [busy, setBusy] = useState(false);
+  // Results of the co-author's changing calls in this chat, by call id (ActionLines, `outcomes`).
+  const [outcomes, setOutcomes] = useState<ReadonlyMap<string, string>>(
+    new Map(),
+  );
   const [error, setError] = useState<{
     text: string;
     tone: "error" | "notice";
@@ -127,6 +143,8 @@ export function CoauthorChat({
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [fileErrors, setFileErrors] = useState<string[]>([]);
   const checking = attachments.some((a) => a.id === null);
+  const { data: account } = useAccount();
+  const confirmations = useConfirmations(account?.coauthorMode);
 
   useAgentContext({
     description: "Что сейчас открыто у автора в Authorled",
@@ -157,6 +175,17 @@ export function CoauthorChat({
     const subscription = agent.subscribe({
       onRunFailed: ({ error }) => {
         failure = error;
+      },
+      // A change of the co-author is shown at once, not after the whole turn
+      // (openspec/specs/web/workspace, «Экраны после действия соавтора»).
+      onToolCallResultEvent: ({ event }) => {
+        const content = toolText(event.content);
+        setOutcomes((found) => new Map(found).set(event.toolCallId, content));
+        for (const resource of changedResources(content))
+          void invalidate({
+            resource,
+            invalidates: ["list", "many", "detail"],
+          });
       },
       onRunErrorEvent: ({ event }) => {
         // The limit of the period is not a failure: the backend's message is shown as it is
@@ -234,7 +263,7 @@ export function CoauthorChat({
   async function send(text: string) {
     const question = text.trim();
     // While a file is being checked the message waits (web/workspace, «Файлы в сообщении»).
-    if (agent.isRunning || checking) return;
+    if (agent.isRunning || checking || busy) return;
     const sent = attachments.filter(
       (a): a is Attachment & { id: string } => a.id !== null,
     );
@@ -248,6 +277,7 @@ export function CoauthorChat({
     setDraft("");
     clearFiles();
     setView("messages");
+    setBusy(true);
     const id = crypto.randomUUID();
     agent.addMessage({ id, role: "user", content });
     // The ids reach the co-author with this turn only; it reads the files with read_chat_file.
@@ -278,12 +308,17 @@ export function CoauthorChat({
         text: e instanceof Error ? e.message : String(e),
         tone: e instanceof ChatError ? e.tone : "error",
       });
+      // After the author answered a confirmation the turn has taken place: it stays as it is.
+      const sentAt = agent.messages.findIndex((m) => m.id === id);
+      if (agent.messages.slice(sentAt + 1).some((m) => m.role === "tool"))
+        return;
       // The question and its files stay in the field, so they can be sent again.
       agent.setMessages(agent.messages.filter((m) => m.id !== id));
       setDraft(question);
       setAttachments(sent);
     } finally {
       if (files !== null) copilotkit.removeContext(files);
+      setBusy(false);
     }
   }
 
@@ -349,7 +384,51 @@ export function CoauthorChat({
   const last = messages.at(-1);
   const waiting =
     agent.isRunning &&
-    (last === undefined || last.role === "user" || textOf(last) === "");
+    (last === undefined ||
+      last.role === "user" ||
+      (textOf(last) === "" && callsOf(last).length === 0));
+  const changingCalls = firstChangingCalls(messages);
+
+  /**
+   * An answer of the co-author: its text, or the changing calls it carries. The text Agno puts
+   * on a paused run is its own, in English, so a message with changing calls shows them only;
+   * a message with neither (a turn of reading tools) is not shown.
+   */
+  function assistantMessage(m: Message) {
+    const calls = changingCalls.get(m.id) ?? [];
+    const text = calls.length > 0 ? "" : textOf(m);
+    if (text === "" && calls.length === 0) return null;
+    return (
+      <div key={m.id} className="max-w-[92%] self-start">
+        <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-ai">
+          <Sparkles className="size-3.5" />
+          Соавтор
+        </div>
+        {text !== "" && (
+          <div className="chat-md">
+            <Markdown>{text}</Markdown>
+          </div>
+        )}
+        <ActionLines
+          calls={calls}
+          messages={agent.messages}
+          outcomes={outcomes}
+          confirmations={confirmations}
+        />
+        {!(agent.isRunning && m === last) && text !== "" && (
+          <Button
+            variant="outline"
+            size="xs"
+            className="mt-2 rounded-lg text-muted-foreground"
+            onClick={() => void navigator.clipboard.writeText(text)}
+          >
+            <Copy />
+            Скопировать
+          </Button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <section
@@ -376,6 +455,8 @@ export function CoauthorChat({
           className="rounded-full"
           aria-label="История бесед"
           aria-pressed={view === "history"}
+          // A turn waiting for the author belongs to this conversation: it ends first.
+          disabled={busy}
           onClick={() => void openHistory()}
         >
           <History />
@@ -385,6 +466,7 @@ export function CoauthorChat({
           size="icon-sm"
           className="rounded-full"
           aria-label="Новая беседа"
+          disabled={busy}
           onClick={startNew}
         >
           <Plus />
@@ -463,28 +545,7 @@ export function CoauthorChat({
                   {textOf(m)}
                 </div>
               ) : (
-                <div key={m.id} className="max-w-[92%] self-start">
-                  <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-ai">
-                    <Sparkles className="size-3.5" />
-                    Соавтор
-                  </div>
-                  <div className="chat-md">
-                    <Markdown>{textOf(m)}</Markdown>
-                  </div>
-                  {!(agent.isRunning && m === last) && textOf(m) !== "" && (
-                    <Button
-                      variant="outline"
-                      size="xs"
-                      className="mt-2 rounded-lg text-muted-foreground"
-                      onClick={() =>
-                        void navigator.clipboard.writeText(textOf(m))
-                      }
-                    >
-                      <Copy />
-                      Скопировать
-                    </Button>
-                  )}
-                </div>
+                assistantMessage(m)
               ),
             )
           )}
@@ -596,13 +657,15 @@ export function CoauthorChat({
               (draft.trim() === "" &&
                 !attachments.some((a) => a.id !== null)) ||
               checking ||
-              agent.isRunning
+              agent.isRunning ||
+              busy
             }
             onClick={() => void send(draft)}
           >
             <ArrowUp />
           </Button>
         </div>
+        <ModeSwitch />
         {fileErrors.length > 0 && (
           <ul
             role="alert"

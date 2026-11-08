@@ -4,10 +4,11 @@ import {
   useInvalidate,
   useUpdate,
 } from "@refinedev/core";
-import { useState, type CSSProperties, type RefObject } from "react";
+import { useEffect, useState, type CSSProperties, type RefObject } from "react";
 
 import { useComments } from "@/data/hooks";
 import type { CommentThread, NewReply } from "@/data/model";
+import type { SuggestionAnchor } from "@/editor/index.ts";
 import type {
   EditorComments,
   ScreenplayEditorHandle,
@@ -54,6 +55,21 @@ export function useEditorComments(
       throw new Error("Редактор сценария ещё не открыт");
     return editor.current;
   };
+  // Open threads of the co-author without a mark get one by their anchor after the text opens and
+  // after every change of the list (web/workspace, «Комментарий соавтора по якорю»); a thread
+  // whose words are gone stays without a place, and the list says so.
+  const anchors = JSON.stringify(
+    threads
+      .filter((t) => !t.resolved && t.sceneUid !== null && !quotes.has(t.id))
+      .map((t) => ({ id: t.id, sceneUid: t.sceneUid, quote: t.quote })),
+  );
+  useEffect(() => {
+    if (readOnly) return;
+    if (editor.current === null)
+      throw new Error("Редактор сценария ещё не открыт");
+    editor.current.placeComments(JSON.parse(anchors) as SuggestionAnchor[]);
+  }, [editor, anchors, readOnly]);
+
   const saved = (id: string) => threads.some((t) => t.id === id);
   const unsavedDraft = draft !== null && !saved(draft) ? draft : null;
   const thread = threads.find((t) => t.id === active) ?? null;

@@ -12,6 +12,7 @@ from core.errors import Conflict, Forbidden, Invalid, Locked, NotFound
 from core.projects import create_project
 from core.review import (
     add_reply,
+    create_coauthor_thread,
     create_suggestion,
     create_thread,
     decide,
@@ -168,6 +169,48 @@ def test_suggestion_needs_the_quote_in_the_scene(connection: Connection) -> None
     with pytest.raises(NotFound):
         create_suggestion(connection, script_id, "s9", "Вера молчит", "Вера плачет", "", SESSION)
     assert list_suggestions(connection, script_id, None) == []
+
+
+def test_coauthor_thread_keeps_the_text(connection: Connection) -> None:
+    _, script_id, author = _story(connection)
+    before = get_text(connection, script_id)
+    thread = create_coauthor_thread(connection, script_id, "s3", "Вера молчит", "Здесь пауза важнее реплики")
+    assert (thread.quote, thread.scene_uid) == ("Вера молчит", "s3")
+    (message,) = thread.messages
+    assert (message.author_kind, message.author_id, message.author_name) == ("coauthor", None, "Соавтор")
+    after = get_text(connection, script_id)
+    assert (after.revision, after.content) == (before.revision, before.content)
+    replied = add_reply(connection, thread.id, "Подумаю", author, "")
+    assert [m.author_kind for m in replied.messages] == ["coauthor", "user"]
+    assert [t.id for t in list_threads(connection, script_id)] == [thread.id]
+
+
+def test_coauthor_thread_needs_the_quote_in_the_scene(connection: Connection) -> None:
+    _, script_id, _ = _story(connection)
+    with pytest.raises(Invalid, match="Цитата не найдена в сцене"):
+        create_coauthor_thread(connection, script_id, "s3", "Вода холодная", "Холодно")
+    with pytest.raises(NotFound):
+        create_coauthor_thread(connection, script_id, "s9", "Вера молчит", "Пауза")
+    with pytest.raises(Invalid):
+        create_coauthor_thread(connection, script_id, "s3", "Вера молчит", "  ")
+    assert list_threads(connection, script_id) == []
+
+
+def test_coauthor_thread_in_a_locked_draft(connection: Connection) -> None:
+    draft_id, script_id, _ = _story(connection)
+    update_draft(connection, draft_id, {"locked": True})
+    with pytest.raises(Locked):
+        create_coauthor_thread(connection, script_id, "s3", "Вера молчит", "Пауза")
+
+
+def test_message_of_the_coauthor_is_not_edited_but_removed(connection: Connection) -> None:
+    _, script_id, author = _story(connection)
+    thread = create_coauthor_thread(connection, script_id, "s3", "Вера молчит", "Пауза")
+    message = thread.messages[0]
+    with pytest.raises(Forbidden):
+        edit_message(connection, thread.id, message.id, "Другое", author)
+    assert delete_message(connection, thread.id, message.id, author) is True
+    assert list_threads(connection, script_id) == []
 
 
 def test_filter_and_decide_once(connection: Connection) -> None:

@@ -78,8 +78,11 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   `agno/app/settings.py`: application model factories.
 - `agno/app/sandbox.py`: providers, repository URL/branch and checkpoint paths.
 - `agno/agents/`: application agents, including the Claude engineer (Claude Code on DeepSeek) and the co-author
-  with its tools (`coauthor_tools.py`: read the story of the conversation, propose an edit; in-process functions
-  that call the core) and its hooks (`coauthor_usage.py`: the limit check before a run, the usage journal after it).
+  with its tools (`coauthor_tools.py`: read the story of the conversation, propose an edit of the screenplay, and by
+  the author's request change notes, documents and comments; in-process functions that call the core; every changing
+  call pauses the run until the chat answers it, the author in the co-author mode `ask`, the chat itself in `auto`;
+  the list is static, AgentOS 3.1.10 refuses tools built per run) and its hooks (`coauthor_usage.py`: the limit check before a run, the usage journal
+  after it). The co-author never deletes, trashes or decides; the screenplay text changes only by suggestions.
   `agno/skills/<agent_id>/SKILL.md`: an agent's prompt as an Anthropic Agent Skill (`name` equals the id,
   the body is the prompt), loaded by `agents/prompts.py`; restart the API after editing it.
   `agno/teams/`: user-defined teams; no Engineering team ships by default.
@@ -154,7 +157,8 @@ npm ci --prefix web
 npm run dev --prefix web
 ```
 
-`validate.sh` also checks the frontend and fails while `web/node_modules` is missing. `web/package.json`
+`validate.sh` stops before any check unless `python`, `ruff`, `mypy` and `alembic` come from one project environment
+(activate `agno/.venv`; CI uses the runner's Python). It also checks the frontend and fails while `web/node_modules` is missing. `web/package.json`
 pins exact versions; commit `web/package-lock.json`.
 
 `agno/pyproject.toml` declares dependencies. Regenerate `agno/requirements.txt` with

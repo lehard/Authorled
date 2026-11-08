@@ -27,6 +27,7 @@ import {
 } from "@/data/model";
 import { PROFILE, ROLES } from "@/data/profiles";
 import { useAutosave } from "@/screens/shared/useAutosave";
+import { useServerChanges } from "@/screens/shared/useServerChanges";
 
 import { docPath, ENTITY_WORDS } from "../docRef";
 import { useEntityActions } from "../entityActions";
@@ -67,6 +68,8 @@ function EntityForm({ kind, record }: { kind: EntityKind; record: Entity }) {
     record.id,
   );
   const [x, setX] = useState<Entity>(record);
+  // The co-author may change the card while it is open: its fields show without a reload.
+  useServerChanges(record, setX);
   const words = ENTITY_WORDS[kind];
 
   function set(patch: Partial<Entity>) {

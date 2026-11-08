@@ -5,7 +5,7 @@ from typing import Any
 
 from sqlalchemy import Engine
 
-from core.review import create_suggestion
+from core.review import create_coauthor_thread, create_suggestion
 
 SCENE = {"type": "sceneHeading", "attrs": {"uid": "s3"}, "content": [{"type": "text", "text": "НАТ. ОЗЕРО — ДЕНЬ"}]}
 ACTION = {"type": "action", "content": [{"type": "text", "text": "Вера молчит."}]}
@@ -32,6 +32,7 @@ def test_thread_reply_resolve(authors: Any) -> None:
     assert created.status_code == 201
     message = created.json()["messages"][0]
     assert (message["own"], message["author_role"], message["author_name"]) == (True, "редактор", "Анна Петрова")
+    assert (message["author_kind"], created.json()["scene_uid"]) == ("user", None)
     again = author.post(f"/api/v1/documents/{script_id}/comments", json={"id": thread_id, "quote": "В", "body": "Ещё"})
     assert again.status_code == 409
     replied = author.post(f"/api/v1/comments/{thread_id}/replies", json={"body": "Согласна"})
@@ -78,3 +79,23 @@ def test_suggestions(authors: Any, engine: Engine) -> None:
     assert [s["id"] for s in listed] == [str(open_one.id)]
     assert author.patch(f"/api/v1/suggestions/{other.id}", json={"status": "accepted"}).status_code == 409
     assert author.get(f"/api/v1/documents/{script_id}/suggestions?status=maybe").status_code == 422
+
+
+def test_thread_of_the_coauthor(authors: Any, engine: Engine) -> None:
+    author = authors()
+    script_id = _screenplay(author)
+    with engine.begin() as connection:
+        thread = create_coauthor_thread(connection, uuid.UUID(script_id), "s3", "Вера молчит", "Здесь пауза важнее")
+    (listed,) = author.get(f"/api/v1/documents/{script_id}/comments").json()
+    assert (listed["quote"], listed["scene_uid"]) == ("Вера молчит", "s3")
+    (message,) = listed["messages"]
+    assert (message["author_kind"], message["author_id"], message["author_name"], message["own"]) == (
+        "coauthor",
+        None,
+        "Соавтор",
+        False,
+    )
+    url = f"/api/v1/comments/{thread.id}/messages/{message['id']}"
+    assert author.patch(url, json={"body": "Другое"}).status_code == 403
+    assert author.delete(url).status_code == 204
+    assert author.get(f"/api/v1/documents/{script_id}/comments").json() == []

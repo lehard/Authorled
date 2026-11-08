@@ -25,18 +25,20 @@ def _thread_out(thread: review.Thread, viewer: uuid.UUID) -> ThreadOut:
         id=thread.id,
         document_id=thread.document_id,
         quote=thread.quote,
+        scene_uid=thread.scene_uid,
         resolved_at=thread.resolved_at,
         created_at=thread.created_at,
         messages=[
             MessageOut(
                 id=m.id,
+                author_kind=m.author_kind,
                 author_id=m.author_id,
                 author_name=m.author_name,
                 author_role=m.author_role,
                 body=m.body,
                 created_at=m.created_at,
                 edited_at=m.edited_at,
-                own=m.author_id == viewer,
+                own=m.author_kind == "user" and m.author_id == viewer,
             )
             for m in thread.messages
         ],

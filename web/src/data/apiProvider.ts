@@ -527,12 +527,21 @@ function scriptChanges(values: Partial<Script>): {
 /** Thread id → id of its first message, which the screens know by the thread id. */
 const firstMessages = new Map<string, string>();
 
+function isAuthorKind(value: unknown): value is CommentMessage["kind"] {
+  return value === "user" || value === "coauthor";
+}
+
+function isStringOrNull(value: unknown): value is string | null {
+  return value === null || typeof value === "string";
+}
+
 function toMessage(body: unknown): CommentMessage {
   const o = shape("сообщение комментария", body);
   const what = "сообщение комментария";
   return {
     id: field(what, o, "id", isString),
     author: field(what, o, "author_name", isString),
+    kind: field(what, o, "author_kind", isAuthorKind),
     own: field(what, o, "own", isBool),
     role: field(what, o, "author_role", isString),
     at: field(what, o, "created_at", isString),
@@ -555,6 +564,7 @@ function toThread(draftId: string, body: unknown): CommentThread {
     id,
     draftId,
     quote: field(what, o, "quote", isString),
+    sceneUid: field(what, o, "scene_uid", isStringOrNull),
     resolved: field(what, o, "resolved_at", isTime) !== null,
     replies,
   };

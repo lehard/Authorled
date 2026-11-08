@@ -388,7 +388,9 @@ Authentik configuration in `auth/`; the root holds what they share (`compose.yam
 `.venv` at the repository root from before the backend moved to `agno/`, delete it and run
 `./agno/scripts/venv_setup.sh` again.
 
-`validate.sh` checks Python formatting, lint rules, and types, and builds and checks the frontend. The smoke tests ask
+`validate.sh` checks Python formatting, lint rules, and types, and builds and checks the frontend. It first checks that
+`python`, `ruff`, `mypy` and `alembic` come from one environment of the project (`agno/.venv` here, the Python of the
+runner in CI) and stops before any check if they do not. The smoke tests ask
 OS Manager to explain setup, check platform health, and explain agent memory.
 They use your model API keys and save results in the database for review in the UI.
 PostgreSQL must be running, even when you only want to list the tests. The evals import the

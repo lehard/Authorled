@@ -259,3 +259,21 @@ def test_pre_hook_unknown_plan_refuses_and_names_it(engine: Engine, author: Call
         check_usage_limit(_context(subject), AgentSession(session_id=SESSION, user_id=subject, runs=[]))
     assert refused.value.additional_data == {"reason": CHECK_FAILED}
     assert "'old'" in str(refused.value.__cause__)
+
+
+def test_run_with_a_pause_is_one_row(engine: Engine, author: Callable[[], str]) -> None:
+    """A run paused for the author's answer (openspec/specs/api/agents, «Расход запуска с паузой»): the pre-hook of
+    another run leaves it alone, and the post-hook after its continuation writes one row with both model calls."""
+    subject = author()
+    run_id = f"p-{uuid.uuid4()}"
+    paused = _output(subject, run_id, RunStatus.paused)
+    check_usage_limit(_context(subject), AgentSession(session_id=SESSION, user_id=subject, runs=[paused]))
+    assert _journal(engine, subject) == []
+    continued = _output(subject, run_id)
+    assert continued.metrics is not None and continued.metrics.details is not None
+    continued.metrics.details["model"].append(
+        ModelMetrics(id="deepseek-fast", provider="DeepSeek", input_tokens=500, cache_read_tokens=0, output_tokens=50)
+    )
+    record_usage(continued, _context(subject, run_id))
+    (row,) = _journal(engine, subject)
+    assert (row.run_id, row.input_tokens, row.cache_read_tokens, row.output_tokens) == (run_id, 1_500, 200, 150)

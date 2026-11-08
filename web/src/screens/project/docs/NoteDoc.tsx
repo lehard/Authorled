@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Note } from "@/data/model";
 import { useAutosave } from "@/screens/shared/useAutosave";
+import { useServerChanges } from "@/screens/shared/useServerChanges";
 
 import { DOC_WORDS, docPath } from "../docRef";
 import { useNoteActions } from "../noteActions";
@@ -28,6 +29,9 @@ export function NoteDoc({ id }: { id: string }) {
   const { save, status } = useAutosave<Note>("notes", id);
   const [title, setTitle] = useState(note.title);
   const [body, setBody] = useState(note.body);
+  // The co-author may change the note while it is open: its changes show without a reload.
+  useServerChanges(note.title, setTitle);
+  useServerChanges(note.body, setBody);
   const words = DOC_WORDS.note;
 
   return (
