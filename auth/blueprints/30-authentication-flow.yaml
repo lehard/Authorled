@@ -19,7 +19,7 @@ entries:
       slug: authorled-enrollment
     attrs:
       name: Authorled sign-up
-      title: Регистрация в Authorled
+      title: Регистрация в Соавторе
       designation: enrollment
       authentication: require_unauthenticated
   - model: authentik_stages_password.passwordstage
@@ -62,11 +62,11 @@ entries:
     identifiers:
       name: authorled-authenticator-email-setup
     attrs:
-      friendly_name: Authorled
+      friendly_name: Соавтор
       use_global_settings: true
       # The code e-mail and the code screen of the frontend say 10 minutes: change them together.
       token_expiry: minutes=10
-      subject: Код для входа в CoAuthor
+      subject: Код для входа в Соавтор
       template: email/coauthor-code.html
   - model: authentik_stages_authenticator_validate.authenticatorvalidatestage
     id: stage-mfa-validate
@@ -95,7 +95,7 @@ entries:
       slug: authorled-authentication
     attrs:
       name: Authorled authentication
-      title: Вход в Authorled
+      title: Вход в Соавтор
       designation: authentication
       authentication: require_unauthenticated
   - model: authentik_flows.flowstagebinding
@@ -250,5 +250,5 @@ entries:
       domain: !Env AUTH_BRAND_DOMAIN
     attrs:
       default: false
-      branding_title: Authorled
+      branding_title: Соавтор
       flow_authentication: !KeyOf flow-authentication

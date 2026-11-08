@@ -17,7 +17,7 @@ entries:
       slug: authorled-invalidation
     attrs:
       name: Authorled sign-out
-      title: Выход из Authorled
+      title: Выход из Соавтора
       designation: invalidation
   - model: authentik_flows.flowstagebinding
     identifiers:
@@ -63,5 +63,5 @@ entries:
     identifiers:
       slug: authorled
     attrs:
-      name: Authorled
+      name: Соавтор
       provider: !KeyOf provider-authorled

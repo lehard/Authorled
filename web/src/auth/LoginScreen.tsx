@@ -223,7 +223,7 @@ export function LoginScreen() {
     card = (
       <form onSubmit={submitEmail} noValidate className="grid gap-2">
         <h1 className="text-heading-1 text-[28px] leading-tight font-medium">
-          Вход в Authorled
+          Вход в Соавтор
         </h1>
         <p className="mb-4 text-muted-foreground">
           Введите почту, на которую заведён аккаунт.
@@ -443,7 +443,7 @@ export function LoginScreen() {
             className="inline-block size-7 rounded-lg bg-primary"
             aria-hidden
           />
-          Authorled
+          Соавтор
         </div>
         <div className="rounded-[22px] bg-paper px-6 py-7 text-paper-foreground shadow-paper sm:px-8">
           {card}

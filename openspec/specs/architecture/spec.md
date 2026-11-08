@@ -1,7 +1,7 @@
 # Architecture Specification
 
 ## Purpose
-Слои и связи текущего кода. Целевая архитектура Authorled (три сервиса, ядро, свои маршруты `/api/v1/`, Redis, LiteLLM) описана в `openspec/context/03-architecture.md` и ADR-001/002 и в коде не реализована.
+Слои и связи текущего кода. Целевая архитектура Соавтора (три сервиса, ядро, свои маршруты `/api/v1/`, Redis, LiteLLM) описана в `openspec/context/03-architecture.md` и ADR-001/002 и в коде не реализована.
 
 ```mermaid
 graph LR
