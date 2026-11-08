@@ -76,23 +76,25 @@ export function useNotes(projectId: string, inTrash = false) {
   return { notes: result.data, query };
 }
 
-/** Comment threads of a draft, oldest first. */
-export function useComments(draftId: string) {
+/** Comment threads of a draft, oldest first; `enabled: false` does not read them yet. */
+export function useComments(draftId: string, enabled = true) {
   const { result, query } = useList<CommentThread>({
     resource: "comments",
     filters: [{ field: "draftId", operator: "eq", value: draftId }],
     sorters: [{ field: "at", order: "asc" }],
     pagination: { mode: "off" },
+    queryOptions: { enabled },
   });
   return { threads: result.data, query };
 }
 
-/** Co-author suggestions of a draft. */
-export function useSuggestions(draftId: string) {
+/** Co-author suggestions of a draft; `enabled: false` does not read them yet. */
+export function useSuggestions(draftId: string, enabled = true) {
   const { result, query } = useList<Suggestion>({
     resource: "suggestions",
     filters: [{ field: "draftId", operator: "eq", value: draftId }],
     pagination: { mode: "off" },
+    queryOptions: { enabled },
   });
   return { suggestions: result.data, query };
 }

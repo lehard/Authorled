@@ -142,6 +142,13 @@ updated: 2026-11-08
 **Источник:** [плагины Sudowrite](https://sudowrite.com/features/plugins), [как их создавать](https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/how-do-i-build-plugins/a3iVxJb4UZLKfSxf8BG3mY), [конструктор плагинов](https://sudowrite.com/blog/sudowrite-plugin-builder/).
 **Связано:** запись «Быстрые действия над выделенным» выше.
 
+### Журнал трасс без HTTP-спанов FastAPI
+**Что:** не писать в журнал трасс AgentOS спаны встроенной телеметрии FastAPI 0.159.1 (`fastapi.dependencies`, HTTP-запросы), оставить трассы запусков агентов; вернуть запуску соавтора имя `Соавтор.arun` и `agent_id`, чтобы `/traces?agent_id=coauthor` его находил.
+**Зачем:** 4671 из 5055 трасс в `ai.agno_traces` — HTTP-спаны; с 2026-11-02 запуск соавтора называется по HTTP-спану и без `agent_id`, и разбирать работу соавтора по трассам неудобно.
+**Решение:** lehard 2026-11-08, план change `editor-fit-and-speed` (раздел «Workflow follow-up»): записать на будущее.
+**Источник:** замеры в `tmp/VERIFY.md`, «editor-fit-and-speed: локальная проверка», группа 1; `openspec/changes/archive/2026-11-08-editor-fit-and-speed/design.md`.
+**Связано:** `setup_tracing(db, batch_processing=True)` в `agno/app/main.py`.
+
 ## Сервер и домен
 
 ### Подключение чат-приложений к MCP по OAuth

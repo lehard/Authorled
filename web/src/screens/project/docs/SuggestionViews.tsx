@@ -15,6 +15,7 @@ import {
 import type { Suggestion } from "@/data/model";
 
 import { commentTime } from "./commentTime";
+import { useCardHeight } from "./cardPlace";
 import { useCardDismiss } from "./useCardDismiss";
 
 // The card of a co-author suggestion and the button that walks through them
@@ -29,8 +30,11 @@ export function SuggestionCard({
   onClose,
   onDiscuss,
   onDecide,
+  onHeight,
 }: {
   style: CSSProperties;
+  /** The height of the card, whenever it changes: a gap in the text follows it. */
+  onHeight?: (height: number) => void;
   suggestion: Suggestion;
   /** The text it would replace. */
   old: string;
@@ -43,6 +47,7 @@ export function SuggestionCard({
 }) {
   const card = useRef<HTMLElement>(null);
   useCardDismiss(card, onClose);
+  useCardHeight(card, onHeight);
   return (
     <section
       ref={card}
@@ -53,7 +58,10 @@ export function SuggestionCard({
       <header className="-mb-1 flex items-center gap-1.5 text-caption text-muted-foreground">
         <Sparkles className="size-4 text-ai" />
         <span className="flex-1">
-          Предложение соавтора · {commentTime(suggestion.at)}
+          Предложение соавтора ·{" "}
+          <span className="whitespace-nowrap">
+            {commentTime(suggestion.at)}
+          </span>
         </span>
         <Tooltip>
           <TooltipTrigger asChild>

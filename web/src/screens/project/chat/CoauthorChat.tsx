@@ -10,6 +10,7 @@ import {
   ArrowUp,
   Copy,
   History,
+  PanelRightClose,
   Paperclip,
   Plus,
   Sparkles,
@@ -84,6 +85,8 @@ type Props = {
   clearSelection: () => void;
   /** Set when the chat is a sheet (narrow screens): a close button in its header. */
   onClose?: () => void;
+  /** Set when the chat is a column (wide screens): «Свернуть чат» in its header. */
+  onCollapse?: () => void;
 };
 
 /** The reason the backend put into the data of a refused run (agents/coauthor_usage.py). */
@@ -108,6 +111,7 @@ export function CoauthorChat({
   selection,
   clearSelection,
   onClose,
+  onCollapse,
 }: Props) {
   const data = useProjectData();
   const navigate = useNavigate();
@@ -480,6 +484,17 @@ export function CoauthorChat({
             onClick={onClose}
           >
             <X />
+          </Button>
+        )}
+        {onCollapse !== undefined && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="rounded-full"
+            aria-label="Свернуть чат"
+            onClick={onCollapse}
+          >
+            <PanelRightClose />
           </Button>
         )}
       </header>

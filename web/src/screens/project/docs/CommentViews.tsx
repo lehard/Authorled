@@ -36,6 +36,7 @@ import {
 import type { CommentMessage, CommentThread } from "@/data/model";
 
 import { commentTime } from "./commentTime";
+import { useCardHeight } from "./cardPlace";
 import { useCardDismiss } from "./useCardDismiss";
 
 // The card of a comment thread and the list of threads (screenplay-comments, decisions 6 and 7).
@@ -204,8 +205,11 @@ export function ThreadCard({
   onDeleteReply,
   onDeleteThread,
   onResolve,
+  onHeight,
 }: {
   style: CSSProperties;
+  /** The height of the card, whenever it changes: a gap in the text follows it. */
+  onHeight?: (height: number) => void;
   /** Null for a new comment that is not saved yet. */
   thread: CommentThread | null;
   /** A locked draft: the thread is only read. */
@@ -222,6 +226,7 @@ export function ThreadCard({
 }) {
   const card = useRef<HTMLElement>(null);
   useCardDismiss(card, onClose);
+  useCardHeight(card, onHeight);
 
   const messages = thread === null ? [] : [thread, ...thread.replies];
   return (

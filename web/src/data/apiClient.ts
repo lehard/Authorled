@@ -61,10 +61,32 @@ function etag(response: Response): number | null {
   return revision;
 }
 
-export async function apiRequest(
+// Reads of the same address that run at the same time share one request and its answer
+// (openspec/specs/web/workspace, «Загрузка окна истории»): the screens of a window read the same
+// list for the live records and the trash, and React StrictMode mounts them twice in development.
+// Only requests in flight are shared; the next read after the answer asks again. The shared body
+// is read-only for the callers.
+const reading = new Map<string, Promise<ApiResponse>>();
+
+export function apiRequest(
   path: string,
   request: ApiRequest = {},
 ): Promise<ApiResponse> {
+  if ((request.method ?? "GET") !== "GET" || request.revision !== undefined)
+    return send(path, request);
+  const key = `${path}?${new URLSearchParams(request.query ?? {}).toString()}`;
+  const running = reading.get(key);
+  if (running !== undefined) return running;
+  const started = send(path, request);
+  reading.set(key, started);
+  void started.then(
+    () => reading.delete(key),
+    () => reading.delete(key),
+  );
+  return started;
+}
+
+async function send(path: string, request: ApiRequest): Promise<ApiResponse> {
   const user = await activeUser();
   if (user === null) throw new HttpError("Вход истёк. Войдите снова.", 401);
   const headers: Record<string, string> = {

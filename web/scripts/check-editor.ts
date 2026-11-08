@@ -8,6 +8,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { history, undo, undoDepth } from "prosemirror-history";
+import type { Node as ProseNode } from "prosemirror-model";
 import { EditorState, TextSelection, type Command } from "prosemirror-state";
 
 import {
@@ -55,6 +56,12 @@ import {
   setFind,
 } from "../src/editor/plugins/find.ts";
 import { suggestions } from "../src/editor/plugins/suggest.ts";
+import { sceneHeadings } from "../src/editor/plugins/sceneHeadings.ts";
+import {
+  cardGapKey,
+  cardGapStatePlugin,
+  type CardGapMeta,
+} from "../src/editor/plugins/cardGap.ts";
 import {
   addComment,
   commentQuotes,
@@ -951,6 +958,77 @@ try {
   if (again.docChanged) fail("повторная постановка изменила текст");
 }
 
+// --- gap for a card (web/workspace, «Карточки у текста»): no change of the document, no undo step
+{
+  const node = toNode(
+    plainDoc([
+      ["action", "Вера молчит."],
+      ["action", "Чайник шумит."],
+    ]),
+  );
+  let s = EditorState.create({
+    doc: node,
+    plugins: [history(), cardGapStatePlugin],
+  });
+  const before = JSON.stringify(toJSON(s.doc));
+  const after = node.child(0).nodeSize;
+  const show: CardGapMeta = { show: { id: "t1", pos: after, height: 120 } };
+  s = s.apply(s.tr.setMeta(cardGapKey, show).setMeta("addToHistory", false));
+  if (JSON.stringify(toJSON(s.doc)) !== before)
+    fail("зазор карточки изменил документ");
+  if (undoDepth(s) !== 0) fail("зазор карточки попал в историю отмены");
+  if (cardGapKey.getState(s)?.pos !== after)
+    fail("зазор карточки не поставлен");
+  // Typing before the gap moves it with the text.
+  s = s.apply(s.tr.insertText("Да. ", 1));
+  if (cardGapKey.getState(s)?.pos !== after + 4)
+    fail(`зазор карточки не поехал с текстом: ${cardGapKey.getState(s)?.pos}`);
+  // Another card's hide leaves it; its own hide removes it.
+  const other: CardGapMeta = { hide: "t2" };
+  s = s.apply(s.tr.setMeta(cardGapKey, other));
+  if (cardGapKey.getState(s) === null) fail("чужая карточка закрыла зазор");
+  const own: CardGapMeta = { hide: "t1" };
+  s = s.apply(s.tr.setMeta(cardGapKey, own));
+  if (cardGapKey.getState(s) !== null) fail("зазор карточки не закрылся");
+}
+
+// --- scene numbers (web/screenplay-editor, «Ввод в пустой заголовок сцены»): numbered in order,
+// the empty heading marked; inserting and deleting a scene renumbers them
+{
+  const numbers = (d: ProseNode) =>
+    sceneHeadings(d)
+      .map((h) => `${h.number}${h.empty ? " пустой" : ""}`)
+      .join(", ");
+  let s = EditorState.create({
+    doc: toNode(
+      plainDoc([
+        ["sceneHeading", "НАТ. ОЗЕРО — РАССВЕТ"],
+        ["action", "Миша идёт по мосткам."],
+        ["sceneHeading", ""],
+        ["action", "Вера закрывает кран."],
+        ["sceneHeading", "ИНТ. ГАРАЖ — ВЕЧЕР"],
+      ]),
+    ),
+  });
+  if (numbers(s.doc) !== "1, 2 пустой, 3")
+    fail(`номера сцен: ${numbers(s.doc)}, нужно «1, 2 пустой, 3»`);
+  const heading = s.schema.nodes.sceneHeading.create(
+    null,
+    s.schema.text("ИНТ. КУХНЯ — УТРО"),
+  );
+  s = s.apply(s.tr.insert(0, heading));
+  if (numbers(s.doc) !== "1, 2, 3 пустой, 4")
+    fail(
+      `номера после вставки сцены: ${numbers(s.doc)}, нужно «1, 2, 3 пустой, 4»`,
+    );
+  const third = sceneHeadings(s.doc)[2];
+  const empty = s.doc.nodeAt(third.pos);
+  if (empty === null) throw new Error("номера сцен: нет третьего заголовка");
+  s = s.apply(s.tr.delete(third.pos, third.pos + empty.nodeSize));
+  if (numbers(s.doc) !== "1, 2, 3")
+    fail(`номера после удаления сцены: ${numbers(s.doc)}, нужно «1, 2, 3»`);
+}
+
 if (failures.length > 0) {
   console.error(
     "check-editor: редактор сценария расходится с openspec/specs/web/screenplay-editor:",
@@ -959,5 +1037,5 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log(
-  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, образцы экспорта, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник, правки сцен, комментарии, предложения соавтора, копия драфтов, uid сцен, якоря предложений — без расхождений`,
+  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, образцы экспорта, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник, правки сцен, комментарии, предложения соавтора, копия драфтов, uid сцен, якоря предложений, зазор карточки, номера сцен — без расхождений`,
 );

@@ -8,6 +8,7 @@ from os import environ
 from agno.job_queue import QueueConfig
 from agno.os import AgentOS, CompanyConfig, OSManager
 from agno.os.interfaces.agui import AGUI
+from agno.tracing import setup_tracing
 
 from agents.coauthor import COAUTHOR_ID, coauthor
 from agents.engineers import engineers
@@ -36,10 +37,16 @@ if runtime_env not in ("dev", "prd"):
 agentos_url = _required_env("AGENTOS_URL")
 db = get_postgres_db()
 
+# Tracing of Agno, written in batches by a background thread (openspec/specs/overview, «Возможности
+# AgentOS»). AgentOS(tracing=True) sets it up with a synchronous processor: every span, including
+# the HTTP spans FastAPI makes on its own, was written to PostgreSQL inside the request, ~80 ms
+# each, and parallel requests waited for one another. A failed setup stops the start.
+setup_tracing(db=db, batch_processing=True)
+
 agent_os = AgentOS(
     db=db,
     mcp=True,
-    tracing=True,
+    tracing=False,
     telemetry=False,
     scheduler=True,
     user_isolation=True,
