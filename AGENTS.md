@@ -81,7 +81,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   with its tools (`coauthor_tools.py`: read the story of the conversation, propose an edit of the screenplay, and by
   the author's request change notes, documents and comments; in-process functions that call the core; every changing
   call pauses the run until the chat answers it, the author in the co-author mode `ask`, the chat itself in `auto`;
-  the list is static, AgentOS 3.1.10 refuses tools built per run) and its hooks (`coauthor_usage.py`: the limit check before a run, the usage journal
+  the list is static, AgentOS 3.1.10 refuses tools built per run; the document tools type profile fields as strings
+  and list the fields of each kind from `FIELD_HINTS` in `core/fields.py`) and its hooks (`coauthor_usage.py`: the limit check before a run, the usage journal
   after it). The co-author never deletes, trashes or decides; the screenplay text changes only by suggestions.
   `agno/skills/<agent_id>/SKILL.md`: an agent's prompt as an Anthropic Agent Skill (`name` equals the id,
   the body is the prompt), loaded by `agents/prompts.py`; restart the API after editing it.
