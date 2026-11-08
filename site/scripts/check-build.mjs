@@ -39,6 +39,16 @@ if (problems.length === 0) {
     new RegExp(`<section[^>]*aria-labelledby="${id}"[\\s\\S]*?</section>`).exec(
       home,
     )?.[0] ?? "";
+  // The contradiction of the first screen: two quoted scenes, the co-author's card and the caption of the example.
+  const hero = section("hero-title");
+  if ((hero.match(/<mark[\s>]/g) ?? []).length !== 2)
+    fail("the first screen must quote two lines in <mark>");
+  if ((hero.match(/Сцена(?:\s|<!-- -->)*\d+/g) ?? []).length !== 2)
+    fail("the first screen must name two scenes by number");
+  if (!/role="group"[^>]*aria-label="[^"]+"/.test(hero))
+    fail("the first screen has no labelled card of the co-author");
+  if (!/<figcaption[^>]*>[^<]*[Пп]ример/.test(hero))
+    fail("the first screen is not captioned as an example");
   for (const id of ["path-title", "impact-title"]) {
     const block = section(id);
     if (!block) fail(`index.html has no section ${id}`);
