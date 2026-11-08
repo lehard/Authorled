@@ -13,7 +13,7 @@ export function TopBar() {
           className="inline-block size-7 rounded-lg bg-primary"
           aria-hidden
         />
-        Authorled
+        Соавтор
       </Link>
       <span className="flex-1" />
       <UserMenu />

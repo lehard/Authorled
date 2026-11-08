@@ -18,6 +18,7 @@
 3. **Вход.** Издатель токенов `https://auth.soavtor.app/application/o/authorled/`, адреса возврата `https://app.soavtor.app/auth/callback` и `https://app.soavtor.app/login`, cookie Authentik на `.soavtor.app`. Blueprint создаёт бренд для домена `auth.soavtor.app` (бренд ищется по домену). Старый бренд `auth.coauthor.glavai.ru` после проверки удаляется вручную в админке Authentik.
 4. **Письма** уходят с `CoAuthor <noreply@soavtor.app>` через Resend. Домен `coauthor.glavai.ru` в Resend удаляется после проверки письма с нового адреса.
    Имя отправителя меняется на «Соавтор» следующим релизом, в change `rename-soavtor` (`business-intents/rename-soavtor.md`).
+   Имя отправителя меняется на «Соавтор» следующим релизом, в change `rename-soavtor` (`business-intents/rename-soavtor.md`).
 5. **Настройки, которые меняются** (значения не секретные):
    - сервер, `/etc/authorled/authorled.env`: `AGENTOS_URL`, `AUTH_BRAND_DOMAIN`, `AUTH_ISSUER`, `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_FRONTEND_LOGOUT_URI`, `AUTHENTIK_COOKIE_DOMAIN`, `AUTHENTIK_EMAIL__FROM`;
    - GitHub, окружение `production`: `PUBLIC_URL`, `AUTH_ISSUER`, `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_FRONTEND_LOGOUT_URI`.

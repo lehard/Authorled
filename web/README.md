@@ -1,6 +1,6 @@
-# Authorled web
+# Soavtor web
 
-Frontend of Authorled: React + TypeScript on Vite, Refine with React Router, shadcn/ui on
+Frontend of Soavtor: React + TypeScript on Vite, Refine with React Router, shadcn/ui on
 Tailwind CSS (ADR-001, ADR-004). The writer's workspace follows mockup v2
 (`openspec/context/_raw/design/kabinet-starc/`); rules: `openspec/specs/web/workspace`.
 

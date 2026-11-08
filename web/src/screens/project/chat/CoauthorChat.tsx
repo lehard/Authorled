@@ -147,7 +147,7 @@ export function CoauthorChat({
   const confirmations = useConfirmations(account?.coauthorMode);
 
   useAgentContext({
-    description: "Что сейчас открыто у автора в Authorled",
+    description: "Что сейчас открыто у автора в Соавторе",
     value: coauthorContext(data, selection),
   });
 
