@@ -1,3 +1,18 @@
+## MODIFIED Requirements
+
+### Requirement: Evals
+`python -m evals` MUST загружать `.env`, требовать `RUNTIME_ENV` со значением `dev` или `prd` (как API) без значения по умолчанию, собирать MCP-инструменты OS Manager и запускать `agno.eval.cli` с судьёй `default_model()` и таймаутом 180 с. Кейсы `evals/cases.py` с тегом `smoke`: `manager_explains_application` (`read_file`), `manager_checks_health` (`run_diagnostics`), `manager_explains_configured_learning` (`read_file`).
+
+#### Scenario: Smoke-набор
+- GIVEN PostgreSQL доступен и ключи моделей заданы
+- WHEN выполняется `python -m evals --tag smoke`
+- THEN MUST запуститься три кейса, а результаты MUST сохраниться в БД
+
+#### Scenario: Нет RUNTIME_ENV
+- GIVEN `RUNTIME_ENV` не задан ни в окружении, ни в `.env`
+- WHEN выполняется `python -m evals --tag smoke`
+- THEN команда MUST завершиться ошибкой, называющей `RUNTIME_ENV`, до запуска кейсов
+
 ## ADDED Requirements
 
 ### Requirement: Eval соавтора от имени пользователя разработки
