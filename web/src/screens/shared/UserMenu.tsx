@@ -1,5 +1,6 @@
 import { useLogout } from "@refinedev/core";
 import { LogOut, RotateCw, Settings } from "lucide-react";
+import { cn } from "cn";
 import { Link } from "react-router";
 
 import {
@@ -30,7 +31,11 @@ export function UserMenu({ compact = false }: { compact?: boolean }) {
       )}
       <DropdownMenu>
         <DropdownMenuTrigger
-          className="flex h-9 items-center gap-2 rounded-full bg-panel pr-3 pl-1 text-sm shadow-panel outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className={cn(
+            "flex h-9 items-center rounded-full bg-panel text-sm shadow-panel outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+            // Compact (the story window) is the avatar alone: a circle with the letter centred.
+            compact ? "w-9 justify-center" : "gap-2 pr-3 pl-1",
+          )}
           aria-label="Меню пользователя"
         >
           <span className="grid size-7 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
