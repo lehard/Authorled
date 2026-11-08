@@ -163,7 +163,7 @@ def _tools_markdown(tools: ToolQuality, scored: Quality) -> list[str]:
     return lines
 
 
-def _markdown(meta: dict[str, Any], scored: Quality, spent: Cost, tools: ToolQuality | None) -> str:
+def _markdown(meta: dict[str, Any], scored: Quality, spent: Cost | None, tools: ToolQuality | None) -> str:
     lines = [
         f"# Экзамен маршрутизации: {meta['domains']}, {meta['split']}, {meta['variant']}, {meta['model']}",
         "",
@@ -203,15 +203,16 @@ def _markdown(meta: dict[str, Any], scored: Quality, spent: Cost, tools: ToolQua
     lines += ["", "## Разделы", "", "| Раздел | Полное совпадение | Ошибок запуска |", "|---|---|---|"]
     for section, part in scored.sections.items():
         lines.append(f"| {section} | {_share(part.exact, part.cases - part.errors)} | {part.errors} |")
-    lines += [
-        "",
-        "## Цена и задержка",
-        "",
-        f"- Вызовов модели: {spent.model_calls}, на случай {spent.calls_per_case:.1f}.",
-        f"- Токены: вход {spent.input_tokens} (из кэша {spent.cache_read_tokens}), выход {spent.output_tokens}.",
-        f"- Стоимость: {spent.cost_rub:.2f} ₽, на случай {spent.rub_per_case:.3f} ₽.",
-        f"- Задержка на случай: медиана {spent.median_seconds:.1f} с, 95-й процентиль {spent.p95_seconds:.1f} с.",
-    ]
+    lines += ["", "## Цена и задержка", ""]
+    if spent is None:
+        lines.append("Ни один случай не дошёл до ответа модели: все — ошибки запуска, цены и задержки нет.")
+    else:
+        lines += [
+            f"- Вызовов модели: {spent.model_calls}, на случай {spent.calls_per_case:.1f}.",
+            f"- Токены: вход {spent.input_tokens} (из кэша {spent.cache_read_tokens}), выход {spent.output_tokens}.",
+            f"- Стоимость: {spent.cost_rub:.2f} ₽, на случай {spent.rub_per_case:.3f} ₽.",
+            f"- Задержка на случай: медиана {spent.median_seconds:.1f} с, 95-й процентиль {spent.p95_seconds:.1f} с.",
+        ]
     if tools is not None:
         lines += _tools_markdown(tools, scored)
     lines += ["", "## Неверные случаи", ""]
@@ -249,7 +250,10 @@ async def _main(arguments: argparse.Namespace) -> int:
     for result, answer in outcomes:
         results.append(result)
         answers[result.case.id] = answer
-    scored, spent = quality(results, domains), cost(results)
+    scored = quality(results, domains)
+    # A run where every case failed still gets its report with the failures (spec «Сбой модели в одном случае»);
+    # it has no cost, and the report says so instead of inventing one.
+    spent = cost(results) if any(result.usage is not None for result in results) else None
     used = tool_quality(results, tools) if tools else None
     meta = {
         "domains": arguments.domains,
@@ -276,7 +280,9 @@ async def _main(arguments: argparse.Namespace) -> int:
             "sections": {name: asdict(score) for name, score in scored.sections.items()},
         },
         "tools": None if used is None else asdict(used),
-        "cost": {**asdict(spent), "calls_per_case": spent.calls_per_case, "rub_per_case": spent.rub_per_case},
+        "cost": None
+        if spent is None
+        else {**asdict(spent), "calls_per_case": spent.calls_per_case, "rub_per_case": spent.rub_per_case},
         "cases": [{**asdict(result), "exact": result.exact, "answer": answers[result.case.id]} for result in results],
     }
     REPORT_DIR.mkdir(parents=True, exist_ok=True)

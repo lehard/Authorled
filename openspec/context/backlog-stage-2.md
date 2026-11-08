@@ -147,7 +147,7 @@ updated: 2026-11-08
 **Зачем:** Jev не пишет текст, а только выбирает: около $0,0001 за запрос (весь рабочий набор из 413 случаев — около $0,04) и медиана 175 мс против 3–8 секунд и 0,04–0,13 ₽ у выбора домена на DeepSeek. Если на русском он не хуже, маршрутизация станет почти бесплатной и быстрой. Не проверено: русский язык (не заявлен), продолжения беседы (поля для истории нет), альфа-версия API, условия хранения данных; для продукта нужен путь в обход LiteLLM (ADR-003) и решение о передаче текстов авторов в OpenRouter.
 **Решение:** lehard 2026-11-08, при разборе итогов экзамена: записать на будущее; взять, когда вернёмся к оркестратору (признаки — `business-intents/coauthor-quality-eval.md`).
 **Источник:** [Jev в OpenRouter Labs](https://openrouter.ai/labs/jev), [руководство](https://openrouter.ai/docs/guides/community/jev), [сравнение с Claude Opus 5 на Banking77](https://openrouter.ai/blog/insights/jev-vs-claude-opus-5-classification/) (81,0% против 84,4%, один английский набор).
-**Связано:** `business-intents/coauthor-orchestrator-domains.md`, `openspec/changes/coauthor-orchestrator-domains/`, отчёт https://claude.ai/artifact/3MxWHJXYCXz8pKyGsWChju.
+**Связано:** `business-intents/coauthor-orchestrator-domains.md`, `openspec/changes/archive/2026-11-08-coauthor-orchestrator-domains/`, отчёт https://claude.ai/artifact/3MxWHJXYCXz8pKyGsWChju.
 
 ### Предупреждение о балансе провайдера моделей
 **Что:** регулярно проверять баланс DeepSeek (`GET https://api.deepseek.com/user/balance`) и заранее предупреждать владельца, когда он подходит к нулю; при `is_available: false` — сразу.

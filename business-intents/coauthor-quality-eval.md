@@ -70,7 +70,7 @@
 
 ## References
 
-- `business-intents/coauthor-orchestrator-domains.md`, `openspec/changes/coauthor-orchestrator-domains/`.
+- `business-intents/coauthor-orchestrator-domains.md`, `openspec/changes/archive/2026-11-08-coauthor-orchestrator-domains/`.
 - Экзамен маршрутизации: `agno/evals/routing/` (README, наборы `wide-work.toml`), отчёт для Льва: https://claude.ai/artifact/3MxWHJXYCXz8pKyGsWChju.
 - Соавтор: `agno/agents/coauthor.py`, `agno/agents/coauthor_tools.py`, `agno/skills/coauthor/SKILL.md`; демо: `agno/demo/`, `web/src/data/demo.json`.
 - Текущие evals: `agno/evals/cases.py` (случай `coauthor_uses_context`).

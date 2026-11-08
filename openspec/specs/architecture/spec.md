@@ -76,12 +76,17 @@ OS, Company, queue, learning, notes, реестр и инженеры MUST ис�
 - THEN `databases` MUST быть `["agentos-db"]`
 
 ### Requirement: Модели
-`default_model()` MUST возвращать при каждом вызове новый экземпляр модели DeepSeek с псевдонимом прокси `deepseek-fast` без режима размышлений; `manager_model()` MUST возвращать модель с псевдонимом `deepseek-thinking` в режиме размышлений и MUST использоваться OS Manager и CompanyOS. Обе модели MUST обращаться к LiteLLM-прокси по `LITELLM_URL` с ключом `LITELLM_API_KEY`. Псевдонимы MUST объявляться только в `app/settings.py`; инженеры MUST брать их оттуда и MUST NOT задавать имена моделей сами.
+`default_model()` MUST возвращать при каждом вызове новый экземпляр модели DeepSeek с псевдонимом прокси `deepseek-fast` без режима размышлений; `manager_model()` MUST возвращать модель с псевдонимом `deepseek-thinking` в режиме размышлений и MUST использоваться OS Manager и CompanyOS. `claude_sonnet_model()` и `claude_opus_model()` MUST возвращать при каждом вызове новый экземпляр модели с псевдонимом `claude-sonnet` и `claude-opus`; их используют только компоненты экзамена маршрутизации (спека `orchestrator`). Все модели MUST обращаться к LiteLLM-прокси по `LITELLM_URL` с ключом `LITELLM_API_KEY`. Псевдонимы MUST объявляться только в `app/settings.py`; инженеры MUST брать их оттуда и MUST NOT задавать имена моделей сами.
 
 #### Scenario: Модель менеджера
 - GIVEN платформа запущена
 - WHEN клиент выполняет `GET /teams`
 - THEN `os-manager-internal` MUST иметь модель `deepseek-thinking`
+
+#### Scenario: Модели Claude только у экзамена
+- GIVEN платформа запущена
+- WHEN клиент выполняет `GET /agents` и `GET /teams`
+- THEN ни один зарегистрированный агент или команда MUST NOT иметь модель `claude-sonnet` или `claude-opus`
 
 ### Requirement: Sandbox
 `sandbox_provider()` MUST возвращать `None`; тогда инженеры MUST исполняться на сервере AgentOS в корне репозитория. `docker_sandbox()` MUST создавать `DockerSandbox` (образ `agno-sandbox:local`, сеть `isolated`, `workspace_mb=2048`, checkpoints в `<root>/tmp/checkpoints`). `agentcore_sandbox(runtime_arn)` MUST требовать смонтированный том `/data`, иначе MUST завершаться `ValueError`.
