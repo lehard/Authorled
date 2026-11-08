@@ -1,0 +1,161 @@
+"""One case through the real co-author, the way the chat runs it (design, decisions 2–4).
+
+A copy of the registered agent `coauthor` — the same prompt, tools, model and usage hooks — with its sessions in
+memory, so nothing reaches the AgentOS sessions. The run belongs to the user of the measurement: the conversation id
+names the open draft of its demo story, the caller is bound the way a request binds it, and the message carries the
+chat's context block. A changing tool pauses the run; the measurement records the proposed action and answers
+the pause as an author who rejects it, so the story does not change and the co-author finishes its answer to the
+other requests of the message (owner, 2026-11-08).
+"""
+
+import time
+import uuid
+
+from agno.db.in_memory import InMemoryDb
+from agno.models.message import Message
+from agno.os.authz.provider import AuthorizationContext
+from agno.os.authz.scope_provider import ScopeAuthorizationProvider
+from agno.run.agent import RunOutput
+from agno.run.authorization import RunAuthorization, authorization_scope
+from agno.run.base import RunStatus
+from agno.session.agent import AgentSession
+
+from agents.coauthor import COAUTHOR_ID, coauthor
+from app.auth.authorization import GROUP_SCOPES
+from core.plans import ModelPrice
+from evals.coauthor.records import Call, CaseRun, Usage
+from evals.coauthor.user import SUBJECT, Place
+from evals.routing.cases import Case
+
+# The group of screenwriters (openspec/specs/auth, GROUP_SCOPES): the scopes a writer's token gives.
+AUTHOR_GROUP = "screenwriters"
+# What the chat attaches to every message (web/src/screens/project/chat/CoauthorChat.tsx, docContext.ts).
+CONTEXT_DESCRIPTION = "Что сейчас открыто у автора в Соавторе"
+REJECTION = "Автор отклонил это действие."
+# A run that keeps pausing after this many rejections is a failed case, not an endless loop.
+MAX_PAUSES = 4
+# Whole results for the judge: the demo screenplays are about 2,300 characters; a cut one made later scenes look
+# invented to the judge (rerun 2026-11-08).
+RESULT_CHARS = 12000
+
+
+def chat_context(place: Place) -> dict[str, str]:
+    """The chat's context with the story card open (docContext.ts, kind «info»).
+
+    AG-UI passes the chat's context as run dependencies with add_dependencies_to_context, and Agno appends them to
+    the author's message as an <additional context> block (agno os/interfaces/agui/router.py, agent/_messages.py);
+    the measurement runs the agent the same way.
+    """
+    value = "\n".join(
+        [
+            f"История: «{place.title}» (полнометражный сценарий), драфт «{place.draft_name}».",
+            "Открыт документ: История.",
+            "Содержимое документа:",
+            f"Название: {place.title}\nТэглайн: {place.tagline}",
+        ]
+    )
+    return {CONTEXT_DESCRIPTION: value}
+
+
+def _caller() -> RunAuthorization:
+    scopes = list(GROUP_SCOPES[AUTHOR_GROUP])
+    context = AuthorizationContext(
+        principal_id=SUBJECT, scopes=scopes, claims={"sub": SUBJECT, "groups": [AUTHOR_GROUP], "scopes": scopes}
+    )
+    # A request binds its caller the same way: identity for the tools, no extra tool checks (agno os/authz).
+    return RunAuthorization(ScopeAuthorizationProvider(), context, enforce_tools=False)
+
+
+def _session(session_id: str, case: Case) -> InMemoryDb:
+    db = InMemoryDb()
+    db.upsert_session(AgentSession(session_id=session_id, agent_id=COAUTHOR_ID, user_id=SUBJECT))
+    turns = case.history
+    for author, answer in zip(turns[::2], turns[1::2], strict=True):
+        db.upsert_run(
+            RunOutput(
+                run_id=str(uuid.uuid4()),
+                agent_id=COAUTHOR_ID,
+                session_id=session_id,
+                user_id=SUBJECT,
+                status=RunStatus.completed,
+                messages=[Message(role="user", content=author.text), Message(role="assistant", content=answer.text)],
+            ),
+            session_id=session_id,
+        )
+    return db
+
+
+def _calls(output: RunOutput, proposed: set[str]) -> tuple[Call, ...]:
+    calls: list[Call] = []
+    for execution in output.tools or []:
+        if execution.tool_name is None:
+            raise ValueError(f"A tool call of run {output.run_id} has no name")
+        paused = execution.tool_call_id in proposed
+        result = "" if paused or execution.result is None else str(execution.result)[:RESULT_CHARS]
+        calls.append(Call(execution.tool_name, dict(execution.tool_args or {}), paused, result))
+    return tuple(calls)
+
+
+def _usage(output: RunOutput, model: str, price: ModelPrice) -> Usage:
+    calls = sum(1 for m in output.messages or [] if m.role == "assistant" and m.metrics.output_tokens)
+    input_tokens = cache_read = output_tokens = 0
+    for entries in ((output.metrics.details if output.metrics else None) or {}).values():
+        for entry in entries:
+            if entry.id != model:
+                raise RuntimeError(f"Run {output.run_id} used model {entry.id!r}, not {model!r}")
+            input_tokens += entry.input_tokens
+            cache_read += entry.cache_read_tokens
+            output_tokens += entry.output_tokens
+    return Usage(
+        calls, input_tokens, cache_read, output_tokens, price.cost_rub(input_tokens, cache_read, output_tokens)
+    )
+
+
+async def run_case(case: Case, place: Place, model: str, price: ModelPrice) -> CaseRun:
+    session_id = f"{place.project_id}:{place.draft_id}:{uuid.uuid4()}"
+    agent = coauthor.deep_copy(update={"db": _session(session_id, case)})
+    context = chat_context(place)
+    proposed: set[str] = set()
+    started = time.monotonic()
+    try:
+        with authorization_scope(_caller):
+            output = await agent.arun(
+                input=case.message,
+                session_id=session_id,
+                user_id=SUBJECT,
+                dependencies=context,
+                add_dependencies_to_context=True,
+                stream=False,
+            )
+            pauses = 0
+            while output.status == RunStatus.paused:
+                pauses += 1
+                if pauses > MAX_PAUSES:
+                    raise RuntimeError(f"The run paused more than {MAX_PAUSES} times")
+                requirements = output.active_requirements
+                for requirement in requirements:
+                    if not requirement.needs_confirmation or requirement.tool_execution is None:
+                        raise RuntimeError(
+                            f"The run paused on a requirement the measurement cannot answer: {requirement}"
+                        )
+                    if requirement.tool_execution.tool_call_id is None:
+                        raise RuntimeError("A paused tool call has no tool_call_id")
+                    proposed.add(requirement.tool_execution.tool_call_id)
+                    requirement.reject(REJECTION)
+                output = await agent.acontinue_run(
+                    run_response=output,
+                    requirements=requirements,
+                    session_id=session_id,
+                    user_id=SUBJECT,
+                    dependencies=context,
+                    stream=False,
+                )
+    except Exception as error:
+        # Recorded, not swallowed: the case is reported as a failed run with this text (spec «Отчёт замера»).
+        return CaseRun(case.id, "error", "", time.monotonic() - started, error=f"{type(error).__name__}: {error}")
+    seconds = time.monotonic() - started
+    if output.status != RunStatus.completed:
+        return CaseRun(case.id, "error", "", seconds, error=f"Run status {output.status}: {output.content}")
+    answer = output.content if isinstance(output.content, str) else ""
+    outcome = "paused" if proposed else "answered"
+    return CaseRun(case.id, outcome, answer, seconds, _calls(output, proposed), _usage(output, model, price))

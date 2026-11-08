@@ -1,0 +1,603 @@
+# Выборка замера соавтора (openspec/specs/coauthor-eval): id случаев рабочей части широкого набора
+# (evals/routing/cases/wide-work.toml) и история, в которой идёт случай: tihaya-voda или posledniy-parom.
+# Собрана детерминированно по разделам и покрытию доменов, 2026-11-08.
+
+[[case]]
+id = "wide-single-024"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-single-010"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-single-026"
+place = "tihaya-voda"
+
+[[case]]
+id = "single-005"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-single-007"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-single-028"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-single-017"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-single-004"
+place = "tihaya-voda"
+
+[[case]]
+id = "single-021"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-single-032"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-single-013"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-single-023"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-single-012"
+place = "tihaya-voda"
+
+[[case]]
+id = "single-055"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-single-016"
+place = "posledniy-parom"
+
+[[case]]
+id = "single-003"
+place = "tihaya-voda"
+
+[[case]]
+id = "single-047"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-single-009"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-single-005"
+place = "posledniy-parom"
+
+[[case]]
+id = "single-075"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-single-033"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-single-014"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-single-022"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-single-011"
+place = "tihaya-voda"
+
+[[case]]
+id = "single-029"
+place = "tihaya-voda"
+
+[[case]]
+id = "single-073"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-single-001"
+place = "posledniy-parom"
+
+[[case]]
+id = "single-050"
+place = "tihaya-voda"
+
+[[case]]
+id = "single-011"
+place = "tihaya-voda"
+
+[[case]]
+id = "single-066"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-single-031"
+place = "posledniy-parom"
+
+[[case]]
+id = "single-009"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-single-006"
+place = "tihaya-voda"
+
+[[case]]
+id = "single-070"
+place = "tihaya-voda"
+
+[[case]]
+id = "single-010"
+place = "posledniy-parom"
+
+[[case]]
+id = "single-041"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-single-003"
+place = "tihaya-voda"
+
+[[case]]
+id = "single-017"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-single-030"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-single-008"
+place = "tihaya-voda"
+
+[[case]]
+id = "boundary-047"
+place = "tihaya-voda"
+
+[[case]]
+id = "boundary-043"
+place = "tihaya-voda"
+
+[[case]]
+id = "boundary-049"
+place = "tihaya-voda"
+
+[[case]]
+id = "boundary-025"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-boundary-023"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-boundary-022"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-boundary-040"
+place = "posledniy-parom"
+
+[[case]]
+id = "boundary-045"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-boundary-044"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-boundary-006"
+place = "posledniy-parom"
+
+[[case]]
+id = "boundary-019"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-boundary-024"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-boundary-014"
+place = "posledniy-parom"
+
+[[case]]
+id = "boundary-002"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-boundary-021"
+place = "tihaya-voda"
+
+[[case]]
+id = "boundary-035"
+place = "tihaya-voda"
+
+[[case]]
+id = "boundary-013"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-boundary-041"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-boundary-037"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-boundary-034"
+place = "tihaya-voda"
+
+[[case]]
+id = "boundary-023"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-boundary-002"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-boundary-013"
+place = "tihaya-voda"
+
+[[case]]
+id = "boundary-007"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-boundary-048"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-boundary-026"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-boundary-038"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-boundary-019"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-boundary-025"
+place = "tihaya-voda"
+
+[[case]]
+id = "boundary-030"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-boundary-035"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-boundary-036"
+place = "tihaya-voda"
+
+[[case]]
+id = "boundary-014"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-boundary-016"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-boundary-009"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-multi-005"
+place = "tihaya-voda"
+
+[[case]]
+id = "multi-009"
+place = "posledniy-parom"
+
+[[case]]
+id = "multi-049"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-multi-006"
+place = "tihaya-voda"
+
+[[case]]
+id = "multi-039"
+place = "tihaya-voda"
+
+[[case]]
+id = "multi-014"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-multi-004"
+place = "posledniy-parom"
+
+[[case]]
+id = "multi-030"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-multi-007"
+place = "posledniy-parom"
+
+[[case]]
+id = "multi-035"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-multi-014"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-multi-009"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-multi-010"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-multi-012"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-multi-011"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-multi-003"
+place = "tihaya-voda"
+
+[[case]]
+id = "multi-031"
+place = "posledniy-parom"
+
+[[case]]
+id = "multi-025"
+place = "tihaya-voda"
+
+[[case]]
+id = "multi-055"
+place = "posledniy-parom"
+
+[[case]]
+id = "multi-003"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-continuation-006"
+place = "tihaya-voda"
+
+[[case]]
+id = "continuation-019"
+place = "tihaya-voda"
+
+[[case]]
+id = "continuation-003"
+place = "tihaya-voda"
+
+[[case]]
+id = "continuation-054"
+place = "tihaya-voda"
+
+[[case]]
+id = "continuation-021"
+place = "posledniy-parom"
+
+[[case]]
+id = "continuation-005"
+place = "tihaya-voda"
+
+[[case]]
+id = "continuation-053"
+place = "tihaya-voda"
+
+[[case]]
+id = "continuation-006"
+place = "tihaya-voda"
+
+[[case]]
+id = "continuation-046"
+place = "tihaya-voda"
+
+[[case]]
+id = "continuation-010"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-continuation-004"
+place = "posledniy-parom"
+
+[[case]]
+id = "continuation-014"
+place = "tihaya-voda"
+
+[[case]]
+id = "continuation-017"
+place = "posledniy-parom"
+
+[[case]]
+id = "continuation-045"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-continuation-003"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-switch-003"
+place = "posledniy-parom"
+
+[[case]]
+id = "wide-switch-002"
+place = "tihaya-voda"
+
+[[case]]
+id = "switch-002"
+place = "tihaya-voda"
+
+[[case]]
+id = "switch-025"
+place = "tihaya-voda"
+
+[[case]]
+id = "switch-021"
+place = "posledniy-parom"
+
+[[case]]
+id = "switch-007"
+place = "tihaya-voda"
+
+[[case]]
+id = "switch-006"
+place = "tihaya-voda"
+
+[[case]]
+id = "switch-022"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-noise-006"
+place = "posledniy-parom"
+
+[[case]]
+id = "noise-007"
+place = "tihaya-voda"
+
+[[case]]
+id = "noise-018"
+place = "tihaya-voda"
+
+[[case]]
+id = "noise-023"
+place = "tihaya-voda"
+
+[[case]]
+id = "noise-019"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-noise-001"
+place = "posledniy-parom"
+
+[[case]]
+id = "noise-009"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-noise-005"
+place = "posledniy-parom"
+
+[[case]]
+id = "noise-034"
+place = "tihaya-voda"
+
+[[case]]
+id = "wide-noise-002"
+place = "tihaya-voda"
+
+[[case]]
+id = "noise-031"
+place = "tihaya-voda"
+
+[[case]]
+id = "noise-002"
+place = "tihaya-voda"
+
+[[case]]
+id = "none-034"
+place = "tihaya-voda"
+
+[[case]]
+id = "none-029"
+place = "tihaya-voda"
+
+[[case]]
+id = "none-002"
+place = "tihaya-voda"
+
+[[case]]
+id = "none-027"
+place = "tihaya-voda"
+
+[[case]]
+id = "none-010"
+place = "tihaya-voda"
+
+[[case]]
+id = "none-006"
+place = "tihaya-voda"
+
+[[case]]
+id = "none-037"
+place = "tihaya-voda"
+
+[[case]]
+id = "none-011"
+place = "tihaya-voda"
+
+[[case]]
+id = "none-025"
+place = "tihaya-voda"
+
+[[case]]
+id = "none-014"
+place = "tihaya-voda"
+
+[[case]]
+id = "adversarial-029"
+place = "tihaya-voda"
+
+[[case]]
+id = "adversarial-030"
+place = "posledniy-parom"
+
+[[case]]
+id = "adversarial-027"
+place = "tihaya-voda"
+
+[[case]]
+id = "adversarial-021"
+place = "tihaya-voda"
+
+[[case]]
+id = "adversarial-025"
+place = "tihaya-voda"
+
+[[case]]
+id = "adversarial-026"
+place = "tihaya-voda"
+
+[[case]]
+id = "adversarial-023"
+place = "tihaya-voda"
+
+[[case]]
+id = "adversarial-022"
+place = "posledniy-parom"
+
+[[case]]
+id = "adversarial-007"
+place = "tihaya-voda"
+
+[[case]]
+id = "adversarial-018"
+place = "tihaya-voda"
