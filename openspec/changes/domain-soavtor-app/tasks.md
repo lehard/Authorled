@@ -19,17 +19,19 @@
 
 - [x] 4.1 Проверить публичный DNS (`https://dns.google/resolve`) для `soavtor.app`, `www.soavtor.app`, `app.soavtor.app`, `auth.soavtor.app` — A `66.151.34.151` — и что домен `soavtor.app` в Resend проверен. Проверка: ответы в `tmp/VERIFY.md`.
 - [x] 4.2 Записать в `tmp/VERIFY.md` нынешние значения 7 строк env сервера и 4 переменных GitHub (они не секретные) для отката.
-- [ ] 4.3 Заменить переменные окружения `production` в GitHub: `PUBLIC_URL=https://app.soavtor.app`, `AUTH_ISSUER=https://auth.soavtor.app/application/o/authorled/`, `AUTH_FRONTEND_REDIRECT_URI=https://app.soavtor.app/auth/callback`, `AUTH_FRONTEND_LOGOUT_URI=https://app.soavtor.app/login`. Проверка: `gh api repos/lehard/Authorled/environments/production/variables`.
-- [ ] 4.4 Заменить в `/etc/authorled/authorled.env`: `AGENTOS_URL=https://app.soavtor.app/os`, `AUTH_BRAND_DOMAIN=auth.soavtor.app`, `AUTH_ISSUER`, `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_FRONTEND_LOGOUT_URI` (как в 4.3), `AUTHENTIK_COOKIE_DOMAIN=.soavtor.app`, `AUTHENTIK_EMAIL__FROM="CoAuthor <noreply@soavtor.app>"`; перед правкой — копия файла рядом. Проверка: `grep` этих 7 строк без вывода других.
-- [ ] 4.5 После влития в `main` опубликовать релиз; деплой проходит, включая применение blueprints и проверку `https://app.soavtor.app/os/health`. Проверка: зелёный запуск `deploy.yml`.
+- [x] 4.3 Заменить переменные окружения `production` в GitHub: `PUBLIC_URL=https://app.soavtor.app`, `AUTH_ISSUER=https://auth.soavtor.app/application/o/authorled/`, `AUTH_FRONTEND_REDIRECT_URI=https://app.soavtor.app/auth/callback`, `AUTH_FRONTEND_LOGOUT_URI=https://app.soavtor.app/login`. Проверка: `gh api repos/lehard/Authorled/environments/production/variables`.
+- [x] 4.4 Заменить в `/etc/authorled/authorled.env`: `AGENTOS_URL=https://app.soavtor.app/os`, `AUTH_BRAND_DOMAIN=auth.soavtor.app`, `AUTH_ISSUER`, `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_FRONTEND_LOGOUT_URI` (как в 4.3), `AUTHENTIK_COOKIE_DOMAIN=.soavtor.app`, `AUTHENTIK_EMAIL__FROM="CoAuthor <noreply@soavtor.app>"`; перед правкой — копия файла рядом. Проверка: `grep` этих 7 строк без вывода других.
+- [x] 4.5 После влития в `main` опубликовать релиз; деплой проходит, включая применение blueprints и проверку `https://app.soavtor.app/os/health`. Проверка: зелёный запуск `deploy.yml`.
 
 ## 5. Проверка на сервере
 
-- [ ] 5.1 Вход на `https://app.soavtor.app/login`: код приходит с `noreply@soavtor.app`, в заголовках письма DKIM и SPF `pass`; после входа открывается полка; соавтор отвечает в чате. Проверка: запись в `tmp/VERIFY.md` (hosted).
-- [ ] 5.2 Токены выдаёт `https://auth.soavtor.app/application/o/authorled/`; `/api/v3/core/brands/current/` на `auth.soavtor.app` содержит поток `authorled-authentication`; у провайдера `authorled-web` только новые адреса возврата и выхода. Проверка: ответы в `tmp/VERIFY.md`.
-- [ ] 5.3 Переадресации из спеки `runtime` (старая ссылка, `www`, корень) отвечают кодами и `Location` как в сценариях; `auth.coauthor.glavai.ru` не доходит до Authentik; у всех новых адресов действующие сертификаты. Проверка: `curl -sI` по каждому адресу, вывод в `tmp/VERIFY.md`.
+- [x] 5.1 Вход на `https://app.soavtor.app/login`: код приходит с `noreply@soavtor.app`, в заголовках письма DKIM и SPF `pass`; после входа открывается полка; соавтор отвечает в чате. Проверка: запись в `tmp/VERIFY.md` (hosted).
+- [x] 5.2 Токены выдаёт `https://auth.soavtor.app/application/o/authorled/`; `/api/v3/core/brands/current/` на `auth.soavtor.app` содержит поток `authorled-authentication`; у провайдера `authorled-web` только новые адреса возврата и выхода. Проверка: ответы в `tmp/VERIFY.md`.
+- [x] 5.3 Переадресации из спеки `runtime` (старая ссылка, `www`, корень) отвечают кодами и `Location` как в сценариях; `auth.coauthor.glavai.ru` не доходит до Authentik; у всех новых адресов действующие сертификаты. Проверка: `curl -sI` по каждому адресу, вывод в `tmp/VERIFY.md`.
 - [ ] 5.4 `./scripts/mcp_check.sh` против `https://app.soavtor.app` проходит. Проверка: вывод в `tmp/VERIFY.md`.
+  - 2026-11-08: не пройдёт без отдельной работы. Подключение MCP по OAuth сломано и до переезда: три адреса `/.well-known/...` и форма согласия уходят мимо `/os/`. Без токена `/os/mcp` отвечает 401, метаданные `/os/.well-known/oauth-authorization-server` с новым адресом на месте. Задача перенесена в бэклог («Подключение чат-приложений к MCP по OAuth»).
 - [ ] 5.5 С подтверждения владельца удалить старый бренд `auth.coauthor.glavai.ru` в Authentik и домен `coauthor.glavai.ru` в Resend (Resend — делает владелец в кабинете). Проверка: бренда нет в `/api/v3/core/brands/`; повторный вход проходит.
+  - 2026-11-08: удаление бренда ждёт подтверждения владельца в чате (необратимо). Старый домен в Resend удаляет владелец.
 
 ## Workflow follow-up
 
