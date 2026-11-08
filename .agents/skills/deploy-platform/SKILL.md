@@ -49,8 +49,11 @@ keys (`auth/jwks/jwks.json`) are public and may be shared to complete configurat
 
 The production server is updated by publishing a GitHub release from `main`
 (`.github/workflows/deploy.yml`, `deploy/deploy.sh`; README, "Deploy by release"). Do not run
-`docker compose up` on the server by hand for a new version. A rollback is a manual run of the same
-workflow with an earlier tag. The server starts empty: never run `dev.sh seed` or `dev.sh auth-users` there.
+`docker compose up` on the server by hand for a new version. The same release builds and ships the
+product site (`site/`) to `/srv/authorled/site` and serves it on `soavtor.app`; its build needs the
+GitHub variables `SITE_ORIGIN` and `SITE_APP_URL`, and the server needs `/srv/authorled/site/incoming`
+owned by `deploy`. A rollback is a manual run of the same workflow with an earlier tag; for tags before
+`v0.3.5` (no `site/`) run the workflow of that tag (`--ref <tag>`). The server starts empty: never run `dev.sh seed` or `dev.sh auth-users` there.
 
 Use the provider's status/list commands, saved project identifiers, and local
 configuration to find an existing deployment. A failed health check does not mean
@@ -94,7 +97,8 @@ redeploying.
 
 Build submission is not successful deployment. Inspect bounded provider logs and
 test the public URL: `/health` must succeed; unauthenticated `/agents` requests and
-MCP initialization POSTs must reject access. A plain `GET /mcp` may return public
+MCP initialization POSTs must reject access. `deploy/check_site.sh https://soavtor.app` must pass: the
+site answers, an unknown page is 404, and an empty beta request is refused with 422. A plain `GET /mcp` may return public
 server-card metadata; it does not test authorization. With MCP OAuth enabled,
 verify the POST's Bearer challenge. Exercise an authenticated request with an
 existing token, then confirm the UI connects at

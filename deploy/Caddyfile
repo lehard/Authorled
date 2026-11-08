@@ -30,9 +30,25 @@ auth.soavtor.app {
 	reverse_proxy 127.0.0.1:9000
 }
 
-# Temporary (302) until the product site (change product-site) takes the root of the domain.
+# The product site (openspec/specs/web/site): static files of the current release. Of the API only
+# the beta request route is reachable here; other /os/ paths get the 404 page of the site.
 soavtor.app {
-	redir https://app.soavtor.app{uri} 302
+	handle /os/api/v1/beta-requests {
+		uri strip_prefix /os
+		reverse_proxy 127.0.0.1:8000
+	}
+
+	handle {
+		encode gzip
+		root * /srv/authorled/site/current
+		file_server
+	}
+
+	handle_errors 404 {
+		root * /srv/authorled/site/current
+		rewrite * /404.html
+		file_server
+	}
 }
 
 www.soavtor.app {
