@@ -77,6 +77,21 @@ switch_frontend() {
     done
 }
 
+# Authentik applies a blueprint again only when its file changes, so a new value in .env (an
+# address of the product, the brand domain) would never reach it (openspec/specs/auth,
+# «Конфигурация из blueprints»). Applying an unchanged blueprint again changes nothing.
+apply_blueprints() {
+    "${COMPOSE[@]}" up -d --wait authentik-server authentik-worker
+    local files=(auth/blueprints/*.yaml)
+    [[ -f "${files[0]}" ]] || fail "no blueprints in auth/blueprints"
+    local file
+    for file in "${files[@]}"; do
+        "${COMPOSE[@]}" exec -T authentik-worker ak apply_blueprint "/blueprints/custom/${file##*/}" \
+            || fail "blueprint ${file} was not applied"
+    done
+    echo "deploy: blueprints applied: ${#files[@]}"
+}
+
 main() {
     check_inputs "$@"
     local tag="$1"
@@ -86,6 +101,7 @@ main() {
     backup_database "${tag}"
     git checkout --quiet --detach "refs/tags/${tag}"
     "${COMPOSE[@]}" up -d --build
+    apply_blueprints
     switch_frontend "${tag}"
 
     caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
