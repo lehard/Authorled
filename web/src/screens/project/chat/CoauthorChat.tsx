@@ -48,6 +48,7 @@ import {
 } from "./api";
 import { coauthorContext } from "./docContext";
 import { ModeSwitch } from "./ModeSwitch";
+import { readRunError, UNAVAILABLE, type RunError } from "./runError";
 
 const SUGGESTIONS = [
   "О чём эта история?",
@@ -85,14 +86,6 @@ type Props = {
   /** Set when the chat is a sheet (narrow screens): a close button in its header. */
   onClose?: () => void;
 };
-
-/** The reason the backend put into the data of a refused run (agents/coauthor_usage.py). */
-function limitReason(rawEvent: unknown): unknown {
-  if (typeof rawEvent !== "object" || rawEvent === null) return undefined;
-  const data = (rawEvent as { additional_data?: unknown }).additional_data;
-  if (typeof data !== "object" || data === null) return undefined;
-  return (data as { reason?: unknown }).reason;
-}
 
 function textOf(m: Message): string {
   return typeof m.content === "string" ? m.content : "";
@@ -169,8 +162,10 @@ export function CoauthorChat({
   }, [messages.length, lastContent]);
 
   // CopilotKit reports a failed run (network, HTTP status, RUN_ERROR of the agent) to the
-  // agent's subscribers instead of rejecting runAgent; turn it into an error to show.
+  // agent's subscribers instead of rejecting runAgent; turn it into an error to show. The
+  // author sees no text of an exception (openspec/specs/web/workspace, «Чат с соавтором»).
   async function runOrThrow() {
+    let runError: RunError | null = null;
     let failure: Error | null = null;
     const subscription = agent.subscribe({
       onRunFailed: ({ error }) => {
@@ -188,25 +183,39 @@ export function CoauthorChat({
           });
       },
       onRunErrorEvent: ({ event }) => {
-        // The limit of the period is not a failure: the backend's message is shown as it is
-        // (openspec/specs/web/workspace, «Чат с соавтором»).
-        failure =
-          limitReason(event.rawEvent) === "usage_limit_reached"
-            ? new ChatError(event.message, null, "notice")
-            : new ChatError(
-                `Соавтор не смог ответить: ${event.message}. Попробуйте ещё раз.`,
-              );
+        // A refusal of the product keeps the backend's message; anything else stays in the
+        // console and the API log.
+        console.error("Run of the co-author failed", event);
+        runError = readRunError(event.message, event.rawEvent);
       },
     });
+    // runAgent may still reject (CopilotKit 1.79.1 rethrows a failed detachActiveRun): that is a
+    // failed run too, not a text for the author.
+    let thrown: unknown = null;
     try {
       await copilotkit.runAgent({ agent });
+    } catch (e) {
+      thrown = e;
     } finally {
       subscription.unsubscribe();
       // The co-author may have suggested edits during its turn: the text shows them without a
       // reload (openspec/specs/web/workspace, «Предложение по якорю»).
       void invalidate({ resource: "suggestions", invalidates: ["list"] });
     }
-    if (failure !== null) throw failure;
+    // RUN_ERROR wins: it is what the backend said, whatever the client failed with after it.
+    const said = runError as RunError | null;
+    if (said !== null) {
+      throw said.kind === "refusal"
+        ? new ChatError(said.text, null, said.tone)
+        : new ChatError(UNAVAILABLE);
+    }
+    const reported = failure as Error | null;
+    const failed: unknown = reported !== null ? reported : thrown;
+    if (failed === null) return;
+    // osFetch already put a text for the author (and the status for 401) into a ChatError.
+    if (failed instanceof ChatError) throw failed;
+    console.error("Run of the co-author failed", failed);
+    throw new ChatError(UNAVAILABLE);
   }
 
   // Each file goes to the core at once, to this conversation; a refusal is shown under the
