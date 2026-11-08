@@ -1,6 +1,6 @@
 # Бизнес-интент: eval запускает агентов от имени проверенного пользователя разработки
 
-Статус: вариант согласован с владельцем 2026-11-08 (вариант А: настоящий токен `writer@authorled.test`); OpenSpec change `eval-verified-caller` создан 2026-11-08 (`openspec/changes/eval-verified-caller/`), не реализован. Владелец: lehard. Обновлено: 2026-11-08.
+Статус: вариант согласован с владельцем 2026-11-08 (вариант А: настоящий токен `writer@authorled.test`); change `eval-verified-caller` реализован, проверен локально и архивирован 2026-11-08 (`openspec/changes/archive/2026-11-08-eval-verified-caller/`, проверки — `tmp/VERIFY.md`). Владелец: lehard. Обновлено: 2026-11-08.
 Рамки: спеки `runtime` («Evals», «Скрипт локальной разработки»), `auth` («Проверка токена», «Principal», «Пользователи для разработки», «Секреты модуля», «Состав и границы модуля»), `core/subscriptions` («Проверка лимита до запуска», «Журнал расхода соавтора»), `api/agents` («Соавтор»); `openspec/context/07-anti-patterns.md` (п. 26: fallback-и).
 
 ## Why
