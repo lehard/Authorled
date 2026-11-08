@@ -13,7 +13,7 @@
 - [x] 2.2 `deploy/deploy.sh`: `check_inputs` проверяет `site/incoming/<tag>/index.html`; `switch_frontend` → `switch_release <каталог> <tag>` для `web` и `site`, сайт переключается до `caddy validate`. Проверка: `bash -n deploy/deploy.sh`, `shellcheck deploy/deploy.sh`; прогон `check_inputs` и `switch_release` во временном каталоге (подставленный `ROOT`) показывает отказ без файлов сайта и верную ссылку `site/current`.
 - [x] 2.3 `deploy/Caddyfile`: блок `soavtor.app` по design (решение 5) вместо `302`; комментарий о временной переадресации убрать. Проверка: `docker run --rm -v "$PWD/deploy:/etc/caddy:ro" caddy:2.11 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile` проходит.
 - [x] 2.4 Проверка Caddy локально: тот же образ с `deploy/Caddyfile`, где домены заменены на `http://:8080` для сайта, `root` указывает на `site/dist`, а API — на локальный `127.0.0.1:8000`. Проверка: `/` → `200` с `Content-Encoding: gzip` при `Accept-Encoding: gzip`, `/privacy` → переадресация на `/privacy/` → `200`, `/no-such-page` → `404` со страницей 404, `/os/health` → `404` сайта, `POST /os/api/v1/beta-requests` с пустым телом → `422` без `Content-Encoding`. Временный файл не коммитится; вывод в `tmp/VERIFY.md` (container).
-- [x] 2.5 `deploy.yml`, шаг «Check the public addresses»: после API проверить `$SITE_ORIGIN/` и `/privacy/` → `200`, `/no-such-page` → `404`, пустой `POST /os/api/v1/beta-requests` → `422`; ошибка печатает адрес и код. Проверка: прогон тела шага локально против Caddy из 2.4 (адрес подставлен) — зелёный; с остановленным API — красный с адресом.
+- [x] 2.5 `deploy.yml`, шаг «Check the site» после «Check the public addresses» (скрипт `deploy/check_site.sh`): проверить `$SITE_ORIGIN/` и `/privacy/` → `200`, `/no-such-page` → `404`, пустой `POST /os/api/v1/beta-requests` → `422`; ошибка печатает адрес и код. Проверка: прогон тела шага локально против Caddy из 2.4 (адрес подставлен) — зелёный; с остановленным API — красный с адресом.
 
 ## 3. Документы
 
@@ -26,13 +26,13 @@
 
 - [x] 4.1 Создать `/srv/authorled/site/incoming` под пользователем `deploy` (`ssh authorled-deploy install -d -m 755 /srv/authorled/site/incoming`). Проверка: `stat -c "%U %a" /srv/authorled/site/incoming` — `deploy 755`.
 - [x] 4.2 Задать в GitHub Environment `production` переменные `SITE_ORIGIN=https://soavtor.app` и `SITE_APP_URL=https://app.soavtor.app`. Проверка: `gh api repos/lehard/Authorled/environments/production/variables` показывает обе.
-- [ ] 4.3 После влития в `main` опубликовать релиз. Проверка: зелёный запуск `deploy.yml`, включая проверку адресов сайта.
+- [x] 4.3 После влития в `main` опубликовать релиз. Проверка: зелёный запуск `deploy.yml`, включая проверку адресов сайта.
 
 ## 5. Проверка на сервере
 
-- [ ] 5.1 `https://soavtor.app/` и `/privacy/` открываются, `canonical` — `https://soavtor.app/...`, «Войти» ведёт на `https://app.soavtor.app`; `https://www.soavtor.app/x` → `301` на `https://soavtor.app/x`; `https://soavtor.app/os/agents` не доходит до API; ответ главной сжат. Проверка: `curl -sI` и выдержки HTML в `tmp/VERIFY.md` (hosted).
-- [ ] 5.2 Заявка владельца с формы на `soavtor.app` сохраняется и видна в `./scripts/usage.sh prod beta-requests`. Проверка: строка списка (без чужих данных) в `tmp/VERIFY.md` (hosted).
-- [ ] 5.3 Выход из редактора на `app.soavtor.app` открывает экран входа со ссылкой «О продукте», она открывает `https://soavtor.app/`. Проверка: запись в `tmp/VERIFY.md` (hosted).
+- [x] 5.1 `https://soavtor.app/` и `/privacy/` открываются, `canonical` — `https://soavtor.app/...`, «Войти» ведёт на `https://app.soavtor.app`; `https://www.soavtor.app/x` → `301` на `https://soavtor.app/x`; `https://soavtor.app/os/agents` не доходит до API; ответ главной сжат. Проверка: `curl -sI` и выдержки HTML в `tmp/VERIFY.md` (hosted).
+- [x] 5.2 Заявка владельца с формы на `soavtor.app` сохраняется и видна в `./scripts/usage.sh prod beta-requests`. Проверка: строка списка (без чужих данных) в `tmp/VERIFY.md` (hosted).
+- [x] 5.3 Выход из редактора на `app.soavtor.app` открывает экран входа со ссылкой «О продукте», она открывает `https://soavtor.app/`. Проверка: запись в `tmp/VERIFY.md` (hosted).
 
 ## Workflow follow-up
 
