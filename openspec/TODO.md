@@ -30,7 +30,7 @@
 | `coauthor-suggestions` | архивирован 2026-11-01 | этап 4.4: предложения правок соавтора в тексте, «Принять» и «Отклонить», обход, «Обсудить в чате»; создание агентом — с ядром |
 | `screenplay-drafts` | архивирован 2026-11-01 | этап 4.5: драфты сценария, запрет правки, сравнение по абзацам в две колонки, драфты в корзине; версии на бэкенде — с ядром |
 
-> Внимание: compose требует ключи LiteLLM, DeepSeek, GigaChat, Sber500 (`SBER500_API_BASE`, `SBER500_API_KEY`) и файл `agno/litellm/certs/ca-bundle.pem`; без них `docker compose up` не стартует.
+> Внимание: compose требует ключи LiteLLM, DeepSeek, GigaChat, Cloud.ru (`CLOUDRU_API_KEY`) и файл `agno/litellm/certs/ca-bundle.pem`; без них `docker compose up` не стартует.
 
 ## Живая проверка DeepSeek/LiteLLM/GigaChat
 Из архивированного change `switch-models-to-deepseek-litellm` (tasks 1.1, 6.2–6.7). Ждут ключей. Код, прокси и документация проверены статически и в контейнерах на фиктивных ключах (`tmp/VERIFY.md`). Если проверка требует правки кода или design — новый change.
