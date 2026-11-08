@@ -2,6 +2,8 @@ import { HttpAgent, type AbstractAgent, type Message } from "@ag-ui/client";
 
 import { activeUser } from "@/auth/userManager";
 
+import { NO_CONNECTION } from "./runError";
+
 // The co-author agent and the AgentOS API on the frontend's own origin (/os/, dev: Vite proxy).
 
 export const COAUTHOR_ID = "coauthor";
@@ -62,9 +64,9 @@ export async function osFetch(
       },
     });
   } catch (e) {
-    throw new ChatError(
-      `Нет связи с сервером. Проверьте интернет и попробуйте ещё раз (${e instanceof Error ? e.message : String(e)}).`,
-    );
+    // The author gets no technical cause (openspec/specs/web/workspace, «Чат с соавтором»).
+    console.error(`Request to ${url} did not reach the server`, e);
+    throw new ChatError(NO_CONNECTION);
   }
   if (!response.ok)
     throw new ChatError(
