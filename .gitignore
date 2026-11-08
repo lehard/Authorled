@@ -94,3 +94,12 @@ web/dist/
 # The Node rules above are for root deploy tooling; the frontend manifest and lockfile ship.
 !web/package.json
 !web/package-lock.json
+
+# =========================
+# Product site (site/)
+# =========================
+site/node_modules/
+site/dist/
+site/dist-ssr/
+!site/package.json
+!site/package-lock.json
