@@ -1,6 +1,6 @@
 ---
 owner: lehard
-updated: 2026-10-26
+updated: 2026-11-08
 ---
 # ADR-003: DeepSeek и GigaChat через LiteLLM-прокси
 ## Status: Accepted
@@ -45,9 +45,16 @@ updated: 2026-10-26
 2027-04
 
 ## Amendment 2026-10-29: выбор модели эмбеддингов и шлюз Sber500
-Change `switch-embeddings-to-sber500`. Решения выше остаются в силе; дополнения:
+Change `switch-embeddings-to-sber500`. Решения выше остаются в силе; дополнения (часть про шлюз Sber500 заменена дополнением 2026-11-08):
 - GigaChat API по ключу физлица отвечает `402 Payment Required` на эмбеддинги, поэтому рядом с `gigachat-embeddings` настроен шлюз Sber500 (OpenAI-совместимый LiteLLM, `SBER500_API_BASE`, `SBER500_API_KEY`) с псевдонимами `giga-embeddings` (`giga-embeddings-instruct-480m`), `bge-m3-embeddings` (`bge-m3`), `qwen3-embeddings` (`qwen3-embedding-0.6b`). Все по 1024 измерения; `giga-embeddings-instruct-3b` (2048) не подходит под лимит HNSW.
 - Активный псевдоним задаёт обязательная переменная `EMBEDDINGS_MODEL` без значения по умолчанию. Неизвестное значение останавливает API; ошибка выбранного псевдонима не приводит к переходу на другой. Размерность ответа проверяется явно.
 - Смена модели требует пересоздать `shared_knowledge` и загрузить документы заново: векторы разных моделей несовместимы.
 - Ключи всех настроенных провайдеров остаются обязательными в compose.
 - Принятые риски шлюза: общий хост без SLA и подтверждения размещения; ключ выдан стартапу менторами Sber500. Владелец согласился 2026-10-29.
+
+## Amendment 2026-11-08: эмбеддинги через Cloud.ru Foundation Models
+Change `switch-embeddings-to-cloudru`, интент `business-intents/embeddings-cloudru.md`. Заменяет часть дополнения 2026-10-29 про шлюз Sber500; выбор `EMBEDDINGS_MODEL`, проверка размерности и правило пересоздания `shared_knowledge` остаются.
+- Ключ шлюза Sber500 исчерпал бюджет (`429 budget_exceeded`, 2026-11-08); шлюз удалён из конфигурации вместе с `SBER500_API_BASE` и `SBER500_API_KEY`.
+- Псевдонимы `giga-embeddings`, `bge-m3-embeddings`, `qwen3-embeddings` сохранили имена и указывают на Cloud.ru Evolution Foundation Models (OpenAI-совместимый API): `ai-sage/Giga-Embeddings-instruct-480M`, `BAAI/bge-m3`, `Qwen/Qwen3-Embedding-0.6B`, все по 1024 измерения. Активный — `giga-embeddings`.
+- Адрес `https://foundation-models.api.cloud.ru/v1` записан в `agno/litellm/config.yaml`; ключ сервисного аккаунта — обязательная переменная прокси `CLOUDRU_API_KEY`. `drop_params` остаётся: Cloud.ru отклоняет `dimensions`. TLS проверяется бандлом прокси (цепочка GlobalSign).
+- Принятые риски: расход идёт с баланса владельца, при нулевом балансе эмбеддинги отвечают ошибкой без перехода на другой провайдер; цена Giga-Embeddings не опубликована в тарифной таблице Cloud.ru. Владелец согласился 2026-11-08.

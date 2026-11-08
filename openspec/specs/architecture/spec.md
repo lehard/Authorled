@@ -22,7 +22,7 @@ graph LR
     API -->|псевдонимы моделей| LLM["litellm: LiteLLM-прокси"]
     LLM --> DeepSeek["DeepSeek API"]
     LLM -->|TLS: Russian Trusted CA| GigaChat["GigaChat API (эмбеддинги)"]
-    LLM -->|OpenAI-совместимый API| Sber500["Шлюз Sber500 (эмбеддинги)"]
+    LLM -->|OpenAI-совместимый API| CloudRu["Cloud.ru Foundation Models (эмбеддинги)"]
     REG --> Parallel["Parallel web"]
 ```
 

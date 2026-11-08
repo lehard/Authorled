@@ -43,7 +43,7 @@ Prefer to set it up yourself? Follow the steps below.
 
 ## Run locally
 
-You'll need Git, Docker with Compose, a DeepSeek API key, an embeddings provider key (Sber500 gateway or GigaChat API credentials) and the choice of embedding model.
+You'll need Git, Docker with Compose, a DeepSeek API key, an embeddings provider key (Cloud.ru Foundation Models or GigaChat API credentials) and the choice of embedding model.
 Make sure Docker is running.
 Run the commands below in a terminal.
 
@@ -56,7 +56,7 @@ cp example.env .env
 ```
 
 Open `.env` and fill the Required block: `LITELLM_MASTER_KEY`, `LITELLM_API_KEY`,
-`DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`, `SBER500_API_BASE`, `SBER500_API_KEY`, `EMBEDDINGS_MODEL` and `AGENTOS_DB_PASSWORD` (password
+`DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`, `CLOUDRU_API_KEY`, `EMBEDDINGS_MODEL` and `AGENTOS_DB_PASSWORD` (password
 of the database role `agentos` the API connects with), and the block of the
 [auth module](#module-auth): `AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`,
 `AUTHENTIK_BOOTSTRAP_EMAIL`, `AUTHENTIK_BOOTSTRAP_PASSWORD`, `AUTH_FRONTEND_CLIENT_ID`,
@@ -231,8 +231,8 @@ to port 8000 on your host. Use a reverse proxy on the host or an HTTPS tunnel.
 ### 1. Configure the host
 
 Production Compose reads `.env`. Fill the Required block (`LITELLM_MASTER_KEY`,
-`LITELLM_API_KEY`, `DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`, `SBER500_API_BASE`,
-`SBER500_API_KEY`, `EMBEDDINGS_MODEL`),
+`LITELLM_API_KEY`, `DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`, `CLOUDRU_API_KEY`,
+`EMBEDDINGS_MODEL`),
 place `agno/litellm/certs/ca-bundle.pem`, and set `AGENTOS_URL` to your public HTTPS URL,
 a strong `DB_PASS` (password of the bootstrap superuser of PostgreSQL, used only by the init
 services and administration), a strong `AGENTOS_DB_PASSWORD` (the role `agentos` the API
@@ -430,9 +430,9 @@ The application uses only the proxy aliases:
 | `deepseek-fast` | DeepSeek `deepseek-flash`, thinking off | Agents by default |
 | `deepseek-thinking` | DeepSeek `deepseek-v4-pro`, thinking on | OS Manager, Company Manager, Claude Engineer |
 | `gigachat-embeddings` | GigaChat API `Embeddings-2` (1024 dimensions) | Knowledge bases, when selected |
-| `giga-embeddings` | Sber500 gateway `giga-embeddings-instruct-480m` (1024 dimensions) | Knowledge bases, when selected |
-| `bge-m3-embeddings` | Sber500 gateway `bge-m3` (1024 dimensions) | Knowledge bases, when selected |
-| `qwen3-embeddings` | Sber500 gateway `qwen3-embedding-0.6b` (1024 dimensions) | Knowledge bases, when selected |
+| `giga-embeddings` | Cloud.ru Foundation Models `ai-sage/Giga-Embeddings-instruct-480M` (1024 dimensions) | Knowledge bases, when selected |
+| `bge-m3-embeddings` | Cloud.ru Foundation Models `BAAI/bge-m3` (1024 dimensions) | Knowledge bases, when selected |
+| `qwen3-embeddings` | Cloud.ru Foundation Models `Qwen/Qwen3-Embedding-0.6B` (1024 dimensions) | Knowledge bases, when selected |
 
 `EMBEDDINGS_MODEL` in `.env` picks the one embedding alias the API uses; it is required and has no
 default, and an unknown value stops the API at startup. An error from the chosen alias is not
@@ -444,7 +444,8 @@ documents again**: vectors of different models are incompatible even at the same
 For `gigachat-embeddings` the proxy verifies GigaChat TLS with `agno/litellm/certs/ca-bundle.pem`: the certifi CA bundle
 with the Russian Trusted Root CA and Sub CA appended. The file is committed; rebuild it with
 `./agno/scripts/build_ca_bundle.sh` (active `.venv`) after a `certifi` update. Without that file
-the proxy does not start. The Sber500 gateway uses a public certificate.
+the proxy does not start. Cloud.ru Foundation Models (`https://foundation-models.api.cloud.ru/v1`, set in
+the proxy configuration) uses a public certificate that the same bundle verifies.
 
 `gigachat-embeddings` (`Embeddings-2`) reads at most 512 tokens, so knowledge bases declare readers that cut
 documents into chunks of up to 1200 characters ([agno/db/__init__.py](agno/db/__init__.py)). URLs use
@@ -542,7 +543,7 @@ add the others when you need them. Docker Compose reads `.env` for both local an
 | `LITELLM_URL` | Proxy address for the API. Local Compose sets `http://litellm:4000`; set it yourself when the API runs on the host. |
 | `DEEPSEEK_API_KEY` | DeepSeek models behind the proxy: agents, OS Manager, Company Manager and Claude Engineer (required). |
 | `GIGACHAT_CREDENTIALS` and `GIGACHAT_SCOPE` | GigaChat Embeddings-2 behind the proxy, alias `gigachat-embeddings` (required). Scope is `GIGACHAT_API_PERS` or `GIGACHAT_API_B2B`. |
-| `SBER500_API_BASE` and `SBER500_API_KEY` | Sber500 gateway behind the proxy: aliases `giga-embeddings`, `bge-m3-embeddings`, `qwen3-embeddings` (required). |
+| `CLOUDRU_API_KEY` | Cloud.ru Foundation Models behind the proxy, a service account key: aliases `giga-embeddings`, `bge-m3-embeddings`, `qwen3-embeddings` (required). |
 | `EMBEDDINGS_MODEL` | Active embedding alias for the API (required, no default); see [Models](#models). |
 | `PARALLEL_API_KEY` | Optional web search key. Without it, search uses Parallel's MCP server without an API key. |
 | `AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`, `AUTHENTIK_BOOTSTRAP_EMAIL`, `AUTHENTIK_BOOTSTRAP_PASSWORD` | Authentik server secret, password of its database role, first administrator (required, see [Module auth](#module-auth)). |

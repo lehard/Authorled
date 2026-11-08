@@ -1,6 +1,6 @@
 ---
 owner: lehard
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 # Architecture
 Целевая архитектура Authorled. Текущий код — шаблон AgentOS; мастер-спека `openspec/specs/` описывает его как есть и обновляется через changes.
@@ -43,7 +43,7 @@ updated: 2026-11-02
 - Authentik (модуль `auth`): JWT с проверкой подписи по ключам Authentik; в AgentOS `authorization=True`, `user_isolation=True`. Приложение берёт ключи только из файла `JWT_JWKS_FILE` (выгружается модулем `auth`); загрузки по URL в Agno 3.1.10 нет.
 - Фронтенд: Refine (каркас, роутинг, проекты, файлы, админка), CopilotKit (чат через AG-UI-интеграцию Agno), форк `@plotwell/editor` в `web/src/editor/` (редактор сценария; автосохранение отправляет на бэкенд весь текст с номером ревизии; комментарии и предложения агента — плагины-декорации, хранятся на бэкенде); дизайн-система — shadcn/ui на Tailwind CSS — ADR-004.
 - Модели: только через LiteLLM; зарубежные LLM разрешены. Эмбеддинги, модерация, антивирус — в РФ или свои.
-- Модели — DeepSeek (`deepseek-fast`, `deepseek-thinking`), эмбеддинги — один из псевдонимов, выбранный `EMBEDDINGS_MODEL` (GigaChat `Embeddings-2` или модели шлюза Sber500, все 1024 измерения); всё через LiteLLM-прокси по псевдонимам — ADR-003.
+- Модели — DeepSeek (`deepseek-fast`, `deepseek-thinking`), эмбеддинги — один из псевдонимов, выбранный `EMBEDDINGS_MODEL` (GigaChat `Embeddings-2` или модели Cloud.ru Foundation Models, все 1024 измерения); всё через LiteLLM-прокси по псевдонимам — ADR-003.
 - ClamAV — проверка загрузок до обработки: сервис `clamav` в compose, проверка в запросе загрузки (протокол `INSTREAM`), без него API не стартует.
 
 ## Очереди и события
@@ -61,6 +61,6 @@ updated: 2026-11-02
 ## Ключевые решения
 - Фронтенд и модульный монолит бэкенда (авторизация — модуль `auth`), связь только через стандартные контракты — ADR-001.
 - Свои продуктовые маршруты — роутер в приложении AgentOS (не `base_app`), утверждение только маршрутом — ADR-002.
-- Модели DeepSeek и эмбеддинги (GigaChat или шлюз Sber500, выбор `EMBEDDINGS_MODEL`) через LiteLLM-прокси — ADR-003.
+- Модели DeepSeek и эмбеддинги (GigaChat или Cloud.ru Foundation Models, выбор `EMBEDDINGS_MODEL`) через LiteLLM-прокси — ADR-003.
 - Фронтенд: Refine, CopilotKit, форк `@plotwell/editor` на shadcn/ui — ADR-004.
 - Писательские потоки по образцу STARC; партнёрство или своё — ADR-005.
