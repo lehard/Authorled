@@ -24,8 +24,8 @@
 ## 4. Выкладка на сервер
 
 - [x] 4.1 С подтверждения владельца в чате добавить `CLOUDRU_API_KEY` в `/etc/authorled/authorled.env` на `authorled` (ключ не печатать; `SBER500_*` пока оставить для отката). Проверка: `grep -c '^CLOUDRU_API_KEY=' /etc/authorled/authorled.env` = 1 и запрос эмбеддинга к Cloud.ru с сервера этим ключом отдаёт 1024 измерения.
-- [ ] 4.2 После релиза из `main` (README, «Deploy by release»; релиз запускает владелец) проверить на сервере: прокси `healthy`, эмбеддинг через прокси псевдонимом `giga-embeddings` — 1024 числа, загрузка и поиск в `shared-knowledge` работают, тестовый контент удалён. Записать в `tmp/VERIFY.md` (hosted).
-- [ ] 4.3 С подтверждения владельца удалить `SBER500_API_BASE` и `SBER500_API_KEY` из `/etc/authorled/authorled.env`. Проверка: `grep -c '^SBER500' /etc/authorled/authorled.env` = 0, `docker compose config -q` на сервере проходит.
+- [x] 4.2 После релиза из `main` (README, «Deploy by release»; релиз запускает владелец) проверить на сервере: прокси `healthy`, эмбеддинг через прокси псевдонимом `giga-embeddings` — 1024 числа, загрузка и поиск в `shared-knowledge` работают, тестовый контент удалён. Записать в `tmp/VERIFY.md` (hosted).
+- [x] 4.3 С подтверждения владельца удалить `SBER500_API_BASE` и `SBER500_API_KEY` из `/etc/authorled/authorled.env`. Проверка: `grep -c '^SBER500' /etc/authorled/authorled.env` = 0, `docker compose config -q` на сервере проходит.
 
 ## Workflow follow-up
 
