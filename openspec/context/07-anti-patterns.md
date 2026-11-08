@@ -32,7 +32,7 @@ updated: 2026-11-08
 ## Тесты
 21. Проверка ответов LLM в pytest — для этого evals.
 22. Моки базы в тестах ядра — только реальный PostgreSQL.
-23. Bundled regression suite, кастомные scorers/изоляция/cleanup в evals.
+23. Bundled regression suite, кастомные scorers/изоляция/cleanup в evals. Единственное исключение — экзамен маршрутизации `agno/evals/routing/`: свой набор и подсчёт без LLM-судьи (владелец, 2026-11-08, `business-intents/coauthor-orchestrator-domains.md`).
 
 ## Платформа Agno (из шаблона)
 24. Пересоздание OS Manager / Company Manager / очередей / lifecycle sandbox в приложении — зона Agno.

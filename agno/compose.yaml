@@ -69,6 +69,9 @@ services:
       GIGACHAT_CREDENTIALS: ${GIGACHAT_CREDENTIALS:?GIGACHAT_CREDENTIALS must be set in .env}
       GIGACHAT_SCOPE: ${GIGACHAT_SCOPE:?GIGACHAT_SCOPE must be set in .env}
       CLOUDRU_API_KEY: ${CLOUDRU_API_KEY:?CLOUDRU_API_KEY must be set in .env}
+      # Optional on purpose (owner's decision 2026-11-08, openspec/specs/llm-gateway): only the
+      # routing exam's claude-sonnet / claude-opus use it; without it their calls fail with 401.
+      ANTHROPIC_EXAM_API_KEY: ${ANTHROPIC_EXAM_API_KEY:-}
     healthcheck:
       test:
         - CMD

@@ -34,6 +34,10 @@ runtime_env = _required_env("RUNTIME_ENV")
 if runtime_env not in ("dev", "prd"):
     raise RuntimeError(f"RUNTIME_ENV must be exactly 'dev' or 'prd', got {runtime_env!r}")
 agentos_url = _required_env("AGENTOS_URL")
+# Agno's own managers report every run unless AGNO_TELEMETRY says otherwise; our agents also set
+# telemetry=False in code (openspec/specs/runtime, «Телеметрия Agno выключена»).
+if environ.get("AGNO_TELEMETRY") != "false":
+    raise RuntimeError(f"AGNO_TELEMETRY must be exactly 'false', got {environ.get('AGNO_TELEMETRY')!r}")
 db = get_postgres_db()
 
 agent_os = AgentOS(

@@ -41,4 +41,6 @@ coauthor = Agent(
     add_history_to_context=True,
     num_history_runs=10,
     add_datetime_to_context=True,
+    # Agno agents report every run unless told not to (openspec/specs/runtime, «Телеметрия Agno выключена»).
+    telemetry=False,
 )

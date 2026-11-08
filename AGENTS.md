@@ -85,7 +85,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   after it). The co-author never deletes, trashes or decides; the screenplay text changes only by suggestions.
   `agno/skills/<agent_id>/SKILL.md`: an agent's prompt as an Anthropic Agent Skill (`name` equals the id,
   the body is the prompt), loaded by `agents/prompts.py`; restart the API after editing it.
-  `agno/teams/`: user-defined teams; no Engineering team ships by default.
+  `agno/teams/`: the place for the application's teams; the folder does not exist yet and appears with the first
+  registered team (the routing exam builds its teams in `agno/evals/routing/` and does not register them).
 - `agno/db/`: cached OS database and distinct knowledge content adapters.
 - `agno/core/`: the product core, independent of Agno: `connection.py` (database URL from `DB_*`),
   `tables.py` (tables of schema `authorled`: users and settings, stories, drafts, documents, texts, notes, snapshots and points, review, files,
@@ -258,7 +259,9 @@ and for `web/` also builds the app and checks design tokens and their contrast; 
 `./scripts/dev.sh test` runs pytest for the core on real PostgreSQL (not in CI yet).
 Also run `git diff --check`. Keep evals in `agno/evals/__main__.py` and `agno/evals/cases.py`, using
 Agno's `criteria` and `expected_tool_calls`. Do not add a bundled regression suite or
-custom isolation, scorers or cleanup machinery by default.
+custom isolation, scorers or cleanup machinery by default. The one exception is the routing exam
+in `agno/evals/routing/` (its own case set and scoring, owner 2026-11-08,
+`business-intents/coauthor-orchestrator-domains.md`).
 
 - `python -m evals --tag smoke`: runs the three application cases and spends model calls.
   Uses the application's `.env`, database and workspace; sessions and results persist
@@ -267,6 +270,9 @@ custom isolation, scorers or cleanup machinery by default.
   application initializes knowledge storage on import.
 - Inspect answers, tool results and judge reasons. Additional tool calls are allowed;
   these cases do not enforce read-only execution. Use owned fixtures for mutating cases.
+- `python -m evals.routing --domains base|wide --split work|holdout --variant team|team-route|skills --model <alias>`
+  (from `agno/`; `.env` gives it `LITELLM_URL=http://127.0.0.1:4000`): the routing exam of the orchestrator on
+  domain stubs; spends model calls, needs the LiteLLM proxy but no database, writes its report to `tmp/routing/` (`agno/evals/routing/README.md`).
 - `./scripts/mcp_check.sh`: initializes MCP and checks required tools without model calls.
   `--prompt` spends model calls. Set `MCP_CHECK_HOST=1` for the host API.
 - Verify direct engineer execution, HTTP execution, team delegation and Company Task

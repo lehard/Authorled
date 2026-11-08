@@ -19,3 +19,17 @@ output_rub = 120
 input_rub = 132
 cache_read_rub = 4.4
 output_rub = 396
+
+# Только экзамен маршрутизации (agno/evals/routing). Прайс Anthropic, тот же курс 100 ₽ за доллар;
+# источник — таблица моделей справки claude-api (кэш от 2026-10-06), тарифы первой стороны Anthropic.
+# anthropic/claude-sonnet-5-5: $2 вход, $0.20 кэш, $10 выход.
+[models.claude-sonnet]
+input_rub = 200
+cache_read_rub = 20
+output_rub = 1000
+
+# anthropic/claude-opus-5-5: $4 вход, $0.20 кэш, $20 выход.
+[models.claude-opus]
+input_rub = 400
+cache_read_rub = 20
+output_rub = 2000
