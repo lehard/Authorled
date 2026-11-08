@@ -86,6 +86,14 @@
     filter: none;
   }
 }
+@keyframes site-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: none;
+  }
+}
 @keyframes site-fade {
   from {
     opacity: 0;
@@ -96,8 +104,9 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* The first screen appears on load, once, in reading order (design-to-motion, «hero appear»). */
-  [data-appear] {
+  /* The first screen appears on load, once, in reading order (design-to-motion, «hero appear»); without JavaScript
+     it stands still in its end state. */
+  .js [data-appear] {
     animation: site-appear 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
     animation-delay: calc(var(--i, 0) * 70ms);
   }
@@ -122,6 +131,12 @@
   }
   .js [data-word] {
     transition: opacity 0.45s cubic-bezier(0.33, 1, 0.68, 1);
+  }
+
+  /* The line between the two scenes of the first screen draws itself once on load, piece by piece. */
+  .js [data-rail] {
+    animation: site-grow 0.2s linear both;
+    animation-delay: var(--draw-delay, 0ms);
   }
 
   /* SVG lines draw themselves when their section comes into view. */

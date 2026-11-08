@@ -30,3 +30,23 @@ export const AFTER: ScriptLine[] = [
   { kind: "character", text: "АНЯ" },
   { kind: "dialogue", text: "Мама говорит то же самое. Теми же словами." },
 ];
+
+/**
+ * The contradiction of the first screen (design D1, D4): Kolya's line in scene 5 and how Anya retells it in scene 6
+ * of the draft `water-1`, word for word. The sandbox answer «Проверь, нет ли противоречий» points at the same pair.
+ */
+export const CONTRADICTION = {
+  first: {
+    number: 5,
+    place: "Гараж",
+    character: "КОЛЯ",
+    line: "Он утонул. Всё.",
+  },
+  second: {
+    number: 6,
+    place: "Кухня",
+    character: "АНЯ",
+    line: "Он сказал, что Миша утонул не случайно.",
+  },
+  note: "Коля такого не говорил. Задумано?",
+};

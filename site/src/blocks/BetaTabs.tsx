@@ -94,7 +94,7 @@ export function BetaTabs() {
         <div
           role="tablist"
           aria-label={BETA.title}
-          className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0"
+          className="-mx-4 flex gap-2 overflow-x-auto px-4 py-1 sm:-mx-1 sm:px-1"
         >
           {TABS.map((tab, index) => (
             <button

@@ -57,6 +57,26 @@ try {
         `${name}px: «${label}» is not on the first screen`,
       );
     }
+    // Beta tabs: the ring and the focus outline of the first and the last tab are not cut by the scrolling row.
+    const tablist = page.getByRole("tablist");
+    for (const which of ["first", "last"]) {
+      const tab = tablist.getByRole("tab")[which]();
+      await tab.scrollIntoViewIfNeeded();
+      const room = await tab.evaluate((element) => {
+        const own = element.getBoundingClientRect();
+        const row = element.parentElement.getBoundingClientRect();
+        return Math.min(
+          own.top - row.top,
+          row.bottom - own.bottom,
+          own.left - row.left,
+          row.right - own.right,
+        );
+      });
+      check(
+        room >= 4,
+        `${name}px: the ${which} tab has ${room}px of room in its row, its ring is cut`,
+      );
+    }
     await scrollThrough(page);
     const overflow = await page.evaluate(
       () =>
@@ -77,27 +97,46 @@ try {
   await page.goto(SITE_URL, { waitUntil: "networkidle" });
   await page.waitForTimeout(1500);
 
-  // The live edit of the first screen.
-  const sheet = page.locator("section[aria-labelledby='hero-title'] figure");
-  await sheet.getByRole("button", { name: "Принять" }).click();
-  check(
-    (await sheet.locator("del").count()) === 0,
-    "live edit: «Принять» left the struck line",
+  // The contradiction of the first screen: show both lines, mark it as intended, show it again.
+  const contradiction = page.locator(
+    "section[aria-labelledby='hero-title'] figure",
   );
+  const lit = () =>
+    contradiction
+      .locator("mark")
+      .evaluateAll(
+        (marks) =>
+          marks.filter(
+            (mark) =>
+              getComputedStyle(mark).backgroundColor !== "rgba(0, 0, 0, 0)",
+          ).length,
+      );
+  check((await lit()) === 0, "contradiction: lines are lit before a click");
+  await contradiction
+    .getByRole("button", { name: "Показать в тексте" })
+    .click();
   check(
-    await sheet.getByText("Утонул. Всё.").isVisible(),
-    "live edit: «Принять» did not set the new line",
+    (await lit()) === 2,
+    "contradiction: «Показать в тексте» did not light both lines",
   );
-  await sheet.getByRole("button", { name: "Показать снова" }).click();
-  await sheet.getByRole("button", { name: "Отклонить" }).focus();
+  await contradiction.getByRole("button", { name: "Так задумано" }).focus();
   await page.keyboard.press("Enter");
   check(
-    await sheet.getByText("Он утонул. Всё.").isVisible(),
-    "live edit: Enter on «Отклонить» did not keep the line",
+    (await contradiction
+      .getByRole("button", { name: "Так задумано" })
+      .count()) === 0,
+    "contradiction: Enter on «Так задумано» did not fold the card",
   );
   check(
-    (await sheet.locator("ins").count()) === 0,
-    "live edit: «Отклонить» left the inserted line",
+    (await lit()) === 0,
+    "contradiction: «Так задумано» left the lines lit",
+  );
+  await contradiction.getByRole("button", { name: "Показать снова" }).click();
+  check(
+    await contradiction
+      .getByRole("button", { name: "Так задумано" })
+      .isVisible(),
+    "contradiction: «Показать снова» did not bring the card back",
   );
 
   // The vision phrase lights up word by word.
@@ -219,6 +258,22 @@ try {
         ).length,
     );
     check(hidden === 0, `${name}: ${hidden} blocks or words are not shown`);
+    const hero = await view.evaluate(() => {
+      const figure = document.querySelector(
+        "section[aria-labelledby='hero-title'] figure",
+      );
+      const hidden = [...figure.querySelectorAll("[data-appear]")].filter(
+        (element) => Number(getComputedStyle(element).opacity) < 1,
+      ).length;
+      const undrawn = [...figure.querySelectorAll("[data-rail]")].filter(
+        (line) => getComputedStyle(line).transform !== "none",
+      ).length;
+      return { hidden, undrawn, marks: figure.querySelectorAll("mark").length };
+    });
+    check(
+      hero.marks === 2 && hero.hidden === 0 && hero.undrawn === 0,
+      `${name}: the first screen is not in its end state (${JSON.stringify(hero)})`,
+    );
     const faq = view
       .locator("section[aria-labelledby='faq-title'] details")
       .first();

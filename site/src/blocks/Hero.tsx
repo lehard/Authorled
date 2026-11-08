@@ -1,111 +1,171 @@
 import { useState, type CSSProperties } from "react";
 
 import { LinkButton } from "../components/ui";
-import { HEADLINE, HERO, LIVE_EDIT } from "../content/copy";
-import { AFTER, SCENE, SUGGESTION, type ScriptLine } from "../content/demo";
+import { HEADLINE, HERO, HERO_CHECK } from "../content/copy";
+import { CONTRADICTION } from "../content/demo";
 import { APP_URL } from "../site";
 
-// The first screen (openspec/specs/web/site, «Главная страница», «Живая правка в первом экране»; design D3).
-// It appears on load in reading order; the visitor accepts or rejects the co-author's suggestion right here.
+// The first screen (openspec/specs/web/site, «Главная страница», «Противоречие в первом экране»; design D1–D3 of
+// site-hero-contradiction). It appears on load in reading order: scene 5, scene 6, the line between them, then the
+// co-author's card. The visitor shows the two lines in the text or marks the contradiction as intended.
 
 const order = (i: number): CSSProperties => ({ "--i": i }) as CSSProperties;
+const draw = (delay: number): CSSProperties =>
+  ({ "--draw-delay": `${delay}ms` }) as CSSProperties;
 
-function Line({ line }: { line: ScriptLine }) {
-  switch (line.kind) {
-    case "heading":
-      return <p className="font-bold uppercase">{line.text}</p>;
-    case "action":
-      return <p>{line.text}</p>;
-    case "character":
-      return <p className="mt-3 pl-[34%] uppercase">{line.text}</p>;
-    case "parenthetical":
-      return <p className="pl-[26%]">{line.text}</p>;
-    case "dialogue":
-      return <p className="pr-[12%] pl-[18%]">{line.text}</p>;
-  }
+type Scene = (typeof CONTRADICTION)["first"];
+type State = "flagged" | "shown" | "intended";
+
+/** One piece of the line that links the two scenes, grown in turn on load; the dot marks a scene. */
+function Rail({
+  from,
+  to,
+  dot,
+  delay,
+  linked,
+}: {
+  from: string;
+  to: string;
+  /** Order of appearance of the dot: with its scene card. */
+  dot?: number;
+  delay: number;
+  linked: boolean;
+}) {
+  return (
+    <div
+      aria-hidden="true"
+      className={`relative transition-opacity duration-300 ease-base ${linked ? "" : "opacity-0"}`}
+    >
+      <div
+        className="absolute left-[calc(50%-1px)] w-0.5 origin-top rounded-full bg-ai-border"
+        style={{ top: from, bottom: to, ...draw(delay) }}
+        data-rail
+      />
+      {dot === undefined ? null : (
+        <span
+          className="absolute top-[1.1rem] left-[calc(50%-0.3125rem)] size-2.5 rounded-full bg-ai"
+          data-appear
+          style={order(dot)}
+        />
+      )}
+    </div>
+  );
 }
 
-type Decision = "offered" | "accepted" | "rejected";
-
-function LiveEdit() {
-  const [decision, setDecision] = useState<Decision>("offered");
+function SceneCard({
+  scene,
+  lit,
+  i,
+}: {
+  scene: Scene;
+  lit: boolean;
+  i: number;
+}) {
   return (
-    <figure className="flex flex-col gap-3" data-appear style={order(6)}>
-      <div className="rounded-2xl bg-panel p-2 shadow-panel ring-1 ring-border">
-        <div className="flex flex-col gap-1 rounded-xl bg-paper px-5 py-6 font-mono text-sm leading-6 text-paper-foreground shadow-paper sm:px-8">
-          {SCENE.map((line, index) => (
-            <Line key={index} line={line} />
-          ))}
-          <p className="pr-[12%] pl-[18%]" aria-live="polite">
-            {decision === "offered" ? (
-              <>
-                <del className="decoration-deco-delete decoration-2 opacity-70">
-                  {SUGGESTION.before}
-                </del>{" "}
-                <ins className="rounded-sm bg-ai-subtle px-0.5 text-ai no-underline ring-1 ring-ai-border">
-                  {SUGGESTION.after}
-                </ins>
-              </>
-            ) : decision === "accepted" ? (
-              <span className="site-fade-in">{SUGGESTION.after}</span>
-            ) : (
-              <span className="site-fade-in">{SUGGESTION.before}</span>
-            )}
-          </p>
-          {AFTER.map((line, index) => (
-            <Line key={index} line={line} />
-          ))}
-        </div>
-        <div
-          role="group"
-          aria-label={LIVE_EDIT.label}
-          className="mx-2 -mt-1 mb-1 rounded-xl bg-card p-4 ring-1 ring-ai-border sm:mx-6"
-          data-appear
-          style={order(10)}
+    <div
+      className="rounded-xl bg-paper px-4 py-3 text-paper-foreground shadow-paper ring-1 ring-border sm:px-5"
+      data-appear
+      style={order(i)}
+    >
+      <p className="caption-1 text-muted-foreground">
+        {HERO_CHECK.scene} {scene.number} · {scene.place}
+      </p>
+      <p className="mt-2 font-mono text-base leading-7 uppercase">
+        {scene.character}
+      </p>
+      <p className="font-mono text-base leading-7">
+        <mark
+          className={`rounded-sm px-0.5 text-inherit ${lit ? "bg-ai-subtle ring-1 ring-ai-border" : "bg-transparent"}`}
         >
-          {decision === "offered" ? (
-            <div className="flex flex-col gap-3">
-              <p className="caption-1 text-ai">{LIVE_EDIT.label}</p>
-              <p className="body-6 text-muted-foreground">{SUGGESTION.why}</p>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className="rounded-full bg-primary px-4 py-2 button-sm text-primary-foreground transition-transform duration-300 ease-base hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.98]"
-                  onClick={() => setDecision("accepted")}
-                >
-                  {LIVE_EDIT.accept}
-                </button>
-                <button
-                  type="button"
-                  className="rounded-full px-4 py-2 button-sm text-foreground ring-1 ring-border-strong transition-transform duration-300 ease-base hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.98]"
-                  onClick={() => setDecision("rejected")}
-                >
-                  {LIVE_EDIT.reject}
-                </button>
+          {scene.line}
+        </mark>
+      </p>
+    </div>
+  );
+}
+
+const primaryButton =
+  "rounded-full bg-primary px-4 py-2 button-sm text-primary-foreground transition-transform duration-300 ease-base hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.98]";
+const secondaryButton =
+  "rounded-full px-4 py-2 button-sm text-foreground ring-1 ring-border-strong transition-transform duration-300 ease-base hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.98]";
+
+function ContradictionCheck() {
+  const [state, setState] = useState<State>("flagged");
+  const linked = state !== "intended";
+  const lit = state === "shown";
+  return (
+    <figure className="flex flex-col gap-3">
+      <div className="rounded-2xl bg-panel p-3 shadow-panel ring-1 ring-border sm:p-4">
+        <div className="grid grid-cols-[1rem_1fr] gap-x-3">
+          <Rail from="1.4rem" to="0" dot={6} delay={1000} linked={linked} />
+          <div className="pb-3">
+            <SceneCard scene={CONTRADICTION.first} lit={lit} i={6} />
+          </div>
+          <Rail from="0" to="0" delay={1200} linked={linked} />
+          <div className="pb-3">
+            <div
+              role="group"
+              aria-label={HERO_CHECK.group}
+              className="rounded-xl bg-card p-4 ring-1 ring-ai-border"
+              data-appear
+              style={order(23)}
+            >
+              <div aria-live="polite">
+                {state === "intended" ? (
+                  <div className="site-fade-in flex flex-wrap items-center justify-between gap-3">
+                    <p className="body-6 text-foreground">
+                      {HERO_CHECK.marked}
+                    </p>
+                    <button
+                      type="button"
+                      className={secondaryButton}
+                      onClick={() => setState("flagged")}
+                    >
+                      {HERO_CHECK.again}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <p className="caption-1 text-ai">{HERO_CHECK.label}</p>
+                    <p className="body-6 text-foreground">
+                      {CONTRADICTION.note}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className={primaryButton}
+                        aria-pressed={lit}
+                        onClick={() => setState(lit ? "flagged" : "shown")}
+                      >
+                        {lit ? HERO_CHECK.hide : HERO_CHECK.show}
+                      </button>
+                      <button
+                        type="button"
+                        className={secondaryButton}
+                        onClick={() => setState("intended")}
+                      >
+                        {HERO_CHECK.intended}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          ) : (
-            <div className="site-fade-in flex flex-wrap items-center justify-between gap-3">
-              <p className="body-6 text-foreground">
-                {decision === "accepted"
-                  ? LIVE_EDIT.accepted
-                  : LIVE_EDIT.rejected}
-              </p>
-              <button
-                type="button"
-                className="rounded-full px-4 py-2 button-sm text-foreground ring-1 ring-border-strong hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                onClick={() => setDecision("offered")}
-              >
-                {LIVE_EDIT.again}
-              </button>
-            </div>
-          )}
+          </div>
+          <Rail
+            from="0"
+            to="calc(100% - 1.4rem)"
+            dot={8}
+            delay={1400}
+            linked={linked}
+          />
+          <SceneCard scene={CONTRADICTION.second} lit={lit} i={8} />
         </div>
       </div>
       <figcaption
         className="body-6 text-muted-foreground"
         data-appear
-        style={order(11)}
+        style={order(24)}
       >
         {HERO.sheetCaption}
       </figcaption>
@@ -170,7 +230,7 @@ export function Hero() {
             {HERO.note}
           </p>
         </div>
-        <LiveEdit />
+        <ContradictionCheck />
       </div>
     </section>
   );
