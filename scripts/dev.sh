@@ -45,6 +45,19 @@ fail() {
     exit 1
 }
 
+# Stops unless the service runs in the Compose project of this checkout. A failure of docker compose
+# itself (it cannot read the configuration) is named as such, never as a service that is not running.
+require_running() {
+    local service="$1" for_command="$2" ids project
+    ids="$(docker compose ps -q --status running "${service}")" \
+        || fail "docker compose failed (its error is above), so ${service} was not checked: fix .env (the compose files require every variable they name)."
+    [[ -z "${ids}" ]] || return 0
+    project="$(docker compose config | sed -n '1s/^name: //p')" \
+        || fail "docker compose config failed (its error is above) while naming the project where ${service} is not running."
+    [[ -n "${project}" ]] || fail "${service} is not running, and 'docker compose config' printed no project name."
+    fail "${service} is not running in Compose project ${project} (${PWD}): ${for_command} needs the local stand; run it from the checkout where the stand runs, or start it (docker compose up -d)."
+}
+
 command="${1:-}"
 case "${command}" in
     -h|--help) usage; exit 0 ;;
@@ -149,8 +162,7 @@ case "${command}" in
         writer_token="$(sed -n 's/^AUTH_DEV_WRITER_TOKEN=//p' .env | tail -n 1)"
         [[ -n "${writer_token}" && "${writer_token}" != "***" ]] \
             || fail "AUTH_DEV_WRITER_TOKEN is not set in .env (app password of writer for the co-author eval)."
-        [[ -n "$(docker compose ps -q --status running mailpit)" ]] \
-            || fail "mailpit is not running: auth-users needs the local stand (docker compose up -d)."
+        require_running mailpit auth-users
         docker compose exec -T -e AUTH_DEV_USER_PASSWORD="${dev_password}" -e AUTH_DEV_WRITER_TOKEN="${writer_token}" \
             authentik-worker ak apply_blueprint /blueprints-dev/dev-users.yaml
         # A confirmed e-mail device per user: without it the first sign-in sets one up, and an
@@ -178,18 +190,27 @@ for username in ("writer", "editor"):
         agentos_db_password="$(sed -n 's/^AGENTOS_DB_PASSWORD=//p' .env | tail -n 1)"
         [[ -n "${agentos_db_password}" ]] || fail "AGENTOS_DB_PASSWORD is not set in .env (password of the database role agentos)."
         for service in agentos-db authentik-worker; do
-            [[ -n "$(docker compose ps -q --status running "${service}")" ]] \
-                || fail "${service} is not running: seed needs the local stand (docker compose up -d)."
+            require_running "${service}" seed
         done
         # The subject of a user is what the token of the user will carry. Logs share stdout, hence the
-        # prefix; without the line the users are missing, whatever the exit code of ak shell.
-        people="$(docker compose exec -T authentik-worker ak shell -c '
+        # prefixes. The query names the missing users itself, so a failure of the command is never
+        # taken for users that are missing.
+        authentik_output="$(docker compose exec -T authentik-worker ak shell -c '
 import json
 from authentik.core.models import User
-users = [User.objects.get(username=name) for name in ("writer", "editor")]
+names = ("writer", "editor")
+found = {u.username: u for u in User.objects.filter(username__in=names)}
+print("DEMO_MISSING " + " ".join(name for name in names if name not in found))
+users = [found[name] for name in names if name in found]
 print("DEMO_USERS " + json.dumps([{"subject": u.uid, "email": u.email, "name": u.name} for u in users]))
-' | sed -n 's/^DEMO_USERS //p' || true)"
-        [[ -n "${people}" ]] || fail "no development users in Authentik: run ./scripts/dev.sh auth-users."
+')" || fail "reading the development users from Authentik (authentik-worker) failed; its error is above."
+        missing_line="$(grep -m 1 '^DEMO_MISSING ' <<< "${authentik_output}")" \
+            || fail "reading the development users from Authentik printed no DEMO_MISSING line."
+        missing="${missing_line#DEMO_MISSING }"
+        [[ -z "${missing}" ]] || fail "no development users in Authentik (${missing}): run ./scripts/dev.sh auth-users."
+        people_line="$(grep -m 1 '^DEMO_USERS ' <<< "${authentik_output}")" \
+            || fail "reading the development users from Authentik printed no DEMO_USERS line."
+        people="${people_line#DEMO_USERS }"
         export DB_DRIVER=postgresql+psycopg DB_HOST=127.0.0.1 DB_PORT=5432
         export DB_USER=agentos DB_PASS="${agentos_db_password}" DB_DATABASE=ai
         cd agno
