@@ -17,6 +17,7 @@
     "check:contrast": "node scripts/check-contrast.ts",
     "check:native-ui": "node scripts/check-native-ui.ts",
     "check:editor": "node scripts/check-editor.ts",
+    "check:chat": "node scripts/check-chat.ts",
     "samples:export": "node scripts/samples.ts"
   },
   "dependencies": {

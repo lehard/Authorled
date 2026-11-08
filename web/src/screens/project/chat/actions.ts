@@ -5,6 +5,7 @@ import { PROFILE } from "@/data/profiles";
 
 import type { ProjectData } from "../ProjectContext";
 import type { DocRef } from "../docRef";
+import { readOutcome, type Target } from "./outcome";
 
 // Actions of the co-author in the chat (openspec/specs/web/workspace, «Подтверждение действия
 // соавтора», «Сделанное соавтором в чате»). The names are the changing tools of the backend
@@ -168,29 +169,18 @@ export function decisionOf(content: string): Decision | null {
   return null;
 }
 
-type Done = {
-  done: string;
-  target: { type: string; id: string; kind?: string };
-};
+type Done = { done: string; target: Target };
 
+/** What a done call did and where it opens; null for a refusal or a result the chat cannot read. */
 export function doneOf(content: string): Done | null {
-  try {
-    const parsed: unknown = JSON.parse(content);
-    if (
-      typeof parsed === "object" &&
-      parsed !== null &&
-      typeof (parsed as Done).done === "string" &&
-      typeof (parsed as Done).target === "object"
-    )
-      return parsed as Done;
-  } catch {
-    // A refusal of the core is plain text.
-  }
-  return null;
+  const outcome = readOutcome(content);
+  return outcome.kind === "done"
+    ? { done: outcome.done, target: outcome.target }
+    : null;
 }
 
 /** Where a changed thing opens: a card, a note or the screenplay text. */
-export function targetRef(target: Done["target"]): DocRef {
+export function targetRef(target: Target): DocRef {
   if (target.type === "note") return { kind: "note", id: target.id };
   if (target.type === "document") {
     const entity = SERVER_KIND[target.kind ?? ""];
