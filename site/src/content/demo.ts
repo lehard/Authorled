@@ -50,3 +50,50 @@ export const CONTRADICTION = {
   },
   note: "Коля такого не говорил. Задумано?",
 };
+
+/**
+ * Scene 6 of the draft `water-1`, shortened for the sandbox fragment (design D2 of site-coauthor-examples): its heading
+ * and Anya's line about Kolya. `quote` is the part the scene link lights up; it is also the line of the first screen.
+ */
+export const SCENE_6 = {
+  heading: "ИНТ. ДОМ ВЕРЫ, КУХНЯ — НОЧЬ",
+  character: "АНЯ",
+  lead: "Я была у дяди Коли.",
+  quote: CONTRADICTION.second.line,
+};
+
+/**
+ * Quotes of the «one action» cards under the beta tabs (design D3 of site-coauthor-examples), word for word from
+ * `web/src/data/demo.json`, draft `water-1`: Misha's short goal from his card, suggestion `s1` in scene 6 and an action
+ * line of scene 4. None of them is quoted by the first screen.
+ */
+export const ONE_ACTION_QUOTES = {
+  mishaGoal: "Уехать из посёлка до конца лета.",
+  suggestion: {
+    scene: 6,
+    before: "Чашка давно чистая. Она всё равно трёт её губкой.",
+    after: "Чашка давно чистая — Вера всё равно её трёт.",
+    /** The first half of the `why` of `s1`: the card has room for one short reason. */
+    why: "Короче на строку, а действие остаётся.",
+  },
+  comment: {
+    scene: 4,
+    quote: "Аня смотрит, пока звонок не обрывается.",
+  },
+};
+
+/**
+ * Uncle Kolya's card next to the vision phrase (design D4 of site-coauthor-examples): facts from his card in
+ * `demo.json`, with the scene of draft `water-1` where the text shows them (scene 3: «Коля отводит глаза к воде» at the
+ * pier; scene 5: «(не поднимая головы)»). A fact only from the card has no scene.
+ */
+export const KOLYA = {
+  name: "Дядя Коля",
+  age: 60,
+  role: "Деверь Веры",
+  facts: [
+    { text: "Был на озере в тот день", scene: null },
+    { text: "К воде подходит только на пристани", scene: 3 },
+    { text: "Отвечает в сторону", scene: 5 },
+  ],
+} as const;

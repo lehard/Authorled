@@ -456,7 +456,7 @@ npm run dev --prefix site    # http://127.0.0.1:5174
 
 `.env` needs `SITE_ORIGIN` (the site's own address), `SITE_APP_URL` (the service «Войти» opens) and, for the dev
 server, `AGENTOS_URL`: the form posts to `/os/api/v1/beta-requests` on the site's origin and the dev server passes it
-to the API. `npm run build --prefix site` writes `site/dist/` and checks it (texts of the blocks, «Концепт» marks, images, scripts of the main page ≤ 120 KB gzip). The behaviour of the page (contradiction of the first screen, sandbox, tabs, path, impact, keyboard, no JavaScript, reduced motion, 390 px) is checked in a real browser against `npm run preview --prefix site`: `SITE_URL=http://127.0.0.1:5174 CHROMIUM_PATH=<Chromium> npm run check:behaviour --prefix site` — a local check, not part of `validate.sh`. A release deploys the site to `soavtor.app`
+to the API. `npm run build --prefix site` writes `site/dist/` and checks it (texts of the blocks, «Концепт» marks, images, scripts of the main page ≤ 120 KB gzip). The behaviour of the page (contradiction of the first screen, sandbox and its scene links, tabs and the suggestion card under them, hero card of the vision block, path, impact, keyboard, no JavaScript, reduced motion, 390 px) is checked in a real browser against `npm run preview --prefix site`: `SITE_URL=http://127.0.0.1:5174 CHROMIUM_PATH=<Chromium> npm run check:behaviour --prefix site` — a local check, not part of `validate.sh`. A release deploys the site to `soavtor.app`
 («Deploy by release»). The requests are listed by `./scripts/usage.sh local|prod beta-requests`.
 
 Change dependencies in `agno/pyproject.toml`, then run `./agno/scripts/generate_requirements.sh`.

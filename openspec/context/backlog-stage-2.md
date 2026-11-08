@@ -142,6 +142,13 @@ updated: 2026-11-08
 **Источник:** [плагины Sudowrite](https://sudowrite.com/features/plugins), [как их создавать](https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/how-do-i-build-plugins/a3iVxJb4UZLKfSxf8BG3mY), [конструктор плагинов](https://sudowrite.com/blog/sudowrite-plugin-builder/).
 **Связано:** запись «Быстрые действия над выделенным» выше.
 
+### Ссылки на сцены в ответах соавтора
+**Что:** в ответе соавтора в чате беты номера сцен и цитаты — ссылки: нажатие открывает сцену в редакторе и подсвечивает цитату.
+**Зачем:** сейчас соавтор называет сцены только текстом, и место приходится искать самому. На сайте это показано как концепт в песочнице.
+**Решение:** lehard 2026-11-09, при согласовании интента `site-coauthor-examples`: записать на будущее, сейчас не делать.
+**Источник:** `business-intents/site-coauthor-examples.md` (вариант Б, Non-goals).
+**Связано:** `web/src/screens/project/chat/`, `web/src/editor/anchors.ts` (размещение по `uid` сцены и цитате).
+
 ### Журнал трасс без HTTP-спанов FastAPI
 **Что:** не писать в журнал трасс AgentOS спаны встроенной телеметрии FastAPI 0.159.1 (`fastapi.dependencies`, HTTP-запросы), оставить трассы запусков агентов; вернуть запуску соавтора имя `Соавтор.arun` и `agent_id`, чтобы `/traces?agent_id=coauthor` его находил.
 **Зачем:** 4671 из 5055 трасс в `ai.agno_traces` — HTTP-спаны; с 2026-11-02 запуск соавтора называется по HTTP-спану и без `agent_id`, и разбирать работу соавтора по трассам неудобно.
