@@ -2,11 +2,20 @@
 # Not under /blueprints, so Authentik never applies this file by itself; ./scripts/dev.sh
 # auth-users applies it with AUTH_DEV_USER_PASSWORD from .env and then gives each user a
 # confirmed e-mail code device (blueprints cannot set `confirmed`), so sign-in goes straight to
-# the code, which arrives in Mailpit.
+# the code, which arrives in Mailpit. It also opens the local sign-up to every address
+# (openspec/specs/auth, «Список разрешённых почт»): the list lives in the attribute allowed_emails of
+# the group screenwriters, which the blueprints of /blueprints never set.
 version: 1
 metadata:
   name: Authorled development users
 entries:
+  - model: authentik_core.group
+    identifiers:
+      name: screenwriters
+    attrs:
+      attributes:
+        allowed_emails:
+          - "*"
   - model: authentik_core.user
     identifiers:
       username: writer

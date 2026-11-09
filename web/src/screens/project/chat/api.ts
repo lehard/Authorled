@@ -161,6 +161,7 @@ export async function renameConversation(
 }
 
 type RunRow = {
+  run_id?: unknown;
   run_input?: string | null;
   content?: unknown;
   created_at?: number;
@@ -169,25 +170,42 @@ type RunRow = {
 // Agno stores the question with the AG-UI context appended; the chat shows the question only.
 const CONTEXT_TAIL = /\s*<additional context>[\s\S]*<\/additional context>\s*$/;
 
+export type LoadedConversation = {
+  messages: { id: string; role: "user" | "assistant"; content: string }[];
+  /** The run of each answer, by message id: the run a mark of the answer belongs to. */
+  runOf: Map<string, string>;
+};
+
 /** Messages of a conversation as the chat shows them: each run is a question and an answer. */
 export async function loadConversation(
   id: string,
-): Promise<{ id: string; role: "user" | "assistant"; content: string }[]> {
+): Promise<LoadedConversation> {
   const runs = (await (
     await osFetch(`${OS}/sessions/${encodeURIComponent(id)}/runs?type=agent`)
   ).json()) as RunRow[];
-  return runs.flatMap((r, i) => [
-    ...(r.run_input
-      ? [
-          {
-            id: `${id}-u${i}`,
-            role: "user" as const,
-            content: r.run_input.replace(CONTEXT_TAIL, ""),
-          },
-        ]
-      : []),
-    ...(typeof r.content === "string" && r.content !== ""
-      ? [{ id: `${id}-a${i}`, role: "assistant" as const, content: r.content }]
-      : []),
-  ]);
+  const runOf = new Map<string, string>();
+  const messages = runs.flatMap((r, i) => {
+    const answer =
+      typeof r.content === "string" && r.content !== "" ? r.content : null;
+    if (answer !== null) {
+      if (typeof r.run_id !== "string" || r.run_id === "")
+        throw new Error(`Запуск ${i} беседы ${id} пришёл без run_id.`);
+      runOf.set(`${id}-a${i}`, r.run_id);
+    }
+    return [
+      ...(r.run_input
+        ? [
+            {
+              id: `${id}-u${i}`,
+              role: "user" as const,
+              content: r.run_input.replace(CONTEXT_TAIL, ""),
+            },
+          ]
+        : []),
+      ...(answer !== null
+        ? [{ id: `${id}-a${i}`, role: "assistant" as const, content: answer }]
+        : []),
+    ];
+  });
+  return { messages, runOf };
 }

@@ -90,7 +90,7 @@ updated: 2026-11-08
 ### Быстрые действия над выделенным
 **Что:** меню у выделенного фрагмента с готовыми просьбами к соавтору: «сократи реплику», «усиль подтекст», «проверь голос персонажа».
 **Зачем:** частые просьбы в один клик, без набора текста в чате; автор узнаёт, чем соавтор может помочь.
-**Решение:** lehard 2026-11-06, при разборе Sudowrite и NovelAI: сохранить на будущее.
+**Решение:** lehard 2026-11-06, при разборе Sudowrite и NovelAI: сохранить на будущее. lehard 2026-11-08, при разборе NolanAI: перенести в MVP в виде проверок наставника, а не просьб переписать — `business-intents/coauthor-mentor-checks.md`.
 **Источник:** меню выделения и Rewrite в [Sudowrite](https://docs.sudowrite.com/getting-started/dQph1snuwbfMWG9wRjsNug/features/dq7YUMNy5ZMvKUJiRAisyT).
 **Связано:** чат соавтора (`web/src/screens/project/chat/`), `web/src/editor/`.
 
@@ -141,6 +141,13 @@ updated: 2026-11-08
 **Решение:** lehard 2026-11-06, при разборе Sudowrite и NovelAI: сохранить на будущее, сейчас не делать.
 **Источник:** [плагины Sudowrite](https://sudowrite.com/features/plugins), [как их создавать](https://docs.sudowrite.com/using-sudowrite/1ow1qkGqof9rtcyGnrWUBS/how-do-i-build-plugins/a3iVxJb4UZLKfSxf8BG3mY), [конструктор плагинов](https://sudowrite.com/blog/sudowrite-plugin-builder/).
 **Связано:** запись «Быстрые действия над выделенным» выше.
+
+### Журнал трасс без HTTP-спанов FastAPI
+**Что:** не писать в журнал трасс AgentOS спаны встроенной телеметрии FastAPI 0.159.1 (`fastapi.dependencies`, HTTP-запросы), оставить трассы запусков агентов; вернуть запуску соавтора имя `Соавтор.arun` и `agent_id`, чтобы `/traces?agent_id=coauthor` его находил.
+**Зачем:** 4671 из 5055 трасс в `ai.agno_traces` — HTTP-спаны; с 2026-11-02 запуск соавтора называется по HTTP-спану и без `agent_id`, и разбирать работу соавтора по трассам неудобно.
+**Решение:** lehard 2026-11-08, план change `editor-fit-and-speed` (раздел «Workflow follow-up»): записать на будущее.
+**Источник:** замеры в `tmp/VERIFY.md`, «editor-fit-and-speed: локальная проверка», группа 1; `openspec/changes/archive/2026-11-08-editor-fit-and-speed/design.md`.
+**Связано:** `setup_tracing(db, batch_processing=True)` в `agno/app/main.py`.
 
 ### Jev как вариант оркестратора на экзамене маршрутизации
 **Что:** добавить в экзамен маршрутизации (`agno/evals/routing/`) четвёртый вариант — выбор доменов моделью решений Jev (TypeSafe, через OpenRouter, Decisions API): на каждый домен вопрос «касается ли сообщение этого домена» (Noul), все вопросы в одном запросе, история беседы — в контексте `state`. Прогнать оба состава (4 и 12 доменов) и сравнить с тремя вариантами на DeepSeek.

@@ -1,7 +1,8 @@
 import { MoreHorizontal, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
+import { projectScreen } from "@/app/screens";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -47,6 +48,12 @@ export function ShelfScreen() {
   const { createStory, renameStory, trashStory } = useStoryActions();
   const [creating, setCreating] = useState(false);
   const [renaming, setRenaming] = useState<Project | null>(null);
+  // The stories are on screen: the story window loads in the background, so opening a story
+  // does not wait for it (openspec/specs/web/app, «Фоновая подгрузка окна истории»).
+  const shown = query.isSuccess && trashQuery.isSuccess;
+  useEffect(() => {
+    if (shown) projectScreen.preload();
+  }, [shown]);
 
   const failed = [query, trashQuery].find((q) => q.isError);
   if (failed?.error)
@@ -72,10 +79,13 @@ export function ShelfScreen() {
         </h1>
         <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-[repeat(auto-fill,240px)] sm:gap-x-[26px] sm:gap-y-8">
           {projects.map((p) => (
-            <div key={p.id} className="group/card relative grid gap-3.5">
+            <div
+              key={p.id}
+              className="group/card relative grid content-start gap-3.5"
+            >
               <Link
                 to={`/p/${p.id}/text`}
-                className="grid gap-3.5 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="grid content-start gap-3.5 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
               >
                 <span className={p.cover ? "book art" : "book"}>{p.title}</span>
                 <span className="grid gap-0.5 px-0.5">

@@ -70,8 +70,6 @@ services:
       AUTH_FRONTEND_LOGOUT_URI: ${AUTH_FRONTEND_LOGOUT_URI:?AUTH_FRONTEND_LOGOUT_URI must be set in .env}
       AUTH_DEV_SERVICE_TOKEN: ${AUTH_DEV_SERVICE_TOKEN:?AUTH_DEV_SERVICE_TOKEN must be set in .env}
       AUTH_BRAND_DOMAIN: ${AUTH_BRAND_DOMAIN:?AUTH_BRAND_DOMAIN must be set in .env}
-      # Read by the sign-up policy on each sign-up, so a new list needs no blueprint change.
-      AUTH_ALLOWED_EMAILS: ${AUTH_ALLOWED_EMAILS:?AUTH_ALLOWED_EMAILS must be set in .env}
       # Outgoing mail (sign-in codes). Locally the Mailpit service below; in production a real
       # SMTP server. Empty USERNAME and PASSWORD must be written explicitly (no login).
       AUTHENTIK_EMAIL__HOST: ${AUTHENTIK_EMAIL__HOST:?AUTHENTIK_EMAIL__HOST must be set in .env}

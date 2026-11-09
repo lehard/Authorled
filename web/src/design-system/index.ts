@@ -4,6 +4,7 @@ export { GrowingTextarea, type GrowLimit } from "./components/GrowingTextarea";
 export { InkLoader } from "./components/InkLoader";
 export { Paper } from "./components/Paper";
 export { ThemeSwitcher } from "./components/ThemeSwitcher";
+export { TruncatedText } from "./components/TruncatedText";
 export {
   THEMES,
   applyAccountTheme,

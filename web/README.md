@@ -1,6 +1,6 @@
-# Authorled web
+# Soavtor web
 
-Frontend of Authorled: React + TypeScript on Vite, Refine with React Router, shadcn/ui on
+Frontend of Soavtor: React + TypeScript on Vite, Refine with React Router, shadcn/ui on
 Tailwind CSS (ADR-001, ADR-004). The writer's workspace follows mockup v2
 (`openspec/context/_raw/design/kabinet-starc/`); rules: `openspec/specs/web/workspace`.
 
@@ -46,11 +46,19 @@ third-party fonts and assets.
   `ScreenplayEditor.tsx` is its React wrapper. It only exports (Fountain, FDX, print); the core
   imports manuscripts. `anchors.ts` puts co-author suggestions in the text by their anchor (scene
   `uid` and the exact words); `plugins/sceneUids.ts` gives every scene heading a lasting `uid`.
+  The page fits the width of its column: narrower than US Letter, it is scaled down to 60%
+  (`transform: scale`) with the same geometry (pages, scene numbers); narrower still, it becomes
+  one continuous sheet.
 - `scripts/check-contrast.ts` — WCAG contrast of token pairs in every theme.
 - `scripts/check-editor.ts` — Tab/Enter, type keys, colour marks, scene `uid`s and suggestion anchors
   of the editor; the export samples the core import tests read (`agno/tests/fixtures/import/all-types.*`)
   must equal the current export. `npm run samples:export` (`scripts/samples.ts`) writes them again.
 - `scripts/check-native-ui.ts` — no native tooltips, checkboxes, radio buttons or selects.
+- `scripts/check-bundle.mjs` — part of `npm run build`: the scripts of the first screen (sign-in,
+  shelf) stay within 300 KB gzip, and the story window and the showcase stay separate parts loaded
+  when opened (`src/app/screens.ts`; the shelf preloads the story window). `index.html` shows a
+  splash on the tokens until the app mounts, and «Не удалось загрузить Соавтор» if a script or
+  style does not load (`openspec/specs/web/app`, «Заставка и отказ загрузки»).
 
 Checks run from the repository root with `./scripts/validate.sh`.
 

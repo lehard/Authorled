@@ -15,12 +15,27 @@ generic manager behavior belongs in Agno. `CLAUDE.md` links to this file.
   under `/api/v1/`, added by `attach_api` to the app that `agent_os.get_app()` returns, before the
   MCP mount at the root (see `openspec/context/ADR/ADR-002-own-routes-via-base-app.md`). Do not pass
   `base_app`: with it Agno drops its error handlers for its own routes. Every other API surface stays
-  with Agno; today the own routes are `/api/v1/me` and the story routes (stories, documents, texts,
-  drafts, notes, comments, suggestions, saves, files, import).
+  with Agno; today the own routes are `/api/v1/me`, the story routes (stories, documents, texts,
+  drafts, notes, comments, suggestions, saves, files, import) and the marks of the co-author's answers
+  (`/api/v1/coauthor-feedback`).
 - Check framework behavior against the Agno version pinned in `agno/pyproject.toml`.
   Do not bypass framework rejections or add compatibility adapters to this template.
 - Keep the starter lean. Add abstractions, tests and infrastructure only for a concrete
   application need. Never print or commit credentials.
+
+## Parallel sessions
+
+Other agent sessions may be working in this checkout at the same time. Prefer a separate
+worktree per session (the desktop app creates them under `.claude/worktrees/`).
+
+- Changes in `git status` that you did not make belong to another session: do not revert,
+  format, stage or commit them.
+- Never run `git stash`, `git reset --hard`, `git checkout -- <path>`, `git restore`, `git clean`,
+  switch branches, `git add -A` or `git commit -a`. Stage and commit only your own files, by path.
+- Do not run `./scripts/format.sh` in a shared checkout; format only the files you changed.
+- Docker, the database and ports are shared: `dev.sh reset-db`, `docker compose down` and
+  container restarts only with the user's approval.
+- One session works on one OpenSpec change.
 
 ## OpenSpec is mandatory
 
@@ -42,6 +57,8 @@ The flow from discussion to code:
    `tasks.md` and ask the user to run `/opsx:update` when the plan must change.
 - Exempt: typos, formatting, comments, edits under `openspec/` itself, and read-only
   questions or investigation (`/opsx:explore`). If unsure whether a request is exempt, ask.
+- Also exempt: texts and images of the product site in `site/` (owner, 2026-11-08). New pages,
+  forms, the build of `site/` and anything that touches the core go through OpenSpec; a doubtful edit too.
 
 ## Workflows
 
@@ -61,7 +78,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 ## Where changes belong
 
 - `agno/app/main.py`: AgentOS registration, shared database, OS Manager, Company and queue.
-- `agno/app/api/`: own product routes (`me.py`; `stories.py`, `notes.py`, `review.py`, `saves.py`, `files.py` for stories) and their
+- `agno/app/api/`: own product routes (`me.py`; `stories.py`, `notes.py`, `review.py`, `saves.py`, `files.py` for stories;
+  `feedback.py` for the marks «Полезно» and «Не то» of the co-author's answers) and their
   `application/problem+json` errors, handled only for the product's own exception types (`Problem`, `core/errors.py`).
   `body.py`: JSON body, `If-Match`, the caller and the project access check every story route does first.
 - `agno/app/auth/` and `auth/`: the auth module. `agno/app/auth/` is the only code that reads JWT
@@ -100,13 +118,15 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   client), `errors.py` (refusals the routes answer with), `plans.py` with the data files `plans.toml` and
   `model_prices.toml` (plans and model prices in rubles; a broken file or a co-author model without a price stops
   startup), `subscriptions.py` (one active subscription per user, its periods and renewal) and `usage.py` (the usage
-  journal, the limit check and the report). `agno/migrations/` and `agno/alembic.ini`: Alembic for
+  journal, the limit check and the report), `feedback.py` (the author's marks of the co-author's answers by run, the
+  report of the marks). `agno/migrations/` and `agno/alembic.ini`: Alembic for
   schema `authorled` only, forward-only, one head; never migrate Agno or Authentik schemas there.
   `agno/tests/`: pytest for the core on real PostgreSQL (`./scripts/dev.sh test`).
 - `agno/evals/`: application cases and the Agno eval CLI entrypoint.
 - `agno/demo/`: `python -m demo`, the loader of the demo stories through the core; `./scripts/dev.sh seed` runs it. Their
   content is `web/src/data/demo.json`, shared with the `fixtures` data source.
-- `agno/admin/`: `python -m admin report|set-plan <e-mail> <plan>`, the administrator's commands over the core;
+- `agno/admin/`: `python -m admin report|set-plan <e-mail> <plan>|beta-requests|coauthor-feedback`, the administrator's
+  commands over the core;
   `./scripts/usage.sh local|prod` runs them in the API container.
 - `scripts/`: local setup, validation and builds. Deployment files: `compose.prod.yaml`, `deploy/` (the release
   script, the check of the frontend build and the Caddy configuration) and `.github/workflows/deploy.yml`.
@@ -118,6 +138,13 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   the routes `/api/v1` of the core with revisions for `If-Match`) or `fixturesProvider.ts` (sample data), chosen by
   `VITE_DATA_SOURCE`. `web/src/editor/`: the screenplay editor; it exports only, the core imports manuscripts;
   `anchors.ts` places co-author suggestions by scene `uid` and quote.
+- `site/`: the product site (openspec/specs/web/site): static pages prerendered to HTML (`scripts/prerender.mjs`,
+  checked by `scripts/check-build.mjs`), no server and no data of its own. It imports the tokens and fonts of
+  `web/src/design-system` (so its build needs `web/node_modules`) and takes `SITE_ORIGIN` and `SITE_APP_URL` from
+  `.env`. Its beta request form posts to `/os/api/v1/beta-requests` on its own origin: the route `app/api/beta.py`,
+  the only product route without a token (`PUBLIC_ROUTES` in `app/auth/authorization.py`), stores requests in the
+  core (`core/beta_requests.py`); `./scripts/usage.sh local|prod beta-requests` lists them. Not deployed until the
+  product has its own domain. Landing skills: `landing-page-design`, `copywriting`, `unslop`; motion — `design-to-motion` (existing frames), `stageshow` (faux UI); Russian copy — `chukovsky`.
 - `compose.yaml`: local PostgreSQL, the LiteLLM proxy, the antivirus ClamAV (`clamav`, required by the API through
   `CLAMAV_HOST` and `CLAMAV_PORT`) and development API. The API connects
   as the non-superuser role `agentos` (`AGENTOS_DB_PASSWORD`), prepared by `agentos-db-init`
@@ -160,9 +187,17 @@ npm ci --prefix web
 npm run dev --prefix web
 ```
 
+The product site (needs `web/node_modules`, `SITE_ORIGIN`, `SITE_APP_URL` and, for the dev server, `AGENTOS_URL`
+in `.env`; it serves on `127.0.0.1:5174`):
+
+```sh
+npm ci --prefix site
+npm run dev --prefix site
+```
+
 `validate.sh` stops before any check unless `python`, `ruff`, `mypy` and `alembic` come from one project environment
-(activate `agno/.venv`; CI uses the runner's Python). It also checks the frontend and fails while `web/node_modules` is missing. `web/package.json`
-pins exact versions; commit `web/package-lock.json`.
+(activate `agno/.venv`; CI uses the runner's Python). It also checks the frontend and the site and fails while `web/node_modules` or `site/node_modules` is missing. `web/package.json`
+pins exact versions; commit `web/package-lock.json`; the same for `site/`.
 
 `agno/pyproject.toml` declares dependencies. Regenerate `agno/requirements.txt` with
 `./agno/scripts/generate_requirements.sh`; do not add `uv.lock`. Use `uv run --no-project`
@@ -278,7 +313,7 @@ owner 2026-11-08, `business-intents/coauthor-tool-contracts.md`).
 - `python -m evals.routing --domains base|wide --split work|holdout --variant team|team-route|skills --model <alias>`
   (from `agno/`; `.env` gives it `LITELLM_URL=http://127.0.0.1:4000`): the routing exam of the orchestrator on
   domain stubs; spends model calls, needs the LiteLLM proxy but no database, writes its report to `tmp/routing/` (`agno/evals/routing/README.md`).
-- `python -m evals.coauthor setup` (once) and `python -m evals.coauthor run --set wide | --set demo --part work|holdout`
+- `python -m evals.coauthor setup` (once) and `python -m evals.coauthor run --set wide | --set demo --part work|holdout|checks`
   `--all | --sample N [--repeat K]` (from `agno/`, with the `DB_*` of `./scripts/dev.sh api`): the real co-author answers
   the sample of the routing exam's wide set or the own demo cases on demo stories of its own user, changes only
   proposed and rejected, judged by `claude-sonnet`; spends model calls, writes its report to `tmp/coauthor-eval/`.

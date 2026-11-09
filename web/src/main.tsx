@@ -1,4 +1,3 @@
-import "./design-system/tokens.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router";
@@ -31,3 +30,5 @@ function app() {
 }
 
 createRoot(root).render(<StrictMode>{app()}</StrictMode>);
+// From now on the app reports failed parts itself (index.html stops replacing the splash).
+window.dispatchEvent(new Event("soavtor:mounted"));

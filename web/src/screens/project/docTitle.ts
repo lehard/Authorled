@@ -15,6 +15,8 @@ export function docTitle(
     | "setText"
     | "textStatus"
     | "openChat"
+    | "askCoauthor"
+    | "coauthorBusy"
     | "openFresh"
     | "generation"
   >,

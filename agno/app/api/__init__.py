@@ -10,6 +10,8 @@ handlers for its own routes.
 from fastapi import FastAPI
 from starlette.routing import Mount
 
+from app.api.beta import router as beta_router
+from app.api.feedback import router as feedback_router
 from app.api.files import router as files_router
 from app.api.me import router as me_router
 from app.api.notes import router as notes_router
@@ -34,6 +36,8 @@ def attach_api(app: FastAPI) -> None:
     app.include_router(review_router)
     app.include_router(saves_router)
     app.include_router(files_router)
+    app.include_router(beta_router)
+    app.include_router(feedback_router)
     ours = routes[start:]
     del routes[start:]
     root_mount = next((i for i, route in enumerate(routes) if isinstance(route, Mount) and route.path == ""), None)

@@ -139,7 +139,7 @@ export function Showcase() {
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-display font-semibold">
-            Дизайн-система Authorled
+            Дизайн-система Соавтора
           </h1>
           <p className="text-body text-muted-foreground">
             Токены, темы, шрифты и базовые компоненты

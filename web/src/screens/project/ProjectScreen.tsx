@@ -5,17 +5,25 @@ import { useParams } from "react-router";
 
 import { Button } from "@/components/ui/button";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
+  useComments,
   useDrafts,
   useEntities,
   useNotes,
   useProject,
   useScript,
+  useSuggestions,
 } from "@/data/hooks";
 import type { Character, Location, Script, World } from "@/data/model";
 import { useSaveActions } from "@/data/saves";
@@ -35,7 +43,14 @@ import { DocView } from "./docs/DocView";
 import { parseDoc } from "./docRef";
 import { docTitle } from "./docTitle";
 import { Navigator } from "./Navigator";
-import { ProjectContext, type ProjectData } from "./ProjectContext";
+import {
+  ProjectContext,
+  type CoauthorRequest,
+  type ProjectData,
+} from "./ProjectContext";
+
+/** Key of `localStorage` for the folded chat of a wide window. */
+const CHAT_FOLDED_KEY = "authorled.chatCollapsed";
 
 /** Window of a story: navigator, workspace, chat (openspec/specs/web/workspace, «Окно истории»). */
 export function ProjectScreen() {
@@ -55,10 +70,31 @@ export function ProjectScreen() {
   const trashDrafts = useDrafts(projectId, true);
   const notes = useNotes(projectId);
   const trashNotes = useNotes(projectId, true);
+  // The editor's comments and suggestions are read with the rest of the window, not after the
+  // editor opens (web/workspace, «Загрузка окна истории»); the window does not wait for them.
+  const scriptOpen =
+    ref?.kind === "part" && (ref.part === "text" || ref.part === "treatment");
+  useComments(draftId, scriptOpen);
+  useSuggestions(draftId, scriptOpen);
   const narrow = useMediaQuery("(max-width: 900px)");
   const [navOpen, setNavOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  // A wide window may fold the chat into a strip; the choice stays in this browser for every
+  // story (web/workspace, «Окно истории»). No key is the chat as it opens first: unfolded.
+  const [chatFolded, setChatFolded] = useState(
+    () => window.localStorage.getItem(CHAT_FOLDED_KEY) === "1",
+  );
+  const foldChat = (folded: boolean) => {
+    if (folded) window.localStorage.setItem(CHAT_FOLDED_KEY, "1");
+    else window.localStorage.removeItem(CHAT_FOLDED_KEY);
+    setChatFolded(folded);
+  };
   const [selection, clearSelection] = useSelectionIn();
+  // A check from a document waits here until the chat sends it; the chat reports when it cannot
+  // send (web/workspace, «Проверки над выделением»).
+  const [coauthorRequest, setCoauthorRequest] =
+    useState<CoauthorRequest | null>(null);
+  const [chatBlocked, setChatBlocked] = useState(false);
   const [currentScene, setCurrentScene] = useState<number | null>(null);
   // The working copy of the text belongs to one draft; another draft starts from its data.
   const [working, setWorking] = useState<{
@@ -157,6 +193,17 @@ export function ProjectScreen() {
       note: trashNotes.notes,
     },
   };
+  const openChat = () => {
+    if (narrow) setChatOpen(true);
+    else foldChat(false);
+  };
+  const coauthorBusy = chatBlocked || coauthorRequest !== null;
+  const chatRequest = {
+    request: coauthorRequest,
+    onRequestTaken: (id: string) =>
+      setCoauthorRequest((r) => (r?.id === id ? null : r)),
+    onBlockedChange: setChatBlocked,
+  };
   const data: ProjectData = {
     ...base,
     doc: ref,
@@ -169,9 +216,14 @@ export function ProjectScreen() {
     textStatus,
     currentScene,
     setCurrentScene,
-    openChat: () => {
-      if (narrow) setChatOpen(true);
+    openChat,
+    askCoauthor: (text) => {
+      if (coauthorBusy)
+        throw new Error("Соавтор ещё отвечает: новая просьба не отправлена.");
+      setCoauthorRequest({ id: crypto.randomUUID(), text });
+      openChat();
     },
+    coauthorBusy,
     openFresh: () => {
       // Every query of the window is read again before the document opens anew; a failed read
       // shows the error screen of the window.
@@ -204,7 +256,8 @@ export function ProjectScreen() {
               <b className="min-w-0 flex-1 truncate">{title}</b>
               <UserMenu compact />
             </header>
-            <main className="min-h-0 flex-1 overflow-auto">
+            {/* The account menu is in the header: the document head keeps no room for it. */}
+            <main className="min-h-0 flex-1 overflow-auto [--account-space:0px]">
               <DocView />
             </main>
             <button
@@ -245,29 +298,63 @@ export function ProjectScreen() {
                   sees={title}
                   selection={selection}
                   clearSelection={clearSelection}
+                  {...chatRequest}
                   onClose={() => setChatOpen(false)}
                 />
               </SheetContent>
             </Sheet>
           </div>
         ) : (
-          <div className="grid h-dvh grid-cols-[240px_minmax(0,1fr)_320px] gap-3 p-3 min-[1241px]:grid-cols-[284px_minmax(0,1fr)_360px]">
+          <div
+            className={
+              chatFolded
+                ? "grid h-dvh grid-cols-[240px_minmax(0,1fr)_48px] gap-3 p-3 min-[1241px]:grid-cols-[284px_minmax(0,1fr)_48px]"
+                : "grid h-dvh grid-cols-[240px_minmax(0,1fr)_320px] gap-3 p-3 min-[1241px]:grid-cols-[284px_minmax(0,1fr)_360px]"
+            }
+          >
             <aside className="min-h-0 overflow-hidden rounded-panel bg-panel shadow-panel">
               {navigator}
             </aside>
-            <main className="relative min-h-0 overflow-auto">
+            {/* --account-space: the width of the account menu (h-9 button: pl-1 + size-7 + pr-3 =
+                44px) and a gap of 8px. The document head keeps it free on its right
+                (openspec/specs/web/workspace, «Шапка документа»); change it with the button. */}
+            <main className="relative min-h-0 overflow-auto [--account-space:--spacing(13)]">
               <div className="absolute top-0 right-0 z-10">
                 <UserMenu compact />
               </div>
               <DocView />
             </main>
             <aside className="min-h-0 overflow-hidden rounded-panel bg-panel shadow-panel">
-              <CoauthorChat
-                key={draft.id}
-                sees={title}
-                selection={selection}
-                clearSelection={clearSelection}
-              />
+              {chatFolded && (
+                <TooltipProvider delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="h-full w-full items-start rounded-panel pt-4"
+                        aria-label="Открыть соавтора"
+                        onClick={() => foldChat(false)}
+                      >
+                        <Sparkles className="size-5 text-ai" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      Открыть соавтора
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              {/* Hidden, not unmounted: the conversation, the typed text and a running answer stay. */}
+              <div hidden={chatFolded} className="h-full">
+                <CoauthorChat
+                  key={draft.id}
+                  sees={title}
+                  selection={selection}
+                  clearSelection={clearSelection}
+                  {...chatRequest}
+                  onCollapse={() => foldChat(true)}
+                />
+              </div>
             </aside>
           </div>
         )}

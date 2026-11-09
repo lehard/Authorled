@@ -60,7 +60,7 @@ Open `.env` and fill the Required block: `LITELLM_MASTER_KEY`, `LITELLM_API_KEY`
 of the database role `agentos` the API connects with), and the block of the
 [auth module](#module-auth): `AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`,
 `AUTHENTIK_BOOTSTRAP_EMAIL`, `AUTHENTIK_BOOTSTRAP_PASSWORD`, `AUTH_FRONTEND_CLIENT_ID`,
-`AUTH_FRONTEND_REDIRECT_URI`, `AUTH_DEV_SERVICE_TOKEN`, `AUTH_BRAND_DOMAIN`, `AUTH_ALLOWED_EMAILS` and `AUTH_ISSUER`. The CA bundle for
+`AUTH_FRONTEND_REDIRECT_URI`, `AUTH_DEV_SERVICE_TOKEN`, `AUTH_BRAND_DOMAIN` and `AUTH_ISSUER`. The CA bundle for
 GigaChat (the Russian Trusted CA) ships in `agno/litellm/certs/ca-bundle.pem` (see [Models](#models)). Then start the platform:
 
 ```sh
@@ -251,8 +251,9 @@ existing database the same step makes `agentos` the owner of schema `ai` and its
 Fill the auth block of `.env` (see [Module auth](#module-auth)): strong values for
 `AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`, `AUTHENTIK_BOOTSTRAP_PASSWORD` and
 `AUTH_DEV_SERVICE_TOKEN`, the real redirect URI of the frontend in
-`AUTH_FRONTEND_REDIRECT_URI`, `AUTH_BRAND_DOMAIN` (the Authentik host name), `AUTH_ALLOWED_EMAILS` (who may sign up) and `AUTH_ISSUER` set to the public address of Authentik plus
-`/application/o/authorled/`. Authentik listens on `127.0.0.1:9000`: publish it on its own
+`AUTH_FRONTEND_REDIRECT_URI`, `AUTH_BRAND_DOMAIN` (the Authentik host name) and `AUTH_ISSUER` set to the public address of Authentik plus
+`/application/o/authorled/`. Sign-up stays closed until the list of allowed e-mails is set in the
+admin interface (see [Module auth](#module-auth), «Admin interface»). Authentik listens on `127.0.0.1:9000`: publish it on its own
 HTTPS domain through the reverse proxy of the host (set `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS`
 for the proxy's address range). The Authentik data lives in the `authentik` schema of the same
 database, so the database backup covers it.
@@ -382,8 +383,8 @@ source agno/.venv/bin/activate
 python -m evals --tag smoke
 ```
 
-The repository has three modules: the backend in `agno/`, the frontend in `web/` and the
-Authentik configuration in `auth/`; the root holds what they share (`compose.yaml`, `.env`,
+The repository has four modules: the backend in `agno/`, the frontend in `web/`, the
+Authentik configuration in `auth/` and the product site in `site/`; the root holds what they share (`compose.yaml`, `.env`,
 `openspec/`, `scripts/`). The Python environment lives in `agno/.venv`. If you still have a
 `.venv` at the repository root from before the backend moved to `agno/`, delete it and run
 `./agno/scripts/venv_setup.sh` again.
@@ -417,6 +418,22 @@ npm run dev --prefix web
 
 The dev server opens the design-system showcase at http://127.0.0.1:5173.
 `./scripts/validate.sh` checks the frontend too, so install its dependencies first.
+
+### Product site
+
+The public site of the product lives in [site/](site/): the main page, the policy for personal data and the request
+for the closed beta. It is prerendered to static HTML and takes the tokens and fonts of `web/`, so install both:
+
+```sh
+npm ci --prefix web
+npm ci --prefix site
+npm run dev --prefix site    # http://127.0.0.1:5174
+```
+
+`.env` needs `SITE_ORIGIN` (the site's own address), `SITE_APP_URL` (the service «Войти» opens) and, for the dev
+server, `AGENTOS_URL`: the form posts to `/os/api/v1/beta-requests` on the site's origin and the dev server passes it
+to the API. `npm run build --prefix site` writes `site/dist/` and checks it (texts of the blocks, «Концепт» marks, images, scripts of the main page ≤ 120 KB gzip). The behaviour of the page (contradiction of the first screen, sandbox, tabs, path, impact, keyboard, no JavaScript, reduced motion, 390 px) is checked in a real browser against `npm run preview --prefix site`: `SITE_URL=http://127.0.0.1:5174 CHROMIUM_PATH=<Chromium> npm run check:behaviour --prefix site` — a local check, not part of `validate.sh`. The site is not deployed until the product
+has its own domain. The requests are listed by `./scripts/usage.sh local|prod beta-requests`.
 
 Change dependencies in `agno/pyproject.toml`, then run `./agno/scripts/generate_requirements.sh`.
 Commit the updated `agno/requirements.txt` and rebuild the API and any sandbox image you use.
@@ -468,6 +485,8 @@ in the running API container:
 ```sh
 ./scripts/usage.sh prod report                       # on the server, from /srv/authorled/app
 ./scripts/usage.sh prod set-plan anna@example.com beta
+./scripts/usage.sh prod beta-requests                # requests for the beta from the site
+./scripts/usage.sh prod coauthor-feedback            # marks of the co-author's answers, the last «Не то»
 ```
 
 `local` instead of `prod` runs the same commands on the local stand. A new plan or price is a change of the data file
@@ -502,7 +521,8 @@ on are the token contract in `openspec/specs/auth`. The API accepts only tokens 
   Production does not run Mailpit; put a real SMTP server in `.env`.
 - **Development users.** `./scripts/dev.sh auth-users` creates `writer@authorled.test`
   (`screenwriters`) and `editor@authorled.test` (`editors`) with the password
-  `AUTH_DEV_USER_PASSWORD` and a confirmed e-mail code device. In the dev server the sign-in
+  `AUTH_DEV_USER_PASSWORD` and a confirmed e-mail code device, and opens the local sign-up to every
+  address (`allowed_emails: ["*"]`, see «Admin interface»). In the dev server the sign-in
   screen has «Войти как Сценарист» and «Войти как Редактор»: they walk the same flow and take
   the code from Mailpit. Production builds do not contain these buttons.
 - **Demo stories.** `./scripts/dev.sh seed` loads the stories of `web/src/data/demo.json` into the
@@ -512,6 +532,35 @@ on are the token contract in `openspec/specs/auth`. The API accepts only tokens 
 - **Groups.** `screenwriters` and `editors` (authors; they may run only the product agent `coauthor`, scope `agents:coauthor:run`), `admins` (superusers, the only ones in the
   Authentik admin interface and with full API access), `plugins` (service accounts). What each
   group may call is in `agno/app/auth/authorization.py`.
+- **Admin interface.** Authentik settings that change without a release are edited at
+  `/if/admin/` of the Authentik host (in production `https://auth.soavtor.app/if/admin/`).
+  Sign in as `akadmin`: the password is `AUTHENTIK_BOOTSTRAP_PASSWORD` from the env file of the
+  server (it sets the password on the first start only; after a change in the profile the new one
+  holds), the code comes to `AUTHENTIK_BOOTSTRAP_EMAIL`. Do not add personal accounts to `admins`:
+  that group also gets the administrative scopes of the API.
+  - *Owned by the admin interface* (the blueprints set them only when the object is created, a
+    release keeps your edits): titles and names of the flows `authorled-authentication`,
+    `authorled-enrollment` and `authorled-invalidation`, the title of the brand of
+    `AUTH_BRAND_DOMAIN`, the subject of the code e-mail, the failed password attempts before the
+    sign-in starts over; users, their groups and passwords.
+  - *Owned by the repository* (a release that changes the blueprint file restores them; change them
+    in `auth/blueprints/`): groups, the OIDC provider and application, the steps of the sign-in,
+    sign-up and sign-out flows and their policies, the code lifetime (10 minutes) and its template,
+    the sign-in flow of the brand, service accounts.
+  - *Who may sign up.* Directory → Groups → `screenwriters` → Edit → Attributes. The list applies
+    to the next sign-up attempt, no restart:
+
+    ```yaml
+    allowed_emails:
+      - tester@example.com
+      - another@example.com
+    ```
+
+    Comparison ignores case; `allowed_emails: ["*"]` opens the sign-up to everyone, `[]` closes it.
+    Without the attribute, or when it is not a list of strings, every sign-up is refused with
+    «Регистрация временно недоступна.» and Events show a `configuration_error` that names it.
+    Removing an address does not block an existing account. Real addresses stay out of the
+    repository.
 - **Token for curl and scripts.** The service account `sa-dev` signs in with the secret
   `AUTH_DEV_SERVICE_TOKEN`:
 
@@ -552,8 +601,7 @@ add the others when you need them. Docker Compose reads `.env` for both local an
 | `AUTH_FRONTEND_CLIENT_ID`, `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_FRONTEND_LOGOUT_URI` | Client ID of the Authentik application (also the expected token audience), the frontend's redirect URI after sign-in and its sign-in screen after sign-out (required). |
 | `AUTH_DEV_SERVICE_TOKEN` | Secret of the development service account `sa-dev` (required). |
 | `AUTH_BRAND_DOMAIN` | Host of Authentik as users open it, with the port if the address has one (locally `localhost:9000`); the product sign-in flow applies to this host (required). |
-| `AUTH_ALLOWED_EMAILS` | Who may sign up: e-mail addresses separated by commas, case-insensitive, or `*` for everyone (required). Other addresses are refused before an account or an e-mail is created. Keep real addresses out of the repository. A new value takes effect after `docker compose up -d authentik-server authentik-worker`; removing an address does not block an existing account. |
-| `AUTHENTIK_EMAIL__HOST`, `__PORT`, `__USERNAME`, `__PASSWORD`, `__USE_TLS`, `__USE_SSL`, `__FROM` | Outgoing mail of Authentik (sign-in codes); locally Mailpit (required; `USERNAME` and `PASSWORD` may be empty). `FROM` carries the sender name in quotes: `"CoAuthor <noreply@example.com>"`. |
+| `AUTHENTIK_EMAIL__HOST`, `__PORT`, `__USERNAME`, `__PASSWORD`, `__USE_TLS`, `__USE_SSL`, `__FROM` | Outgoing mail of Authentik (sign-in codes); locally Mailpit (required; `USERNAME` and `PASSWORD` may be empty). `FROM` carries the sender name in quotes: `"Соавтор <noreply@example.com>"`. |
 | `AUTHENTIK_COOKIE_DOMAIN` | Production only: parent domain of the product, so the session set through the frontend reaches Authentik (required by `compose.prod.yaml`). |
 | `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS` | Production only: address range of the reverse proxy as Authentik sees it (required by `compose.prod.yaml`). A proxy on the host comes through the Docker gateway: `172.16.0.0/12`. |
 | `AUTH_DEV_USER_PASSWORD` | Development only: password of the development users and the quick sign-in (`./scripts/dev.sh auth-users`). |

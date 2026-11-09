@@ -87,6 +87,9 @@ def read_results(name: str, data: dict[str, Any]) -> tuple[dict[str, Any], list[
     meta = _field(name, data, "meta")
     for key in ("set", "part", "repeat"):
         _field(f"{name}: meta", meta, key)
+    if meta["part"] == "checks":
+        # Its context is a scene of the open screenplay, which the report does not keep; run the part again instead.
+        raise RejudgeError(f"{name}: the checks part is not judged again; run it again")
     cases = _field(name, data, "cases")
     return meta, [result_of(f"{name}: case {index}", item) for index, item in enumerate(cases)]
 

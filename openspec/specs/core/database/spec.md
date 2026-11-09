@@ -93,7 +93,7 @@
 #### Scenario: Состав полей user_settings
 - GIVEN все миграции применены
 - WHEN перечисляются колонки `authorled.user_settings`
-- THEN MUST присутствовать ровно `user_id`, `theme`, `updated_at`
+- THEN MUST присутствовать ровно `user_id`, `theme`, `coauthor_mode`, `updated_at`
 
 ### Requirement: Тесты хранения на чистой базе
 Тесты хранения данных продукта MUST выполняться на настоящем PostgreSQL без моков базы. Команда `./scripts/dev.sh test` MUST создавать под загрузочным пользователем чистую базу `ai_test` в `agentos-db`, готовить её тем же шагом инициализации, что и основную, применять миграции под ролью `agentos` и запускать pytest под ролью `agentos`. Основная база `ai` при этом MUST NOT меняться. Если база `ai_test` уже существует, команда MUST пересоздать её до тестов.
@@ -388,5 +388,45 @@
 
 #### Scenario: Пользователь с расходом
 - GIVEN у пользователя есть строки журнала
+- WHEN его запись `users` удаляется
+- THEN база MUST отклонить удаление
+
+### Requirement: Таблица заявок в бету
+Схема `authorled` MUST содержать таблицу `beta_requests`, одну запись на почту заявителя: `id` (`uuid`, создаёт база), `email` (непустой текст в нижнем регистре, уникальный), `name` (непустой текст), `role` (только `screenwriter`, `writer`, `other`), `consent_at` (время согласия, обязательно), `created_at`. Таблица MUST NOT ссылаться на `users`: заявитель ещё не пользователь. Удаление пользователя или истории MUST NOT затрагивать заявки.
+
+#### Scenario: Состав полей beta_requests
+- GIVEN все миграции применены
+- WHEN перечисляются колонки `authorled.beta_requests`
+- THEN MUST присутствовать ровно `id`, `email`, `name`, `role`, `consent_at`, `created_at`
+
+#### Scenario: Вторая запись с той же почтой
+- GIVEN в `beta_requests` есть запись с почтой `anna@example.com`
+- WHEN вставляется ещё одна запись с той же почтой
+- THEN база MUST отклонить запись
+
+#### Scenario: Неизвестная роль
+- GIVEN все миграции применены
+- WHEN вставляется заявка с `role` `producer`
+- THEN база MUST отклонить запись
+
+### Requirement: Таблица оценок ответов соавтора
+Схема `authorled` MUST содержать таблицу `coauthor_feedback`: `id` (`uuid`, создаёт база), `user_id` (ссылка на `users.id`, удаление пользователя с оценками база отклоняет), `run_id` и `session_id` (непустой текст), `value` (`useful`, `not_useful` или пусто — оценка снята), `created_at`, `updated_at`. Пара `user_id`, `run_id` MUST быть уникальной. Текста ответа и произведения в таблице MUST NOT быть.
+
+#### Scenario: Состав полей coauthor_feedback
+- GIVEN все миграции применены
+- WHEN перечисляются колонки `authorled.coauthor_feedback`
+- THEN MUST присутствовать ровно `id`, `user_id`, `run_id`, `session_id`, `value`, `created_at`, `updated_at`
+
+#### Scenario: Вторая оценка того же запуска
+- GIVEN у пользователя есть оценка запуска `r1`
+- WHEN вставляется ещё одна строка этого пользователя с `run_id` `r1`
+- THEN база MUST отклонить вставку
+
+#### Scenario: Неизвестное значение
+- WHEN вставляется оценка с `value` `great`
+- THEN база MUST отклонить вставку
+
+#### Scenario: Пользователь с оценками
+- GIVEN у пользователя есть строки `coauthor_feedback`
 - WHEN его запись `users` удаляется
 - THEN база MUST отклонить удаление

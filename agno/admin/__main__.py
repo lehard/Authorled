@@ -1,4 +1,5 @@
-"""python -m admin report | set-plan <e-mail> <plan>: spending and plans of users (openspec/specs/core/subscriptions).
+"""python -m admin report | set-plan <e-mail> <plan> | beta-requests | coauthor-feedback: spending and plans of users,
+requests for the beta, marks of the co-author's answers (openspec/specs/core/subscriptions, «Команды администратора»).
 
 Run in the API container through ./scripts/usage.sh. Everything goes through the core operations; a failure exits
 non-zero with its reason.
@@ -6,10 +7,12 @@ non-zero with its reason.
 
 import argparse
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
+from core.beta_requests import BetaRequest, list_requests
 from core.engine import get_engine
+from core.feedback import FeedbackReport, feedback_report
 from core.plans import UnknownPlan
 from core.subscriptions import NoSubscription, set_plan
 from core.usage import ReportRow, report, user_id_by_email
@@ -49,11 +52,62 @@ def _cells(row: ReportRow) -> tuple[str, ...]:
     )
 
 
-def print_report(rows: list[ReportRow]) -> None:
-    table = [_COLUMNS, *(_cells(row) for row in rows)]
-    widths = [max(len(line[i]) for line in table) for i in range(len(_COLUMNS))]
+def _print_table(columns: tuple[str, ...], lines: list[tuple[str, ...]]) -> None:
+    table = [columns, *lines]
+    widths = [max(len(line[i]) for line in table) for i in range(len(columns))]
     for line in table:
         print("  ".join(cell.ljust(width) for cell, width in zip(line, widths, strict=True)).rstrip())
+
+
+def print_report(rows: list[ReportRow]) -> None:
+    _print_table(_COLUMNS, [_cells(row) for row in rows])
+
+
+_REQUEST_COLUMNS = ("время (UTC)", "почта", "имя", "кто", "уже пользователь")
+_ROLE_NAMES = {"screenwriter": "сценарист", "writer": "писатель", "other": "другое"}
+
+
+def print_requests(rows: list[BetaRequest]) -> None:
+    if not rows:
+        print("Заявок нет.")
+        return
+    _print_table(
+        _REQUEST_COLUMNS,
+        [
+            (
+                f"{row.created_at.astimezone(UTC):%Y-%m-%d %H:%M}",
+                row.email,
+                row.name,
+                _ROLE_NAMES[row.role],
+                "да" if row.is_user else "нет",
+            )
+            for row in rows
+        ],
+    )
+
+
+FEEDBACK_DAYS = 30
+_FEEDBACK_COLUMNS = ("время (UTC)", "почта", "беседа", "запуск")
+
+
+def print_feedback(found: FeedbackReport) -> None:
+    total = found.useful + found.not_useful
+    if total == 0:
+        print("Оценок нет.")
+        return
+    share = round(100 * found.not_useful / total)
+    print(f"За {FEEDBACK_DAYS} дней: «Полезно» {found.useful}, «Не то» {found.not_useful}, доля «Не то» {share} %.")
+    if not found.recent_not_useful:
+        return
+    print()
+    print("Последние «Не то»:")
+    _print_table(
+        _FEEDBACK_COLUMNS,
+        [
+            (f"{line.updated_at.astimezone(UTC):%Y-%m-%d %H:%M}", line.email, line.session_id, line.run_id)
+            for line in found.recent_not_useful
+        ],
+    )
 
 
 def main(argv: list[str]) -> int:
@@ -63,6 +117,8 @@ def main(argv: list[str]) -> int:
     change = commands.add_parser("set-plan", help="move a user to another plan; the period stays")
     change.add_argument("email")
     change.add_argument("plan")
+    commands.add_parser("beta-requests", help="requests for the beta, the newest first")
+    commands.add_parser("coauthor-feedback", help=f"marks of the co-author's answers in the last {FEEDBACK_DAYS} days")
     args = parser.parse_args(argv)
 
     now = datetime.now(UTC)
@@ -70,6 +126,16 @@ def main(argv: list[str]) -> int:
         with get_engine().begin() as connection:
             rows = report(connection, now)
         print_report(rows)
+        return 0
+    if args.command == "beta-requests":
+        with get_engine().begin() as connection:
+            requests = list_requests(connection)
+        print_requests(requests)
+        return 0
+    if args.command == "coauthor-feedback":
+        with get_engine().begin() as connection:
+            marks = feedback_report(connection, now - timedelta(days=FEEDBACK_DAYS))
+        print_feedback(marks)
         return 0
     try:
         with get_engine().begin() as connection:

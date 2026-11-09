@@ -209,12 +209,14 @@ def test_demo_case_loads() -> None:
 
 
 def test_demo_parts_refused() -> None:
-    work = parse_demo_part("demo-work.toml", {"case": _part("w")}, STORIES)
+    work = parse_demo_part("demo-work.toml", {"case": _part("w")}, STORIES, covered=True)
     with pytest.raises(SampleError, match="in both work and holdout"):
-        check_parts({"work": work, "holdout": parse_demo_part("demo-holdout.toml", {"case": _part("w")}, STORIES)})
+        check_parts(
+            {"work": work, "holdout": parse_demo_part("demo-holdout.toml", {"case": _part("w")}, STORIES, covered=True)}
+        )
     without = [r for r in _part("h") if r["expect"] != ["wide-research"]]
     with pytest.raises(SampleError, match="demo-holdout.toml has no case of domain\\(s\\) wide-research"):
-        parse_demo_part("demo-holdout.toml", {"case": without}, STORIES)
+        parse_demo_part("demo-holdout.toml", {"case": without}, STORIES, covered=True)
 
 
 def test_expected_action_and_facts() -> None:
@@ -366,3 +368,83 @@ def json_round_trip(data: dict[str, Any]) -> dict[str, Any]:
 
     loaded: dict[str, Any] = json.loads(json.dumps(data, default=str, ensure_ascii=False))
     return loaded
+
+
+# Checks of the mentor (openspec/changes/coauthor-mentor-checks, design, decision 9).
+
+
+@pytest.mark.parametrize(
+    ("opened", "reason"),
+    [
+        ({"scene": 9}, "has no scene 9 to open"),
+        ({"scene": "6"}, "named by its number"),
+        ({"uid": "water-6"}, "must be a table"),
+    ],
+)
+def test_open_refused(opened: dict[str, object], reason: str) -> None:
+    with pytest.raises(SampleError, match=reason):
+        parse_demo_case("demo-checks.toml", 0, _row("x", "wide-review", open=opened), STORIES)
+
+
+def test_open_reaches_the_judge() -> None:
+    item = parse_demo_case("demo-checks.toml", 0, _row("x", "wide-review", open={"scene": 6}), STORIES)
+    assert item.expected == Expectation((), open=6)
+    text = criteria(item.case, item.expected)
+    assert "выделил сцену 6" in text and "с точной цитатой из выделенной сцены" in text
+    assert "выделил сцену" not in criteria(item.case, Expectation(()))
+
+
+def test_checks_part_is_not_covered() -> None:
+    rows = [_row(f"c-{i}", "wide-review", open={"scene": 6}) for i in range(2)]
+    assert len(parse_demo_part("demo-checks.toml", {"case": rows}, STORIES, covered=False)) == 2
+    with pytest.raises(SampleError, match="has no case of domain"):
+        parse_demo_part("demo-checks.toml", {"case": rows}, STORIES, covered=True)
+
+
+def test_release_checks_part_loads() -> None:
+    import re
+    from pathlib import Path
+
+    from evals.coauthor.demo_set import load_demo_part
+
+    checks = load_demo_part("checks")
+    web = Path(__file__).parents[2] / "web/src/screens/project/chat/checks.ts"
+    requests = re.findall(r'request: "([^"]+)"', re.sub(r"\s+", " ", web.read_text(encoding="utf-8")))
+    assert [s.case.message for s in checks] == requests and len(requests) == 8
+    assert all(s.place == "tihaya-voda" and s.expected == Expectation((), open=6) for s in checks)
+    assert all(s.case.expect == ("wide-review",) for s in checks)
+
+
+def test_context_of_an_opened_scene() -> None:
+    import uuid
+
+    from demo.load import read_demo
+    from evals.coauthor.context import CONTEXT_DESCRIPTION, chat_context, opened_scene
+    from evals.coauthor.user import Place
+
+    demo = read_demo()
+    project = next(p for p in demo["projects"] if p["title"] == "Тихая вода")
+    draft = next(d for d in demo["drafts"] if d["projectId"] == project["id"])
+    text = next(s for s in demo["scripts"] if s["draftId"] == draft["id"])["text"]
+    place = Place("Тихая вода", "…", uuid.uuid4(), uuid.uuid4(), draft["name"])
+    value = chat_context(place, opened_scene(text, 6))[CONTEXT_DESCRIPTION]
+    assert "Открыт документ: Текст сценария.\nСодержимое документа:\n[Акт] Акт первый\n" in value
+    assert "\n[Реплика] Мам, ты опять не спишь?\n" in value
+    assert value.endswith(
+        "\n\nАвтор выделил фрагмент:\nИНТ. ДОМ ВЕРЫ, КУХНЯ — НОЧЬ\nВера не спит и ждёт\n"
+        "Свет только над раковиной. ВЕРА моет чашку. Чашка давно чистая. Она всё равно трёт её губкой.\n"
+        "Аня (З.К.)\nМам, ты опять не спишь?\nАня приносит слова дяди\n"
+        "Входит АНЯ, в куртке, с рюкзаком. Ставит рюкзак на стул.\nВера\nне оборачиваясь\n"
+        "Я же просила звонить, когда едешь так поздно.\nАня\n"
+        "Я была у дяди Коли. Он сказал, что Миша утонул не случайно.\nВода продолжает течь. Вера закрывает кран."
+    )
+    assert "Открыт документ: История." in chat_context(place)[CONTEXT_DESCRIPTION]
+    with pytest.raises(RuntimeError, match="no scene 9"):
+        opened_scene(text, 9)
+
+
+def test_checks_part_is_not_judged_again() -> None:
+    from evals.coauthor.rejudge import RejudgeError, read_results
+
+    with pytest.raises(RejudgeError, match="checks part is not judged again"):
+        read_results("r", {"meta": {"set": "demo", "part": "checks", "repeat": 1}, "cases": []})

@@ -1,0 +1,151 @@
+/*
+ * The site takes the tokens, fonts and the theme «Утро» of the service (openspec/specs/web/site, «Вид сайта»).
+ * No colours here: only the semantic tokens of web/src/design-system.
+ */
+@import "../../web/src/design-system/tokens.css";
+
+@source "./";
+
+/* Named text styles on the Tailwind scale (landing-page-design, B1); headings use the document font. */
+@utility heading-1 {
+  font-family: var(--font-heading);
+  @apply text-4xl font-semibold text-balance sm:text-6xl;
+}
+@utility heading-2 {
+  font-family: var(--font-heading);
+  @apply text-3xl font-semibold text-balance sm:text-5xl;
+}
+@utility heading-3 {
+  font-family: var(--font-heading);
+  @apply text-2xl font-semibold text-balance sm:text-4xl;
+}
+@utility heading-5 {
+  font-family: var(--font-heading);
+  @apply text-2xl font-semibold text-balance;
+}
+@utility title-2 {
+  @apply text-lg font-medium text-balance;
+}
+@utility title-3 {
+  @apply text-base font-medium;
+}
+@utility body-2 {
+  @apply text-base font-medium text-pretty;
+}
+@utility body-3 {
+  @apply text-base text-pretty;
+}
+@utility body-lg {
+  @apply text-lg text-pretty;
+}
+@utility body-6 {
+  @apply text-sm text-pretty;
+}
+@utility button-md {
+  @apply text-base font-semibold;
+}
+@utility button-sm {
+  @apply text-sm font-semibold;
+}
+@utility caption-1 {
+  @apply text-sm font-medium;
+}
+@utility caption-3 {
+  @apply text-xs font-semibold;
+}
+
+/* The base curve of motion (landing-page-design, B7). */
+@utility ease-base {
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/*
+ * Motion (openspec/specs/web/site, «Движение на сайте»; design D1–D2). Curves of design-to-motion B6.
+ * Start states hide content only with JavaScript on (`.js` from index.html) and only when the visitor
+ * did not ask to reduce motion, so the prerendered page always shows the end state.
+ */
+@utility ease-enter {
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+@utility ease-fade {
+  transition-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+}
+@utility ease-sweep {
+  transition-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@keyframes site-appear {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+@keyframes site-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes site-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* The first screen appears on load, once, in reading order (design-to-motion, «hero appear»); without JavaScript
+     it stands still in its end state. */
+  .js [data-appear] {
+    animation: site-appear 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(var(--i, 0) * 70ms);
+  }
+  .site-fade-in {
+    animation: site-fade 0.5s cubic-bezier(0.33, 1, 0.68, 1) both;
+  }
+
+  /* Sections below the first screen rise into place once when they come into view. */
+  .js [data-reveal] {
+    transition:
+      opacity 0.8s cubic-bezier(0.33, 1, 0.68, 1),
+      transform 1.05s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .js [data-reveal]:not([data-in]) {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+
+  /* The vision phrase: words light up one by one. */
+  .js [data-word]:not([data-lit]) {
+    opacity: 0.25;
+  }
+  .js [data-word] {
+    transition: opacity 0.45s cubic-bezier(0.33, 1, 0.68, 1);
+  }
+
+  /* The line between the two scenes of the first screen draws itself once on load, piece by piece. */
+  .js [data-rail] {
+    animation: site-grow 0.2s linear both;
+    animation-delay: var(--draw-delay, 0ms);
+  }
+
+  /* SVG lines draw themselves when their section comes into view. */
+  .js [data-draw] {
+    stroke-dasharray: 1;
+    transition: stroke-dashoffset 1.4s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  .js :not([data-in]) > [data-draw],
+  .js [data-draw][data-pending] {
+    stroke-dashoffset: 1;
+  }
+}

@@ -51,6 +51,7 @@ class Expectation:
     mention: tuple[tuple[str, ...], ...] = ()  # groups of lower-case stems; each group needs one in the answer
     refs: tuple[Ref, ...] = ()
     absent: tuple[Ref, ...] = ()  # what the case asks about and the story does not have
+    open: int | None = None  # the scene selected in the open screenplay; None: the story card is open
 
 
 @dataclass(frozen=True)

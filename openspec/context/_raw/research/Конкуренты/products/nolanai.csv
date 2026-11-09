@@ -1,0 +1,251 @@
+id,значение,источник,комментарий
+ED-01,есть,https://help.finalbitai.com/en/articles/9916140-keyboard-shortcuts,Cmd+B
+ED-02,есть,https://help.finalbitai.com/en/articles/9916140-keyboard-shortcuts,Cmd+I
+ED-03,есть,https://help.finalbitai.com/en/articles/9916140-keyboard-shortcuts,Cmd+U
+ED-04,есть,https://help.finalbitai.com/en/articles/9916140-keyboard-shortcuts,Cmd+Shift+X
+ED-05,не проверено,,Сценарный редактор; заголовков прозы не описано
+ED-06,не проверено,,Не описано
+ED-07,не проверено,,Не описано
+ED-08,не проверено,,Не описано
+ED-09,не проверено,,Не описано
+ED-10,не проверено,,Картинки есть у персонажей и в раскадровке; вставка в текст сценария не описана
+ED-11,не проверено,,Не описано
+ED-12,не проверено,,Не описано
+ED-13,не проверено,,Не описано
+ED-14,не проверено,,Не описано
+ED-15,частично,https://help.finalbitai.com/en/articles/14893519-how-do-i-check-the-editor-font-size ; https://www.finalbitai.com/releases/finalbit-v3-12-gpt-5-4-claude-4-6-gemini-3-1-update,В редакторе Courier 12; шрифт и размер меняются только в настройках экспорта PDF
+ED-16,не проверено,,Не описано
+ED-17,не проверено,,Не описано
+ED-18,не проверено,,Не описано
+ED-19,не проверено,,Не описано
+ED-20,есть,https://help.finalbitai.com/en/articles/9939882-how-do-i-undo-my-changes ; https://help.finalbitai.com/en/articles/9916140-keyboard-shortcuts,"Cmd+Z, Cmd+Shift+Z или Cmd+Y; отменяются только свои действия, не соавторов"
+ED-21,есть,https://help.finalbitai.com/en/articles/9934323-is-there-a-find-and-replace,Cmd+F
+ED-22,есть,https://help.finalbitai.com/en/articles/9934323-is-there-a-find-and-replace,Replace и Replace All
+ED-23,частично,"Скриншоты владельца из приложения, 2026-11-08",Поиск по сценам и персонажам в левой панели; полнотекстовый поиск по всем сценариям проекта не описан
+ED-24,не проверено,,Не описано
+ED-25,частично,"Скриншоты владельца из заметки «Нолан», 2026-11-08",Fix Spelling & Grammar в меню Ask AI по выделению: ИИ по запросу; постоянной проверки орфографии не видно
+ED-26,частично,"https://help.finalbitai.com/en/articles/15003492-how-can-i-use-ai-to-fix-or-improve-my-screenplay ; https://www.finalbitai.com/features/smart-formatting ; Скриншоты владельца из заметки «Нолан», 2026-11-08","Script Doctor правит формат, грамматику и диалоги ИИ по запуску; постоянной проверки нет в описании; Fix Spelling & Grammar в меню Ask AI по выделению"
+ED-27,не проверено,,Не описано
+ED-28,не проверено,,Не описано
+ED-29,есть,"Скриншоты владельца из приложения, 2026-11-08",Внизу счётчик страниц и слов
+ED-30,не проверено,,Не описано
+ED-31,есть,https://www.finalbitai.com/releases/nolanai-v2-6-16-enhanced-collaboration-features-on-nolanai ; https://www.finalbitai.com/releases/FinalBit-v3.17.0-collaborative%20film%20pre-production%20software,"Комментарии в сценарии (v2.6.16), inline-комментарии в общем проекте (v3.17.0)"
+ED-32,не проверено,,Не описано
+ED-33,не проверено,,Не описано
+ED-34,не проверено,,Не описано
+ED-35,частично,https://www.finalbitai.com/releases/finalbit-v3-11-locked-script-versions-with-suffixes-and-advanced-ai-images,"Сцены добавляются и разделяются (суффиксы 2A, 2B в залоченном сценарии); сама операция разделения и склейки не описана"
+ED-36,не проверено,,Не описано
+ED-37,не проверено,,Не описано
+ED-38,не проверено,,Не описано
+ED-39,есть,"Скриншоты владельца из приложения, 2026-11-08",Переключатель тёмной темы внизу редактора
+ED-40,не проверено,,Не описано
+ED-41,не проверено,,Не описано
+ED-42,не проверено,,Не описано
+ED-43,не проверено,,Не описано
+SC-01,есть,https://help.finalbitai.com/en/articles/9916140-keyboard-shortcuts,Cmd+1 Scene Heading
+SC-02,есть,https://help.finalbitai.com/en/articles/9916140-keyboard-shortcuts,Cmd+2 Action
+SC-03,есть,https://help.finalbitai.com/en/articles/9916140-keyboard-shortcuts,Cmd+3 Character
+SC-04,есть,https://help.finalbitai.com/en/articles/9916140-keyboard-shortcuts,Cmd+5 Dialog
+SC-05,есть,https://help.finalbitai.com/en/articles/9916140-keyboard-shortcuts,Cmd+4 Parenthetical
+SC-06,есть,https://help.finalbitai.com/en/articles/9916140-keyboard-shortcuts,Cmd+6 Transition
+SC-07,не проверено,,Не описано
+SC-08,не проверено,,Не описано
+SC-09,не проверено,,Не описано
+SC-10,не проверено,,Не описано
+SC-11,частично,"https://help.finalbitai.com/en/articles/9916140-keyboard-shortcuts ; Скриншоты владельца из заметки «Нолан», 2026-11-08",Есть элемент Act (Cmd+7); пользовательские типы не описаны; в меню Convert To и шорткатах ещё Episode (Ctrl+8)
+SC-12,есть,https://help.finalbitai.com/en/articles/9916140-keyboard-shortcuts,Tab переключает типы элементов; поведение Enter не описано
+SC-13,не проверено,,Не описано
+SC-14,не проверено,,Не описано
+SC-15,не проверено,,Не описано
+SC-16,частично,"Скриншоты владельца из заметки «Нолан», 2026-11-08","(CONT'D) виден в сценарии у реплики после действия (OLD WOMAN (CONT'D)); ставится ли автоматически и есть ли (MORE), не видно"
+SC-17,частично,https://www.finalbitai.com/releases/nolanai-v2-14-the-inception-rewritten-update ; https://www.finalbitai.com/features/smart-formatting,"Импорт Fountain есть; при вводе текст доводит до формата Script Doctor (бывший Smart Formatting), а не разметка Fountain"
+SC-18,есть,https://www.finalbitai.com/features/free-professional-ai-screenplay-editor ; https://help.finalbitai.com/en/articles/14893519-how-do-i-check-the-editor-font-size,"Industry-standard formatting, Courier 12"
+SC-19,не проверено,,"Можно писать на русском (язык сценария), русский формат оформления не описан"
+SC-20,нет,https://help.finalbitai.com/en/articles/9939666-how-to-upload-existing-script,"Форматы при создании: полнометражный фильм, пилот сериала, короткие видео; пьесы и аудиодрамы в списке нет"
+SC-21,частично,https://help.finalbitai.com/en/articles/9939666-how-to-upload-existing-script ; https://www.finalbitai.com/releases/micro-drama-episodic-production-tools,Пилот сериала и эпизодическая структура с разрезанием мастер-сценария на эпизоды; многокамерный и однокамерный шаблоны не различаются
+SC-22,частично,"Скриншоты владельца из приложения, 2026-11-08 ; https://www.finalbitai.com/features/automatic-script-breakdown ; https://www.finalbitai.com/features/scheduling","Счётчик страниц, восьмые доли страницы в разметке, оценка длительности сцен для расписания; точность пагинации не описана"
+SC-23,есть,https://www.finalbitai.com/features/free-professional-ai-screenplay-editor ; https://www.finalbitai.com/releases/finalbit-v3-11-locked-script-versions-with-suffixes-and-advanced-ai-images,"Номера сцен, ручная правка номеров и суффиксов"
+SC-24,есть,https://www.finalbitai.com/features/free-professional-ai-screenplay-editor ; https://www.finalbitai.com/releases/finalbit-v3-11-locked-script-versions-with-suffixes-and-advanced-ai-images,"Locked script versions: без перенумерации, автосуффиксы 2A, 2B (v3.11)"
+SC-25,не проверено,,Цветные ревизии не описаны
+SC-26,не проверено,,Не описано
+SC-27,есть,https://www.finalbitai.com/releases/nolanai-v2-6-10,Титульная страница с контактами (v2.6.10)
+SC-28,есть,https://www.finalbitai.com/features/automatic-script-breakdown ; https://www.finalbitai.com/releases/ai-script-breakdown-bulk-tagging-cast-list ; https://www.finalbitai.com/pricing,"AI Script Breakdown: актёры, массовка, реквизит, костюмы, трюки, SPFX, свои категории, массовая разметка по всему сценарию (v3.19.0); автоматически на Pro"
+SC-29,есть,https://www.finalbitai.com/pricing ; https://www.finalbitai.com/features/scheduling ; https://www.finalbitai.com/releases/ai-script-breakdown-bulk-tagging-cast-list,"Отчёты разметки, DOOD, единый список актёров; экспорт PDF и Excel с тарифа Creator"
+SC-30,частично,https://www.finalbitai.com/features/automatic-script-breakdown ; https://www.finalbitai.com/features/scheduling,"Разметка в PDF и FDX, расписание в PDF и CSV; экспорт в Movie Magic не описан, всё производство внутри FinalBit"
+SC-31,есть,https://www.finalbitai.com/features/ai-storyboard-generator ; https://help.finalbitai.com/en/articles/9939716-how-do-i-create-a-storyboard-using-finalbit ; https://www.finalbitai.com/pricing,"ИИ-раскадровка по сценам, референсы персонажей (около 98% согласованности); бесплатно до 5 кадров на сцену без ИИ"
+SC-32,есть,https://www.finalbitai.com/features/ai-audio-table-read ; https://www.finalbitai.com/pricing,"Auto TableRead: 400+ голосов, автоназначение персонажам, 5 читок в месяц на Pro"
+ST-01,частично,https://help.finalbitai.com/en/articles/9916140-keyboard-shortcuts ; https://www.finalbitai.com/releases/nolanai-v3-0-0-production-vault ; https://www.finalbitai.com/releases/micro-drama-episodic-production-tools,"Проект содержит сценарии и версии, в сценарии элемент Act и сцены, в сериале эпизоды; частей и глав нет"
+ST-02,частично,"https://help.finalbitai.com/en/articles/9940634-how-to-re-arrange-scenes ; https://www.finalbitai.com/features/free-professional-ai-screenplay-editor ; Скриншоты владельца из заметки «Нолан», 2026-11-08","Справка: перетаскивания сцен нет, только вырезать и вставить; страница редактора: сцены двигаются вверх и вниз; на скриншотах у сцен в левой панели ручки перетаскивания (=)"
+ST-03,не проверено,,Не описано
+ST-04,частично,"https://help.finalbitai.com/en/articles/9960440-what-is-project ; Скриншоты владельца из заметки «Нолан», 2026-11-08","Сценарий в проекте можно пометить как draft; статусов у сцен не описано; у сценария на дашборде теги (Draft 1, + New Tag)"
+ST-05,не проверено,,Цвета есть в расписании (v3.0.0); цветовые метки сцен не описаны
+ST-06,нет,https://help.finalbitai.com/en/articles/9940632-how-do-i-delete-scenes,Удаление сцены необратимо по справке; корзина не описана (история версий позволяет откат)
+ST-07,есть,https://help.finalbitai.com/en/articles/9939666-how-to-upload-existing-script ; https://help.finalbitai.com/en/articles/9940653-using-nolanai-s-tiktok-and-instagram-scriptcrafters ; https://www.finalbitai.com/releases/micro-drama-episodic-production-tools,"Фильм, пилот сериала, Video Shorts для TikTok и Instagram, микродрамы"
+ST-08,есть,https://help.finalbitai.com/en/articles/9960440-what-is-project ; https://www.finalbitai.com/releases/nolanai-v3-0-0-production-vault,"Проект: сценарии, разметка, расписание, шот-лист, раскадровка, питч-дек, отчёты; обложка и описание"
+ST-09,есть,"Скриншоты владельца из приложения, 2026-11-08 ; https://help.finalbitai.com/en/articles/9931006-how-to-create-a-new-scene",Левая панель Scenes со списком заголовков INT./EXT. и кнопкой Add a New Scene
+ST-10,не проверено,,Не описано
+ST-11,не проверено,,Не описано
+ST-12,не проверено,,"Синопсис есть у проекта (Edit synopsis), у сцены не описан"
+ST-13,не проверено,,Не описано
+ST-14,есть,https://www.finalbitai.com/releases/nolanai-v2-10-0-introducing-treatments-and-more,Тритмент и трёхактная структура по Save the Cat или шаблону Nolan (v2.10.0)
+ST-15,есть,https://www.finalbitai.com/releases/new-ways-to-start-a-film-tv-project ; https://help.finalbitai.com/en/articles/14483453-how-can-i-upload-a-treatment-to-finalbit,"Старт с идеи, тритмента, аутлайна или питч-дека: ИИ строит аутлайн по актам, автор проверяет, затем сценарий до ~36 сцен (v3.16.0)"
+ST-16,есть,https://www.finalbitai.com/pricing ; https://help.finalbitai.com/en/articles/14072322-how-to-generate-a-beat-sheet-from-your-screenplay ; https://help.finalbitai.com/en/articles/9931006-how-to-create-a-new-scene,Beat Sheets: создание и импорт; бит-шит из сценария через Co-Pilot; новая сцена из бит-шита
+ST-17,частично,https://help.finalbitai.com/en/articles/9940516-where-is-the-synopsis-and-how-modify-it ; https://www.finalbitai.com/features/ai-script-coverage-for-film-producers-and-writers,Синопсис проекта редактируется; логлайн и синопсис генерирует Coverage
+ST-18,частично,https://help.finalbitai.com/en/articles/14072322-how-to-generate-a-beat-sheet-from-your-screenplay,Бит-шит (Save the Cat) из готового сценария через Co-Pilot; поэпизодного плана не описано
+BD-01,не проверено,https://www.screenweaver.ai/blog/top-ai-tools-screenwriters-2026,Сторонний обзор упоминает карточки сцен; на сайте и в справке FinalBit не найдено
+BD-02,не проверено,,Не описано
+BD-03,не проверено,,Не описано
+BD-04,не проверено,,Не описано
+BD-05,не проверено,,Не описано
+BD-06,не проверено,,Не описано
+BD-07,не проверено,,Таймлайн есть только в видеоредакторе; таймлайна событий истории не описано
+BD-08,не проверено,,Не описано
+BD-09,не проверено,,Не описано
+BD-10,не проверено,,Не описано
+BD-11,не проверено,,Не описано
+BD-12,частично,"https://www.finalbitai.com/features/character-development ; https://www.finalbitai.com/features/ai-copilot ; Скриншоты владельца из приложения, 2026-11-08",Character Arc Mapping и сниппет Character Arc Development: ИИ-анализ и планирование; визуальной сетки арок по сценам не описано
+BD-13,частично,https://www.finalbitai.com/features/character-development ; https://www.finalbitai.com/features/ai-copilot,"Relationship Web и character web mapping; визуальная карта не подтверждена, сниппет Character Web Analysis даёт анализ в чате"
+BD-14,не проверено,,Не описано
+BD-15,не проверено,,Не описано
+BI-01,есть,"https://help.finalbitai.com/en/articles/9940497-how-to-add-a-new-character ; Скриншоты владельца из приложения, 2026-11-08","Вкладка Characters: имя, описание, фото, Generate Character"
+BI-02,частично,https://www.finalbitai.com/features/character-development,"Persona Builder: черты, мотивы, слабости по наводящим вопросам ИИ; шаблонов анкет не описано"
+BI-03,частично,https://www.finalbitai.com/features/automatic-script-breakdown,"Локации извлекаются в разметку (INT/EXT, конкретные места); карточек локаций для истории не описано"
+BI-04,частично,https://www.finalbitai.com/features/automatic-script-breakdown,Реквизит и костюмы извлекаются в разметку для производства
+BI-05,не проверено,,Не описано
+BI-06,частично,https://www.finalbitai.com/features/automatic-script-breakdown,Свои категории тегов в разметке
+BI-07,есть,https://help.finalbitai.com/en/articles/9940497-how-to-add-a-new-character,Фото персонажа: загрузка или генерация ИИ по описанию
+BI-08,частично,https://www.finalbitai.com/features/character-development,"Relationship Web: союзники, противники, наставники; как хранятся связи, не описано"
+BI-09,не проверено,,Не описано
+BI-10,частично,https://www.finalbitai.com/features/automatic-script-breakdown ; https://www.finalbitai.com/releases/micro-drama-episodic-production-tools,Разметка показывает персонажей и элементы по сценам и эпизодам
+BI-11,не проверено,,Не описано
+BI-12,есть,https://www.finalbitai.com/releases/ai-script-breakdown-bulk-tagging-cast-list,"ANDY, Andy и ANDY K. сводятся в одного персонажа (v3.19.0)"
+BI-13,частично,https://www.finalbitai.com/features/plot-hole-detection-report ; https://www.finalbitai.com/features/character-development,"Plot Hole Detection и Consistency Checker: отчёт по запросу, не предупреждения при письме"
+BI-14,не проверено,"Скриншоты владельца из приложения, 2026-11-08",Только сниппет World Building Depth в чате ИИ
+BI-15,не проверено,,Не описано
+BI-16,не проверено,,Не описано
+GO-01,частично,"Скриншоты владельца из заметки «Нолан», 2026-11-08","Внизу редактора поле Goal в страницах с кольцом прогресса; дневная ли это цель и есть ли цель в словах, не видно"
+GO-02,частично,https://www.finalbitai.com/releases/nolanai-v2-10-0-introducing-treatments-and-more,Цели по числу фаз разработки сценария и прогресс (v2.10.0); дедлайна не описано
+GO-03,не проверено,,Не описано
+GO-04,не проверено,,Не описано
+GO-05,не проверено,,Не описано
+GO-06,частично,https://www.finalbitai.com/features/automatic-script-breakdown ; https://www.finalbitai.com/pricing,Персонажи с присутствием в диалогах по сценам в разметке; аналитика на Pro
+GO-07,частично,https://www.finalbitai.com/features/automatic-script-breakdown ; https://www.finalbitai.com/features/scheduling,"Разметка по сценам и локациям, DOOD"
+GO-08,не проверено,,Не описано
+GO-09,частично,"Скриншоты владельца из приложения, 2026-11-08 ; https://www.finalbitai.com/features/scheduling",Счётчик страниц; длительность сцен для расписания по сложности; времени чтения нет в описании
+GO-10,частично,https://www.finalbitai.com/releases/nolanai-v2-10-0-introducing-treatments-and-more,Визуализация прогресса по фазам (v2.10.0)
+VE-01,есть,https://www.finalbitai.com/features/free-professional-ai-screenplay-editor,"Every draft is saved automatically, облачная синхронизация"
+VE-02,есть,https://www.finalbitai.com/releases/nolanai-v2-6-10 ; https://www.finalbitai.com/releases/finalbit-v3-11-locked-script-versions-with-suffixes-and-advanced-ai-images,Кнопка Save и история; залоченные версии сценария
+VE-03,есть,https://www.finalbitai.com/features/free-professional-ai-screenplay-editor ; https://www.finalbitai.com/releases/FinalBit-v3.17.0-collaborative%20film%20pre-production%20software,"Сравнение версий, в v3.17.0 бок о бок"
+VE-04,частично,https://www.finalbitai.com/releases/nolanai-v3-0-0-production-vault ; https://help.finalbitai.com/en/articles/9960440-what-is-project,Несколько версий сценария в проекте и пометка draft; веток со слиянием нет в описании
+VE-05,есть,https://www.finalbitai.com/features/free-professional-ai-screenplay-editor ; https://www.finalbitai.com/releases/nolanai-v2-6-10,"Restore points, восстановление версии"
+VE-06,есть,https://www.finalbitai.com/pricing ; https://www.finalbitai.com/releases/FinalBit-v3.17.0-collaborative%20film%20pre-production%20software,"History: 3 дня (Basic), 90 (Creator), 365 (Pro); в v3.17.0 история с авторами правок"
+VE-07,не проверено,https://www.finalbitai.com/features/free-professional-ai-screenplay-editor,Сайт обещает track changes без описания механизма
+VE-08,частично,https://www.finalbitai.com/releases/nolanai-v2-14-the-inception-rewritten-update ; https://help.finalbitai.com/en/articles/9939886-script-smart-doesn-t-let-me-type,Принять или отклонить можно только предложения Script Doctor и Script Smart
+VE-09,частично,"https://www.finalbitai.com/releases/nolanai-v2-6-16-enhanced-collaboration-features-on-nolanai ; https://www.finalbitai.com/blog/final-draft-vs-finalbit-ai ; Скриншоты владельца из заметки «Нолан», 2026-11-08","Комментарии есть; закрытие тредов упомянуто только в маркетинговом блоге; на скриншоте: подчёркнутый фрагмент, значок с числом на полях, панель с автором, временем, сценой, цитатой и кнопками «решено» и «удалить»; ответов в треде не видно"
+VE-10,не проверено,https://help.finalbitai.com/en/articles/9940643-how-do-i-add-a-collaborator-invite-a-friend ; https://www.finalbitai.com/features/ai-audio-table-read,Сценарий открывается приглашением по email; публичная ссылка есть только у читки (Table Read)
+VE-11,есть,https://www.finalbitai.com/releases/nolanai-v3-7-0 ; https://help.finalbitai.com/en/articles/9940643-how-do-i-add-a-collaborator-invite-a-friend,Роль Viewer
+CO-01,есть,https://www.finalbitai.com/releases/nolanai-v2-6-16-enhanced-collaboration-features-on-nolanai ; https://www.finalbitai.com/releases/nolanai-v3-7-0 ; https://www.finalbitai.com/releases/FinalBit-v3.17.0-collaborative%20film%20pre-production%20software,"Совместное письмо в реальном времени с 2024 года, в v3.17.0 для всех модулей"
+CO-02,есть,https://www.finalbitai.com/blog/final-draft-vs-finalbit-ai,Active cursor tracking (по блогу FinalBit)
+CO-03,есть,https://www.finalbitai.com/releases/nolanai-v3-7-0,"Editor и Viewer, владелец меняет права и отзывает доступ"
+CO-04,не проверено,,Чат в проекте только с ИИ; чата между соавторами не описано
+CO-05,не проверено,,Не описано
+CO-06,не проверено,,"Не описано; ColLab (Workspace) 1, 3 или без лимита проектов по тарифам"
+CO-07,не проверено,,Не описано
+AI-01,есть,https://help.finalbitai.com/en/articles/9934325-how-to-generate-a-complete-100-page-screenplay ; https://www.screenweaver.ai/blog/top-ai-tools-screenwriters-2026,Co-Pilot помогает продолжать сценарий по сценам
+AI-02,есть,https://help.finalbitai.com/en/articles/9931006-how-to-create-a-new-scene ; https://www.finalbitai.com/releases/nolanai-v2-12-5-directors-cut ; https://www.finalbitai.com/releases/new-ways-to-start-a-film-tv-project,Новая сцена из бит-шита; генерация сцен из аутлайна
+AI-03,частично,https://www.finalbitai.com/blog/how-to-fix-screenplay-with-ai-doctor,"Только запросом в чате (например, три варианта продолжения); отдельной функции нет в описании"
+AI-04,есть,"Скриншоты владельца из приложения, 2026-11-08 ; https://www.finalbitai.com/features","Сниппеты Brainstorm Ideas, Plot Twist Generator, Title Suggestions"
+AI-05,есть,https://www.finalbitai.com/features/character-development ; https://help.finalbitai.com/en/articles/9940497-how-to-add-a-new-character,"Generate Character, Backstory Generator, Persona Builder; ворлдбилдинг только сниппетом"
+AI-06,есть,https://www.finalbitai.com/releases/new-ways-to-start-a-film-tv-project ; https://help.finalbitai.com/en/articles/14072322-how-to-generate-a-beat-sheet-from-your-screenplay,"Аутлайн по актам из идеи или тритмента, бит-шит из сценария"
+AI-07,есть,https://www.finalbitai.com/features/ai-script-coverage-for-film-producers-and-writers ; https://www.finalbitai.com/features/pitch-deck,"Coverage даёт логлайн и синопсис, они переносятся в питч-дек"
+AI-08,есть,https://www.finalbitai.com/features/ai-copilot,Выделить абзац или сцену и поменять тон (Co-Pilot 2.0)
+AI-09,есть,https://www.finalbitai.com/features/ai-copilot ; https://help.finalbitai.com/en/articles/9922764-how-to-make-my-scene-shorter,Make it shorter; Click cut to one page сокращает сцену до страницы
+AI-10,не проверено,,Не описано
+AI-11,есть,https://www.finalbitai.com/features/free-professional-ai-screenplay-editor ; https://help.finalbitai.com/en/articles/15003492-how-can-i-use-ai-to-fix-or-improve-my-screenplay,"Polish dialogue в Co-Pilot, правка диалогов в Script Doctor"
+AI-12,есть,https://www.finalbitai.com/releases/nolanai-v2-14-the-inception-rewritten-update ; https://www.finalbitai.com/releases/nolanai-v2-9-15-v2-9-20 ; https://help.finalbitai.com/en/articles/15003492-how-can-i-use-ai-to-fix-or-improve-my-screenplay,"Script Doctor: предложения в тексте с подсветкой, переход к сценам с правками, принятие одним кликом (Pro по справке)"
+AI-13,есть,https://www.finalbitai.com/features/ai-script-coverage-for-film-producers-and-writers ; https://help.finalbitai.com/en/articles/15003492-how-can-i-use-ai-to-fix-or-improve-my-screenplay,Coverage и обратная связь Co-Pilot по сцене или всему сценарию
+AI-14,есть,"https://www.finalbitai.com/features/smart-formatting ; Скриншоты владельца из приложения, 2026-11-08",Script Doctor: тон и темп; сниппеты Plot Structure Review и Story Momentum Check
+AI-15,есть,https://www.finalbitai.com/features/plot-hole-detection-report ; https://www.finalbitai.com/pricing,"Plot Hole Detection: причинность, правила мира, поведение персонажей; 10 сценариев в месяц на Creator, без лимита на Pro"
+AI-16,есть,"https://www.finalbitai.com/features/character-development ; Скриншоты владельца из приложения, 2026-11-08","Character Arc Mapping, Consistency Checker, сниппеты Character Arc Development и Character Web Analysis"
+AI-17,есть,https://www.finalbitai.com/features/ai-script-coverage-for-film-producers-and-writers ; https://www.finalbitai.com/pricing,"Coverage: логлайн, синопсис, персонажи, общее впечатление, комментарии, оценка; 10 в месяц на Creator"
+AI-18,частично,https://www.finalbitai.com/features/ai-script-coverage-for-film-producers-and-writers,Синопсис всего сценария в Coverage; резюме сцены не описано
+AI-19,частично,"Скриншоты владельца из приложения, 2026-11-08 ; https://www.finalbitai.com/pricing ; https://help.finalbitai.com/en/articles/9940513-what-does-context-length-exceeded-mean-in-nolanai",Контекст задаёт автор выбором сцен; Pro AI с более глубоким контекстом; длинный контекст даёт ошибку Context Length Exceeded
+AI-20,частично,"Скриншоты владельца из приложения, 2026-11-08 ; Скриншоты владельца из заметки «Нолан», 2026-11-08","Свободный вопрос и 17 готовых сниппетов; свои сохранённые промпты не описаны; плюс меню Ask AI по выделению: Fix Spelling & Grammar, Improve Writing, Continue Writing, Other, Adjust Tone"
+AI-21,есть,"https://www.finalbitai.com/features/free-professional-ai-screenplay-editor ; https://www.finalbitai.com/releases/finalbit-v3-12-gpt-5-4-claude-4-6-gemini-3-1-update ; https://www.finalbitai.com/releases/finalbit-v3-13-update-video-editor-v2-reel-ai-director ; Скриншоты владельца из приложения, 2026-11-08","Claude, GPT, Gemini, Grok; в чате выбор модели (GPT-5.6 Terra на скриншоте); старшие модели на Pro"
+AI-22,не проверено,,Обещание учитывать стиль автора в отчётах о дырах сюжета (v3.7.4); обучения на стиле не описано
+AI-23,есть,"Скриншоты владельца из приложения, 2026-11-08 ; https://help.finalbitai.com/en/articles/14072322-how-to-generate-a-beat-sheet-from-your-screenplay ; https://www.finalbitai.com/releases/nolanai-v3-6-0",Чат Blake (Co-Pilot) в редакторе; агент Orson по проекту
+AI-24,частично,"https://help.finalbitai.com/en/articles/9934325-how-to-generate-a-complete-100-page-screenplay ; https://help.finalbitai.com/en/articles/9939886-script-smart-doesn-t-let-me-type ; https://www.finalbitai.com/about-us ; https://www.finalbitai.com/releases/new-ways-to-start-a-film-tv-project ; Скриншоты владельца из заметки «Нолан», 2026-11-08","Заявлено: ИИ помогает, а не пишет за автора; Script Smart только советует; но есть генерация сцен и сценария до ~36 сцен из идеи; онбординг Starting Your Story: по одной строке Plot ИИ пишет начало сценария (у владельца 16 сцен, 9 страниц, 1669 слов)"
+AI-25,частично,"Скриншоты владельца из приложения, 2026-11-08","Видно, какие сцены выбраны в контекст (Scenes); источники в ответе не показаны"
+AI-26,не проверено,,Не описано
+AI-27,есть,https://www.finalbitai.com/pricing ; https://help.finalbitai.com/en/articles/9939671-how-i-can-increase-my-ai-requests-limit,Basic: 100 запросов разово (или на 30 дней по другой формулировке); Creator и Pro без лимита; кредиты на видео 100 и 210 в месяц
+AI-28,не проверено,,Не описано
+AI-29,есть,https://www.finalbitai.com/privacy-policy ; https://help.finalbitai.com/en/articles/14126629-do-you-train-ai-models-on-my-scripts-or-share-them-with-other-users ; https://www.finalbitai.com/features/ai-script-coverage-for-film-producers-and-writers,"Не обучают свои модели, договоры запрещают обучение у поставщиков LLM"
+AI-30,есть,https://help.finalbitai.com/en/articles/9940497-how-to-add-a-new-character ; https://www.finalbitai.com/features/ai-storyboard-generator ; https://www.finalbitai.com/features/pitch-deck ; https://www.finalbitai.com/pricing,"Персонажи, раскадровка, картинки для питч-дека; премиальные картинки на Pro"
+AI-31,есть,https://www.finalbitai.com/features/ai-audio-table-read,"Auto TableRead, 400+ голосов (Pro)"
+AI-32,не проверено,https://help.finalbitai.com/en/articles/9940623-can-i-use-finalbit-in-languages-other-than-english,"Работа на нескольких языках есть, перевод текста не описан"
+IO-01,есть,https://www.finalbitai.com/releases/new-ways-to-start-a-film-tv-project,DOCX при старте проекта (v3.16.0)
+IO-02,есть,https://help.finalbitai.com/en/articles/9939666-how-to-upload-existing-script ; https://www.finalbitai.com/releases/new-ways-to-start-a-film-tv-project,"Fountain, бесплатно"
+IO-03,есть,https://www.finalbitai.com/pricing ; https://help.finalbitai.com/en/articles/9939666-how-to-upload-existing-script,FDX
+IO-04,есть,https://www.finalbitai.com/pricing ; https://help.finalbitai.com/en/articles/9939666-how-to-upload-existing-script,PDF; при нестандартной вёрстке формат распознаётся с ошибками
+IO-05,не проверено,,Не описано
+IO-06,не проверено,,Не описано
+IO-07,не проверено,,Не описано
+IO-08,есть,https://www.finalbitai.com/pricing ; https://help.finalbitai.com/en/articles/14496658-can-i-increase-the-font-size-when-exporting-my-script-to-pdf,PDF; на бесплатном тарифе с водяным знаком
+IO-09,не проверено,,Не описано
+IO-10,есть,https://www.finalbitai.com/pricing ; https://www.finalbitai.com/releases/ai-script-breakdown-bulk-tagging-cast-list,PDF & Final Draft Export
+IO-11,не проверено,,Не описано
+IO-12,не проверено,,Не описано
+IO-13,не проверено,,Не описано
+IO-14,частично,https://www.finalbitai.com/releases/finalbit-v3-12-gpt-5-4-claude-4-6-gemini-3-1-update ; https://help.finalbitai.com/en/articles/14496658-can-i-increase-the-font-size-when-exporting-my-script-to-pdf,Шрифт и размер при экспорте PDF
+IO-15,не проверено,,Не описано
+IO-16,нет,https://www.finalbitai.com/pricing,"Нет в сравнении тарифов; продукт для кино и сериалов, не для книг"
+IO-17,нет,https://www.finalbitai.com/pricing,"Нет в сравнении тарифов; продукт для кино и сериалов, не для книг"
+IO-18,нет,https://www.finalbitai.com/pricing,"Нет в сравнении тарифов; продукт для кино и сериалов, не для книг"
+IO-19,нет,https://www.finalbitai.com/pricing,"Нет в сравнении тарифов; продукт для кино и сериалов, не для книг"
+IO-20,нет,https://www.finalbitai.com/pricing,"Нет в сравнении тарифов; продукт для кино и сериалов, не для книг"
+IO-21,нет,https://www.finalbitai.com/pricing,"Нет в сравнении тарифов; продукт для кино и сериалов, не для книг"
+IO-22,частично,"https://www.finalbitai.com/releases/nolanai-v2-6-10 ; https://www.finalbitai.com/releases/nolanai-v3-0-0-production-vault ; Скриншоты владельца из заметки «Нолан», 2026-11-08","Титульная страница, обложка и описание проекта; на дашборде Generate Cover (ИИ) и Upload Cover"
+IO-23,не проверено,,Не описано
+IO-24,не проверено,,Не описано
+PL-01,есть,https://www.finalbitai.com/nolan-ai,"Работает в браузере, приложение studio.nolanai.app"
+PL-02,не проверено,https://www.finalbitai.com/nolan-ai,Только браузер в описании; нативных приложений не нашли
+PL-03,не проверено,https://www.finalbitai.com/nolan-ai,Только браузер в описании; нативных приложений не нашли
+PL-04,не проверено,https://www.finalbitai.com/nolan-ai,Только браузер в описании; нативных приложений не нашли
+PL-05,не проверено,https://www.finalbitai.com/nolan-ai,Приложений в App Store не нашли
+PL-06,не проверено,https://www.finalbitai.com/nolan-ai,Приложений в Google Play не нашли
+PL-07,не проверено,,Офлайн не описан
+PL-08,есть,https://www.finalbitai.com/features/free-professional-ai-screenplay-editor ; https://www.finalbitai.com/releases/FinalBit-v3.17.0-collaborative%20film%20pre-production%20software,"Облако, синхронизация между устройствами"
+PL-09,не проверено,,"Собственный формат не описан; импорт Fountain есть, экспорт Fountain не подтверждён"
+PL-10,не проверено,,"Резервные копии не описаны, есть история версий"
+BZ-01,есть,https://www.finalbitai.com/pricing ; https://help.finalbitai.com/en/articles/12357456-what-s-changing-in-the-free-plan,"Basic: 1 сценарий, 100 запросов ИИ, экспорт с водяным знаком"
+BZ-02,есть,https://www.finalbitai.com/pricing,"Creator 120 USD и Pro 300 USD за 3 месяца (около 40 и 100 USD в месяц); скидка 10% за 3 месяца, 30% за год"
+BZ-03,нет,https://www.finalbitai.com/pricing,Только подписки
+BZ-04,есть,https://www.finalbitai.com/pricing ; https://help.finalbitai.com/en/articles/16527808-does-finalbit-offer-a-free-trial,"7 дней Creator или Pro, нужна карта"
+BZ-05,частично,https://help.finalbitai.com/en/articles/9940623-can-i-use-finalbit-in-languages-other-than-english ; https://help.finalbitai.com/en/articles/9940624-how-do-i-use-nolanai-in-a-different-language ; https://www.finalbitai.com/releases/nolanai-v2-12-3-multi-language-support,Русский выбирается как язык сценария и ответов ИИ; перевод интерфейса не подтверждён
+BZ-06,нет,https://www.finalbitai.com ; https://www.finalbitai.com/features/ai-film-budgeting,"Англоязычный продукт, цены в USD, льготы в бюджете для США, Мексики и Канады"
+BZ-07,частично,https://www.finalbitai.com/education ; https://help.finalbitai.com/en/articles/14126851-what-kind-of-onboarding-and-training-does-finalbit-offer-to-crews-that-are-not-very-tech-savvy ; https://help.finalbitai.com/en/articles/9940652-do-you-offer-non-profit-or-student-discounts,"Справка, YouTube-уроки, программа для вузов, скидка студентам 50%; курсов внутри нет в описании"
+BZ-08,не проверено,,"Конкурсы и мероприятия упомянуты в описании тарифов, сообщества в продукте не описано"
+NEW-AI-1,есть,"Скриншоты владельца из приложения, 2026-11-08; https://nolanai.app","Snippets: библиотека из 17 готовых запросов к ИИ-соавтору в чате, с поиском. Придумать: Brainstorm Ideas, Plot Twist Generator, Title Suggestions, Character Backstory Builder. Проверить: Script Diagnostics, Genre Validator, Filler Finder (вода и лишние сцены), Story Momentum Check (темп), Plot Structure Review. Углубить: Character Arc Development, Character Web Analysis, Conflict Escalation, Subplot Integration, World Building Depth, Theme Weaver, Theme Exploration, Theme Integration. Идеи для наших быстрых действий соавтора; «проверить» ближе к режиму наставника, «придумать» пишет за автора"
+NEW-AI-2,есть,"Скриншоты владельца из приложения, 2026-11-08; https://nolanai.app","Scenes: автор сам выбирает, какие сцены сценария передать ИИ как контекст запроса"
+NEW-AI-3,есть,"Скриншоты владельца из приложения, 2026-11-08; https://nolanai.app","Выбор модели в чате соавтора (например, GPT-5.6 Terra)"
+NEW-AI-4,есть,"Скриншоты владельца из приложения, 2026-11-08; https://nolanai.app","Ask AI по выделению: выделить фрагмент сценария и спросить ИИ про него; соавтор назван персонажем (Blake, Co-Pilot)"
+NEW-AI-5,есть,https://www.finalbitai.com/releases/new-ways-to-start-a-film-tv-project ; https://help.finalbitai.com/en/articles/14483453-how-can-i-upload-a-treatment-to-finalbit,"Старт проекта из исходника (тритмент, питч-дек, аутлайн или идея): ИИ строит аутлайн по актам, автор проверяет и перегенерирует части, затем ИИ собирает сценарий до ~36 сцен"
+NEW-AI-6,есть,https://www.finalbitai.com/releases/nolanai-v3-6-0 ; https://www.finalbitai.com/releases/new-ways-to-start-a-film-tv-project,"Агент Orson: чат по всему продукту, отвечает на вопросы, управляет проектами, создаёт истории"
+NEW-AI-7,есть,https://www.finalbitai.com/releases/nolanai-v2-12-5-directors-cut ; https://www.finalbitai.com/features/ai-copilot,История подсказок ИИ: предложение можно отредактировать перед вставкой и применить позже
+NEW-AI-8,есть,"Скриншоты владельца из приложения, 2026-11-08 ; Скриншоты владельца из заметки «Нолан», 2026-11-08","У ответа ИИ кнопки Copy и лайк/дизлайк; Insert (вставить в сценарий) виден только на демо-картинке в пустом чате, в реальном ответе на Continue Writing его нет"
+NEW-AI-9,есть,https://help.finalbitai.com/en/articles/9940624-how-do-i-use-nolanai-in-a-different-language ; https://www.finalbitai.com/releases/nolanai-v2-12-3-multi-language-support,"Язык сценария (испанский, французский, русский, португальский) задаёт язык ответов ИИ во всём проекте"
+NEW-AI-10,есть,https://www.finalbitai.com/consistent-character-ai-video ; https://www.finalbitai.com/releases/finalbit-v3-13-update-video-editor-v2-reel-ai-director ; https://www.finalbitai.com/pricing,"Видео по раскадровке или сценарию (Veo, Runway, Seedance, агент Reel) и ИИ-трейлер; ежемесячные кредиты 100 и 210"
+NEW-AI-11,есть,https://www.finalbitai.com/features/pitch-deck,Подбор актёров на роли по описаниям персонажей для питч-дека
+NEW-SC-1,есть,https://www.finalbitai.com/features/pitch-deck ; https://www.finalbitai.com/releases/finalbit-v3-12-gpt-5-4-claude-4-6-gemini-3-1-update,"Питч-дек из Coverage: шаблоны, логлайн и синопсис одним кликом, ИИ-картинки, совместная работа"
+NEW-SC-2,есть,https://www.finalbitai.com/features/scheduling ; https://www.finalbitai.com/features/shot-list,"Расписание съёмок: стрипборд, агент Neil, DOOD, call sheets, шот-лист из раскадровки и расписания"
+NEW-SC-3,есть,https://www.finalbitai.com/features/ai-film-budgeting ; https://www.finalbitai.com/pricing,"ИИ-бюджет по сценарию: top sheet, статьи, налоговые льготы США, Мексики, Канады (Pro)"
+NEW-SC-4,есть,https://www.finalbitai.com/releases/micro-drama-episodic-production-tools,"Разрезание мастер-сценария на эпизоды для вертикальных микродрам, разметка и расписание по эпизодам"
+NEW-SC-5,есть,https://www.finalbitai.com/features/automatic-script-breakdown ; https://www.finalbitai.com/releases/FinalBit-v3.17.0-collaborative%20film%20pre-production%20software ; https://www.finalbitai.com/blog/final-draft-vs-finalbit-ai,"Правка сценария сразу обновляет разметку, расписание, раскадровку и бюджет"
+NEW-VE-1,есть,https://www.finalbitai.com/releases/FinalBit-v3.17.0-collaborative%20film%20pre-production%20software,Именная история правок: у каждой правки видно автора и время (v3.17.0)
+NEW-BZ-1,есть,https://www.finalbitai.com/for-studios,Enterprise: библиотека из 2000+ историй с передачей прав для экранизации
+NEW-AI-12,есть,"Скриншоты владельца из заметки «Нолан», 2026-11-08","Меню Ask AI по выделенному тексту: Fix Spelling & Grammar, Improve Writing, Continue Writing, Other, Adjust Tone с 8 тонами (Dark, Light, Sad, Scary, Sinister, Exciting, Comic, Crazy); ответ уходит в чат Co-Pilot"
+NEW-AI-13,есть,"Скриншоты владельца из заметки «Нолан», 2026-11-08","Онбординг Starting Your Story: одно обязательное поле Plot (пример «Sci-fi adventure across multiverse»), Submit — ИИ пишет начало сценария, есть Skip; у владельца из одной строки вышло 16 сцен, 9 страниц, 1669 слов"
+NEW-AI-14,есть,"Скриншоты владельца из заметки «Нолан», 2026-11-08","Continue Writing по выделению переписывает и сам выделенный фрагмент: в ответе исходные строки изменены и разбиты, дальше продолжение на несколько сцен до BLACKOUT; разницы с исходником не показано"
+NEW-AI-15,есть,"Скриншоты владельца из заметки «Нолан», 2026-11-08","Список разговоров с Co-Pilot: каждый назван по запросу (Continue Writing), с датой и удалением"
+NEW-ED-1,есть,"Скриншоты владельца из заметки «Нолан», 2026-11-08","Панель над выделением: Convert To (тип элемента с шорткатами Ctrl+1..8), Ask AI, комментарий, история, цвет выделения, ВСЕ ЗАГЛАВНЫЕ (Ctrl+K), B, I, S, U"
+NEW-ED-2,частично,"Скриншоты владельца из заметки «Нолан», 2026-11-08","Кнопка микрофона в панели редактора, видимо диктовка; в работе не проверено"

@@ -29,6 +29,12 @@ import { printScreenplay, type TitlePage } from "./exporters/print.ts";
 import { screenplayKeymap, setElement } from "./keymaps/index.ts";
 import { createBubbleMenuPlugin } from "./plugins/bubbleMenu.ts";
 import {
+  cardGapKey,
+  cardGapStatePlugin,
+  type CardGapMeta,
+} from "./plugins/cardGap.ts";
+import { cardGapPlugin } from "./plugins/cardGapPlugin.ts";
+import {
   addComment,
   commentRanges,
   commentsKey,
@@ -49,6 +55,7 @@ import {
 import { suggestionsPlugin } from "./plugins/suggestionsPlugin.ts";
 import { createFadeInAlignPlugin } from "./plugins/fadeInAlign.ts";
 import {
+  closeFind,
   findKey,
   findPlugin,
   replaceAll,
@@ -115,6 +122,14 @@ export type CommentAnchor = {
   width: number;
 };
 
+/** Where the gap for a card stands, relative to the editor container (web/workspace, «Карточки у текста»). */
+export type CardGapPlace = {
+  top: number;
+  /** Distances from the left and right edges of the container: the card spans the page. */
+  left: number;
+  right: number;
+};
+
 export type ScreenplayEditorOptions = {
   container: HTMLElement;
   doc: ScreenplayDoc;
@@ -127,6 +142,11 @@ export type ScreenplayEditorOptions = {
   onFindRequest?: () => void;
   /** «Комментировать» in the selection menu; without it the menu has no such button. */
   onCommentRequest?: () => void;
+  /**
+   * «Соавтор» in the selection menu, with the rectangle of that button; without it the menu has
+   * no such button. It stays in a read-only text.
+   */
+  onCoauthorRequest?: (anchor: DOMRect) => void;
   /** A click on an open comment's place. */
   onCommentOpen?: (id: string) => void;
   /** A click on an open co-author suggestion. */
@@ -136,10 +156,24 @@ export type ScreenplayEditorOptions = {
   extraPlugins?: Plugin[];
 };
 
+/** Space around a card in its gap: above and below together, and on the sides of the page. */
+const CARD_GAP_MARGIN = 12;
+const CARD_GAP_INSET = 12;
+/** Width of the US Letter page at 96 dpi; the styles set the same `--pw-page-w`. */
+const PAGE_WIDTH = 816;
+/** Below this scale the page would be too small to read: one continuous sheet instead. */
+const MIN_SCALE = 0.6;
+/** Space between the sticky toolbar and the line scrolled to below it. */
+const SCROLL_GAP = 8;
+
 export class ScreenplayEditorView {
   readonly view: EditorView;
   private readonly container: HTMLElement;
   private readOnly: boolean;
+  private readonly fitting: ResizeObserver;
+  /** Scale of the page set by `fit`; 1 at full size and for the continuous sheet. */
+  private scale = 1;
+  private fitFrame: number | null = null;
 
   constructor(options: ScreenplayEditorOptions) {
     this.readOnly = options.readOnly ?? false;
@@ -156,7 +190,13 @@ export class ScreenplayEditorView {
       }),
       screenplayKeymap(options.mode),
       keymap({ "Mod-z": undo, "Mod-y": redo, "Shift-Mod-z": redo }),
-      keymap(baseKeymap),
+      // Without Escape: its «select the parent node» selected the whole paragraph and kept Escape
+      // from closing the card of a comment or a suggestion (web/workspace, «Карточки у текста»).
+      keymap(
+        Object.fromEntries(
+          Object.entries(baseKeymap).filter(([key]) => key !== "Escape"),
+        ),
+      ),
       history(),
       sceneUidsPlugin,
       // Visibility before find: find skips the paragraphs it hides.
@@ -170,7 +210,12 @@ export class ScreenplayEditorView {
       createFadeInAlignPlugin(),
       commentsPlugin((id) => options.onCommentOpen?.(id)),
       suggestionsPlugin((id) => options.onSuggestionOpen?.(id)),
-      createBubbleMenuPlugin(options.onCommentRequest),
+      createBubbleMenuPlugin(
+        options.onCommentRequest,
+        options.onCoauthorRequest,
+      ),
+      cardGapStatePlugin,
+      cardGapPlugin,
       ...(options.extraPlugins ?? []),
     ];
     // A text without scene ids (sample data) gets them on opening.
@@ -210,6 +255,68 @@ export class ScreenplayEditorView {
       },
     });
     report(state);
+    // The page follows the width of the container (web/screenplay-editor, «Масштаб листа»),
+    // and the space it takes follows the height of the pages.
+    // In the next frame, not in the observer's callback: the margin `fit` sets changes the height
+    // of the observed container, which the callback could not deliver in the same frame.
+    this.fitting = new ResizeObserver(() => {
+      if (this.fitFrame !== null) return;
+      this.fitFrame = requestAnimationFrame(() => {
+        this.fitFrame = null;
+        this.fit();
+      });
+    });
+    this.fitting.observe(this.container);
+    this.fitting.observe(this.view.dom);
+    this.fit();
+  }
+
+  /**
+   * Scales the page to the width of the container, down to 60%; narrower, the continuous sheet.
+   * `transform` keeps the layout of the 100% page, so the page breaks stay its own; it does not
+   * shrink the space the page takes, so a negative bottom margin gives back the height the
+   * scale removes, and the container clips the unused width on the sides. `zoom` is not used:
+   * in WebKit clicks and selection under it miss the text (editor-fit-and-speed, design).
+   */
+  private fit(): void {
+    const width = this.container.clientWidth;
+    const scale = Math.min(1, width / PAGE_WIDTH);
+    const paged = scale >= MIN_SCALE;
+    this.container.classList.toggle("pw-paged", paged);
+    this.container.classList.toggle("pw-continuous", !paged);
+    this.scale = paged ? scale : 1;
+    const style = this.view.dom.style;
+    if (this.scale === 1) {
+      style.transform = "";
+      style.transformOrigin = "";
+      style.marginBottom = "";
+      return;
+    }
+    style.transform = `scale(${this.scale})`;
+    style.transformOrigin = "top center";
+    style.marginBottom = `${-(1 - this.scale) * this.view.dom.offsetHeight}px`;
+  }
+
+  /**
+   * Keeps the line scrolled to below the sticky toolbar above the page: `px` is its height
+   * (web/screenplay-editor, «Каретка ниже панели инструментов»). ProseMirror scrolls to the
+   * caret by `scrollThreshold` and `scrollMargin`; `scrollIntoView` of a scene, a comment or a suggestion reads
+   * `scroll-margin-top` from `--pw-scroll-top`. Both are in pixels of the scrolling column,
+   * so the scale of the page does not change them.
+   */
+  setTopInset(px: number): void {
+    if (!Number.isFinite(px) || px < 0)
+      throw new Error(
+        `Отступ прокрутки сверху: недопустимая высота панели ${px}`,
+      );
+    const top = px + SCROLL_GAP;
+    // The threshold decides when to scroll, the margin how far: with the threshold at 0 a caret
+    // under the toolbar counts as visible and nothing scrolls.
+    this.view.setProps({
+      scrollThreshold: { top, right: 0, bottom: 0, left: 0 },
+      scrollMargin: { top, right: 5, bottom: 5, left: 5 },
+    });
+    this.container.style.setProperty("--pw-scroll-top", `${top}px`);
   }
 
   private snapshot(s: EditorState): EditorSnapshot {
@@ -300,6 +407,23 @@ export class ScreenplayEditorView {
   /** Sets the query or the scope, or moves to match `current` (selected and scrolled to). */
   find(meta: { query?: string; scope?: FindScope; current?: number }): void {
     setFind(meta)(this.view.state, this.view.dispatch);
+    // With the focus in the find bar ProseMirror does not scroll to the selected match: its
+    // scrolling needs the DOM selection inside the editor. The match is scrolled to here,
+    // below the toolbar by `scroll-margin-top` (web/screenplay-editor, «Каретка ниже панели
+    // инструментов»). Find skips hidden paragraphs, so the current match is always shown.
+    if (meta.current === undefined) return;
+    const find = findKey.getState(this.view.state);
+    if (find === undefined) throw new Error("Плагин find не подключён");
+    if (find.matches.length === 0) return;
+    const match = this.view.dom.querySelector(".pw-find-current");
+    if (match === null)
+      throw new Error("Поиск: текущее совпадение не показано в листе");
+    match.scrollIntoView({ block: "nearest" });
+  }
+
+  /** Ends the search; a selected match becomes the caret after it. */
+  closeFind(): void {
+    closeFind()(this.view.state, this.view.dispatch);
   }
 
   replaceCurrent(text: string): void {
@@ -445,6 +569,55 @@ export class ScreenplayEditorView {
     };
   }
 
+  /**
+   * Opens, or resizes, the gap under the paragraph where the place of comment thread or
+   * suggestion `id` ends, for a card `height` screen pixels high; null when the place is not
+   * shown. The gap does not change the document: no save and no step of undo.
+   */
+  showCardGap(id: string, height: number): CardGapPlace | null {
+    const { state } = this.view;
+    const ranges = [
+      ...commentRanges(state.doc, id),
+      ...suggestionRanges(state.doc, id),
+    ];
+    if (this.firstPlace(ranges) === null) return null;
+    const end = Math.max(...ranges.map((r) => r.to));
+    const pos = state.doc.resolve(end).after(1);
+    // The gap is inside the page, so it is scaled with it; the card over it is not.
+    const meta: CardGapMeta = {
+      show: {
+        id,
+        pos,
+        height: Math.ceil((height + CARD_GAP_MARGIN) / this.scale),
+      },
+    };
+    this.view.dispatch(
+      state.tr.setMeta(cardGapKey, meta).setMeta("addToHistory", false),
+    );
+    const gap = this.view.dom.querySelector(
+      `.pw-card-gap[data-for="${CSS.escape(id)}"]`,
+    );
+    if (!(gap instanceof HTMLElement))
+      throw new Error("Зазор для карточки не появился в тексте.");
+    const box = this.container.getBoundingClientRect();
+    const page = this.view.dom.getBoundingClientRect();
+    return {
+      top: gap.getBoundingClientRect().top - box.top + CARD_GAP_MARGIN / 2,
+      left: page.left - box.left + CARD_GAP_INSET,
+      right: box.right - page.right + CARD_GAP_INSET,
+    };
+  }
+
+  /** Closes the gap of the card of `id`; a gap another card opened since stays. */
+  hideCardGap(id: string): void {
+    const meta: CardGapMeta = { hide: id };
+    this.view.dispatch(
+      this.view.state.tr
+        .setMeta(cardGapKey, meta)
+        .setMeta("addToHistory", false),
+    );
+  }
+
   /** Scrolls the first shown place of thread `id` into view; false when there is none. */
   scrollToComment(id: string): boolean {
     const dom = this.firstPlace(commentRanges(this.view.state.doc, id));
@@ -512,6 +685,8 @@ export class ScreenplayEditorView {
   }
 
   destroy(): void {
+    this.fitting.disconnect();
+    if (this.fitFrame !== null) cancelAnimationFrame(this.fitFrame);
     this.view.destroy();
   }
 }

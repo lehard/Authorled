@@ -13,17 +13,32 @@ entries:
   # the e-mail stage does not depend on the order of blueprints: name and e-mail → the user is
   # created in screenwriters → the e-mail code confirms the address and saves the device → login.
   # The sign-up flow comes first: the e-mail stage below links to it (!KeyOf needs it above).
+  # Fields of the admin interface (openspec/specs/auth, «Настройки админки»): an object with them is
+  # declared twice. The `created` entry makes it on an empty schema with every field and is skipped
+  # afterwards; the `present` entry right after it restores only the fields the product relies on
+  # (an update of an existing object is partial), so edits of the other fields in the admin
+  # interface survive releases.
+  # Admin interface: name, title.
   - model: authentik_flows.flow
     id: flow-enrollment
+    state: created
     identifiers:
       slug: authorled-enrollment
     attrs:
       name: Authorled sign-up
-      title: Регистрация в Authorled
+      title: Регистрация в Соавторе
       designation: enrollment
       authentication: require_unauthenticated
+  - model: authentik_flows.flow
+    identifiers:
+      slug: authorled-enrollment
+    attrs:
+      designation: enrollment
+      authentication: require_unauthenticated
+  # Admin interface: failed_attempts_before_cancel.
   - model: authentik_stages_password.passwordstage
     id: stage-password
+    state: created
     identifiers:
       name: authorled-authentication-password
     attrs:
@@ -31,6 +46,13 @@ entries:
         - authentik.core.auth.InbuiltBackend
         - authentik.core.auth.TokenBackend
       failed_attempts_before_cancel: 5
+  - model: authentik_stages_password.passwordstage
+    identifiers:
+      name: authorled-authentication-password
+    attrs:
+      backends:
+        - authentik.core.auth.InbuiltBackend
+        - authentik.core.auth.TokenBackend
   - model: authentik_stages_identification.identificationstage
     id: stage-identification
     identifiers:
@@ -57,16 +79,26 @@ entries:
       expression: |
         user = request.context["pending_user"]
         return bool(user.password) and user.has_usable_password()
+  # Admin interface: subject.
   - model: authentik_stages_authenticator_email.authenticatoremailstage
     id: stage-email-setup
+    state: created
     identifiers:
       name: authorled-authenticator-email-setup
     attrs:
-      friendly_name: Authorled
+      friendly_name: Соавтор
+      use_global_settings: true
+      token_expiry: minutes=10
+      subject: Код для входа в Соавтор
+      template: email/coauthor-code.html
+  - model: authentik_stages_authenticator_email.authenticatoremailstage
+    identifiers:
+      name: authorled-authenticator-email-setup
+    attrs:
+      friendly_name: Соавтор
       use_global_settings: true
       # The code e-mail and the code screen of the frontend say 10 minutes: change them together.
       token_expiry: minutes=10
-      subject: Код для входа в CoAuthor
       template: email/coauthor-code.html
   - model: authentik_stages_authenticator_validate.authenticatorvalidatestage
     id: stage-mfa-validate
@@ -89,13 +121,21 @@ entries:
       name: authorled-authentication-login
     attrs:
       session_duration: seconds=0
+  # Admin interface: name, title.
   - model: authentik_flows.flow
     id: flow-authentication
+    state: created
     identifiers:
       slug: authorled-authentication
     attrs:
       name: Authorled authentication
-      title: Вход в Authorled
+      title: Вход в Соавтор
+      designation: authentication
+      authentication: require_unauthenticated
+  - model: authentik_flows.flow
+    identifiers:
+      slug: authorled-authentication
+    attrs:
       designation: authentication
       authentication: require_unauthenticated
   - model: authentik_flows.flowstagebinding
@@ -171,23 +211,43 @@ entries:
       required: true
       placeholder: Например, Анна Северова
       order: 2
-  # A decision only, no side effects: the e-mail is in AUTH_ALLOWED_EMAILS, one account per
+  # A decision only, no side effects: the e-mail is in the list of allowed e-mails, one account per
   # e-mail, the username equals the e-mail, the name is not blank. The list comes before the
   # registered check, so a refusal does not tell whether an address has an account.
+  # The list is the attribute allowed_emails of the group screenwriters (openspec/specs/auth,
+  # «Список разрешённых почт»): a list of strings set in the admin interface, ["*"] for everyone.
+  # The blueprints never set it, so releases keep it. A missing or broken list refuses every
+  # sign-up and records a configuration_error event that names it; the person sees a short refusal.
   - model: authentik_policies_expression.expressionpolicy
     id: policy-email-not-registered
     identifiers:
       name: authorled-email-not-registered
     attrs:
       expression: |
-        import os
+        from authentik.core.models import Group
+        from authentik.events.models import Event, EventAction
 
         data = request.context.get("prompt_data", {})
         email = str(data.get("email", "")).strip()
         if data.get("username") != data.get("email"):
             ak_message("Имя пользователя должно совпадать с почтой.")
             return False
-        allowed = [item.strip().lower() for item in os.environ["AUTH_ALLOWED_EMAILS"].split(",") if item.strip()]
+        group = Group.objects.filter(name="screenwriters").first()
+        configured = None if group is None else group.attributes.get("allowed_emails")
+        if not isinstance(configured, list) or not all(isinstance(item, str) for item in configured):
+            # Event.new, not ak_create_event: that one prefixes the action with custom_ and copies
+            # the form (e-mail, name) into the event.
+            Event.new(
+                EventAction.CONFIGURATION_ERROR,
+                app="authorled-email-not-registered",
+                message=(
+                    "Sign-up is closed: the attribute allowed_emails of the group screenwriters "
+                    "must be a list of e-mail strings (or [\"*\"])."
+                ),
+            ).save()
+            ak_message("Регистрация временно недоступна.")
+            return False
+        allowed = [item.strip().lower() for item in configured if item.strip()]
         if allowed != ["*"] and email.lower() not in allowed:
             ak_message("Регистрация сейчас доступна только по приглашению.")
             return False
@@ -245,10 +305,18 @@ entries:
     attrs:
       stage: !KeyOf stage-login
   # The brand of the Authentik domain of the product; the default brand stays untouched.
+  # Admin interface: branding_title (the pair of entries is explained at the top of the file).
+  - model: authentik_brands.brand
+    state: created
+    identifiers:
+      domain: !Env AUTH_BRAND_DOMAIN
+    attrs:
+      default: false
+      branding_title: Соавтор
+      flow_authentication: !KeyOf flow-authentication
   - model: authentik_brands.brand
     identifiers:
       domain: !Env AUTH_BRAND_DOMAIN
     attrs:
       default: false
-      branding_title: Authorled
       flow_authentication: !KeyOf flow-authentication

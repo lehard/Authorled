@@ -1,5 +1,5 @@
 import { useUpdate } from "@refinedev/core";
-import { useEffect, useState, type CSSProperties, type RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
 
 import { useSuggestions } from "@/data/hooks";
 import type { Suggestion } from "@/data/model";
@@ -9,7 +9,7 @@ import type {
   ScreenplayEditorHandle,
 } from "@/editor/ScreenplayEditor";
 
-import { cardPlace } from "./cardPlace";
+import { useCardPlace } from "./cardPlace";
 import { SuggestionCard, SuggestionsButton } from "./SuggestionViews";
 
 // Co-author suggestions of one editor (openspec/specs/web/workspace, «Предложение правки в
@@ -34,7 +34,7 @@ export function useEditorSuggestions(
   const { suggestions } = useSuggestions(draftId);
   const { mutateAsync: update } = useUpdate();
   const [active, setActive] = useState<string | null>(null);
-  const [style, setStyle] = useState<CSSProperties>({});
+  const spot = useCardPlace(editor);
   const [places, setPlaces] = useState<[string, string][]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,6 +57,10 @@ export function useEditorSuggestions(
       throw new Error("Редактор сценария ещё не открыт");
     editor.current.placeSuggestions(JSON.parse(anchors) as SuggestionAnchor[]);
   }, [editor, anchors, readOnly]);
+  // A closed card gives its gap back to the text, whichever way it closed.
+  useEffect(() => {
+    if (active === null) spot.release();
+  });
   const [marked, setMarked] = useState<string[] | null>(null);
   const missing =
     marked === null ? [] : open.filter((s) => !marked.includes(s.id));
@@ -66,7 +70,7 @@ export function useEditorSuggestions(
     setError(null);
     setActive(id);
     if (scroll) view().scrollToSuggestion(id);
-    setStyle(cardPlace(view().suggestionAnchor(id)));
+    spot.place(id, view().suggestionAnchor(id));
   }
 
   function close() {
@@ -117,7 +121,8 @@ export function useEditorSuggestions(
       current === undefined || old === undefined ? null : (
         <SuggestionCard
           key={current.id}
-          style={style}
+          style={spot.style}
+          onHeight={spot.fit}
           suggestion={current}
           old={old}
           error={error}

@@ -48,6 +48,10 @@ export function RefineRoot({ dataSource }: { dataSource: DataSource }) {
           clientConfig: {
             defaultOptions: {
               queries: {
+                // Data read in the last 10 s is fresh: a screen mounted while the window opens
+                // takes it instead of reading the same address again (web/workspace, «Загрузка
+                // окна истории»). Invalidation after a change still reads at once.
+                staleTime: 10_000,
                 retry: (count, error) =>
                   (error as { statusCode?: number }).statusCode !== 404 &&
                   count < 3,

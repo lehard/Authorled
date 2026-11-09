@@ -14,7 +14,8 @@
 #      ./scripts/dev.sh reset-db --yes  Delete the agentos-db container and volume
 #      ./scripts/dev.sh psql            Open psql inside agentos-db
 #      ./scripts/dev.sh auth-users      Create the development users writer@authorled.test and
-#                                       editor@authorled.test in the local Authentik
+#                                       editor@authorled.test in the local Authentik and open
+#                                       its sign-up to every address
 #      ./scripts/dev.sh seed            Load the demo stories for these two users into the database ai
 #
 #    Needs Docker with Compose and a filled .env (compose.yaml requires the
@@ -34,7 +35,7 @@ usage() {
     echo '  stop          stop agentos-api, litellm, clamav, Authentik and agentos-db; data is kept'
     echo '  reset-db      delete the agentos-db container and its volume, with the Authentik data (requires --yes)'
     echo '  psql          open psql inside agentos-db'
-    echo '  auth-users    create or update the development users of the local Authentik (password AUTH_DEV_USER_PASSWORD)'
+    echo '  auth-users    create or update the development users of the local Authentik (password AUTH_DEV_USER_PASSWORD) and open its sign-up to everyone'
     echo '  seed          load the demo stories for the development users into the database ai; refuses if they are there'
 }
 
@@ -146,6 +147,7 @@ case "${command}" in
             || fail "AUTH_DEV_USER_PASSWORD is not set in .env (password of the development users)."
         [[ -n "$(docker compose ps -q --status running mailpit)" ]] \
             || fail "mailpit is not running: auth-users needs the local stand (docker compose up -d)."
+        # The users and allowed_emails ["*"] of the group screenwriters (sign-up open to everyone).
         docker compose exec -T -e AUTH_DEV_USER_PASSWORD="${dev_password}" authentik-worker \
             ak apply_blueprint /blueprints-dev/dev-users.yaml
         # A confirmed e-mail device per user: without it the first sign-in sets one up, and an

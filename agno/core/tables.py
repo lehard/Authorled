@@ -401,3 +401,43 @@ usage_records = Table(
     Index("ix_usage_records_subscription_id_occurred_at", "subscription_id", "occurred_at"),
     Index("ix_usage_records_user_id", "user_id"),
 )
+
+BETA_REQUEST_ROLES = ("screenwriter", "writer", "other")
+
+# Requests for the closed beta from the product site, one per e-mail (openspec/specs/api/beta-requests).
+# A requester is not a user yet, so there is no link to users; the e-mail is kept in lower case.
+beta_requests = Table(
+    "beta_requests",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=text("gen_random_uuid()")),
+    Column("email", Text, nullable=False),
+    Column("name", Text, nullable=False),
+    Column("role", Text, nullable=False),
+    Column("consent_at", DateTime(timezone=True), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    UniqueConstraint("email", name="uq_beta_requests_email"),
+    CheckConstraint("email <> '' AND email = lower(email)", name="email_lower"),
+    CheckConstraint("name <> ''", name="name_not_empty"),
+    CheckConstraint("role IN ('screenwriter', 'writer', 'other')", name="role_known"),
+    Index("ix_beta_requests_created_at", "created_at"),
+)
+
+COAUTHOR_FEEDBACK_VALUES = ("useful", "not_useful")
+
+# The author's mark of an answer of the co-author, one per user and run (openspec/specs/core/database). The run is the
+# Agno run of the usage journal; an empty value is a mark taken back. Identifiers only: no text of the answer.
+coauthor_feedback = Table(
+    "coauthor_feedback",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=text("gen_random_uuid()")),
+    Column("user_id", Uuid, ForeignKey(users.c.id, ondelete="RESTRICT"), nullable=False),
+    Column("run_id", Text, nullable=False),
+    Column("session_id", Text, nullable=False),
+    Column("value", Text),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    UniqueConstraint("user_id", "run_id", name="uq_coauthor_feedback_user_id_run_id"),
+    CheckConstraint("run_id <> '' AND session_id <> ''", name="ids_not_empty"),
+    CheckConstraint("value IN ('useful', 'not_useful')", name="value_known"),
+    Index("ix_coauthor_feedback_updated_at", "updated_at"),
+)

@@ -1,7 +1,7 @@
 # Overview Specification
 
 ## Purpose
-Репозиторий `authorled` — бэкенд продукта Authorled (веб-сервис, который проводит писателя или сценариста через методологию из 22 документов; см. `openspec/context/01-product-context.md`). На текущий момент код репозитория — шаблон AgentOS (`agno-agi/agentos-docker`) на фреймворке Agno `3.1.10` с моделями по умолчанию, переключёнными на Claude. Продуктовое ядро Authorled (документы Д1–Д22, чек-листы, граф связей, утверждения, свои маршруты `/api/v1/`) в коде отсутствует.
+Репозиторий `authorled` — монорепозиторий продукта «Соавтор», редактора сценариев с ИИ-соавтором (см. `openspec/context/01-product-context.md`). Бэкенд в `agno/` — приложение на фреймворке Agno `3.1.10`, выросшее из шаблона AgentOS (`agno-agi/agentos-docker`), с моделями DeepSeek через LiteLLM-прокси. Продуктовое ядро — `agno/core/` в схеме `authorled` (спеки `core/*`): пользователи и их настройки, истории, драфты, документы, тексты, заметки, снимки, рецензирование, файлы, импорт рукописей, подписки и журнал расхода соавтора; его свои маршруты — под `/api/v1/` (спеки `api/*`). Методологии из 22 документов (этапы Д1–Д22, чек-листы, граф связей, утверждения) в коде нет.
 
 Спецификация описывает поведение текущего кода. Целевая архитектура — в `openspec/context/03-architecture.md` и ADR; расхождения перечислены в `openspec/TODO.md`.
 
@@ -11,7 +11,7 @@
 - Модели: DeepSeek через LiteLLM-прокси (`agno/litellm/config.yaml`) по псевдонимам `deepseek-fast` (агенты по умолчанию) и `deepseek-thinking` (OS Manager, Company Manager, Claude Engineer); эмбеддинги (1024 измерения) — один из псевдонимов `gigachat-embeddings`, `giga-embeddings`, `bge-m3-embeddings`, `qwen3-embeddings`, выбранный переменной `EMBEDDINGS_MODEL` (ADR-003).
 - Шлюз моделей: LiteLLM-прокси `ghcr.io/berriai/litellm:v1.104.2` (сервис `litellm` в compose).
 - Развёртывание: Docker Compose (`compose.yaml` — разработка, `compose.prod.yaml` — production-override).
-- Frontend: каталог `web/` (монорепозиторий, ADR-001): React + TypeScript на Vite, shadcn/ui на Tailwind CSS; пока содержит дизайн-систему и её витрину, продуктовых экранов нет (`openspec/specs/web/*`). Интерфейс управления платформой — внешний AgentOS UI (`os.agno.com`).
+- Frontend: каталог `web/` (монорепозиторий, ADR-001): React + TypeScript на Vite, shadcn/ui на Tailwind CSS; дизайн-система, экраны входа, полки, окна истории с редактором сценария и чатом соавтора, личного кабинета (`openspec/specs/web/*`). Интерфейс управления платформой — внешний AgentOS UI (`os.agno.com`).
 
 ## Requirements
 
@@ -25,7 +25,7 @@
 - AND `GET http://127.0.0.1:8000/health` MUST вернуть `200` с `status: "ok"` и `instantiated_at`
 
 ### Requirement: Возможности AgentOS
-Система MUST включать в `AgentOS`: MCP (`mcp=True`), трассировку (`tracing=True`), планировщик (`scheduler=True`, `scheduler_base_url=AGENTOS_URL`), изоляцию пользователей (`user_isolation=True`), каталог пользователей (`user_directory=True`), долговечную очередь (`QueueConfig(durable=True, db=db)`), OS Manager, CompanyOS, знание `shared-knowledge`, реестр и манифест `app/config.yaml`. Авторизация MUST быть включена при любом `RUNTIME_ENV`, включая `dev`; без ключа проверки JWT система MUST NOT запускаться. По умолчанию `RUNTIME_ENV` равен `prd`.
+Система MUST включать в `AgentOS`: MCP (`mcp=True`), планировщик (`scheduler=True`, `scheduler_base_url=AGENTOS_URL`), изоляцию пользователей (`user_isolation=True`), каталог пользователей (`user_directory=True`), долговечную очередь (`QueueConfig(durable=True, db=db)`), OS Manager, CompanyOS, знание `shared-knowledge`, реестр и манифест `app/config.yaml`. Трассировка Agno MUST быть включена и MUST записывать спаны в базу OS пакетами в фоне (`setup_tracing(db, batch_processing=True)` до создания `AgentOS`, у самого `AgentOS` — `tracing=False`), чтобы обработка HTTP-запроса не ждала записи трасс; сбой настройки трассировки MUST останавливать запуск. Авторизация MUST быть включена при любом `RUNTIME_ENV`, включая `dev`; без ключа проверки JWT система MUST NOT запускаться. По умолчанию `RUNTIME_ENV` равен `prd`.
 
 #### Scenario: Значения по умолчанию окружения
 - GIVEN `RUNTIME_ENV` и `AGENTOS_URL` не заданы
@@ -42,26 +42,36 @@
 - WHEN запускается API
 - THEN запуск MUST завершиться ошибкой
 
+#### Scenario: Параллельные запросы не ждут трасс
+- GIVEN API запущен, трассировка включена
+- WHEN клиент одновременно отправляет 8 запросов `GET /health`
+- THEN все 8 ответов MUST прийти быстрее 100 мс, считая внутри контейнера API
+
+#### Scenario: Трассы запуска агента сохраняются
+- GIVEN API запущен
+- WHEN автор отправляет сообщение соавтору и ждёт ответа
+- THEN не позже чем через 10 секунд после ответа `GET /traces` MUST возвращать трассу этого запуска
+
 ### Requirement: Состав компонентов
-Система MUST регистрировать агента `claude-engineer` (из `agents/engineers.py`) и встроенного `company-manager-internal`, а также встроенную команду `os-manager-internal`. Система MUST NOT регистрировать `codex-engineer` и workflows.
+Система MUST регистрировать агентов `claude-engineer` (из `agents/engineers.py`) и `coauthor` (из `agents/coauthor.py`, спека `api/agents`) и встроенного `company-manager-internal`, а также встроенную команду `os-manager-internal`. Система MUST NOT регистрировать `codex-engineer` и workflows.
 
 #### Scenario: Счётчики инстанса
 - GIVEN платформа запущена
 - WHEN клиент выполняет `GET /info`
-- THEN ответ MUST содержать `agent_count: 2`, `team_count: 1`, `workflow_count: 0`
+- THEN ответ MUST содержать `agent_count: 3`, `team_count: 1`, `workflow_count: 0`
 
 ### Requirement: Каналы доступа
-Система MUST предоставлять REST API (`openspec/specs/api/*`) и MCP-endpoint `/mcp` (`openspec/specs/api/mcp/spec.md`). Чат-интерфейсы сторонних мессенджеров (в том числе Slack) система MUST NOT подключать, даже если в окружении заданы переменные `SLACK_BOT_TOKEN` и `SLACK_SIGNING_SECRET`.
+Система MUST предоставлять REST API (`openspec/specs/api/*`) и MCP-endpoint `/mcp` (`openspec/specs/api/mcp/spec.md`). Единственный интерфейс MUST быть AG-UI соавтора с маршрутом `/agents/coauthor` (чат фронтенда, спека `api/agents`, «AG-UI соавтора»). Чат-интерфейсы сторонних мессенджеров (в том числе Slack) система MUST NOT подключать, даже если в окружении заданы переменные `SLACK_BOT_TOKEN` и `SLACK_SIGNING_SECRET`.
 
 #### Scenario: Без Slack
 - GIVEN переменные Slack не заданы
 - WHEN клиент выполняет `GET /config`
-- THEN `interfaces` MUST быть пустым списком
+- THEN `interfaces` MUST содержать только `{type: "agui", route: "/agents/coauthor"}`
 
 #### Scenario: Переменные Slack в окружении
 - GIVEN в окружении заданы `SLACK_BOT_TOKEN` и `SLACK_SIGNING_SECRET`
 - WHEN платформа запущена и клиент выполняет `GET /config`
-- THEN `interfaces` MUST быть пустым списком
+- THEN `interfaces` MUST содержать только `{type: "agui", route: "/agents/coauthor"}`
 
 ### Requirement: Свои маршруты в коде репозитория
 HTTP API MUST предоставляться runtime `AgentOS`. Код репозитория MAY объявлять свои маршруты FastAPI только для продуктовых действий без LLM: роутером в приложении, которое возвращает AgentOS (ADR-002), под префиксом `/api/v1/`, не пересекаясь с маршрутами Agno. Параметр `base_app` MUST NOT использоваться: с ним Agno 3.1.10 не ставит свои обработчики ошибок на свои маршруты. Сейчас свои маршруты — `GET` и `PATCH /api/v1/me` (спека `api/me`) и маршруты историй, рецензирования, файлов и импорта (спеки `api/stories`, `api/review`, `api/files`, `api/story-import`): 22 пути и 32 операции. Очереди, lifecycle и конечные автоматы Company приложение по-прежнему не создаёт. OpenAPI MUST содержать 163 пути и 229 операций.

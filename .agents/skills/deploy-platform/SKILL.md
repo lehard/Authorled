@@ -32,7 +32,9 @@ keys (`auth/jwks/jwks.json`) are public and may be shared to complete configurat
   Tokens come from Authentik (module `auth`, services in `auth/compose.yaml`): fill the auth block of
   the production env file with strong values (`AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`,
   `AUTHENTIK_BOOTSTRAP_PASSWORD`, `AUTH_DEV_SERVICE_TOKEN`), the frontend's `AUTH_FRONTEND_*`
-  values, `AUTH_BRAND_DOMAIN` (host name of Authentik), `AUTH_ALLOWED_EMAILS` (who may sign up; real addresses stay out of the repository) and `AUTH_ISSUER` (public HTTPS address of Authentik plus `/application/o/authorled/`).
+  values, `AUTH_BRAND_DOMAIN` (host name of Authentik) and `AUTH_ISSUER` (public HTTPS address of Authentik plus `/application/o/authorled/`).
+  On a new server sign-up stays closed until `akadmin` sets `allowed_emails` of the group `screenwriters`
+  in the admin interface (README, Module auth, «Admin interface»); real addresses stay out of the repository.
   `authentik-jwks-export` writes `JWT_JWKS_FILE` at start; the API does not start without it.
 - If a sandbox is requested, configure its provider and `REPOSITORY` in
   `agno/app/sandbox.py` using the [sandbox setup guide](../../../agno/docs/sandboxes.md).

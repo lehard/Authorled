@@ -1,7 +1,7 @@
 # Architecture Specification
 
 ## Purpose
-Слои и связи текущего кода. Целевая архитектура Authorled (три сервиса, ядро, свои маршруты `/api/v1/`, Redis, LiteLLM) описана в `openspec/context/03-architecture.md` и ADR-001/002 и в коде не реализована.
+Слои и связи текущего кода. Целевая архитектура Соавтора (три сервиса, ядро, свои маршруты `/api/v1/`, Redis, LiteLLM) описана в `openspec/context/03-architecture.md` и ADR-001/002 и в коде не реализована.
 
 ```mermaid
 graph LR
@@ -139,16 +139,19 @@ URL БД MUST собираться из `DB_DRIVER`, `DB_USER`, `DB_PASS`, `DB_H
 - AND в ней MUST появиться схемы `ai` и `authorled` с владельцем `agentos`
 
 ### Requirement: Раскладка монорепозитория
-Репозиторий MUST состоять из трёх модулей верхнего уровня и общего корня:
+Репозиторий MUST состоять из четырёх модулей верхнего уровня и общего корня:
 - `agno/` — бэкенд на Agno: код, зависимости, образ API, прокси моделей, compose-фрагмент `agno/compose.yaml` и скрипты только бэкенда;
-- `web/` — фронтенд;
-- `auth/` — деплой-часть модуля авторизации.
+- `web/` — фронтенд сервиса;
+- `auth/` — деплой-часть модуля авторизации;
+- `site/` — сайт продукта: статические страницы со своими зависимостями, без своего сервера и данных; токены и шрифты берёт из `web/src/design-system`.
 
 В корне MUST оставаться только общее для модулей:
 - `compose.yaml`, который подключает фрагменты модулей и объявляет общую PostgreSQL;
 - `compose.prod.yaml`, `example.env`, `.env`;
 - `openspec/`, `business-intents/`, `.agents/`, `.github/`, `AGENTS.md`/`CLAUDE.md`, `README.md`, `LICENSE`, `tmp/`;
-- `scripts/` со скриптами всего стека.
+- `scripts/` со скриптами всего стека;
+- `deploy/` — выкладка на сервер (скрипт релиза, проверка сборки фронтенда, конфигурация Caddy);
+- `docs/` — тексты для людей вне кода (юридические документы `docs/legal/`).
 
 В корне MUST NOT быть кода бэкенда и папки `modules/`. Пути кода бэкенда в спеках (`app/…`, `agents/…`, `db/…`, `evals/…`) MUST читаться относительно `agno/`; остальные пути — относительно корня репозитория.
 
@@ -164,8 +167,8 @@ URL БД MUST собираться из `DB_DRIVER`, `DB_USER`, `DB_PASS`, `DB_H
 #### Scenario: Состав верхнего уровня
 - GIVEN репозиторий после переноса
 - WHEN перечисляются отслеживаемые git каталоги верхнего уровня
-- THEN каталоги MUST быть только из списка `agno`, `web`, `auth`, `scripts`, `openspec`, `business-intents`, `.agents`, `.claude`, `.github`
-- AND каталогов `app`, `agents`, `db`, `evals`, `litellm`, `docs`, `modules` в корне MUST NOT быть
+- THEN каталоги MUST быть только из списка `agno`, `web`, `auth`, `site`, `scripts`, `deploy`, `docs`, `openspec`, `business-intents`, `.agents`, `.claude`, `.github`
+- AND каталогов `app`, `agents`, `db`, `evals`, `litellm`, `modules` в корне MUST NOT быть
 
 #### Scenario: OS Manager видит весь репозиторий
 - GIVEN API запущен локально или в контейнере
