@@ -54,17 +54,23 @@ def _undo_coauthor_actions(connection: Connection) -> None:
     )
 
 
+def _undo_coauthor_feedback(connection: Connection) -> None:
+    """Undo 0012 before a test rewinds the schema to an older revision."""
+    connection.execute(text("DROP TABLE authorled.coauthor_feedback"))
+
+
 def _undo_beta_requests(connection: Connection) -> None:
     """Undo 0011 before a test rewinds the schema to an older revision."""
     connection.execute(text("DROP TABLE authorled.beta_requests"))
 
 
 def _drop_subscriptions(connection: Connection) -> None:
-    """Undo 0011, 0010 and 0009 before a test rewinds the core to an older revision.
+    """Undo 0012, 0011, 0010 and 0009 before a test rewinds the core to an older revision.
 
     The tables of 0009 live in schema billing after b0001_from_core, so the billing chain is rewound to its base too;
     `_upgrade` brings both chains back to head.
     """
+    _undo_coauthor_feedback(connection)
     _undo_beta_requests(connection)
     _undo_coauthor_actions(connection)
     connection.execute(text("DROP TABLE billing.usage_records, billing.subscriptions"))
@@ -345,6 +351,7 @@ def test_coauthor_actions_migration_keeps_settings_and_comments(
     """Applied from 0009: settings so far get `ask`, messages so far are written by users."""
     subject = f"test-{uuid.uuid4()}"
     with engine.begin() as connection:
+        _undo_coauthor_feedback(connection)
         _undo_beta_requests(connection)
         _undo_coauthor_actions(connection)
         connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0009_subscriptions_usage'"))

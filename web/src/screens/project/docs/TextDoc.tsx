@@ -15,6 +15,8 @@ import {
 } from "@/editor/ScreenplayEditor";
 import { ConfirmDialog } from "@/screens/shared/ConfirmDialog";
 
+import { ChecksAtSelection } from "../chat/ChecksMenu";
+
 import { useProjectData } from "../ProjectContext";
 import { ActionError, ExportItems } from "./ExportItems";
 import { useEditorComments } from "./useEditorComments";
@@ -65,6 +67,8 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
     closeSuggestion.current = suggestions.close;
   });
   const [error, setError] = useState<string | null>(null);
+  // «Соавтор» of the selection menu: its checks open at the rectangle of that button.
+  const [checksAt, setChecksAt] = useState<DOMRect | null>(null);
   // Import through the core (web/workspace, «Импорт, экспорт и печать на экране»).
   const files = useStoryFiles();
   const invalidate = useInvalidate();
@@ -204,6 +208,7 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
           onScene={setCurrentScene}
           comments={comments.comments}
           suggestions={suggestions.suggestions}
+          onCoauthorRequest={setChecksAt}
           tools={
             <>
               {suggestions.tools}
@@ -237,6 +242,7 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
           }
         />
       )}
+      <ChecksAtSelection anchor={checksAt} onClose={() => setChecksAt(null)} />
       <ActionError error={error} onClose={() => setError(null)} />
       {comments.dialog}
       <ConfirmDialog

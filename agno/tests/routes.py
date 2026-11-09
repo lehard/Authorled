@@ -16,7 +16,7 @@ from sqlalchemy import Engine, delete, select
 
 from app.api import attach_api
 from billing.tables import subscriptions, usage_records
-from core.tables import projects, user_settings, users
+from core.tables import coauthor_feedback, projects, user_settings, users
 
 PROBLEM = "application/problem+json"
 
@@ -95,6 +95,7 @@ def authors(client: TestClient, engine: Engine) -> Iterator[Any]:
     with engine.begin() as connection:
         ids = select(users.c.id).where(users.c.auth_subject.in_(made)).scalar_subquery()
         connection.execute(delete(projects).where(projects.c.owner_id.in_(ids)))
+        connection.execute(delete(coauthor_feedback).where(coauthor_feedback.c.user_id.in_(ids)))
         connection.execute(delete(usage_records).where(usage_records.c.user_id.in_(ids)))
         connection.execute(delete(subscriptions).where(subscriptions.c.user_id.in_(ids)))
         connection.execute(delete(user_settings).where(user_settings.c.user_id.in_(ids)))

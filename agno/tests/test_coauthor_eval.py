@@ -209,12 +209,14 @@ def test_demo_case_loads() -> None:
 
 
 def test_demo_parts_refused() -> None:
-    work = parse_demo_part("demo-work.toml", {"case": _part("w")}, STORIES)
+    work = parse_demo_part("demo-work.toml", {"case": _part("w")}, STORIES, covered=True)
     with pytest.raises(SampleError, match="in both work and holdout"):
-        check_parts({"work": work, "holdout": parse_demo_part("demo-holdout.toml", {"case": _part("w")}, STORIES)})
+        check_parts(
+            {"work": work, "holdout": parse_demo_part("demo-holdout.toml", {"case": _part("w")}, STORIES, covered=True)}
+        )
     without = [r for r in _part("h") if r["expect"] != ["wide-research"]]
     with pytest.raises(SampleError, match="demo-holdout.toml has no case of domain\\(s\\) wide-research"):
-        parse_demo_part("demo-holdout.toml", {"case": without}, STORIES)
+        parse_demo_part("demo-holdout.toml", {"case": without}, STORIES, covered=True)
 
 
 def test_expected_action_and_facts() -> None:
@@ -270,3 +272,172 @@ def test_release_demo_set_loads() -> None:
     work, holdout = load_demo_part("work"), load_demo_part("holdout")
     assert (len(work), len(holdout)) == (70, 30)
     assert 15 <= sum(bool(s.expected and s.expected.absent) for s in work + holdout) <= 25
+
+
+# Checks of the mentor (openspec/changes/coauthor-mentor-checks, design, decision 9).
+
+
+@pytest.mark.parametrize(
+    ("opened", "reason"),
+    [
+        ({"scene": 9}, "has no scene 9 to open"),
+        ({"scene": "6"}, "named by its number"),
+        ({"uid": "water-6"}, "must be a table"),
+    ],
+)
+def test_open_refused(opened: dict[str, object], reason: str) -> None:
+    with pytest.raises(SampleError, match=reason):
+        parse_demo_case("demo-checks.toml", 0, _row("x", "wide-review", open=opened), STORIES)
+
+
+def test_open_reaches_the_judge() -> None:
+    item = parse_demo_case("demo-checks.toml", 0, _row("x", "wide-review", open={"scene": 6}), STORIES)
+    assert item.expected == Expectation((), open=6)
+    text = criteria(item.case, item.expected)
+    assert "выделил сцену 6" in text and "с точной цитатой из выделенной сцены" in text
+    assert "выделил сцену" not in criteria(item.case, Expectation(()))
+
+
+def test_checks_part_is_not_covered() -> None:
+    rows = [_row(f"c-{i}", "wide-review", open={"scene": 6}) for i in range(2)]
+    assert len(parse_demo_part("demo-checks.toml", {"case": rows}, STORIES, covered=False)) == 2
+    with pytest.raises(SampleError, match="has no case of domain"):
+        parse_demo_part("demo-checks.toml", {"case": rows}, STORIES, covered=True)
+
+
+def test_release_checks_part_loads() -> None:
+    import re
+    from pathlib import Path
+
+    from evals.coauthor.demo_set import load_demo_part
+
+    checks = load_demo_part("checks")
+    web = Path(__file__).parents[2] / "web/src/screens/project/chat/checks.ts"
+    requests = re.findall(r'request: "([^"]+)"', re.sub(r"\s+", " ", web.read_text(encoding="utf-8")))
+    assert [s.case.message for s in checks] == requests and len(requests) == 8
+    assert all(s.place == "tihaya-voda" and s.expected == Expectation((), open=6) for s in checks)
+    assert all(s.case.expect == ("wide-review",) for s in checks)
+
+
+def test_context_of_an_opened_scene() -> None:
+    import uuid
+
+    from demo.load import read_demo
+    from evals.coauthor.context import CONTEXT_DESCRIPTION, chat_context, opened_scene
+    from evals.coauthor.user import Place
+
+    demo = read_demo()
+    project = next(p for p in demo["projects"] if p["title"] == "Тихая вода")
+    draft = next(d for d in demo["drafts"] if d["projectId"] == project["id"])
+    text = next(s for s in demo["scripts"] if s["draftId"] == draft["id"])["text"]
+    place = Place("Тихая вода", "…", uuid.uuid4(), uuid.uuid4(), draft["name"])
+    value = chat_context(place, opened_scene(text, 6))[CONTEXT_DESCRIPTION]
+    assert "Открыт документ: Текст сценария.\nСодержимое документа:\n[Акт] Акт первый\n" in value
+    assert "\n[Реплика] Мам, ты опять не спишь?\n" in value
+    assert value.endswith(
+        "\n\nАвтор выделил фрагмент:\nИНТ. ДОМ ВЕРЫ, КУХНЯ — НОЧЬ\nВера не спит и ждёт\n"
+        "Свет только над раковиной. ВЕРА моет чашку. Чашка давно чистая. Она всё равно трёт её губкой.\n"
+        "Аня (З.К.)\nМам, ты опять не спишь?\nАня приносит слова дяди\n"
+        "Входит АНЯ, в куртке, с рюкзаком. Ставит рюкзак на стул.\nВера\nне оборачиваясь\n"
+        "Я же просила звонить, когда едешь так поздно.\nАня\n"
+        "Я была у дяди Коли. Он сказал, что Миша утонул не случайно.\nВода продолжает течь. Вера закрывает кран."
+    )
+    assert "Открыт документ: История." in chat_context(place)[CONTEXT_DESCRIPTION]
+    with pytest.raises(RuntimeError, match="no scene 9"):
+        opened_scene(text, 9)
+
+
+# Fixes of the measurement after iteration 1 (openspec/changes/coauthor-answer-rules, design, decisions 6–8).
+
+
+def test_service_help_of_the_prompt() -> None:
+    from evals.coauthor.judge import prompt_service_help, service_help
+
+    prompt = "Вводная.\n\nО сервисе «Соавтор» — только это:\n- меню «⋯»: «Печать…»;\n- корзина.\n\nПравки:\n- …"
+    assert service_help(prompt) == "О сервисе «Соавтор» — только это:\n- меню «⋯»: «Печать…»;\n- корзина."
+    assert service_help("Вводная.\n\nПравки:\n- …") is None
+    with pytest.raises(ValueError, match="no help under it"):
+        service_help("О сервисе «Соавтор»:\n\nПравки:")
+    real = prompt_service_help()
+    assert real is not None and "«Печать…»" in real
+
+
+def test_judge_sees_the_help_only_when_the_run_had_it() -> None:
+    from evals.coauthor.judge import judge_input
+
+    case = _case("a", ("wide-help",))
+    assert "Что соавтор знает о сервисе" not in judge_input(case, "контекст")
+    assert "Что соавтор знает о сервисе" in judge_input(case, "контекст", "О сервисе «Соавтор»:\n- корзина.")
+
+
+def test_noise_threshold_is_half_the_noisy_cases() -> None:
+    def report(name: str, verdicts: dict[str, tuple[bool, bool]]) -> Report:
+        rows = [(c, v) for c, pair in verdicts.items() for v in pair]
+        return _report(name, *rows)
+
+    def craft(before: Report, after: Report) -> Any:
+        return next(r for r in compare(before, after).domains if r.group == "wide-craft")
+
+    # One case of difference over 4 cases (4/8 → 6/8): two noisy cases make it noise.
+    stable = report("a", {"a": (False, False), "b": (False, False), "c": (True, True), "d": (True, True)})
+    noisy = report("b", {"a": (False, True), "b": (True, False), "c": (True, True), "d": (True, True)})
+    row = craft(stable, noisy)
+    assert (row.before, row.after, row.noisy, row.mark) == ((4, 8), (6, 8), 2, "шум")
+    # One case of difference over 5 cases (5/10 → 7/10) with one noisy case: a change.
+    before = report(
+        "a", {"a": (False, False), "b": (False, False), "c": (True, True), "d": (True, True), "e": (True, False)}
+    )
+    after = report(
+        "b", {"a": (True, True), "b": (False, False), "c": (True, True), "d": (True, True), "e": (True, False)}
+    )
+    row = craft(before, after)
+    assert (row.before, row.after, row.noisy, row.mark) == ((5, 10), (7, 10), 1, "лучше")
+
+
+def test_rejudge_reads_a_report_back() -> None:
+    from dataclasses import asdict
+
+    from evals.coauthor.rejudge import RejudgeError, read_results, to_rejudge
+
+    expected = Expectation(("create_story_note",), (("ефим",),), (Ref("scene", "6"),), (Ref("character", "Нина"),))
+    results = [
+        Result(
+            _case("h", ("wide-help",)),
+            "tihaya-voda",
+            _run("h", Call("read_screenplay", {}, False, "текст")),
+            Judged(False, "выдумка", Usage(1, 10, 0, 5, Decimal("0.5"))),
+            Expectation(()),
+            1,
+        ),
+        Result(_case("n", ("wide-notes",)), "posledniy-parom", _run("n"), Judged(True, "ok"), expected, 2),
+        Result(_case("e", ("wide-help",)), "tihaya-voda", CaseRun("e", "error", "", 0.1, error="сбой"), None, None, 1),
+    ]
+    data = {
+        "meta": {"set": "demo", "part": "work", "repeat": 2},
+        "cases": [
+            {
+                "case": asdict(r.case),
+                "place": r.place,
+                "run": asdict(r.run),
+                "repeat": r.repeat,
+                "expected": None if r.expected is None else asdict(r.expected),
+                "judged": None if r.judged is None else asdict(r.judged),
+            }
+            for r in results
+        ],
+    }
+    _, back = read_results("r", json_round_trip(data))
+    assert back == results
+    # Only ran cases of the domain are judged again.
+    assert to_rejudge(back, "wide-help") == [0]
+    with pytest.raises(RejudgeError, match="wide-poetry"):
+        to_rejudge(back, "wide-poetry")
+    with pytest.raises(RejudgeError, match="no field 'repeat'"):
+        read_results("r", {"meta": {"set": "demo", "part": "work"}, "cases": []})
+
+
+def json_round_trip(data: dict[str, Any]) -> dict[str, Any]:
+    import json
+
+    loaded: dict[str, Any] = json.loads(json.dumps(data, default=str, ensure_ascii=False))
+    return loaded

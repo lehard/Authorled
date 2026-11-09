@@ -15,8 +15,9 @@ generic manager behavior belongs in Agno. `CLAUDE.md` links to this file.
   under `/api/v1/`, added by `attach_api` to the app that `agent_os.get_app()` returns, before the
   MCP mount at the root (see `openspec/context/ADR/ADR-002-own-routes-via-base-app.md`). Do not pass
   `base_app`: with it Agno drops its error handlers for its own routes. Every other API surface stays
-  with Agno; today the own routes are `/api/v1/me` and the story routes (stories, documents, texts,
-  drafts, notes, comments, suggestions, saves, files, import).
+  with Agno; today the own routes are `/api/v1/me`, the story routes (stories, documents, texts,
+  drafts, notes, comments, suggestions, saves, files, import) and the marks of the co-author's answers
+  (`/api/v1/coauthor-feedback`).
 - Check framework behavior against the Agno version pinned in `agno/pyproject.toml`.
   Do not bypass framework rejections or add compatibility adapters to this template.
 - Keep the starter lean. Add abstractions, tests and infrastructure only for a concrete
@@ -96,7 +97,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 ## Where changes belong
 
 - `agno/app/main.py`: AgentOS registration, shared database, OS Manager, Company and queue.
-- `agno/app/api/`: own product routes (`me.py`; `stories.py`, `notes.py`, `review.py`, `saves.py`, `files.py` for stories) and their
+- `agno/app/api/`: own product routes (`me.py`; `stories.py`, `notes.py`, `review.py`, `saves.py`, `files.py` for stories;
+  `feedback.py` for the marks «Полезно» and «Не то» of the co-author's answers) and their
   `application/problem+json` errors, handled only for the product's own exception types (`Problem`, `core/errors.py`).
   `body.py`: JSON body, `If-Match`, the caller and the project access check every story route does first.
 - `agno/app/auth/` and `auth/`: the auth module. `agno/app/auth/` is the only code that reads JWT
@@ -120,7 +122,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   and list the fields of each kind from `FIELD_HINTS` in `core/fields.py`) and its hooks (`coauthor_usage.py`: the limit check before a run, the usage journal
   after it). The co-author never deletes, trashes or decides; the screenplay text changes only by suggestions.
   `agno/skills/<agent_id>/SKILL.md`: an agent's prompt as an Anthropic Agent Skill (`name` equals the id,
-  the body is the prompt), loaded by `agents/prompts.py`; restart the API after editing it.
+  the body is the prompt), loaded by `agents/prompts.py`; restart the API after editing it. The co-author's prompt holds
+  a short help about the service (section «О сервисе «Соавтор»»): a change to a screen it describes updates it too.
   `agno/teams/`: the place for the application's teams; the folder does not exist yet and appears with the first
   registered team (the routing exam builds its teams in `agno/evals/routing/` and does not register them).
 - `agno/db/`: cached OS database and distinct knowledge content adapters.
@@ -131,7 +134,9 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   `documents.py`, `fields.py`, `texts.py`, `notes.py`, `snapshots.py`, `saves.py`, `review.py`, `files.py`, `imports.py` and
   `importers/` (stories, their equal drafts and the documents of a draft, the editor text with revisions, notes of a story, snapshots
   of a document and points of a draft, comments and suggestions, uploads, manuscript import), `clamav.py` (antivirus
-  client) and `errors.py` (refusals the routes answer with). The core never calls billing. `agno/migrations/` and
+  client), `errors.py` (refusals the routes answer with) and `feedback.py` (the author's marks of the co-author's
+  answers by run, the report of the marks; the route gives it the conversation of the run from billing). The core
+  never calls billing. `agno/migrations/` and
   `agno/alembic.ini`: Alembic for schema `authorled` only, forward-only, one head; never migrate Agno or Authentik
   schemas there.
   `agno/tests/`: pytest for the core and billing on real PostgreSQL (`./scripts/dev.sh test`).
@@ -149,7 +154,7 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 - `agno/evals/`: application cases and the Agno eval CLI entrypoint.
 - `agno/demo/`: `python -m demo`, the loader of the demo stories through the core; `./scripts/dev.sh seed` runs it. Their
   content is `web/src/data/demo.json`, shared with the `fixtures` data source.
-- `agno/admin/`: `python -m admin report|set-plan <e-mail> <plan>`, the administrator's commands over billing and the
+- `agno/admin/`: `python -m admin report|set-plan <e-mail> <plan>|coauthor-feedback`, the administrator's commands over billing and the
   core (it joins the spending of billing with the e-mails of the core);
   `./scripts/usage.sh local|prod` runs them in the API container.
 - `scripts/`: local setup, validation and builds. Deployment files: `compose.prod.yaml`, `deploy/` (the release
@@ -343,11 +348,12 @@ owner 2026-11-08, `business-intents/coauthor-tool-contracts.md`).
 - `python -m evals.routing --domains base|wide --split work|holdout --variant team|team-route|skills --model <alias>`
   (from `agno/`; `.env` gives it `LITELLM_URL=http://127.0.0.1:4000`): the routing exam of the orchestrator on
   domain stubs; spends model calls, needs the LiteLLM proxy but no database, writes its report to `tmp/routing/` (`agno/evals/routing/README.md`).
-- `python -m evals.coauthor setup` (once) and `python -m evals.coauthor run --set wide | --set demo --part work|holdout`
+- `python -m evals.coauthor setup` (once) and `python -m evals.coauthor run --set wide | --set demo --part work|holdout|checks`
   `--all | --sample N [--repeat K]` (from `agno/`, with the `DB_*` of `./scripts/dev.sh api`): the real co-author answers
   the sample of the routing exam's wide set or the own demo cases on demo stories of its own user, changes only
   proposed and rejected, judged by `claude-sonnet`; spends model calls, writes its report to `tmp/coauthor-eval/`.
-  `python -m evals.coauthor compare <before.json> <after.json>` compares two reports without model calls
+  `python -m evals.coauthor compare <before.json> <after.json>` compares two reports without model calls;
+  `python -m evals.coauthor rejudge <report.json> --domain <domain>` judges one domain again from the saved answers
   (`agno/evals/coauthor/README.md`).
 - `python -m evals.coauthor actions-setup` (once) and `python -m evals.coauthor actions-run --all | --sample N` (from
   `agno/`, with the same `DB_*`): the measurement of actions — the real co-author runs the requests of

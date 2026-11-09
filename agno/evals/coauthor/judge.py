@@ -4,6 +4,9 @@ One binary verdict with a reason per case. The judge sees the chat's context, th
 conversation before it, and the co-author's answer with every tool it called and the action it proposed. Agno logs
 a failed evaluation and returns no result; the case then gets a «judge error», never a verdict. A case of the demo set
 adds its expectation, built by code from its fields (openspec/specs/coauthor-eval, «Ожидание случая для судьи»).
+The judge also gets the service help the co-author's prompt had in the run, as what the co-author knows about the
+service; without it, correct answers from the help look invented (openspec/changes/coauthor-answer-rules, design,
+decision 6).
 """
 
 import json
@@ -18,6 +21,8 @@ from evals.coauthor.score import Judged
 from evals.routing.cases import Case
 
 JUDGE_MODEL = CLAUDE_SONNET
+# The heading of the service help in the co-author's prompt (agno/skills/coauthor/SKILL.md).
+HELP_HEADING = "О сервисе «Соавтор»"
 # What one domain of a case asks of the answer, added to the common criteria. An action is needed only when the
 # author asks to change, add, record or leave something; variants, critique and answers in the chat are fine.
 DOMAIN_CRITERIA = {
@@ -63,6 +68,12 @@ def expectation_lines(expected: Expectation) -> list[str]:
         f"- в истории нет {ref.label()}: хороший ответ прямо говорит, что этого нет, и уточняет, а не подменяет другим;"
         for ref in expected.absent
     ]
+    if expected.open is not None:
+        lines.append(
+            f"- автор открыл текст сценария и выделил сцену {expected.open}: хороший ответ называет одно–три места "
+            "с точной цитатой из выделенной сцены, объясняет, почему место слабое, задаёт автору вопрос и не "
+            "присылает переписанную сцену целиком; другие документы истории читает инструментами и не выдумывает их;"
+        )
     return lines
 
 
@@ -73,11 +84,39 @@ def criteria(case: Case, expected: Expectation | None = None) -> str:
     return "\n".join(lines)
 
 
-def judge_input(case: Case, context: str) -> str:
+def service_help(prompt: str) -> str | None:
+    """The service help of a prompt: its heading line and the lines up to the next blank line; None without one."""
+    lines = prompt.splitlines()
+    start = next((i for i, line in enumerate(lines) if line.startswith(HELP_HEADING)), None)
+    if start is None:
+        return None
+    end = next((i for i in range(start + 1, len(lines)) if not lines[i].strip()), len(lines))
+    if end == start + 1:
+        raise ValueError(f"The prompt has the heading «{HELP_HEADING}» and no help under it")
+    return "\n".join(lines[start:end])
+
+
+def prompt_service_help() -> str | None:
+    """The service help of the co-author's prompt as it is now (agno/skills/coauthor/SKILL.md)."""
+    from agents.prompts import agent_prompt
+
+    return service_help(agent_prompt("coauthor"))
+
+
+def judge_input(case: Case, context: str, help_text: str | None = None) -> str:
     turns = [f"{'Автор' if t.role == 'author' else 'Соавтор'}: {t.text}" for t in case.history]
     before = ["Беседа до этого:", *turns, ""] if turns else []
     opened = ["Что чат прислал соавтору о том, что открыто у автора:", context, ""]
-    return "\n".join([*opened, *before, f"Сообщение автора: {case.message}"])
+    known = (
+        [
+            "Что соавтор знает о сервисе «Соавтор» (справка в его инструкциях; сведения из неё — не выдумка):",
+            help_text,
+            "",
+        ]
+        if help_text is not None
+        else []
+    )
+    return "\n".join([*known, *opened, *before, f"Сообщение автора: {case.message}"])
 
 
 def judge_output(run: CaseRun) -> str:
@@ -95,7 +134,12 @@ def judge_output(run: CaseRun) -> str:
 
 
 async def judge(
-    case: Case, run: CaseRun, context: str, price: ModelPrice, expected: Expectation | None = None
+    case: Case,
+    run: CaseRun,
+    context: str,
+    price: ModelPrice,
+    expected: Expectation | None = None,
+    help_text: str | None = None,
 ) -> Judged:
     metrics = RunMetrics()
     evaluation = AgentAsJudgeEval(
@@ -106,7 +150,9 @@ async def judge(
         telemetry=False,
         show_spinner=False,
     )
-    result = await evaluation.arun(input=judge_input(case, context), output=judge_output(run), run_metrics=metrics)
+    result = await evaluation.arun(
+        input=judge_input(case, context, help_text), output=judge_output(run), run_metrics=metrics
+    )
     usage = _usage(metrics, price)
     if result is None or not result.results:
         return Judged(None, "", usage, error="Судья не вернул оценку (причина — в логе Agno «Evaluation failed»)")

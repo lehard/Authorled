@@ -1,11 +1,12 @@
 """python -m evals.coauthor setup | run | compare: the quality measurement of the current co-author.
 
 openspec/specs/coauthor-eval, README.md here. `setup` creates the user of the measurement with its demo stories.
-`run --set wide|demo [--part work|holdout] (--all | --sample N) [--repeat K]` checks the set, the user and the prices
-before the first model call, then runs every case K times through the real co-author (two at a time) and has the
+`run --set wide|demo [--part work|holdout|checks] (--all | --sample N) [--repeat K]` checks the set, the user and the
+prices before the first model call, then runs every case K times through the real co-author (two at a time) and has the
 judge rate it. The report goes to tmp/coauthor-eval/<UTC time>.json and .md, the cases for the owner to
 <UTC time>-review.md; the log holds only case ids. `compare <before.json> <after.json>` compares two reports of one
-set and part without model calls.
+set and part without model calls. `rejudge <report.json> --domain D` judges the cases of domain D again from the saved
+answers, with the current service help, and writes a new report.
 
 The measurement of actions (actions.py): `actions-setup` creates its own user with the demo stories; `actions-run
 (--all | --sample N)` checks the set, the user and the price, then runs every request on a fresh copy of the open
@@ -51,11 +52,16 @@ def _arguments(argv: list[str]) -> argparse.Namespace:
     commands.add_parser("setup", help="create the user of the measurement and its demo stories")
     run = commands.add_parser("run", help="run a set through the co-author and the judge (spends model calls)")
     run.add_argument("--set", required=True, choices=SETS, dest="set_name", help="wide: the sample; demo: own cases")
-    run.add_argument("--part", choices=("work", "holdout"), help="the part of the demo set (required for demo)")
+    run.add_argument(
+        "--part", choices=("work", "holdout", "checks"), help="the part of the demo set (required for demo)"
+    )
     which = run.add_mutually_exclusive_group(required=True)
     which.add_argument("--all", action="store_true", help="every case of the set")
     which.add_argument("--sample", type=int, help="only the first N cases of the set")
     run.add_argument("--repeat", type=int, default=1, help="run every case K times (the noise of the run)")
+    again = commands.add_parser("rejudge", help="judge the cases of one domain of a report again (spends judge calls)")
+    again.add_argument("report", type=Path)
+    again.add_argument("--domain", required=True, help="a domain of the wide set, e.g. wide-help")
     pair = commands.add_parser("compare", help="compare two reports of one set and part (no model calls)")
     pair.add_argument("before", type=Path)
     pair.add_argument("after", type=Path)
@@ -75,7 +81,7 @@ def _arguments(argv: list[str]) -> argparse.Namespace:
         if arguments.repeat < 1:
             parser.error("--repeat must be at least 1")
         if arguments.set_name == "demo" and arguments.part is None:
-            parser.error("--set demo needs --part work or --part holdout")
+            parser.error("--set demo needs --part work, --part holdout or --part checks")
         if arguments.set_name == "wide" and arguments.part is not None:
             parser.error("--part belongs to --set demo; the wide set is one sample")
     return arguments
@@ -193,11 +199,12 @@ async def _run(arguments: argparse.Namespace) -> int:
     from app.auth import set_project_access_source
     from billing import prices
     from core.projects import ProjectAccess
+    from evals.coauthor.context import CONTEXT_DESCRIPTION, chat_context, open_scene
     from evals.coauthor.demo_set import load_demo_part
-    from evals.coauthor.judge import JUDGE_MODEL, judge
-    from evals.coauthor.run import CONTEXT_DESCRIPTION, chat_context, run_case
+    from evals.coauthor.judge import JUDGE_MODEL, judge, prompt_service_help
+    from evals.coauthor.run import run_case
     from evals.coauthor.sample import load_sample
-    from evals.coauthor.score import Result, review_pick, spent, summarize
+    from evals.coauthor.score import Result
     from evals.coauthor.user import QUALITY, places
 
     # Everything is checked before the first model call (spec «Прогон замера»).
@@ -205,7 +212,16 @@ async def _run(arguments: argparse.Namespace) -> int:
     if arguments.sample is not None:
         sampled = sampled[: arguments.sample]
     where = places(QUALITY)
+    # The chat's context of every case, read from the core before the first model call: a check of the mentor
+    # opens the screenplay of its draft and selects a scene (spec «Случай с открытым текстом сценария»).
+    contexts = {}
+    for item in sampled:
+        scene = None if item.expected is None else item.expected.open
+        place = where[item.place]
+        contexts[item.case.id] = chat_context(place, None if scene is None else open_scene(place, scene))
     coauthor_price, judge_price = prices().get(COAUTHOR_MODEL), prices().get(JUDGE_MODEL)
+    # What the co-author knows about the service in this run; the judge sees the same (design, decision 6).
+    help_text = prompt_service_help()
     # The co-author's tools ask the core who may open a story, as in the API (app/main.py).
     set_project_access_source(ProjectAccess())
 
@@ -214,19 +230,18 @@ async def _run(arguments: argparse.Namespace) -> int:
 
     async def one(item: Sampled, repeat: int) -> Result:
         async with gate:
-            run = await run_case(item.case, where[item.place], COAUTHOR_MODEL, coauthor_price)
-            context = chat_context(where[item.place])[CONTEXT_DESCRIPTION]
+            run = await run_case(item.case, where[item.place], contexts[item.case.id], COAUTHOR_MODEL, coauthor_price)
+            context = contexts[item.case.id][CONTEXT_DESCRIPTION]
             judged = (
-                None if run.outcome == "error" else await judge(item.case, run, context, judge_price, item.expected)
+                None
+                if run.outcome == "error"
+                else await judge(item.case, run, context, judge_price, item.expected, help_text)
             )
             print(f"{item.case.id} #{repeat}: {run.outcome}{'' if judged is None else ', judged'}", flush=True)
             return Result(item.case, item.place, run, judged, item.expected, repeat)
 
     jobs = [one(item, repeat) for repeat in range(1, arguments.repeat + 1) for item in sampled]
     results = list(await asyncio.gather(*jobs))
-    summary = summarize(results)
-    coauthor = spent([r.run.usage for r in results if r.run.usage is not None])
-    judge_usage = spent([r.judged.usage for r in results if r.judged is not None and r.judged.usage is not None])
     seconds = [r.run.seconds for r in results if r.run.outcome != "error"]
     meta = {
         "set": arguments.set_name,
@@ -237,10 +252,22 @@ async def _run(arguments: argparse.Namespace) -> int:
         "started": started.isoformat(timespec="seconds"),
         "coauthor_model": COAUTHOR_MODEL,
         "judge_model": JUDGE_MODEL,
+        "service_help": help_text,
         # No case ran: no latency, and the report says so (spec «Сбой соавтора в одном случае»).
         "median_seconds": percentile(seconds, 0.5) if seconds else None,
         "p95_seconds": percentile(seconds, 0.95) if seconds else None,
     }
+    _write_report(meta, results, started)
+    return 0
+
+
+def _write_report(meta: dict[str, Any], results: list[Result], started: datetime) -> None:
+    """The report of a run or a re-judging: JSON, the summary and, except for the held-out part, the owner's file."""
+    from evals.coauthor.score import review_pick, spent, summarize
+
+    summary = summarize(results)
+    coauthor = spent([r.run.usage for r in results if r.run.usage is not None])
+    judge_usage = spent([r.judged.usage for r in results if r.judged is not None and r.judged.usage is not None])
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     stem = f"{started:%Y%m%dT%H%M%SZ}"
     report = {
@@ -270,7 +297,7 @@ async def _run(arguments: argparse.Namespace) -> int:
     text = _markdown(meta, summary, coauthor, judge_usage)
     (REPORT_DIR / f"{stem}.md").write_text(text, encoding="utf-8")
     files = f"{stem}.json and {stem}.md"
-    if arguments.part != "holdout":
+    if meta["part"] != "holdout":
         review = ["# Замер соавтора: ответы для чтения владельцем", ""]
         for result in review_pick(results):
             review += _case_lines(result)
@@ -278,6 +305,34 @@ async def _run(arguments: argparse.Namespace) -> int:
         files = f"{stem}.json, {stem}.md and {stem}-review.md"
     print(text)
     print(f"Report: tmp/coauthor-eval/{files}")
+
+
+async def _rejudge(arguments: argparse.Namespace) -> int:
+    # Imported after .env is loaded, as in _run.
+    from billing import prices
+    from evals.coauthor.judge import JUDGE_MODEL, prompt_service_help
+    from evals.coauthor.rejudge import check_domain, read_results, rejudge
+    from evals.coauthor.user import QUALITY, places
+
+    # Everything is checked before the first model call (spec «Повторная оценка судьёй»).
+    check_domain(arguments.domain)
+    try:
+        data = json.loads(arguments.report.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise SystemExit(f"{arguments.report}: {error}") from error
+    meta, results = read_results(arguments.report.stem, data)
+    where = places(QUALITY)
+    price = prices().get(JUDGE_MODEL)
+    help_text = prompt_service_help()
+    started = datetime.now(UTC)
+    redone = await rejudge(results, arguments.domain, where, price, help_text, CONCURRENCY)
+    meta = meta | {
+        "started": started.isoformat(timespec="seconds"),
+        "rejudged_from": arguments.report.stem,
+        "rejudged_domain": arguments.domain,
+        "service_help": help_text,
+    }
+    _write_report(meta, redone, started)
     return 0
 
 
@@ -317,6 +372,7 @@ async def _actions_run(arguments: argparse.Namespace) -> int:
     from core.projects import ProjectAccess, user_id_of
     from evals.coauthor.actions import check, load_set, markdown, summarize
     from evals.coauthor.actions_run import run_request
+    from evals.coauthor.demo_notes import demo_notes, restore_notes
     from evals.coauthor.score import spent
     from evals.coauthor.user import ACTIONS, places
 
@@ -325,8 +381,12 @@ async def _actions_run(arguments: argparse.Namespace) -> int:
     if arguments.sample is not None:
         requests = requests[: arguments.sample]
     where = places(ACTIONS)
-    with get_engine().connect() as connection:
+    with get_engine().begin() as connection:
         owner = user_id_of(connection, ACTIONS.subject)
+        # Notes that cannot be matched with the demo stop the run before any model call (spec «Заметки истории
+        # перед просьбой»); every request restores them again.
+        for place in where.values():
+            restore_notes(connection, place.project_id, demo_notes(place.title), owner)
     price = prices().get(COAUTHOR_MODEL)
     set_project_access_source(ProjectAccess())
     commit = _commit()
@@ -402,6 +462,8 @@ def main(argv: list[str]) -> int:
         return 0
     if arguments.command == "compare":
         return _compare(arguments)
+    if arguments.command == "rejudge":
+        return asyncio.run(_rejudge(arguments))
     if arguments.command == "actions-setup":
         from demo.load import DemoExists
         from evals.coauthor.user import ACTIONS, setup

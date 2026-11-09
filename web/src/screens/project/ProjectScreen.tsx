@@ -43,7 +43,11 @@ import { DocView } from "./docs/DocView";
 import { parseDoc } from "./docRef";
 import { docTitle } from "./docTitle";
 import { Navigator } from "./Navigator";
-import { ProjectContext, type ProjectData } from "./ProjectContext";
+import {
+  ProjectContext,
+  type CoauthorRequest,
+  type ProjectData,
+} from "./ProjectContext";
 
 /** Key of `localStorage` for the folded chat of a wide window. */
 const CHAT_FOLDED_KEY = "authorled.chatCollapsed";
@@ -86,6 +90,11 @@ export function ProjectScreen() {
     setChatFolded(folded);
   };
   const [selection, clearSelection] = useSelectionIn();
+  // A check from a document waits here until the chat sends it; the chat reports when it cannot
+  // send (web/workspace, «Проверки над выделением»).
+  const [coauthorRequest, setCoauthorRequest] =
+    useState<CoauthorRequest | null>(null);
+  const [chatBlocked, setChatBlocked] = useState(false);
   const [currentScene, setCurrentScene] = useState<number | null>(null);
   // The working copy of the text belongs to one draft; another draft starts from its data.
   const [working, setWorking] = useState<{
@@ -184,6 +193,17 @@ export function ProjectScreen() {
       note: trashNotes.notes,
     },
   };
+  const openChat = () => {
+    if (narrow) setChatOpen(true);
+    else foldChat(false);
+  };
+  const coauthorBusy = chatBlocked || coauthorRequest !== null;
+  const chatRequest = {
+    request: coauthorRequest,
+    onRequestTaken: (id: string) =>
+      setCoauthorRequest((r) => (r?.id === id ? null : r)),
+    onBlockedChange: setChatBlocked,
+  };
   const data: ProjectData = {
     ...base,
     doc: ref,
@@ -196,10 +216,14 @@ export function ProjectScreen() {
     textStatus,
     currentScene,
     setCurrentScene,
-    openChat: () => {
-      if (narrow) setChatOpen(true);
-      else foldChat(false);
+    openChat,
+    askCoauthor: (text) => {
+      if (coauthorBusy)
+        throw new Error("Соавтор ещё отвечает: новая просьба не отправлена.");
+      setCoauthorRequest({ id: crypto.randomUUID(), text });
+      openChat();
     },
+    coauthorBusy,
     openFresh: () => {
       // Every query of the window is read again before the document opens anew; a failed read
       // shows the error screen of the window.
@@ -274,6 +298,7 @@ export function ProjectScreen() {
                   sees={title}
                   selection={selection}
                   clearSelection={clearSelection}
+                  {...chatRequest}
                   onClose={() => setChatOpen(false)}
                 />
               </SheetContent>
@@ -326,6 +351,7 @@ export function ProjectScreen() {
                   sees={title}
                   selection={selection}
                   clearSelection={clearSelection}
+                  {...chatRequest}
                   onCollapse={() => foldChat(true)}
                 />
               </div>

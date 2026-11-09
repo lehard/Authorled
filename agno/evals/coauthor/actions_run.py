@@ -3,9 +3,10 @@
 The core copies the open draft of the demo story for the request (`create_draft`); the conversation names the copy,
 so the co-author works only there. The agent is the registered `coauthor` with its sessions in memory, run as the
 user of the measurement of actions. Every pause is confirmed, as the chat does in the mode `auto`, and the run goes
-on to the co-author's answer. What changed is read from the core before and after: cards of the copy, notes of the
-story (shared by its drafts), comments and suggestions of the copy, and the documents of the open draft, which must
-stay as they were.
+on to the co-author's answer. The notes of a story are shared by its drafts, so before every request they are brought
+back to the demo state (spec «Заметки истории перед просьбой»). What changed is read from the core before and after:
+cards of the copy, notes of the story, comments and suggestions of the copy, and the documents of the open draft,
+which must stay as they were.
 """
 
 import time
@@ -23,6 +24,7 @@ from core.documents import list_documents
 from core.drafts import create_draft
 from core.engine import get_engine
 from evals.coauthor.actions import ActionRun, Card, Changes, Request
+from evals.coauthor.demo_notes import demo_notes, restore_notes
 from evals.coauthor.run import caller, calls_of, chat_context, session_db, usage_of
 from evals.coauthor.user import EvalUser, Place
 
@@ -97,6 +99,8 @@ async def run_request(
 ) -> ActionRun:
     open_draft_id = place.draft_id
     started = time.monotonic()
+    with get_engine().begin() as connection:
+        restore_notes(connection, place.project_id, demo_notes(place.title), owner)
     copy = fresh_draft(place, request, owner)
     before = snapshot(copy.project_id, copy.draft_id, open_draft_id)
     session_id = f"{copy.project_id}:{copy.draft_id}:{uuid.uuid4()}"

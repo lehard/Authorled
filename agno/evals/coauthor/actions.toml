@@ -1,4 +1,4 @@
-# The set of the measurement of actions (openspec/changes/coauthor-tool-contracts, design, decision 5): requests of
+# The set of the measurement of actions (openspec/specs/coauthor-actions-eval): requests of
 # an author in the world of the demo stories (web/src/data/demo.json), each run in a fresh copy of the open draft.
 #
 # Every request is a `[[request]]` table:

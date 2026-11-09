@@ -513,6 +513,7 @@ in the running API container:
 ./scripts/usage.sh prod report                       # on the server, from /srv/authorled/app
 ./scripts/usage.sh prod set-plan anna@example.com beta
 ./scripts/usage.sh prod beta-requests                # requests for the beta from the site
+./scripts/usage.sh prod coauthor-feedback            # marks of the co-author's answers, the last «Не то»
 ```
 
 `local` instead of `prod` runs the same commands on the local stand. A new plan or price is a change of the data file
