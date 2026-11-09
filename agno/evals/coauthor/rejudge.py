@@ -9,7 +9,7 @@ import asyncio
 from decimal import Decimal
 from typing import Any
 
-from core.plans import ModelPrice
+from billing import ModelPrice
 from evals.coauthor.records import Call, CaseRun, Expectation, Ref, Usage
 from evals.coauthor.score import Judged, Result
 from evals.coauthor.user import Place
@@ -111,8 +111,8 @@ async def rejudge(
     concurrency: int,
 ) -> list[Result]:
     # Imported here: the judge's model is built from the .env the command loaded.
-    from evals.coauthor.judge import judge
     from evals.coauthor.context import CONTEXT_DESCRIPTION, chat_context
+    from evals.coauthor.judge import judge
 
     picked = to_rejudge(results, domain)
     gate = asyncio.Semaphore(concurrency)

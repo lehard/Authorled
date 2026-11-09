@@ -309,7 +309,7 @@ def _write_report(meta: dict[str, Any], results: list[Result], started: datetime
 
 async def _rejudge(arguments: argparse.Namespace) -> int:
     # Imported after .env is loaded, as in _run.
-    from core.plans import prices
+    from billing import prices
     from evals.coauthor.judge import JUDGE_MODEL, prompt_service_help
     from evals.coauthor.rejudge import check_domain, read_results, rejudge
     from evals.coauthor.user import QUALITY, places
