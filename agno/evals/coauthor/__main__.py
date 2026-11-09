@@ -372,6 +372,7 @@ async def _actions_run(arguments: argparse.Namespace) -> int:
     from core.projects import ProjectAccess, user_id_of
     from evals.coauthor.actions import check, load_set, markdown, summarize
     from evals.coauthor.actions_run import run_request
+    from evals.coauthor.demo_notes import demo_notes, restore_notes
     from evals.coauthor.score import spent
     from evals.coauthor.user import ACTIONS, places
 
@@ -380,8 +381,12 @@ async def _actions_run(arguments: argparse.Namespace) -> int:
     if arguments.sample is not None:
         requests = requests[: arguments.sample]
     where = places(ACTIONS)
-    with get_engine().connect() as connection:
+    with get_engine().begin() as connection:
         owner = user_id_of(connection, ACTIONS.subject)
+        # Notes that cannot be matched with the demo stop the run before any model call (spec «Заметки истории
+        # перед просьбой»); every request restores them again.
+        for place in where.values():
+            restore_notes(connection, place.project_id, demo_notes(place.title), owner)
     price = prices().get(COAUTHOR_MODEL)
     set_project_access_source(ProjectAccess())
     commit = _commit()
