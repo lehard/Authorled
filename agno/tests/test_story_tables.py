@@ -36,7 +36,9 @@ def _user(connection: Connection) -> uuid.UUID:
 
 def _project(connection: Connection, owner_id: uuid.UUID) -> uuid.UUID:
     return connection.execute(
-        insert(projects).values(owner_id=owner_id, title="Маяк", format="feature").returning(projects.c.id)
+        insert(projects)
+        .values(owner_id=owner_id, title="Маяк", format="feature", cover_color="blue")
+        .returning(projects.c.id)
     ).scalar_one()
 
 
@@ -95,13 +97,26 @@ def test_projects_columns(connection: Connection) -> None:
         "deleted_at",
         "word_goal",
         "goal_deadline",
+        "cover_color",
     ]
 
 
 def test_unknown_format_is_rejected(connection: Connection) -> None:
     owner = _user(connection)
     with pytest.raises(IntegrityError, match="ck_projects_format_known"):
-        connection.execute(insert(projects).values(owner_id=owner, title="Маяк", format="novel"))
+        connection.execute(insert(projects).values(owner_id=owner, title="Маяк", format="novel", cover_color="blue"))
+
+
+def test_unknown_cover_color_is_rejected(connection: Connection) -> None:
+    owner = _user(connection)
+    with pytest.raises(IntegrityError, match="ck_projects_cover_color_known"):
+        connection.execute(insert(projects).values(owner_id=owner, title="Маяк", format="feature", cover_color="pink"))
+
+
+def test_story_without_cover_color_is_rejected(connection: Connection) -> None:
+    owner = _user(connection)
+    with pytest.raises(IntegrityError, match="cover_color"):
+        connection.execute(insert(projects).values(owner_id=owner, title="Маяк", format="feature"))
 
 
 def test_second_script_is_rejected(connection: Connection) -> None:

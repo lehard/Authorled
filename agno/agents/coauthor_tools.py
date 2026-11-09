@@ -20,10 +20,10 @@ from agno.tools.function import Function
 
 from app.auth import can_access_project, run_principal
 from core import documents as docs
-from core import notes, review, story_templates, texts
+from core import notes, review, search, story_templates, texts
 from core.engine import get_engine
 from core.errors import Conflict, Invalid, Locked, NotFound
-from core.fields import Role, field_guide
+from core.fields import FIELD_HINTS, Role, field_guide
 from core.files import file_text as stored_file_text
 from core.files import get_file
 from core.users import active_user_id
@@ -166,6 +166,60 @@ def list_story_templates(run_context: RunContext) -> str:
                 out.append(f"  Акт «{act.name}»")
                 out.extend(f"    — {point.name}: {point.hint}" for point in act.points)
         return "\n".join(out)
+
+    return _answer(work)
+
+
+_KIND_WORDS = {"character": "персонаж", "location": "локация", "world": "мир"}
+_COMMON_FIELDS = {"name": "имя или название", "summary": "короткое описание"}
+
+
+def _piece(snippet: search.Snippet) -> str:
+    return f"{snippet.before}«{snippet.match}»{snippet.after}"
+
+
+def _found(result: search.SearchResult) -> str:
+    if not (result.scenes or result.documents or result.notes):
+        return f"Ничего не нашлось по запросу «{result.query}»."
+    out = [f"Найдено по запросу «{result.query}» (регистр и ё/е не различаются):"]
+    if result.scenes:
+        out.append("Сцены:")
+        for scene in result.scenes:
+            where = "Вне сцен" if scene.uid is None else f"Сцена {scene.number}, uid {scene.uid}"
+            out.append(f"- {where} (совпадений {scene.count}): {_piece(scene.snippet)}")
+    if result.documents:
+        out.append("Документы:")
+        for document in result.documents:
+            if document.kind == "script":
+                what = f"{FIELD_HINTS['script'][document.field]} сценария, id {document.id}"
+            else:
+                label = _COMMON_FIELDS.get(document.field) or FIELD_HINTS[document.kind][document.field]
+                what = f"{_KIND_WORDS[document.kind]} «{document.name}», id {document.id}, поле «{label}»"
+            out.append(f"- {what} (совпадений {document.count}): {_piece(document.snippet)}")
+    if result.notes:
+        out.append("Заметки:")
+        for note in result.notes:
+            where = "в названии" if note.field == "title" else "в тексте"
+            out.append(f"- «{note.title}», id {note.id}, {where} (совпадений {note.count}): {_piece(note.snippet)}")
+    return "\n".join(out)
+
+
+def search_story(run_context: RunContext, query: str) -> str:
+    """Поиск слова, имени, предмета или фразы по драфту этой беседы и заметкам истории.
+
+    Ищет в тексте сценария, логлайне, синопсисе, персонажах, локациях, мирах и заметках (без корзины),
+    без учёта регистра и разницы ё/е. Возвращает сцены с uid, документы и заметки с id и кусочком текста
+    вокруг первого совпадения; целиком найденное читай через read_screenplay, read_story_document
+    или read_story_note.
+
+    Args:
+        query: что искать, не короче 2 символов, например «лодка» или «ключ».
+    """
+
+    def work() -> Any:
+        draft = _draft(run_context)
+        with get_engine().connect() as connection:
+            return _found(search.search_draft(connection, draft.id, query))
 
     return _answer(work)
 
@@ -430,6 +484,7 @@ READING_TOOLS: list[Callable[..., str]] = [
     list_story_documents,
     read_story_document,
     read_screenplay,
+    search_story,
     read_chat_file,
     list_story_notes,
     read_story_note,

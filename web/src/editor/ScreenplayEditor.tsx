@@ -77,6 +77,8 @@ export type ScreenplayEditorHandle = {
   focus(): void;
   /** Puts the caret at scene `number`; false when there is no such scene. */
   goToScene(number: number): boolean;
+  /** Opens the find bar with `query`; the current match is the first one from the caret or the start on. */
+  openFind(query: string, from: "caret" | "start"): void;
   /** Removes every place of a comment thread from the text, outside undo. */
   removeComment(id: string): void;
   commentAnchor(id: string): CommentAnchor | null;
@@ -333,6 +335,10 @@ export function ScreenplayEditor({
       replace: (next) => view().replace(next),
       focus: () => view().focus(),
       goToScene: (number) => view().goToScene(number),
+      openFind: (query, from) => {
+        setFindOpen(true);
+        view().openFind(query, from);
+      },
       removeComment: (id) => view().removeComment(id),
       commentAnchor: (id) => view().commentAnchor(id),
       showCardGap: (id, height) => view().showCardGap(id, height),

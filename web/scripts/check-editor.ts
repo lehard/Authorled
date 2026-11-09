@@ -86,6 +86,7 @@ import { SCENE_HEADING_START } from "../src/editor/plugins/inputRules.ts";
 import { sceneUidsPlugin } from "../src/editor/plugins/sceneUids.ts";
 import { findAnchor, placeAnchors } from "../src/editor/anchors.ts";
 import { schema } from "../src/editor/schema/index.ts";
+import { foldText } from "../src/editor/fold.ts";
 
 import { SAMPLE_ROWS, staleSamples } from "./samples.ts";
 
@@ -390,6 +391,14 @@ try {
     fail("в «Только текущая сцена» поиск нашёл текст других сцен");
   s = s.apply(s.tr.setMeta(visibilityKey, { isolate: false }));
   if (count("Миша", "all") !== 0) fail("поиск нашёл текст скрытого бита");
+  // «ё» and «е» are one letter for the search, as in the search of the story (project-search).
+  if (count("ИДЕТ", "all") !== 1)
+    fail("поиск «ИДЕТ» должен находить «идёт»: ё и е не различаются");
+  const yo = findKey.getState(s)!.matches[0]!;
+  if (s.doc.textBetween(yo.from, yo.to) !== "идёт")
+    fail(`поиск «ИДЕТ» выделил «${s.doc.textBetween(yo.from, yo.to)}»`);
+  if (foldText("İВЁРА") !== "İвера")
+    fail(`свёртка сдвинула буквы: «${foldText("İВЁРА")}»`);
   count("мам", "all");
   s = run(replaceAll("Надя"), s);
   const after = paragraphs(toJSON(s.doc))

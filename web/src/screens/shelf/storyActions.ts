@@ -2,7 +2,7 @@ import { useCreate, useGetIdentity, useUpdate } from "@refinedev/core";
 
 import type { Identity } from "@/auth/authProvider";
 import { useStoryFiles, type NewStory } from "@/data/files";
-import type { NewProject, Script } from "@/data/model";
+import type { CoverColor, NewProject, Script } from "@/data/model";
 
 const quiet = { successNotification: false, errorNotification: false } as const;
 
@@ -67,6 +67,15 @@ export function useStoryActions() {
     await update({ resource: "projects", id, values: { title }, ...quiet });
   }
 
+  async function setCoverColor(id: string, coverColor: CoverColor) {
+    await update({
+      resource: "projects",
+      id,
+      values: { coverColor },
+      ...quiet,
+    });
+  }
+
   async function trashStory(id: string, inTrash: boolean) {
     await update({
       resource: "projects",
@@ -76,5 +85,5 @@ export function useStoryActions() {
     });
   }
 
-  return { createStory, renameStory, trashStory };
+  return { createStory, renameStory, setCoverColor, trashStory };
 }
