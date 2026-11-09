@@ -31,11 +31,13 @@ If a Python environment is active, run `deactivate` first.
 ```sh
 ./agno/scripts/venv_setup.sh
 docker build --target sandbox --load -t agno-sandbox:local -f agno/Dockerfile .
+./scripts/dev.sh up    # in the main checkout: the stand without the agentos-api container
 ./scripts/dev.sh api
 ```
 
-`dev.sh api` starts `agentos-db`, `litellm` and Authentik, exports the Authentik keys, stops the
-`agentos-api` container and runs the API on the host with `--reload`, `DB_HOST=127.0.0.1`,
+`dev.sh up` starts `agentos-db`, `litellm`, `clamav`, Authentik and Mailpit. `dev.sh api` needs them healthy and
+port 8000 free (it never stops the `agentos-api` container), migrates the database of the checkout, exports the
+Authentik keys and runs the API on the host with `--reload`, `DB_HOST=127.0.0.1`,
 `LITELLM_URL=http://127.0.0.1:4000` and `JWT_JWKS_FILE` pointing at the exported keys.
 
 Keep that terminal running. From another terminal, check the API's MCP connection:

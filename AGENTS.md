@@ -38,6 +38,11 @@ generic manager behavior belongs in Agno. `CLAUDE.md` links to this file.
 - Do not run `./scripts/format.sh` in a shared checkout; format only the files you changed.
 - Docker, the database and ports are shared: `dev.sh reset-db`, `docker compose down` and
   container restarts only with the user's approval.
+- The local stand (Compose project `authorled`) belongs to the main checkout: only there `dev.sh up|db|stop|reset-db`
+  start or stop it. From a worktree the other `dev.sh` commands use the running stand without starting, stopping or
+  recreating it, and their own databases `ai_test_<worktree>` (`test`) and `ai_dev_<worktree>` (`migrate`, `api`,
+  `seed`, `psql`); `.env` of a worktree is a link to the `.env` of the main checkout
+  (`ln -sf <main checkout>/.env .env`). Do not run `docker compose up` for the stand from a worktree.
 - One session works on one OpenSpec change, from apply to merge.
 - Two hooks in `.claude/settings.json` remind of this flow and change nothing:
   `scripts/hook_session_start.sh` warns when a session starts in the main checkout or the main checkout is
@@ -196,15 +201,18 @@ settings), check that the committed
 on loopback; token checks are on in `dev` too, so API calls need a token from Authentik
 (README, "Module auth"; `./scripts/auth_check.sh` checks the chain).
 
-To run the API on the host with `--reload`, use `./scripts/dev.sh api` (Postgres, LiteLLM and
-Authentik in Docker; it migrates the schemas of the core and billing and exports the Authentik keys before the API
-starts). `./scripts/dev.sh migrate` applies the migrations of the core and billing; `./scripts/dev.sh test` runs the core tests on a
-fresh database `ai_test`, never on `ai`. New migration: `alembic revision --rev-id <NNNN>_<what> -m "..."` from `agno/`,
+To run the API on the host with `--reload`, start the stand in the main checkout with `./scripts/dev.sh up`
+(Postgres, LiteLLM, ClamAV, Authentik and Mailpit in Docker, not the `agentos-api` container), then use
+`./scripts/dev.sh api`: it needs port 8000 free (it never stops `agentos-api` itself), migrates the schemas of the core
+and billing on the host and exports the Authentik keys before the API starts. `./scripts/dev.sh migrate` applies the
+migrations of the core and billing on the host; `./scripts/dev.sh test` runs the core tests on a fresh test database, never
+on `ai`. The main checkout uses `ai` and `ai_test`, a worktree `ai_dev_<worktree>` and `ai_test_<worktree>`; the
+commands except `up` and `db` need the stand running and stop with a message otherwise. New migration: `alembic revision --rev-id <NNNN>_<what> -m "..."` from `agno/`,
 written by hand to match `agno/core/tables.py`; a migration of billing: `alembic -c billing/alembic.ini revision
 --rev-id b<NNNN>_<what> -m "..."`, written by hand to match `agno/billing/tables.py`.
-`./scripts/dev.sh seed` loads the demo stories for the development users into `ai` after `auth-users`.
-`./scripts/dev.sh db|stop|reset-db --yes|psql` manage the database (`reset-db` also wipes the
-Authentik data);
+`./scripts/dev.sh seed` loads the demo stories for the development users into the database of the checkout after
+`auth-users` (and, in a worktree, `migrate`). `./scripts/dev.sh db|stop|reset-db --yes` manage the database in the
+main checkout (`reset-db` also wipes the Authentik data); `./scripts/dev.sh psql` opens the database of the checkout;
 `.env` is required for every command because `compose.yaml` interpolates the whole file.
 
 For Python development:
@@ -354,7 +362,8 @@ owner 2026-11-08, `business-intents/coauthor-tool-contracts.md`).
   (from `agno/`; `.env` gives it `LITELLM_URL=http://127.0.0.1:4000`): the routing exam of the orchestrator on
   domain stubs; spends model calls, needs the LiteLLM proxy but no database, writes its report to `tmp/routing/` (`agno/evals/routing/README.md`).
 - `python -m evals.coauthor setup` (once) and `python -m evals.coauthor run --set wide | --set demo --part work|holdout|checks`
-  `--all | --sample N [--repeat K]` (from `agno/`, with the `DB_*` of `./scripts/dev.sh api`): the real co-author answers
+  `--all | --sample N [--repeat K]` (from `agno/`, with the `DB_*` of `./scripts/dev.sh api`, in a worktree its
+  `ai_dev_<worktree>`): the real co-author answers
   the sample of the routing exam's wide set or the own demo cases on demo stories of its own user, changes only
   proposed and rejected, judged by `claude-sonnet`; spends model calls, writes its report to `tmp/coauthor-eval/`.
   `python -m evals.coauthor compare <before.json> <after.json>` compares two reports without model calls;

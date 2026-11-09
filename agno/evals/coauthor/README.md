@@ -55,7 +55,7 @@
 ## Запуск
 
 Из `agno/` с активированным `agno/.venv`. Нужны LiteLLM-прокси (`LITELLM_URL` из `.env`), локальная база и
-переменные `DB_*` — те же, что экспортирует `./scripts/dev.sh api`:
+переменные `DB_*` — те же, что экспортирует `./scripts/dev.sh api` (в worktree база — `ai_dev_<worktree>`, а не `ai`):
 
 ```sh
 export DB_DRIVER=postgresql+psycopg DB_HOST=127.0.0.1 DB_PORT=5432 DB_USER=agentos DB_DATABASE=ai
