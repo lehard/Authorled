@@ -22,6 +22,27 @@ generic manager behavior belongs in Agno. `CLAUDE.md` links to this file.
 - Keep the starter lean. Add abstractions, tests and infrastructure only for a concrete
   application need. Never print or commit credentials.
 
+## Parallel sessions
+
+`main` is the only long-lived branch; releases come only from it (openspec/specs/dev-workflow).
+
+- The main checkout (the repository root, not a worktree) stays on `main` and is for reading and
+  `git pull` only: do not edit or commit there.
+- Every session works in its own worktree under `.claude/worktrees/`, created from `origin/main`, in a
+  branch `claude/<change>`, and reaches `main` only through a pull request.
+- Changes in `git status` that you did not make belong to another session: do not revert,
+  format, stage or commit them.
+- Never run `git stash`, `git reset --hard`, `git checkout -- <path>`, `git restore`, `git clean`,
+  switch branches, `git add -A` or `git commit -a`. Stage and commit only your own files, by path.
+- Do not run `./scripts/format.sh` in a shared checkout; format only the files you changed.
+- Docker, the database and ports are shared: `dev.sh reset-db`, `docker compose down` and
+  container restarts only with the user's approval.
+- One session works on one OpenSpec change, from apply to merge.
+- Two hooks in `.claude/settings.json` remind of this flow and change nothing:
+  `scripts/hook_session_start.sh` warns when a session starts in the main checkout or the main checkout is
+  not on `main`; `scripts/hook_stop.sh` asks the session once to finish verify and archive when all tasks of
+  a change its branch touched are checked and the change is not archived.
+
 ## OpenSpec is mandatory
 
 Every change to code, configuration, agents, prompts, evals or behavior goes through an
@@ -35,11 +56,23 @@ The flow from discussion to code:
    `business-intents/<slug>.md` in the format of the existing intents (status line,
    Why, What Changes, Scope, Non-goals, Constraints, Acceptance criteria, Risks,
    Open Questions, References), then stop.
-3. OpenSpec: the user runs `/opsx:propose`, `/opsx:update`, `/opsx:apply`, `/opsx:verify`
-   and `/opsx:archive` themselves. Do not start them on your own; when a request
-   needs code and no active change covers it, say so and point to the intent.
-   Inside a command the user started, follow its skill; keep `/opsx:apply` within
-   `tasks.md` and ask the user to run `/opsx:update` when the plan must change.
+3. OpenSpec: the user runs `/opsx:propose`, `/opsx:update` and `/opsx:apply` themselves.
+   Do not start them on your own; when a request needs code and no active change covers it,
+   say so and point to the intent. Inside a command the user started, follow its skill; keep
+   `/opsx:apply` within `tasks.md` and ask the user to run `/opsx:update` when the plan must change.
+4. Finish in the same session, without a separate command of the user, once every task of
+   `tasks.md` is checked. This rule is the user's standing permission to commit, push and merge
+   in this step:
+   1. Verify (skill `openspec-verify-change`). On any CRITICAL issue stop and show the issues.
+   2. Archive (skill `openspec-archive-change`, specs synced) in the same branch; name the
+      WARNING and SUGGESTION issues in the report.
+   3. Merge `origin/main` into the branch (`git merge`, not rebase); on a conflict stop and ask.
+   4. Run `./scripts/validate.sh`, `git diff --check` and the tests the change needs; on a failure
+      stop and name the failed check.
+   5. Commit your own files by path, push, open the pull request into `main`, wait for its checks
+      with `gh pr checks <PR> --watch --fail-fast` and merge it with `gh pr merge <PR> --merge`.
+   Do not create a release unless the user asks. The server check after a release goes in a small
+   pull request of its own from a fresh `origin/main`; no `-archive` or `-close` branches.
 - Exempt: typos, formatting, comments, edits under `openspec/` itself, and read-only
   questions or investigation (`/opsx:explore`). If unsure whether a request is exempt, ask.
 - Also exempt: texts and images of the product site in `site/` (owner, 2026-11-08). New pages,
