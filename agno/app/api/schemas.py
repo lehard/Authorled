@@ -16,6 +16,7 @@ class ProjectOut(_Out):
     title: str
     description: str
     format: str
+    cover_color: str
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None

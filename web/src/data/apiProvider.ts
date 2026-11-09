@@ -39,6 +39,7 @@ import type {
   VersionTarget,
   World,
 } from "./model";
+import { isCoverColor } from "./model";
 import type { SaveOperation } from "./saves";
 
 // Data source `api` (openspec/specs/web/workspace, «Источник данных»; design of story-data-web,
@@ -142,8 +143,7 @@ function readProject(body: unknown): SavedProject {
     id: field("историю", o, "id", isString),
     title: field("историю", o, "title", isString),
     desc: field("историю", o, "description", isString),
-    // Covers come at stage 2 (openspec/context/backlog-stage-2.md); the core keeps none.
-    cover: false,
+    coverColor: field("историю", o, "cover_color", isCoverColor),
     updatedAt: field("историю", o, "updated_at", isString),
     deletedAt: field("историю", o, "deleted_at", isTime),
   };
@@ -931,6 +931,7 @@ async function update(
     for (const [key, value] of Object.entries(values)) {
       if (key === "title") changes.title = value;
       else if (key === "desc") changes.description = value;
+      else if (key === "coverColor") changes.cover_color = value;
       else throw new Error(`Источник api не меняет поле «${key}» истории.`);
     }
     await request(`/projects/${id}`, { method: "PATCH", json: changes });

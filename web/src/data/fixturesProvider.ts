@@ -26,6 +26,7 @@ import type {
   VersionReason,
   VersionTarget,
 } from "./model";
+import { nextCoverColor } from "./model";
 import type { SaveOperation } from "./saves";
 
 // Data source `fixtures` (openspec/specs/web/workspace, «Источник данных»): sample data of
@@ -419,7 +420,9 @@ export const fixturesProvider: DataProvider = {
         id: crypto.randomUUID(),
         title: project.title,
         desc: project.desc,
-        cover: false,
+        coverColor: nextCoverColor(
+          (table("projects").at(-1) as Project | undefined)?.coverColor,
+        ),
         updatedAt: now(),
         deletedAt: null,
       };
@@ -529,7 +532,12 @@ export const fixturesProvider: DataProvider = {
         "suggestion",
       );
     Object.assign(row, variables as object);
-    if (resource === "projects") row.updatedAt = now();
+    // The colour of the cover is not a change of the story: the shelf keeps its place, as in the core.
+    if (
+      resource === "projects" &&
+      Object.keys(variables as object).some((key) => key !== "coverColor")
+    )
+      row.updatedAt = now();
     return { data: await out(resource, row) };
   },
 

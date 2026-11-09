@@ -54,6 +54,11 @@ def _undo_coauthor_actions(connection: Connection) -> None:
     )
 
 
+def _undo_story_cover_colors(connection: Connection) -> None:
+    """Undo 0013 before a test rewinds the schema to an older revision."""
+    connection.execute(text("ALTER TABLE authorled.projects DROP COLUMN cover_color"))
+
+
 def _undo_coauthor_feedback(connection: Connection) -> None:
     """Undo 0012 before a test rewinds the schema to an older revision."""
     connection.execute(text("DROP TABLE authorled.coauthor_feedback"))
@@ -65,11 +70,12 @@ def _undo_beta_requests(connection: Connection) -> None:
 
 
 def _drop_subscriptions(connection: Connection) -> None:
-    """Undo 0012, 0011, 0010 and 0009 before a test rewinds the core to an older revision.
+    """Undo 0013, 0012, 0011, 0010 and 0009 before a test rewinds the core to an older revision.
 
     The tables of 0009 live in schema billing after b0001_from_core, so the billing chain is rewound to its base too;
     `_upgrade` brings both chains back to head.
     """
+    _undo_story_cover_colors(connection)
     _undo_coauthor_feedback(connection)
     _undo_beta_requests(connection)
     _undo_coauthor_actions(connection)
@@ -351,17 +357,19 @@ def test_coauthor_actions_migration_keeps_settings_and_comments(
     """Applied from 0009: settings so far get `ask`, messages so far are written by users."""
     subject = f"test-{uuid.uuid4()}"
     with engine.begin() as connection:
-        _undo_coauthor_feedback(connection)
-        _undo_beta_requests(connection)
-        _undo_coauthor_actions(connection)
-        connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0009_subscriptions_usage'"))
         owner = connection.execute(
             insert(users)
             .values(auth_subject=subject, email="mode@authorled.test", display_name="Автор")
             .returning(users.c.id)
         ).scalar_one()
-        connection.execute(text("INSERT INTO authorled.user_settings (user_id) VALUES (:id)"), {"id": owner})
+        # The story is made on the schema of head: the core writes its colour, which 0013 added.
         story, _, script = create_project(connection, owner, "Маяк")
+        _undo_story_cover_colors(connection)
+        _undo_coauthor_feedback(connection)
+        _undo_beta_requests(connection)
+        _undo_coauthor_actions(connection)
+        connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0009_subscriptions_usage'"))
+        connection.execute(text("INSERT INTO authorled.user_settings (user_id) VALUES (:id)"), {"id": owner})
         thread = uuid.uuid4()
         connection.execute(
             text("INSERT INTO authorled.comment_threads (id, document_id, quote) VALUES (:id, :doc, 'Вера')"),
@@ -462,6 +470,46 @@ def test_billing_move_keeps_rows(engine: Engine, billing_alembic_config: Config)
         connection.execute(delete(users).where(users.c.id == user_id))
         connection.execute(delete(usage_records).where(usage_records.c.id == record))
         connection.execute(delete(subscriptions).where(subscriptions.c.id == subscription))
+
+
+def test_cover_colors_migration_colours_stories_in_turn(
+    engine: Engine, alembic_config: Config, billing_alembic_config: Config
+) -> None:
+    """Applied from 0012: each author's stories take the colours in the order of creation, from blue."""
+    subjects = [f"test-{uuid.uuid4()}" for _ in range(2)]
+    with engine.begin() as connection:
+        _undo_story_cover_colors(connection)
+        connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0012_coauthor_feedback'"))
+        first, second = (
+            connection.execute(
+                insert(users)
+                .values(auth_subject=subject, email=f"{subject}@authorled.test", display_name="Автор")
+                .returning(users.c.id)
+            ).scalar_one()
+            for subject in subjects
+        )
+        stories = {}
+        for owner, title, day in [(first, "Паром", 2), (first, "Маяк", 1), (second, "Дача", 3)]:
+            stories[title] = connection.execute(
+                text(
+                    "INSERT INTO authorled.projects (owner_id, title, format, created_at) "
+                    "VALUES (:owner, :title, 'feature', :created) RETURNING id"
+                ),
+                {"owner": owner, "title": title, "created": datetime(2026, 11, day, tzinfo=UTC)},
+            ).scalar_one()
+
+    _upgrade(alembic_config, billing_alembic_config)
+
+    with engine.begin() as connection:
+        colors = dict(
+            connection.execute(
+                select(projects.c.title, projects.c.cover_color).where(projects.c.owner_id.in_([first, second]))
+            ).all()
+        )
+        assert colors == {"Маяк": "blue", "Паром": "teal", "Дача": "blue"}
+        connection.execute(delete(projects).where(projects.c.id.in_(stories.values())))
+        connection.execute(delete(subscriptions).where(subscriptions.c.user_id.in_([first, second])))
+        connection.execute(delete(users).where(users.c.id.in_([first, second])))
 
 
 def test_billing_move_needs_the_core_first(engine: Engine, billing_alembic_config: Config) -> None:

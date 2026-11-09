@@ -15,7 +15,7 @@ from core import drafts
 from core.engine import get_engine
 from core.errors import Conflict, Invalid, NotFound
 from core.fields import SCRIPT_NAME
-from core.tables import documents, projects, users
+from core.tables import COVER_COLORS, documents, projects, users
 from core.texts import add_text, new_screenplay
 from core.users import AccountDeleted, AccountNotFound
 
@@ -26,6 +26,7 @@ class Project:
     title: str
     description: str
     format: str
+    cover_color: str
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None
@@ -40,7 +41,9 @@ class ListedProject(Project):
 
 
 def _project(row: Any) -> Project:
-    return Project(row.id, row.title, row.description, row.format, row.created_at, row.updated_at, row.deleted_at)
+    return Project(
+        row.id, row.title, row.description, row.format, row.cover_color, row.created_at, row.updated_at, row.deleted_at
+    )
 
 
 def user_id_of(connection: Connection, subject: str) -> uuid.UUID:
@@ -95,6 +98,25 @@ def _description(value: Any) -> str:
     return value
 
 
+def _cover_color(value: Any) -> str:
+    if value not in COVER_COLORS:
+        raise Invalid(f"Поле «cover_color» должно быть одним из: {', '.join(COVER_COLORS)}.", "cover_color")
+    return str(value)
+
+
+def _next_cover_color(connection: Connection, owner_id: uuid.UUID) -> str:
+    """The colour after that of the author's last created story, the trash included; blue for the first one."""
+    last = connection.execute(
+        select(projects.c.cover_color)
+        .where(projects.c.owner_id == owner_id)
+        .order_by(projects.c.created_at.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    if last is None:
+        return COVER_COLORS[0]
+    return COVER_COLORS[(COVER_COLORS.index(last) + 1) % len(COVER_COLORS)]
+
+
 def project_row(connection: Connection, project_id: uuid.UUID, for_update: bool = False) -> Project:
     query = select(projects).where(projects.c.id == project_id)
     if for_update:
@@ -116,6 +138,7 @@ def list_projects(connection: Connection, owner_id: uuid.UUID, trash: bool) -> l
             row.title,
             row.description,
             row.format,
+            row.cover_color,
             row.created_at,
             row.updated_at,
             row.deleted_at,
@@ -131,11 +154,20 @@ def create_project(
 ) -> tuple[Project, uuid.UUID, uuid.UUID]:
     """A new feature film with «Драфт 1» and its screenplay; the text is one empty scene heading unless given.
 
-    Returns the story, the draft and the screenplay.
+    The cover takes the next colour of the palette. The time of creation is that of the insert, not of the
+    transaction, so stories created in one transaction keep their order. Returns the story, the draft and the
+    screenplay.
     """
     row = connection.execute(
         insert(projects)
-        .values(owner_id=owner_id, title=_title(title), description=_description(description), format="feature")
+        .values(
+            owner_id=owner_id,
+            title=_title(title),
+            description=_description(description),
+            format="feature",
+            cover_color=_next_cover_color(connection, owner_id),
+            created_at=func.clock_timestamp(),
+        )
         .returning(projects)
     ).one()
     draft_id = drafts.add_first_draft(connection, row.id)
@@ -160,19 +192,24 @@ def update_project(connection: Connection, project_id: uuid.UUID, changes: dict[
     project = project_row(connection, project_id, for_update=True)
     if project.deleted_at is not None:
         raise Conflict("История в корзине: сначала восстановите её.")
-    unknown = set(changes) - {"title", "description"}
+    unknown = set(changes) - {"title", "description", "cover_color"}
     if unknown:
         name = sorted(unknown)[0]
         raise Invalid(f"Поле «{name}» нельзя менять здесь.", name)
     if not changes:
-        raise Invalid("Передайте title или description.")
+        raise Invalid("Передайте title, description или cover_color.")
     values: dict[str, Any] = {}
     if "title" in changes:
         values["title"] = _title(changes["title"])
     if "description" in changes:
         values["description"] = _description(changes["description"])
+    if "cover_color" in changes:
+        values["cover_color"] = _cover_color(changes["cover_color"])
+    # The colour is how the story looks, not a change of it: the shelf keeps its place.
+    if "title" in values or "description" in values:
+        values["updated_at"] = func.now()
     row = connection.execute(
-        update(projects).where(projects.c.id == project_id).values(**values, updated_at=func.now()).returning(projects)
+        update(projects).where(projects.c.id == project_id).values(**values).returning(projects)
     ).one()
     return _project(row)
 

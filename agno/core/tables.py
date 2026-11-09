@@ -76,6 +76,9 @@ user_settings = Table(
 )
 
 # Stories of the authors (openspec/specs/api/stories). MVP: one format, the feature film; one owner.
+# Colours of a story's cover in the order new stories take them (openspec/specs/api/stories).
+COVER_COLORS = ("blue", "teal", "amber", "crimson", "plum", "graphite")
+
 projects = Table(
     "projects",
     metadata,
@@ -88,8 +91,11 @@ projects = Table(
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     # Set while the story lies in the trash; only the author empties it, there is no expiry.
     Column("deleted_at", DateTime(timezone=True)),
+    # No default: the core picks the colour of every new story.
+    Column("cover_color", Text, nullable=False),
     CheckConstraint("title <> ''", name="title_not_empty"),
     CheckConstraint("format IN ('feature')", name="format_known"),
+    CheckConstraint(f"cover_color IN ({', '.join(repr(c) for c in COVER_COLORS)})", name="cover_color_known"),
     Index("ix_projects_owner_id_deleted_at", "owner_id", "deleted_at"),
 )
 

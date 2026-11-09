@@ -53,6 +53,32 @@ def test_unknown_field_is_named(authors: Any) -> None:
     assert "color" in response.json()["detail"]
 
 
+def test_cover_colour_on_the_shelf(authors: Any) -> None:
+    author = authors()
+    created = author.post("/api/v1/projects", json={"title": "Маяк"}).json()["project"]
+    assert created["cover_color"] == "blue"
+    changed = author.patch(f"/api/v1/projects/{created['id']}", json={"cover_color": "amber"})
+    assert changed.status_code == 200, changed.text
+    assert (changed.json()["cover_color"], changed.json()["updated_at"]) == ("amber", created["updated_at"])
+    assert [p["cover_color"] for p in author.get("/api/v1/projects").json()] == ["amber"]
+
+
+def test_cover_colour_outside_the_palette(authors: Any) -> None:
+    author = authors()
+    story = author.story()
+    response = author.patch(f"/api/v1/projects/{story['project']['id']}", json={"cover_color": "pink"})
+    assert response.status_code == 422
+    assert response.headers["content-type"] == PROBLEM
+    assert "cover_color" in response.json()["detail"]
+    assert author.get("/api/v1/projects").json()[0]["cover_color"] == "blue"
+
+
+def test_cover_colour_is_not_chosen_at_creation(authors: Any) -> None:
+    response = authors().post("/api/v1/projects", json={"title": "Маяк", "cover_color": "plum"})
+    assert response.status_code == 422
+    assert "cover_color" in response.json()["detail"]
+
+
 def test_body_must_be_json(authors: Any) -> None:
     response = authors().post("/api/v1/projects", content=b"title", headers={"Content-Type": "application/json"})
     assert response.status_code == 422
