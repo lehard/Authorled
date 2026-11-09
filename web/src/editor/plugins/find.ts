@@ -9,6 +9,7 @@ import {
 import { Decoration, DecorationSet } from "prosemirror-view";
 
 import type { ElementName } from "../elements.ts";
+import { foldText } from "../fold.ts";
 import { openSuggestionRanges, type SuggestionRange } from "./suggestions.ts";
 import { hiddenIn } from "./visibility.ts";
 
@@ -33,7 +34,8 @@ const SCOPE_TYPES: Record<Exclude<FindScope, "all">, ElementName[]> = {
 export type Match = { from: number; to: number };
 
 /**
- * Matches of `query` in the visible paragraphs of `scope`, ignoring case; matches touching a
+ * Matches of `query` in the visible paragraphs of `scope`, ignoring case and the difference of
+ * «ё» and «е» (`foldText`); matches touching a
  * range of `skip` (open co-author suggestions, which cannot be edited) are left out.
  */
 export function findMatches(
@@ -44,14 +46,14 @@ export function findMatches(
   skip: SuggestionRange[],
 ): Match[] {
   if (query === "") return [];
-  const q = query.toLowerCase();
+  const q = foldText(query);
   const types = scope === "all" ? null : SCOPE_TYPES[scope];
   const out: Match[] = [];
   doc.forEach((node, offset, i) => {
     if (hidden.has(i) || !node.isTextblock) return;
     if (types !== null && !types.includes(node.type.name as ElementName))
       return;
-    const text = node.textContent.toLowerCase();
+    const text = foldText(node.textContent);
     for (
       let at = text.indexOf(q);
       at >= 0;

@@ -27,6 +27,7 @@ import type {
   VersionTarget,
 } from "./model";
 import type { SaveOperation } from "./saves";
+import type { SearchOperation } from "./search";
 
 // Data source `fixtures` (openspec/specs/web/workspace, «Источник данных»): sample data of
 // mockup v2 in page memory, reset on reload. It behaves as the core where screens rely on it
@@ -57,6 +58,10 @@ const store = {
 } as unknown as Record<Resource, Row[]>;
 
 /** Import and chat files need the core (design of story-data-web, decision 7). */
+/** Search of a story needs the core (design of project-search, decision 6). */
+export const FIXTURES_NO_SEARCH =
+  "Поиск по истории работает только с источником данных api.";
+
 export const FIXTURES_UNAVAILABLE =
   "Недоступно с данными примера: импорт и файлы в чат работают только с источником данных api.";
 
@@ -567,7 +572,8 @@ export const fixturesProvider: DataProvider = {
   },
 
   custom: async ({ meta, payload }) => {
-    const op = { operation: meta?.operation, payload } as SaveOperation;
+    const op = { operation: meta?.operation, payload } as
+      SaveOperation | SearchOperation;
     switch (op.operation) {
       case "openDraft": {
         const draft = find("drafts", op.payload.draftId);
@@ -593,6 +599,8 @@ export const fixturesProvider: DataProvider = {
       case "restorePoint":
         await restorePoint(op.payload.id);
         break;
+      case "search":
+        throw new Error(FIXTURES_NO_SEARCH);
       default:
         throw new Error(FIXTURES_UNAVAILABLE);
     }

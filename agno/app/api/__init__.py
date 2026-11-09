@@ -18,6 +18,7 @@ from app.api.notes import router as notes_router
 from app.api.problems import install_problem_handlers
 from app.api.review import router as review_router
 from app.api.saves import router as saves_router
+from app.api.search import router as search_router
 from app.api.stories import router as stories_router
 
 
@@ -36,6 +37,7 @@ def attach_api(app: FastAPI) -> None:
     app.include_router(review_router)
     app.include_router(saves_router)
     app.include_router(files_router)
+    app.include_router(search_router)
     app.include_router(beta_router)
     app.include_router(feedback_router)
     ours = routes[start:]

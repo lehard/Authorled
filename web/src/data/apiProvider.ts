@@ -22,6 +22,7 @@ import type {
   CommentThread,
   Draft,
   Entity,
+  EntityKind,
   Location,
   NewDraft,
   NewNote,
@@ -40,6 +41,15 @@ import type {
   World,
 } from "./model";
 import type { SaveOperation } from "./saves";
+import type {
+  EntityHit,
+  NoteHit,
+  PartHit,
+  SceneHit,
+  SearchOperation,
+  SearchResult,
+  SearchSnippet,
+} from "./search";
 
 // Data source `api` (openspec/specs/web/workspace, «Источник данных»; design of story-data-web,
 // decisions 1, 2 and 7): the resources of the screens translated into the routes of the core.
@@ -1053,8 +1063,89 @@ async function restoreVersion(id: string, target: VersionTarget) {
   });
 }
 
-async function operation(op: FileOperation | SaveOperation): Promise<unknown> {
+// The core's names of a found field as the screens name them (entityChanges, the other way).
+const SCREEN_FIELD: Record<string, string> = {
+  summary: "one",
+  description: "long",
+};
+const SCREEN_KIND: Record<string, EntityKind> = {
+  character: "char",
+  location: "loc",
+  world: "world",
+};
+
+function readSnippet(what: string, body: unknown): SearchSnippet {
+  const o = shape(what, body);
+  return {
+    before: field(what, o, "before", isString),
+    match: field(what, o, "match", isString),
+    after: field(what, o, "after", isString),
+  };
+}
+
+function readSearch(body: unknown): SearchResult {
+  const what = "результаты поиска";
+  const o = shape(what, body);
+  const scenes = list(what, o.scenes).map((item): SceneHit => {
+    const s = shape(what, item);
+    return {
+      uid: field(what, s, "uid", isStringOrNull),
+      number: field(what, s, "number", isNumber),
+      heading: field(what, s, "heading", isString),
+      count: field(what, s, "count", isNumber),
+      snippet: readSnippet(what, s.snippet),
+    };
+  });
+  const documents = list(what, o.documents).map((item): EntityHit | PartHit => {
+    const d = shape(what, item);
+    const kind = field(what, d, "kind", isString);
+    const key = field(what, d, "field", isString);
+    const count = field(what, d, "count", isNumber);
+    const snippet = readSnippet(what, d.snippet);
+    if (kind === "script") {
+      if (key !== "logline" && key !== "synopsis")
+        throw new Error(`Сервер нашёл в сценарии неизвестное поле «${key}».`);
+      return { type: "part", part: key, count, snippet };
+    }
+    const entity = SCREEN_KIND[kind];
+    if (entity === undefined)
+      throw new Error(`Сервер нашёл документ неизвестного вида «${kind}».`);
+    return {
+      type: "entity",
+      entity,
+      id: field(what, d, "id", isString),
+      name: field(what, d, "name", isString),
+      field: SCREEN_FIELD[key] ?? key,
+      count,
+      snippet,
+    };
+  });
+  const notes = list(what, o.notes).map((item): NoteHit => {
+    const n = shape(what, item);
+    const key = field(what, n, "field", isString);
+    if (key !== "title" && key !== "body")
+      throw new Error(`Сервер нашёл в заметке неизвестное поле «${key}».`);
+    return {
+      id: field(what, n, "id", isString),
+      title: field(what, n, "title", isString),
+      field: key,
+      count: field(what, n, "count", isNumber),
+      snippet: readSnippet(what, n.snippet),
+    };
+  });
+  return { query: field(what, o, "query", isString), scenes, documents, notes };
+}
+
+async function operation(
+  op: FileOperation | SaveOperation | SearchOperation,
+): Promise<unknown> {
   switch (op.operation) {
+    case "search":
+      return readSearch(
+        await request(`/drafts/${op.payload.draftId}/search`, {
+          query: { q: op.payload.q },
+        }),
+      );
     case "openDraft":
       await request(`/drafts/${op.payload.draftId}/open`, { method: "POST" });
       return {};
@@ -1138,6 +1229,6 @@ export const apiProvider: DataProvider = {
     data: (await operation({
       operation: meta?.operation,
       payload,
-    } as FileOperation | SaveOperation)) as never,
+    } as FileOperation | SaveOperation | SearchOperation)) as never,
   }),
 };
