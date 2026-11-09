@@ -53,7 +53,7 @@ export function Privacy() {
             ← На главную
           </a>
           <h1 className="heading-3 text-paper-foreground">
-            Политика обработки персональных данных
+            Политика обработки данных заявки в бету
           </h1>
           <p className="body-6 text-muted-foreground">
             Действует с 8 ноября 2026 года.
