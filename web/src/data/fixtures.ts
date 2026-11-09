@@ -31,7 +31,8 @@ export const FIXTURES = demo as unknown as {
   characters: Character[];
   locations: Location[];
   worlds: World[];
-  notes: Note[];
+  /** Sample notes have no originals: files need the core. */
+  notes: Omit<Note, "file">[];
   comments: FixtureThread[];
   suggestions: Suggestion[];
   drafts: Draft[];

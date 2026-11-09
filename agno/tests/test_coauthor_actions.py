@@ -48,6 +48,7 @@ def test_release_set_loads() -> None:
     ("change", "reason"),
     [
         ({"expect": "delete_story_document"}, "r1: tool 'delete_story_document' is not a changing tool"),
+        ({"expect": "save_chat_file_to_notes"}, "r1: tool 'save_chat_file_to_notes' is not a changing tool"),
         ({"fields": ["appearance"]}, "r1: field 'appearance' is not a text field of character"),
         ({"fields": ["fear|motivation"]}, "r1: field 'motivation'"),
         ({"kind": "script"}, "r1: kind 'script'"),

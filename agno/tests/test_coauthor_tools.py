@@ -25,6 +25,7 @@ from agents.coauthor_tools import (
     read_screenplay,
     read_story_document,
     read_story_note,
+    save_chat_file_to_notes,
     search_story,
     suggest_edit,
     update_story_document,
@@ -237,6 +238,74 @@ def test_notes_of_the_story(authors: Any) -> None:
     assert note["body"] == "Вера уходит к воде.\nАня идёт за ней."
 
 
+def test_long_note_is_read_in_parts(authors: Any) -> None:
+    author = authors()
+    project_id, draft_id, _ = _story_with_vera(author)
+    run = _run(author.subject, f"{project_id}:{draft_id}:{uuid.uuid4()}")
+    body = "а" * 20_000 + "б" * 20_000 + "в" * 5_000
+    note_id = _done(create_story_note(run, "Эпоха", body))["target"]["id"]
+
+    (listed,) = json.loads(list_story_notes(run))
+    assert (listed["length"], listed["file"]) == (45_000, None)
+    third = json.loads(read_story_note(run, note_id, part=3))
+    assert (third["part"], third["parts"], third["body"]) == (3, 3, "в" * 5_000)
+    assert json.loads(read_story_note(run, note_id))["body"] == "а" * 20_000
+    assert read_story_note(run, note_id, part=4) == "Отказ: в заметке 3 частей, части 4 нет."
+    short = _done(create_story_note(run, "Финал"))["target"]["id"]
+    assert json.loads(read_story_note(run, short))["parts"] == 1
+
+
+def _chat_file(author: Any, project_id: str, session: str, name: str = "Эпоха.txt") -> str:
+    uploaded = author.post(
+        f"/api/v1/projects/{project_id}/files",
+        files={"file": (name, "Москва, 1913".encode())},
+        data={"purpose": "chat", "session_id": session},
+    )
+    assert uploaded.status_code == 201, uploaded.text
+    file_id: str = uploaded.json()["id"]
+    return file_id
+
+
+def test_chat_file_goes_to_notes(authors: Any) -> None:
+    author = authors()
+    project_id, draft_id, _ = _story_with_vera(author)
+    session = f"{project_id}:{draft_id}:{uuid.uuid4()}"
+    file_id = _chat_file(author, project_id, session)
+    run = _run(author.subject, session)
+
+    saved = _done(save_chat_file_to_notes(run, file_id))
+
+    assert saved["target"]["type"] == "note"
+    (note,) = author.get(f"/api/v1/projects/{project_id}/notes").json()
+    assert (note["title"], note["body"], note["file"]["name"]) == ("Эпоха", "Москва, 1913", "Эпоха.txt")
+    (listed,) = json.loads(list_story_notes(run))
+    assert listed["file"] == "Эпоха.txt"
+
+
+def test_chat_file_of_another_conversation_is_not_saved(authors: Any) -> None:
+    author = authors()
+    project_id, draft_id, _ = _story_with_vera(author)
+    file_id = _chat_file(author, project_id, f"{project_id}:{draft_id}:{uuid.uuid4()}")
+    run = _run(author.subject, f"{project_id}:{draft_id}:{uuid.uuid4()}")
+
+    assert save_chat_file_to_notes(run, file_id) == "Отказ: файл не найден в этой беседе."
+    assert save_chat_file_to_notes(run, "not-an-id") == "Отказ: файл не найден в этой беседе."
+    assert author.get(f"/api/v1/projects/{project_id}/notes").json() == []
+
+
+def test_chat_file_without_place(authors: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    author = authors()
+    project_id, draft_id, _ = _story_with_vera(author)
+    session = f"{project_id}:{draft_id}:{uuid.uuid4()}"
+    file_id = _chat_file(author, project_id, session)
+    monkeypatch.setattr(tools.billing, "storage_limit", lambda user_id, at: 1)
+
+    refused = save_chat_file_to_notes(_run(author.subject, session), file_id)
+
+    assert refused.startswith("Отказ: Место для файлов заметок кончилось")
+    assert author.get(f"/api/v1/projects/{project_id}/notes").json() == []
+
+
 def test_note_of_another_story_is_not_found(authors: Any) -> None:
     author = authors()
     project_id, draft_id, _ = _story_with_vera(author)
@@ -320,6 +389,7 @@ def test_no_tool_deletes_trashes_or_decides() -> None:
     assert not {n for n in names if any(word in n for word in ("delete", "trash", "restore", "decide", "resolve"))}
     assert {tool.__name__ for tool in CHANGING_TOOLS} == {
         "create_story_note",
+        "save_chat_file_to_notes",
         "update_story_note",
         "create_story_document",
         "update_story_document",

@@ -10,8 +10,8 @@ from fastapi import APIRouter, Depends, Request, Response
 from starlette.concurrency import run_in_threadpool
 
 from app.api.body import caller_id, parse_id, read_upload, require_project
-from app.api.problems import Problem
 from app.api.notes import storage_place
+from app.api.problems import Problem
 from app.api.schemas import FileOut, NoteOut
 from app.auth import Principal, current_principal
 from core import files, notes

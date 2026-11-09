@@ -18,9 +18,13 @@ from evals.coauthor.user import PLACES
 
 SET_FILE = Path(__file__).parent / "actions.toml"
 NO_ACTION = "none"
+# Changing tools that need a file attached to the message: the measurement sends text only, so the set does not ask
+# for them (spec «Набор просьб замера действий»); called anyway, they are a change nobody asked for.
+NEEDS_FILE = frozenset({"save_chat_file_to_notes"})
 # The tools the set asks for: every changing tool but suggest_edit, which changes the screenplay only through the
-# author's decision and is measured by the quality measurement. A suggestion here is a change nobody asked for.
-ACTION_TOOLS = frozenset(CHANGING - {"suggest_edit"})
+# author's decision and is measured by the quality measurement, and the tools of NEEDS_FILE. A suggestion here is a
+# change nobody asked for.
+ACTION_TOOLS = frozenset(CHANGING - {"suggest_edit"} - NEEDS_FILE)
 DOCUMENT_TOOLS = ("create_story_document", "update_story_document")
 TARGET_TOOLS = ("update_story_document", "update_story_note")
 CREATED_KINDS = ("character", "location", "world")

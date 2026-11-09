@@ -59,6 +59,10 @@ type Resource = (typeof RESOURCES)[number];
 
 const store = {
   ...structuredClone(FIXTURES),
+  notes: FIXTURES.notes.map((note) => ({
+    ...structuredClone(note),
+    file: null,
+  })),
   versions: [],
   points: [],
 } as unknown as Record<Resource, Row[]>;
@@ -69,7 +73,7 @@ export const FIXTURES_NO_SEARCH =
   "Поиск по истории работает только с источником данных api.";
 
 export const FIXTURES_UNAVAILABLE =
-  "Недоступно с данными примера: импорт и файлы в чат работают только с источником данных api.";
+  "Недоступно с данными примера: импорт, файлы в чат и в заметки работают только с источником данных api.";
 
 function table(resource: string): Row[] {
   if (!(RESOURCES as readonly string[]).includes(resource)) {
@@ -552,6 +556,7 @@ export const fixturesProvider: DataProvider = {
         title: values.title,
         body: "",
         deletedAt: null,
+        file: null,
       };
     } else if (resource === "points") {
       const values = variables as Pick<Point, "draftId" | "name">;

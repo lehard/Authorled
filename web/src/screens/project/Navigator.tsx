@@ -19,6 +19,7 @@ import {
   User,
   Users,
   type LucideIcon,
+  Upload,
 } from "lucide-react";
 import { useState, type DragEvent, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router";
@@ -55,6 +56,7 @@ import { DraftSwitcher } from "./DraftSwitcher";
 import { useEntityActions } from "./entityActions";
 import { NodeMenu, type MenuEntry } from "./NodeMenu";
 import { useNoteActions } from "./noteActions";
+import { NoteUploadDialog } from "./NoteUploadDialog";
 import { useProjectData } from "./ProjectContext";
 import { StorySearchField, StorySearchResults } from "./StorySearch";
 
@@ -106,6 +108,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
     worlds: false,
   });
   const [adding, setAdding] = useState<DocKind | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [emptying, setEmptying] = useState(false);
   // The tree, or the scene list of «Текст сценария» or «Поэпизодник».
   const [mode, setMode] = useState<"tree" | "text" | "treatment">("tree");
@@ -235,6 +238,11 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
           label: DOC_WORDS.note.add,
           icon: Plus,
           run: () => setAdding("note"),
+        },
+        {
+          label: "Загрузить файл",
+          icon: Upload,
+          run: () => setUploading(true),
         },
       ],
       kids: data.notes.map((n) => ({
@@ -452,6 +460,17 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
           setOpen((s) => new Set(s).add(GROUP_OF[kind]));
           onNavigate();
           navigate(path({ kind: "entity", entity: kind, id }));
+        }}
+        onUploadFile={() => setUploading(true)}
+      />
+      <NoteUploadDialog
+        open={uploading}
+        onOpenChange={setUploading}
+        projectId={project.id}
+        onDone={(id) => {
+          setOpen((s) => new Set(s).add("notes"));
+          onNavigate();
+          navigate(path({ kind: "note", id }));
         }}
       />
       <ConfirmDialog

@@ -73,12 +73,22 @@ export type World = EntityBase & { overview: string };
 export type Entity = Character | Location | World;
 
 /** A note of the author: it belongs to the story and is the same in every draft. */
+/** The original of a note made from a file (openspec/specs/api/stories, «Заметка из файла»). */
+export type NoteFile = {
+  id: string;
+  name: string;
+  mediaType: string;
+  sizeBytes: number;
+};
+
 export type Note = {
   id: string;
   projectId: string;
   title: string;
   body: string;
   deletedAt: string | null;
+  /** The original; null for a note written by hand. */
+  file: NoteFile | null;
 };
 
 /** A new note: it starts without text. */
