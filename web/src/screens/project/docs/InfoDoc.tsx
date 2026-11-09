@@ -14,10 +14,11 @@ import { useProjectData } from "../ProjectContext";
 import { DocHead, FieldCard } from "./DocHead";
 import { Field } from "./Field";
 import { scriptFacts } from "./scriptFacts";
+import { WritingBlock } from "./WritingBlock";
 
 /**
- * «История»: title and tagline of the story, shared by its drafts, and the parts and facts of the
- * open draft, which its lock closes.
+ * «История»: title and tagline of the story, shared by its drafts, the parts and facts of the
+ * open draft, which its lock closes, and the block «Письмо» with the writing goals.
  */
 export function InfoDoc() {
   const { project, draft, script, text } = useProjectData();
@@ -79,6 +80,7 @@ export function InfoDoc() {
             {facts.scenes} сцен · ≈ {facts.duration}
           </p>
         </FieldCard>
+        <WritingBlock draftId={draft.id} project={project} />
       </div>
     </>
   );

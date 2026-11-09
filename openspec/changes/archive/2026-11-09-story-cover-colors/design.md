@@ -57,6 +57,6 @@
 
 ## Migration Plan
 
-- Миграция `0013_story_cover_colors`: добавить `cover_color` без `NOT NULL`; заполнить по каждому `owner_id` по кругу палитры в порядке `created_at, id` (`row_number() over (partition by owner_id order by created_at, id)`); поставить `NOT NULL` и `CHECK`. `downgrade` — `NotImplementedError`, как у остальных миграций схемы.
+- Миграция `0014_story_cover_colors` (до слияния с writing-goals — `0013`): добавить `cover_color` без `NOT NULL`; заполнить по каждому `owner_id` по кругу палитры в порядке `created_at, id` (`row_number() over (partition by owner_id order by created_at, id)`); поставить `NOT NULL` и `CHECK`. `downgrade` — `NotImplementedError`, как у остальных миграций схемы.
 - Порядок выкладки обычный: `agentos-migrate` применяет миграцию до старта API; фронтенд выходит в том же релизе. Старый фронтенд с новым API работает (лишнее поле игнорируется), новый со старым API падает на отсутствии поля — релиз выкатывает их вместе.
 - Откат: только новой миграцией вперёд (удалить колонку) вместе с откатом фронтенда.

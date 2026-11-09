@@ -40,6 +40,10 @@ export type Project = {
   draftsCount: number;
   /** The draft this story opens in for the signed-in user. */
   openDraftId: string;
+  /** The goal of the story in words (openspec/specs/api/writing); null is no goal. */
+  wordGoal: number | null;
+  /** Deadline of the goal, `YYYY-MM-DD`; only with a goal. */
+  goalDeadline: string | null;
 };
 
 export const SCRIPT_PARTS = {

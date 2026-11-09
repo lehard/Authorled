@@ -1,7 +1,7 @@
 """Response bodies of the story routes, for OpenAPI; built from the records of the core."""
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
@@ -16,6 +16,8 @@ class ProjectOut(_Out):
     title: str
     description: str
     format: str
+    word_goal: int | None
+    goal_deadline: date | None
     cover_color: str
     created_at: datetime
     updated_at: datetime
@@ -152,3 +154,24 @@ class FileOut(_Out):
     purpose: str
     session_id: str | None
     created_at: datetime
+
+
+class WritingDayOut(_Out):
+    date: date
+    words: int | None
+    met: bool | None
+
+
+class StoryGoalOut(_Out):
+    words: int
+    goal: int | None
+    deadline: date | None
+    days_left: int | None
+    per_day: int | None
+
+
+class WritingOut(_Out):
+    today: date
+    daily_goal: int | None
+    days: list[WritingDayOut]
+    story: StoryGoalOut

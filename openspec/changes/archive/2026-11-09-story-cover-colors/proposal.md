@@ -43,7 +43,7 @@
 
 ## Impact
 
-- `agno/core/tables.py`, новая миграция `agno/migrations/versions/0013_*`, `agno/core/projects.py`, `agno/core/imports.py` (через `create_project`).
+- `agno/core/tables.py`, новая миграция `agno/migrations/versions/0014_story_cover_colors.py`, `agno/core/projects.py`, `agno/core/imports.py` (через `create_project`).
 - `agno/app/api/schemas.py`, `agno/app/api/stories.py`; OpenAPI: новое поле ответа и тела `PATCH`.
 - `agno/demo/load.py`, `web/src/data/demo.json`.
 - `agno/tests/`: тесты ядра историй, маршрутов, миграций и демо.

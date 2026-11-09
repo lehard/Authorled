@@ -41,6 +41,7 @@ import type {
 } from "./model";
 import { isCoverColor } from "./model";
 import type { SaveOperation } from "./saves";
+import type { Writing, WritingOperation } from "./writing";
 
 // Data source `api` (openspec/specs/web/workspace, «Источник данных»; design of story-data-web,
 // decisions 1, 2 and 7): the resources of the screens translated into the routes of the core.
@@ -82,6 +83,10 @@ const isString = (v: unknown): v is string => typeof v === "string";
 const isNumber = (v: unknown): v is number => Number.isInteger(v);
 const isBool = (v: unknown): v is boolean => typeof v === "boolean";
 const isTime = (v: unknown): v is string | null => v === null || isString(v);
+const isCountOrNull = (v: unknown): v is number | null =>
+  v === null || isNumber(v);
+const isFlagOrNull = (v: unknown): v is boolean | null =>
+  v === null || isBool(v);
 const isObject = (v: unknown): v is Json =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 const isArray = (v: unknown): v is unknown[] => Array.isArray(v);
@@ -146,6 +151,8 @@ function readProject(body: unknown): SavedProject {
     coverColor: field("историю", o, "cover_color", isCoverColor),
     updatedAt: field("историю", o, "updated_at", isString),
     deletedAt: field("историю", o, "deleted_at", isTime),
+    wordGoal: field("историю", o, "word_goal", isCountOrNull),
+    goalDeadline: field("историю", o, "goal_deadline", isTime),
   };
 }
 
@@ -156,6 +163,32 @@ function readListedProject(body: unknown): Project {
     ...readProject(o),
     draftsCount: field("историю", o, "drafts_count", isNumber),
     openDraftId: field("историю", o, "open_draft_id", isString),
+  };
+}
+
+/** The writing statistics of a draft (openspec/specs/api/writing). */
+function readWriting(body: unknown): Writing {
+  const what = "статистику письма";
+  const o = shape(what, body);
+  const story = shape(what, field(what, o, "story", isObject));
+  return {
+    today: field(what, o, "today", isString),
+    dailyGoal: field(what, o, "daily_goal", isCountOrNull),
+    days: field(what, o, "days", isArray).map((item) => {
+      const d = shape(what, item);
+      return {
+        date: field(what, d, "date", isString),
+        words: field(what, d, "words", isCountOrNull),
+        met: field(what, d, "met", isFlagOrNull),
+      };
+    }),
+    story: {
+      words: field(what, story, "words", isNumber),
+      goal: field(what, story, "goal", isCountOrNull),
+      deadline: field(what, story, "deadline", isTime),
+      daysLeft: field(what, story, "days_left", isCountOrNull),
+      perDay: field(what, story, "per_day", isCountOrNull),
+    },
   };
 }
 
@@ -931,6 +964,8 @@ async function update(
     for (const [key, value] of Object.entries(values)) {
       if (key === "title") changes.title = value;
       else if (key === "desc") changes.description = value;
+      else if (key === "wordGoal") changes.word_goal = value;
+      else if (key === "goalDeadline") changes.goal_deadline = value;
       else if (key === "coverColor") changes.cover_color = value;
       else throw new Error(`Источник api не меняет поле «${key}» истории.`);
     }
@@ -1054,8 +1089,22 @@ async function restoreVersion(id: string, target: VersionTarget) {
   });
 }
 
-async function operation(op: FileOperation | SaveOperation): Promise<unknown> {
+async function operation(
+  op: FileOperation | SaveOperation | WritingOperation,
+): Promise<unknown> {
   switch (op.operation) {
+    case "writing":
+      return readWriting(
+        await request(`/drafts/${op.payload.draftId}/writing`, {
+          query: { tz: op.payload.tz },
+        }),
+      );
+    case "setDailyGoal":
+      await request("/me", {
+        method: "PATCH",
+        json: { daily_word_goal: op.payload.goal },
+      });
+      return {};
     case "openDraft":
       await request(`/drafts/${op.payload.draftId}/open`, { method: "POST" });
       return {};
@@ -1139,6 +1188,6 @@ export const apiProvider: DataProvider = {
     data: (await operation({
       operation: meta?.operation,
       payload,
-    } as FileOperation | SaveOperation)) as never,
+    } as FileOperation | SaveOperation | WritingOperation)) as never,
   }),
 };

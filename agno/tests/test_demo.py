@@ -13,7 +13,7 @@ from core.notes import list_notes
 from core.projects import create_project, list_projects, trash_project
 from core.review import list_suggestions, list_threads
 from core.saves import list_points
-from core.tables import SCHEMA, projects
+from core.tables import SCHEMA, projects, writing_progress
 from core.texts import get_text, scenes, screenplay_id
 from core.users import get_or_create_user
 from demo.load import DemoExists, SchemaBehind, ensure_migrated, load_demo
@@ -150,3 +150,10 @@ def test_a_schema_behind_refuses(connection: Connection) -> None:
 
     with pytest.raises(SchemaBehind, match="dev.sh migrate"):
         ensure_migrated(connection)
+
+
+def test_demo_records_no_writing(connection: Connection, accounts: dict[str, uuid.UUID]) -> None:
+    """Demo stories are no writing of their owners (openspec/specs/api/writing, «Что не считается написанным»)."""
+    load_demo(connection, accounts)
+    written = select(func.count()).select_from(writing_progress)
+    assert connection.execute(written.where(writing_progress.c.user_id.in_(accounts.values()))).scalar_one() == 0

@@ -24,7 +24,7 @@ from app.api.problems import Problem
 from app.api.schemas import CreatedProject, DocumentOut, DraftOut, ListedProjectOut, ProjectOut, TextOut
 from app.auth import Principal, current_principal
 from core import documents as docs
-from core import drafts, imports, texts
+from core import drafts, imports, texts, writing
 from core import projects as stories
 from core.engine import get_engine
 
@@ -130,7 +130,7 @@ def _update_project(project_id: uuid.UUID, body: dict[str, Any]) -> ProjectOut:
 @router.patch(
     "/projects/{project_id}",
     response_model=ProjectOut,
-    summary="Rename or describe a story, or change the colour of its cover",
+    summary="Rename or describe a story, set its goal in words or change the colour of its cover",
 )
 async def update_project(
     project_id: str, request: Request, principal: Principal = Depends(current_principal)
@@ -392,7 +392,7 @@ def get_text(document_id: str, response: Response, principal: Principal = Depend
 def _put_text(principal: Principal, document_id: uuid.UUID, revision: int, content: Any) -> TextOut:
     with get_engine().begin() as connection:
         user = caller_id(connection, principal)
-        return TextOut.model_validate(texts.put_text(connection, document_id, revision, content, user))
+        return TextOut.model_validate(writing.save_author_text(connection, document_id, revision, content, user))
 
 
 @router.put(
