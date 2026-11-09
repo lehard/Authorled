@@ -140,6 +140,7 @@ export function ScreenplayEditor({
   tools,
   menu,
   overlay,
+  onCoauthorRequest,
   ref,
 }: {
   /** Fixed for the life of the component: give the component a new `key` to switch. */
@@ -160,6 +161,11 @@ export function ScreenplayEditor({
   menu?: ReactNode;
   /** Drawn over the page area, positioned against it (comment cards). */
   overlay?: ReactNode;
+  /**
+   * «Соавтор» in the selection menu, with the rectangle of its button; fixed for the life of the
+   * component whether it is given.
+   */
+  onCoauthorRequest?: (anchor: DOMRect) => void;
   ref?: Ref<ScreenplayEditorHandle>;
 }) {
   const host = useRef<HTMLDivElement>(null);
@@ -176,12 +182,21 @@ export function ScreenplayEditor({
     onScene,
     comments,
     suggestions,
+    onCoauthorRequest,
   });
   // Texts this editor has reported: a saved copy coming back is an echo, not a change from
   // outside, even when the author has typed on since (an older echo must not undo typing).
   const reported = useRef<string[]>([]);
   useEffect(() => {
-    latest.current = { mode, doc, onChange, onScene, comments, suggestions };
+    latest.current = {
+      mode,
+      doc,
+      onChange,
+      onScene,
+      comments,
+      suggestions,
+      onCoauthorRequest,
+    };
   });
 
   useEffect(() => {
@@ -206,6 +221,10 @@ export function ScreenplayEditor({
               const id = crypto.randomUUID();
               if (view.addComment(id)) latest.current.comments?.onNew(id);
             },
+      onCoauthorRequest:
+        latest.current.onCoauthorRequest === undefined
+          ? undefined
+          : (anchor) => latest.current.onCoauthorRequest?.(anchor),
       onCommentOpen: (id) => latest.current.comments?.onOpen(id),
       onSuggestionOpen: (id) => latest.current.suggestions?.onOpen(id),
       onFindRequest: () => {

@@ -142,6 +142,11 @@ export type ScreenplayEditorOptions = {
   onFindRequest?: () => void;
   /** «Комментировать» in the selection menu; without it the menu has no such button. */
   onCommentRequest?: () => void;
+  /**
+   * «Соавтор» in the selection menu, with the rectangle of that button; without it the menu has
+   * no such button. It stays in a read-only text.
+   */
+  onCoauthorRequest?: (anchor: DOMRect) => void;
   /** A click on an open comment's place. */
   onCommentOpen?: (id: string) => void;
   /** A click on an open co-author suggestion. */
@@ -205,7 +210,10 @@ export class ScreenplayEditorView {
       createFadeInAlignPlugin(),
       commentsPlugin((id) => options.onCommentOpen?.(id)),
       suggestionsPlugin((id) => options.onSuggestionOpen?.(id)),
-      createBubbleMenuPlugin(options.onCommentRequest),
+      createBubbleMenuPlugin(
+        options.onCommentRequest,
+        options.onCoauthorRequest,
+      ),
       cardGapStatePlugin,
       cardGapPlugin,
       ...(options.extraPlugins ?? []),

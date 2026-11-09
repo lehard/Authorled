@@ -8,6 +8,8 @@
 #      ./scripts/usage.sh local report                  The local stand (compose.yaml)
 #      ./scripts/usage.sh prod report                   The production server, from /srv/authorled/app
 #      ./scripts/usage.sh <local|prod> set-plan <e-mail> <plan>
+#      ./scripts/usage.sh <local|prod> beta-requests    Requests for the beta
+#      ./scripts/usage.sh <local|prod> coauthor-feedback  Marks of the co-author's answers, 30 days
 #
 #    The commands run `python -m admin` inside the running agentos-api container, through the
 #    operations of the core. The target is required: the script does not guess where it runs.
@@ -18,7 +20,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 usage() {
-    echo 'Usage: ./scripts/usage.sh local|prod report | set-plan <e-mail> <plan> | beta-requests'
+    echo 'Usage: ./scripts/usage.sh local|prod report | set-plan <e-mail> <plan> | beta-requests | coauthor-feedback'
 }
 
 [[ $# -ge 2 ]] || { usage >&2; exit 2; }
@@ -33,6 +35,7 @@ case "$1" in
     report) [[ $# -eq 1 ]] || { usage >&2; exit 2; } ;;
     set-plan) [[ $# -eq 3 ]] || { usage >&2; exit 2; } ;;
     beta-requests) [[ $# -eq 1 ]] || { usage >&2; exit 2; } ;;
+    coauthor-feedback) [[ $# -eq 1 ]] || { usage >&2; exit 2; } ;;
     *) usage >&2; exit 2 ;;
 esac
 

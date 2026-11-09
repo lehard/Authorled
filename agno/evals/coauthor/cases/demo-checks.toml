@@ -1,0 +1,75 @@
+# Checks of the mentor (openspec/changes/coauthor-mentor-checks, design, decision 9): the request of
+# web/src/screens/project/chat/checks.ts word for word, sent over scene 6 of «Тихая вода» (the night kitchen,
+# water-6) selected in the open screenplay. The part is not covered by domains and sections (spec «Наборы замера»).
+
+[[case]]
+id = "dc-water"
+section = "single"
+message = "Где здесь вода? Назови одно–три места, которые можно сократить без потери смысла, и спроси меня о них."
+expect = ["wide-review"]
+place = "tihaya-voda"
+action = "none"
+open = { scene = 6 }
+
+[[case]]
+id = "dc-want"
+section = "single"
+message = "Чего хочет герой в этой сцене и что ему мешает? Покажи, где это видно в тексте, а где не хватает."
+expect = ["wide-review"]
+place = "tihaya-voda"
+action = "none"
+open = { scene = 6 }
+
+[[case]]
+id = "dc-pace"
+section = "single"
+message = "Не провисает ли здесь темп? Назови места, где затянуто, и спроси меня, что в них важно."
+expect = ["wide-review"]
+place = "tihaya-voda"
+action = "none"
+open = { scene = 6 }
+
+[[case]]
+id = "dc-voices"
+section = "single"
+message = "Звучат ли реплики как разные люди? Найди места, где герои говорят одинаково."
+expect = ["wide-review"]
+place = "tihaya-voda"
+action = "none"
+open = { scene = 6 }
+
+[[case]]
+id = "dc-tone"
+section = "single"
+message = "Какой тон здесь, по-твоему, задуман? Где текст из него выпадает?"
+expect = ["wide-review"]
+place = "tihaya-voda"
+action = "none"
+open = { scene = 6 }
+
+[[case]]
+id = "dc-conflict"
+section = "single"
+message = "Чего здесь не хватает для конфликта? Где противостояние слабеет?"
+expect = ["wide-review"]
+place = "tihaya-voda"
+action = "none"
+open = { scene = 6 }
+
+[[case]]
+id = "dc-show"
+section = "single"
+message = "Где здесь показано, а где рассказано? Назови места, где герои или ремарки объясняют то, что можно показать."
+expect = ["wide-review"]
+place = "tihaya-voda"
+action = "none"
+open = { scene = 6 }
+
+[[case]]
+id = "dc-contradictions"
+section = "single"
+message = "Нет ли здесь противоречий с другими документами истории: персонажами, локациями, миром, синопсисом?"
+expect = ["wide-review"]
+place = "tihaya-voda"
+action = "none"
+open = { scene = 6 }

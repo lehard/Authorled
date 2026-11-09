@@ -14,6 +14,8 @@ import {
   Paperclip,
   Plus,
   Sparkles,
+  ThumbsDown,
+  ThumbsUp,
   X,
 } from "lucide-react";
 import {
@@ -28,10 +30,16 @@ import Markdown from "react-markdown";
 import { useNavigate } from "react-router";
 
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useStoryFiles } from "@/data/files";
 import { GrowingTextarea, InkLoader } from "@/design-system";
 
-import { useProjectData } from "../ProjectContext";
+import { useProjectData, type CoauthorRequest } from "../ProjectContext";
 import { ActionLines } from "./ActionLines";
 import { changedResources, firstChangingCalls, toolText } from "./actions";
 import { useConfirmations } from "./confirmations";
@@ -47,15 +55,20 @@ import {
   threadPrefix,
   type Conversation,
 } from "./api";
+import { ABOUT_STORY, CHECKS } from "./checks";
+import { ChecksButton } from "./ChecksMenu";
+import { useChatRuns } from "./chatRuns";
+import {
+  clearMark,
+  loadMarks,
+  markError,
+  putMark,
+  type Mark,
+} from "./feedback";
 import { coauthorContext } from "./docContext";
 import { ModeSwitch } from "./ModeSwitch";
 import { readRunError, UNAVAILABLE, type RunError } from "./runError";
 
-const SUGGESTIONS = [
-  "О чём эта история?",
-  "Что можно сократить в этом документе?",
-  "Проверь, нет ли противоречий в этом документе",
-];
 const TITLE_LENGTH = 48;
 // Files in a message (openspec/specs/web/workspace, «Файлы в чат»): what the core reads for the
 // co-author, its size limit and how many go in one message.
@@ -84,6 +97,11 @@ type Props = {
   sees: string;
   selection: string;
   clearSelection: () => void;
+  /** A check from a document: the chat sends it once and reports it taken. */
+  request: CoauthorRequest | null;
+  onRequestTaken: (id: string) => void;
+  /** Whether a message can go now: the window offers the checks of documents only then. */
+  onBlockedChange: (blocked: boolean) => void;
   /** Set when the chat is a sheet (narrow screens): a close button in its header. */
   onClose?: () => void;
   /** Set when the chat is a column (wide screens): «Свернуть чат» in its header. */
@@ -103,6 +121,9 @@ export function CoauthorChat({
   sees,
   selection,
   clearSelection,
+  request,
+  onRequestTaken,
+  onBlockedChange,
   onClose,
   onCollapse,
 }: Props) {
@@ -142,6 +163,7 @@ export function CoauthorChat({
   const checking = attachments.some((a) => a.id === null);
   const { data: account } = useAccount();
   const confirmations = useConfirmations(account?.coauthorMode);
+  const runs = useChatRuns();
 
   useAgentContext({
     description: "Что сейчас открыто у автора в Соавторе",
@@ -153,12 +175,22 @@ export function CoauthorChat({
     const here = { id: openDraftId, projectId };
     if (!agent.threadId.startsWith(threadPrefix(here))) {
       switchThread(agent, newThreadId(here), []);
+      runs.reset(new Map(), new Map());
     }
+    // `runs` changes with every mark; the conversation is what this effect follows.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agent, openDraftId, projectId]);
 
   const messages = agent.messages.filter(
     (m) => m.role === "user" || m.role === "assistant",
   );
+
+  // No message goes while a turn runs or a file is checked (`send`); the window knows it too.
+  const blocked = busy || checking || agent.isRunning;
+  useEffect(() => {
+    onBlockedChange(blocked);
+  }, [blocked, onBlockedChange]);
+  useEffect(() => () => onBlockedChange(false), [onBlockedChange]);
 
   const lastContent = messages.at(-1)?.content;
   useEffect(() => {
@@ -168,10 +200,17 @@ export function CoauthorChat({
   // CopilotKit reports a failed run (network, HTTP status, RUN_ERROR of the agent) to the
   // agent's subscribers instead of rejecting runAgent; turn it into an error to show. The
   // author sees no text of an exception (openspec/specs/web/workspace, «Чат с соавтором»).
-  async function runOrThrow() {
+  // Returns the run id of the first RUN_STARTED of the turn: the run of Agno that the usage journal
+  // records. A turn resumed after a confirmation continues that run, while its RUN_STARTED carries
+  // a new id of the client (design, decision 5).
+  async function runOrThrow(): Promise<string | null> {
     let runError: RunError | null = null;
     let failure: Error | null = null;
+    let runId: string | null = null;
     const subscription = agent.subscribe({
+      onRunStartedEvent: ({ event }) => {
+        if (runId === null) runId = event.runId;
+      },
       onRunFailed: ({ error }) => {
         failure = error;
       },
@@ -215,7 +254,7 @@ export function CoauthorChat({
     }
     const reported = failure as Error | null;
     const failed: unknown = reported !== null ? reported : thrown;
-    if (failed === null) return;
+    if (failed === null) return runId;
     // osFetch already put a text for the author (and the status for 401) into a ChatError.
     if (failed instanceof ChatError) throw failed;
     console.error("Run of the co-author failed", failed);
@@ -273,10 +312,22 @@ export function CoauthorChat({
     setFileErrors([]);
   }
 
-  async function send(text: string) {
+  /**
+   * Sends a message of the author. A typed one leaves the field and comes back to it on a
+   * failure; a check (`check`) keeps what is typed in the field.
+   */
+  async function send(text: string, from: "field" | "check") {
     const question = text.trim();
     // While a file is being checked the message waits (web/workspace, «Файлы в сообщении»).
-    if (agent.isRunning || checking || busy) return;
+    if (agent.isRunning || checking || busy) {
+      // The window offers no check meanwhile; if one still came, the author sees it did not go.
+      if (from === "check")
+        setError({
+          text: "Соавтор ещё отвечает: проверка не отправлена.",
+          tone: "notice",
+        });
+      return;
+    }
     const sent = attachments.filter(
       (a): a is Attachment & { id: string } => a.id !== null,
     );
@@ -287,7 +338,7 @@ export function CoauthorChat({
       .join("\n\n");
     const first = messages.length === 0;
     setError(null);
-    setDraft("");
+    if (from === "field") setDraft("");
     clearFiles();
     setView("messages");
     setBusy(true);
@@ -304,7 +355,19 @@ export function CoauthorChat({
             ),
           });
     try {
-      await runOrThrow();
+      const runId = await runOrThrow();
+      // The answer of the turn is its last message with text; only it gets the marks.
+      const answer = agent.messages
+        .slice(agent.messages.findIndex((m) => m.id === id) + 1)
+        .findLast((m) => m.role === "assistant" && textOf(m) !== "");
+      if (answer !== undefined) {
+        if (runId === null)
+          console.error(
+            "The run of the co-author sent no RUN_STARTED",
+            answer.id,
+          );
+        else runs.addRun(answer.id, runId);
+      }
       if (first)
         await renameConversation(
           agent.threadId,
@@ -327,13 +390,24 @@ export function CoauthorChat({
         return;
       // The question and its files stay in the field, so they can be sent again.
       agent.setMessages(agent.messages.filter((m) => m.id !== id));
-      setDraft(question);
+      if (from === "field") setDraft(question);
       setAttachments(sent);
     } finally {
       if (files !== null) copilotkit.removeContext(files);
       setBusy(false);
     }
   }
+
+  // A check from a document goes like a typed question, once per request.
+  const taken = useRef<string | null>(null);
+  useEffect(() => {
+    if (request === null || taken.current === request.id) return;
+    taken.current = request.id;
+    onRequestTaken(request.id);
+    void send(request.text, "check");
+    // `send` reads the state of this render; the request is what starts the effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request]);
 
   function onDrop(e: DragEvent) {
     if (e.dataTransfer.files.length === 0) return;
@@ -350,6 +424,7 @@ export function CoauthorChat({
   function startNew() {
     clearFiles();
     switchThread(agent, newThreadId(openDraft), []);
+    runs.reset(new Map(), new Map());
     setError(null);
     setView("messages");
   }
@@ -375,9 +450,13 @@ export function CoauthorChat({
   async function openConversation(c: Conversation) {
     setError(null);
     try {
-      const loaded = await loadConversation(c.id);
+      const [loaded, marks] = await Promise.all([
+        loadConversation(c.id),
+        loadMarks(c.id),
+      ]);
       clearFiles();
-      switchThread(agent, c.id, loaded);
+      switchThread(agent, c.id, loaded.messages);
+      runs.reset(loaded.runOf, marks);
       setView("messages");
     } catch (e) {
       setError({
@@ -387,10 +466,26 @@ export function CoauthorChat({
     }
   }
 
+  // A click marks the answer, a click on the chosen mark takes it back; a refusal brings the
+  // previous mark back (web/workspace, «Оценка ответа соавтора»).
+  async function mark(runId: string, value: Mark) {
+    const before = runs.marks.get(runId) ?? null;
+    const next = before === value ? null : value;
+    setError(null);
+    runs.setMark(runId, next);
+    try {
+      if (next === null) await clearMark(runId);
+      else await putMark(runId, next);
+    } catch (e) {
+      runs.setMark(runId, before);
+      setError({ text: markError(e), tone: "error" });
+    }
+  }
+
   function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      void send(draft);
+      void send(draft, "field");
     }
   }
 
@@ -410,6 +505,9 @@ export function CoauthorChat({
   function assistantMessage(m: Message) {
     const calls = changingCalls.get(m.id) ?? [];
     const text = calls.length > 0 ? "" : textOf(m);
+    // Marks belong to the last answer of a run, the one whose run the chat knows.
+    const runId = runs.runOf.get(m.id);
+    const chosen = runId === undefined ? undefined : runs.marks.get(runId);
     if (text === "" && calls.length === 0) return null;
     return (
       <div key={m.id} className="max-w-[92%] self-start">
@@ -429,15 +527,41 @@ export function CoauthorChat({
           confirmations={confirmations}
         />
         {!(agent.isRunning && m === last) && text !== "" && (
-          <Button
-            variant="outline"
-            size="xs"
-            className="mt-2 rounded-lg text-muted-foreground"
-            onClick={() => void navigator.clipboard.writeText(text)}
-          >
-            <Copy />
-            Скопировать
-          </Button>
+          <div className="mt-2 flex flex-wrap items-center gap-1">
+            <Button
+              variant="outline"
+              size="xs"
+              className="rounded-lg text-muted-foreground"
+              onClick={() => void navigator.clipboard.writeText(text)}
+            >
+              <Copy />
+              Скопировать
+            </Button>
+            {runId !== undefined && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  className="rounded-lg text-muted-foreground aria-pressed:bg-ai-subtle aria-pressed:text-ai"
+                  aria-pressed={chosen === "useful"}
+                  onClick={() => void mark(runId, "useful")}
+                >
+                  <ThumbsUp />
+                  Полезно
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  className="rounded-lg text-muted-foreground aria-pressed:bg-ai-subtle aria-pressed:text-ai"
+                  aria-pressed={chosen === "not_useful"}
+                  onClick={() => void mark(runId, "not_useful")}
+                >
+                  <ThumbsDown />
+                  Не то
+                </Button>
+              </>
+            )}
+          </div>
         )}
       </div>
     );
@@ -546,18 +670,36 @@ export function CoauthorChat({
             <div className="m-auto max-w-72 text-center text-muted-foreground">
               <b className="mb-1.5 block text-foreground">Спросите соавтора</b>
               Он видит открытый документ и выделенный фрагмент.
-              <div className="mt-4 grid gap-1.5">
-                {SUGGESTIONS.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => void send(s)}
-                    className="rounded-2xl bg-paper px-3 py-2 text-left text-foreground hover:shadow-panel"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
+              <button
+                type="button"
+                onClick={() => void send(ABOUT_STORY, "check")}
+                className="mt-4 w-full rounded-2xl bg-paper px-3 py-2 text-left text-foreground hover:shadow-panel"
+              >
+                {ABOUT_STORY}
+              </button>
+              <p className="mt-4 mb-1.5 text-xs font-semibold">
+                Проверки наставника
+              </p>
+              <TooltipProvider delayDuration={400}>
+                <div className="flex flex-wrap justify-center gap-1.5">
+                  {CHECKS.map((check) => (
+                    <Tooltip key={check.id}>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => void send(check.request, "check")}
+                          className="rounded-full bg-paper px-3 py-1 text-caption text-foreground hover:shadow-panel"
+                        >
+                          {check.label}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-64">
+                        {check.request}
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+                </div>
+              </TooltipProvider>
             </div>
           ) : (
             messages.map((m) =>
@@ -686,12 +828,18 @@ export function CoauthorChat({
               agent.isRunning ||
               busy
             }
-            onClick={() => void send(draft)}
+            onClick={() => void send(draft, "field")}
           >
             <ArrowUp />
           </Button>
         </div>
-        <ModeSwitch />
+        <div className="flex items-start justify-between gap-2">
+          <ModeSwitch />
+          <ChecksButton
+            disabled={blocked}
+            onPick={(text) => void send(text, "check")}
+          />
+        </div>
         {fileErrors.length > 0 && (
           <ul
             role="alert"
