@@ -1,6 +1,6 @@
 # Бизнес-интент: инструменты соавтора описаны так, как их проверяет ядро
 
-Статус: решения согласованы с владельцем 2026-11-08 («Да, записать»); change `coauthor-tool-contracts` спланирован 2026-11-08 (`openspec/changes/coauthor-tool-contracts/`), не реализован. Решено при `/opsx:propose`: пояснения полей — в ядре; около 60 просьб; замер в `agno/evals/coauthor/` после архива `coauthor-quality-eval`, прогон «до» на нынешнем коде. Группы 2–3 закоммичены (`d2aa94a`), замер выполнен 2026-11-09 (итог ниже). Владелец: lehard. Обновлено: 2026-11-09.
+Статус: решения согласованы с владельцем 2026-11-08 («Да, записать»); change `coauthor-tool-contracts` спланирован 2026-11-08, реализован и архивирован 2026-11-09 (`openspec/changes/archive/2026-11-09-coauthor-tool-contracts/`, проверки и методика — `verification.md` там). Решено при `/opsx:propose`: пояснения полей — в ядре; около 60 просьб; замер в `agno/evals/coauthor/` после архива `coauthor-quality-eval`, прогон «до» на нынешнем коде. Группы 2–3 закоммичены (`d2aa94a`), замер выполнен 2026-11-09 (итог ниже). Владелец: lehard. Обновлено: 2026-11-09.
 Рамки: мастер-спеки `api/agents` («Инструменты соавтора», «Действия соавтора»), `api/stories` («Виды документов и их поля»), `openspec/context/07-anti-patterns.md` (п. 23 — свои наборы в evals только по решению владельца, п. 26 — без fallback), ADR-003 (модели только через LiteLLM). Связан с `business-intents/coauthor-actions.md`, `coauthor-refusal-text.md`, `coauthor-quality-eval.md`.
 
 ## Why

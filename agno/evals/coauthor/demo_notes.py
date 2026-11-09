@@ -1,5 +1,5 @@
-"""The notes of a demo story brought back to the demo state (openspec/changes/coauthor-tool-contracts, design,
-decision 5; spec «Заметки истории перед просьбой»).
+"""The notes of a demo story brought back to the demo state (openspec/specs/coauthor-actions-eval, «Заметки истории
+перед просьбой»).
 
 Notes belong to the story, not to a draft, so the fresh copy of a draft does not separate them: without this, a request
 of the measurement of actions would see the notes an earlier request or run created or renamed. No model and no agent

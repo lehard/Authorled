@@ -1,6 +1,6 @@
 """The measurement of actions: its set, what one request produced, the checks and the report.
 
-openspec/changes/coauthor-tool-contracts (design, decision 5). The set is actions.toml here; it is checked against
+openspec/specs/coauthor-actions-eval. The set is actions.toml here; it is checked against
 core/fields.py and the demo stories before any model call. Plain data and code checks, without the agent or the
 database, so the checks and their tests run without a model; actions_run.py runs a request through the co-author.
 """
