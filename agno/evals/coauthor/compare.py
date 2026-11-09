@@ -1,9 +1,10 @@
 """Comparison of two reports of the measurement, without model calls (design, decision 12).
 
 Only reports of one set and part compare. For every domain and section: the share of good cases in each, the
-difference and the noise — cases whose repeats disagree in either report; a difference of no more cases than the
-noisy ones is marked as noise, not as a change. Cases with one stable verdict in both reports that differ are listed
-as became good or became bad.
+difference and the noise — cases whose repeats disagree in either report. A noisy case moves the share of its group
+by half a case at most, so a difference of no more than half the noisy cases is marked as noise, not as a change
+(openspec/changes/coauthor-answer-rules, design, decision 8). Cases with one stable verdict in both reports that
+differ are listed as became good or became bad.
 """
 
 from dataclasses import dataclass
@@ -70,7 +71,7 @@ class Row:
             return "нет оценок"
         if delta == 0:
             return "без изменений"
-        if abs(delta) * self.cases <= self.noisy:
+        if abs(delta) * self.cases <= self.noisy / 2:
             return "шум"
         return "лучше" if delta > 0 else "хуже"
 

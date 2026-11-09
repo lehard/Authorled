@@ -85,7 +85,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   and list the fields of each kind from `FIELD_HINTS` in `core/fields.py`) and its hooks (`coauthor_usage.py`: the limit check before a run, the usage journal
   after it). The co-author never deletes, trashes or decides; the screenplay text changes only by suggestions.
   `agno/skills/<agent_id>/SKILL.md`: an agent's prompt as an Anthropic Agent Skill (`name` equals the id,
-  the body is the prompt), loaded by `agents/prompts.py`; restart the API after editing it.
+  the body is the prompt), loaded by `agents/prompts.py`; restart the API after editing it. The co-author's prompt holds
+  a short help about the service (section «О сервисе «Соавтор»»): a change to a screen it describes updates it too.
   `agno/teams/`: the place for the application's teams; the folder does not exist yet and appears with the first
   registered team (the routing exam builds its teams in `agno/evals/routing/` and does not register them).
 - `agno/db/`: cached OS database and distinct knowledge content adapters.
@@ -281,7 +282,8 @@ owner 2026-11-08, `business-intents/coauthor-tool-contracts.md`).
   `--all | --sample N [--repeat K]` (from `agno/`, with the `DB_*` of `./scripts/dev.sh api`): the real co-author answers
   the sample of the routing exam's wide set or the own demo cases on demo stories of its own user, changes only
   proposed and rejected, judged by `claude-sonnet`; spends model calls, writes its report to `tmp/coauthor-eval/`.
-  `python -m evals.coauthor compare <before.json> <after.json>` compares two reports without model calls
+  `python -m evals.coauthor compare <before.json> <after.json>` compares two reports without model calls;
+  `python -m evals.coauthor rejudge <report.json> --domain <domain>` judges one domain again from the saved answers
   (`agno/evals/coauthor/README.md`).
 - `python -m evals.coauthor actions-setup` (once) and `python -m evals.coauthor actions-run --all | --sample N` (from
   `agno/`, with the same `DB_*`): the measurement of actions — the real co-author runs the requests of
