@@ -35,6 +35,23 @@ class CreatedProject(BaseModel):
     script_id: uuid.UUID
 
 
+class TemplatePointOut(_Out):
+    name: str
+    hint: str
+
+
+class TemplateActOut(_Out):
+    name: str
+    points: list[TemplatePointOut]
+
+
+class StoryTemplateOut(_Out):
+    id: str
+    name: str
+    description: str
+    acts: list[TemplateActOut]
+
+
 class DraftOut(_Out):
     id: uuid.UUID
     project_id: uuid.UUID
