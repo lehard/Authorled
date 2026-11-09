@@ -86,5 +86,5 @@
 
 - Замер: `business-intents/coauthor-quality-eval.md`, `openspec/changes/archive/2026-11-09-coauthor-quality-eval/`, `openspec/specs/coauthor-eval/spec.md`, `agno/evals/coauthor/README.md`.
 - Снимки «до» (на коде без правок `coauthor-tool-contracts`): `tmp/coauthor-eval/20261108T213705Z.json` (work), `20261108T214938Z.json` (holdout), `20261108T203132Z.json` (wide); разбор провалов — `tmp/VERIFY.md`, «coauthor-quality-eval».
-- Промпт: `agno/skills/coauthor/SKILL.md`; соседние change: `openspec/changes/coauthor-tool-contracts/`, `openspec/changes/coauthor-mentor-checks/`.
+- Промпт: `agno/skills/coauthor/SKILL.md`; соседние change: `openspec/changes/archive/2026-11-09-coauthor-tool-contracts/`, `openspec/changes/coauthor-mentor-checks/`.
 - Отчёт для Льва: https://claude.ai/artifact/3MxWHJXYCXz8pKyGsWChju.

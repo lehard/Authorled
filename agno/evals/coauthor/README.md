@@ -87,8 +87,9 @@ python -m evals.coauthor rejudge ../tmp/coauthor-eval/<отчёт>.json --domain
 ## Замер действий
 
 Проверяет то, чего не видит замер качества: доходит ли действие соавтора до ядра после «Разрешить» и ложатся ли
-сведения туда, где их ждёт автор (`openspec/changes/coauthor-tool-contracts`, design, решение 5;
-`business-intents/coauthor-tool-contracts.md`).
+сведения туда, где их ждёт автор (`openspec/specs/coauthor-actions-eval/spec.md`,
+`business-intents/coauthor-tool-contracts.md`). Как сравнивать прогоны «до» и «после», результаты первых прогонов и
+оставшиеся слабые места — `openspec/changes/archive/2026-11-09-coauthor-tool-contracts/verification.md`.
 
 - **Набор** — `actions.toml`, 64 разговорные просьбы по демо-историям: создать персонажа, локацию, мир, изменить
   карточку (поле, роль, имя), создать и изменить заметку, оставить комментарий, и просьбы без действия. У просьбы
