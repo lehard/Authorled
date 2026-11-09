@@ -16,8 +16,8 @@ generic manager behavior belongs in Agno. `CLAUDE.md` links to this file.
   MCP mount at the root (see `openspec/context/ADR/ADR-002-own-routes-via-base-app.md`). Do not pass
   `base_app`: with it Agno drops its error handlers for its own routes. Every other API surface stays
   with Agno; today the own routes are `/api/v1/me`, the story routes (stories, documents, texts,
-  drafts, notes, comments, suggestions, saves, files, import) and the marks of the co-author's answers
-  (`/api/v1/coauthor-feedback`).
+  drafts, notes, comments, suggestions, saves, files, import, search), the writing statistics of a draft
+  (`/api/v1/drafts/{id}/writing`) and the marks of the co-author's answers (`/api/v1/coauthor-feedback`).
 - Check framework behavior against the Agno version pinned in `agno/pyproject.toml`.
   Do not bypass framework rejections or add compatibility adapters to this template.
 - Keep the starter lean. Add abstractions, tests and infrastructure only for a concrete
@@ -97,8 +97,9 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 ## Where changes belong
 
 - `agno/app/main.py`: AgentOS registration, shared database, OS Manager, Company and queue.
-- `agno/app/api/`: own product routes (`me.py`; `stories.py`, `notes.py`, `review.py`, `saves.py`, `files.py` for stories;
-  `feedback.py` for the marks «Полезно» and «Не то» of the co-author's answers) and their
+- `agno/app/api/`: own product routes (`me.py`; `stories.py`, `notes.py`, `review.py`, `saves.py`, `files.py`, `search.py` for stories;
+  `writing.py` for the writing statistics of a draft; `feedback.py` for the marks «Полезно» and «Не то» of the
+  co-author's answers) and their
   `application/problem+json` errors, handled only for the product's own exception types (`Problem`, `core/errors.py`).
   `body.py`: JSON body, `If-Match`, the caller and the project access check every story route does first.
 - `agno/app/auth/` and `auth/`: the auth module. `agno/app/auth/` is the only code that reads JWT
@@ -115,7 +116,7 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   `agno/app/settings.py`: application model factories.
 - `agno/app/sandbox.py`: providers, repository URL/branch and checkpoint paths.
 - `agno/agents/`: application agents, including the Claude engineer (Claude Code on DeepSeek) and the co-author
-  with its tools (`coauthor_tools.py`: read the story of the conversation, propose an edit of the screenplay, and by
+  with its tools (`coauthor_tools.py`: read and search the story of the conversation, propose an edit of the screenplay, and by
   the author's request change notes, documents and comments; in-process functions that call the core; every changing
   call pauses the run until the chat answers it, the author in the co-author mode `ask`, the chat itself in `auto`;
   the list is static, AgentOS 3.1.10 refuses tools built per run; the document tools type profile fields as strings
@@ -128,13 +129,15 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   registered team (the routing exam builds its teams in `agno/evals/routing/` and does not register them).
 - `agno/db/`: cached OS database and distinct knowledge content adapters.
 - `agno/core/`: the product core, independent of Agno: `connection.py` (database URL from `DB_*`),
-  `tables.py` (tables of schema `authorled`: users and settings, stories, drafts, documents, texts, notes, snapshots and points, review, files and
-  requests for the beta),
+  `tables.py` (tables of schema `authorled`: users and settings, stories, drafts, documents, texts, notes, snapshots and points, review, files,
+  requests for the beta and the journal of written words),
   `engine.py` (the core's own connection pool), `users.py` (account operations), `projects.py`, `drafts.py`,
-  `documents.py`, `fields.py`, `texts.py`, `notes.py`, `snapshots.py`, `saves.py`, `review.py`, `files.py`, `imports.py` and
+  `documents.py`, `fields.py`, `texts.py`, `notes.py`, `snapshots.py`, `saves.py`, `review.py`, `files.py`, `search.py`, `imports.py` and
   `importers/` (stories, their equal drafts and the documents of a draft, the editor text with revisions, notes of a story, snapshots
-  of a document and points of a draft, comments and suggestions, uploads, manuscript import), `clamav.py` (antivirus
-  client), `errors.py` (refusals the routes answer with) and `feedback.py` (the author's marks of the co-author's
+  of a document and points of a draft, comments and suggestions, uploads, search of a draft and its story, manuscript import), `clamav.py` (antivirus
+  client), `errors.py` (refusals the routes answer with), `writing.py` (words of the screenplay by one rule shared with
+  `web/src/editor/wordCount.cases.json`, the words the author's saves add by period of 15 minutes, days in the reader's
+  time zone, the daily goal and the goal of a story) and `feedback.py` (the author's marks of the co-author's
   answers by run, the report of the marks; the route gives it the conversation of the run from billing). The core
   never calls billing. `agno/migrations/` and
   `agno/alembic.ini`: Alembic for schema `authorled` only, forward-only, one head; never migrate Agno or Authentik

@@ -11,7 +11,12 @@ import type {
 import { activeUser } from "@/auth/userManager";
 import { plainDoc, stripMarks, type ScreenplayDoc } from "@/editor/document.ts";
 
-import { FIXTURES, type FixtureMessage, type FixtureThread } from "./fixtures";
+import {
+  FIXTURES,
+  WRITING_SAMPLE,
+  type FixtureMessage,
+  type FixtureThread,
+} from "./fixtures";
 import type {
   CommentThread,
   Entity,
@@ -27,6 +32,8 @@ import type {
   VersionTarget,
 } from "./model";
 import type { SaveOperation } from "./saves";
+import type { SearchOperation } from "./search";
+import type { Writing, WritingOperation } from "./writing";
 
 // Data source `fixtures` (openspec/specs/web/workspace, «Источник данных»): sample data of
 // mockup v2 in page memory, reset on reload. It behaves as the core where screens rely on it
@@ -57,6 +64,10 @@ const store = {
 } as unknown as Record<Resource, Row[]>;
 
 /** Import and chat files need the core (design of story-data-web, decision 7). */
+/** Search of a story needs the core (design of project-search, decision 6). */
+export const FIXTURES_NO_SEARCH =
+  "Поиск по истории работает только с источником данных api.";
+
 export const FIXTURES_UNAVAILABLE =
   "Недоступно с данными примера: импорт и файлы в чат работают только с источником данных api.";
 
@@ -122,6 +133,55 @@ function copyDraft(base: string, draftId: string): void {
         id: `${draftId}-${row.id}`,
         draftId,
       });
+}
+
+/** The daily goal of the signed-in user, in page memory like the rest of this source. */
+let dailyGoal: number | null = WRITING_SAMPLE.dailyGoal;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** `YYYY-MM-DD` of a moment in a time zone. */
+function localDate(moment: Date, tz: string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(moment);
+}
+
+/** The sample days ending today in `tz`, judged as the core judges them (openspec/specs/api/writing). */
+function writing(draftId: string, tz: string): Writing {
+  const draft = find("drafts", draftId);
+  const project = find(
+    "projects",
+    String(draft.projectId),
+  ) as unknown as Project;
+  const now = Date.now();
+  const days = WRITING_SAMPLE.days.map((words, i) => ({
+    date: localDate(
+      new Date(now - (WRITING_SAMPLE.days.length - 1 - i) * DAY_MS),
+      tz,
+    ),
+    words,
+    met: words === null || dailyGoal === null ? null : words >= dailyGoal,
+  }));
+  const today = days[days.length - 1].date;
+  const { wordGoal: goal, goalDeadline: deadline } = project;
+  const words = WRITING_SAMPLE.storyWords;
+  const daysLeft =
+    deadline === null
+      ? null
+      : Math.round((Date.parse(deadline) - Date.parse(today)) / DAY_MS);
+  let perDay: number | null = null;
+  if (goal !== null && daysLeft !== null)
+    perDay =
+      words >= goal
+        ? 0
+        : daysLeft > 0
+          ? Math.ceil((goal - words) / daysLeft)
+          : null;
+  return {
+    today,
+    dailyGoal,
+    days,
+    story: { words, goal, deadline, daysLeft, perDay },
+  };
 }
 
 /** The drafts opened last, by story: the only user of this source is the signed-in one. */
@@ -422,6 +482,8 @@ export const fixturesProvider: DataProvider = {
         cover: false,
         updatedAt: now(),
         deletedAt: null,
+        wordGoal: null,
+        goalDeadline: null,
       };
       const draftId = crypto.randomUUID();
       store.drafts.push({
@@ -567,8 +629,14 @@ export const fixturesProvider: DataProvider = {
   },
 
   custom: async ({ meta, payload }) => {
-    const op = { operation: meta?.operation, payload } as SaveOperation;
+    const op = { operation: meta?.operation, payload } as
+      SaveOperation | SearchOperation | WritingOperation;
     switch (op.operation) {
+      case "writing":
+        return { data: writing(op.payload.draftId, op.payload.tz) as never };
+      case "setDailyGoal":
+        dailyGoal = op.payload.goal;
+        break;
       case "openDraft": {
         const draft = find("drafts", op.payload.draftId);
         opened.set(String(draft.projectId), draft.id);
@@ -593,6 +661,8 @@ export const fixturesProvider: DataProvider = {
       case "restorePoint":
         await restorePoint(op.payload.id);
         break;
+      case "search":
+        throw new Error(FIXTURES_NO_SEARCH);
       default:
         throw new Error(FIXTURES_UNAVAILABLE);
     }

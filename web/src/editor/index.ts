@@ -421,6 +421,21 @@ export class ScreenplayEditorView {
     match.scrollIntoView({ block: "nearest" });
   }
 
+  /**
+   * Opens the search with `query` in the whole text; the current match is the first one from the
+   * caret on, or from the start of the text (web/workspace, «Переход к совпадению из поиска по
+   * истории»).
+   */
+  openFind(query: string, from: "caret" | "start"): void {
+    const at = from === "start" ? 0 : this.view.state.selection.from;
+    setFind({ query, scope: "all" })(this.view.state, this.view.dispatch);
+    const find = findKey.getState(this.view.state);
+    if (find === undefined) throw new Error("Плагин find не подключён");
+    if (find.matches.length === 0) return;
+    const next = find.matches.findIndex((m) => m.from >= at);
+    this.find({ current: next === -1 ? 0 : next });
+  }
+
   /** Ends the search; a selected match becomes the caret after it. */
   closeFind(): void {
     closeFind()(this.view.state, this.view.dispatch);
