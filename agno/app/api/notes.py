@@ -1,20 +1,22 @@
-"""Notes of a story: /api/v1 (openspec/specs/api/stories, «Заметки истории» … «Корзина заметок»).
+"""Notes of a story: /api/v1 (openspec/specs/api/stories, «Заметки истории» … «Место для оригиналов заметок»).
 
 Like the other story routes, every route first finds the story and checks the caller's access to it; a missing and
-someone else's note both answer 404.
+someone else's note both answer 404. A note from a file takes its place from the plan of the caller (billing).
 """
 
 import uuid
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, Request, Response
 from starlette.concurrency import run_in_threadpool
 
-from app.api.body import caller_id, if_match, parse_id, read_object, require_project
+import billing
+from app.api.body import caller_id, if_match, parse_id, read_object, read_upload, require_project
 from app.api.problems import Problem
 from app.api.schemas import NoteOut
 from app.auth import Principal, current_principal
-from core import notes
+from core import files, notes
 from core.engine import get_engine
 
 router = APIRouter(prefix="/api/v1", tags=["Notes"])
@@ -43,6 +45,51 @@ def list_notes(project_id: str, principal: Principal = Depends(current_principal
     found = _project_id(principal, project_id)
     with get_engine().connect() as connection:
         return [NoteOut.model_validate(n) for n in notes.list_notes(connection, found)]
+
+
+def storage_place(user_id: uuid.UUID) -> int:
+    """Bytes for the originals of notes by the caller's plan; an ended subscription gives none."""
+    try:
+        return billing.storage_limit(user_id, datetime.now(UTC))
+    except billing.SubscriptionEnded as error:
+        raise Problem(403, "Forbidden", "Подписка закончилась: файлы в заметки не загружаются.") from error
+
+
+def _note_from_upload(principal: Principal, project_id: uuid.UUID, name: str, data: bytes) -> NoteOut:
+    checked = files.check_upload(name, "note", data)
+    with get_engine().connect() as connection:
+        user = caller_id(connection, principal)
+    place = storage_place(user)
+    with get_engine().begin() as connection:
+        return NoteOut.model_validate(notes.create_note_from_file(connection, project_id, user, checked, place))
+
+
+@router.post(
+    "/projects/{project_id}/notes/files",
+    status_code=201,
+    response_model=NoteOut,
+    summary="A note from a file: the file is checked like a file of a conversation and kept as the original",
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {
+                "multipart/form-data": {
+                    "schema": {
+                        "type": "object",
+                        "required": ["file"],
+                        "properties": {"file": {"type": "string", "format": "binary"}},
+                    }
+                }
+            },
+        }
+    },
+)
+async def note_from_upload(
+    project_id: str, request: Request, principal: Principal = Depends(current_principal)
+) -> NoteOut:
+    found = await run_in_threadpool(_project_id, principal, project_id)
+    _, name, data = await read_upload(request, set())
+    return await run_in_threadpool(_note_from_upload, principal, found, name, data)
 
 
 def _create_note(principal: Principal, project_id: uuid.UUID, body: dict[str, Any]) -> NoteOut:

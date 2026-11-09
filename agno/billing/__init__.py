@@ -14,6 +14,7 @@ from billing.engine import get_engine
 from billing.plans import DataFileError, ModelPrice, Plan, Prices, UnknownModel, UnknownPlan, prices
 from billing.plans import plans as _plans
 from billing.subscriptions import NoSubscription, Subscription, SubscriptionEnded
+from billing.subscriptions import current_subscription as _current_subscription
 from billing.subscriptions import ensure_signup_subscription as _ensure_signup_subscription
 from billing.subscriptions import set_plan as _set_plan
 from billing.usage import (
@@ -57,8 +58,11 @@ __all__ = [
     "report",
     "run_session",
     "set_plan",
+    "storage_limit",
     "validate_data",
 ]
+
+_MIB = 1024 * 1024
 
 
 def validate_data() -> None:
@@ -109,6 +113,17 @@ def check_limit(user_id: uuid.UUID, at: datetime) -> Allowance:
             raise
         connection.commit()
         return allowance
+
+
+def storage_limit(user_id: uuid.UUID, at: datetime) -> int:
+    """Bytes the plan of the user's current subscription gives for the originals of notes.
+
+    A granted subscription whose period is over moves forward first, as in check_limit. NoSubscription,
+    SubscriptionEnded and UnknownPlan are raised as they are: there is no place by default.
+    """
+    with get_engine().begin() as connection:
+        subscription = _current_subscription(connection, user_id, at)
+        return _plans().get(subscription.plan).storage_mb * _MIB
 
 
 def run_session(user_id: uuid.UUID, run_id: str, agent_id: str) -> str:

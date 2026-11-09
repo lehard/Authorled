@@ -10,6 +10,7 @@ import {
   ArrowUp,
   Copy,
   History,
+  NotebookPen,
   PanelRightClose,
   Paperclip,
   Plus,
@@ -39,6 +40,8 @@ import {
 import { useStoryFiles } from "@/data/files";
 import { GrowingTextarea, InkLoader } from "@/design-system";
 
+import { docPath } from "../docRef";
+import { useNoteActions } from "../noteActions";
 import { useProjectData, type CoauthorRequest } from "../ProjectContext";
 import { ActionLines } from "./ActionLines";
 import { changedResources, firstChangingCalls, toolText } from "./actions";
@@ -142,6 +145,9 @@ export function CoauthorChat({
     ],
   });
   const [draft, setDraft] = useState("");
+  const field = useRef<HTMLTextAreaElement | null>(null);
+  // The last request to fill that went into the field.
+  const [filled, setFilled] = useState<string | null>(null);
   // A turn of the author, from sending to the end of the co-author's answer, including the time
   // a confirmation card waits for the author: no other message goes meanwhile.
   const [busy, setBusy] = useState(false);
@@ -163,6 +169,12 @@ export function CoauthorChat({
   const storyFiles = useStoryFiles();
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [fileErrors, setFileErrors] = useState<string[]>([]);
+  // «В заметки» of an attached file (web/workspace, «Файл чата в заметки»): the note made of it,
+  // by the key of the attachment, or null while it is being made.
+  const [savedNotes, setSavedNotes] = useState<Map<string, string | null>>(
+    () => new Map(),
+  );
+  const noteActions = useNoteActions(projectId);
   const checking = attachments.some((a) => a.id === null);
   const { data: account } = useAccount();
   const confirmations = useConfirmations(account?.coauthorMode);
@@ -228,6 +240,9 @@ export function CoauthorChat({
         for (const resource of changedResources(content))
           void invalidate({
             resource,
+            // The screenplay of the draft is read as one record by the draft's id (useScript):
+            // Refine refreshes a detail only by its id.
+            ...(resource === "scripts" ? { id: data.draft.id } : {}),
             invalidates: ["list", "many", "detail"],
           });
       },
@@ -269,6 +284,24 @@ export function CoauthorChat({
 
   // Each file goes to the core at once, to this conversation; a refusal is shown under the
   // field and the file is not attached.
+  async function saveToNotes(key: string, fileId: string) {
+    setSavedNotes((m) => new Map(m).set(key, null));
+    try {
+      const id = await noteActions.fromChatFile(fileId);
+      setSavedNotes((m) => new Map(m).set(key, id));
+    } catch (e) {
+      setSavedNotes((m) => {
+        const next = new Map(m);
+        next.delete(key);
+        return next;
+      });
+      setFileErrors((es) => [
+        ...es,
+        e instanceof Error ? e.message : String(e),
+      ]);
+    }
+  }
+
   function attach(list: FileList | File[]) {
     const errors: string[] = [];
     let room = MAX_FILES - attachments.length;
@@ -316,6 +349,7 @@ export function CoauthorChat({
   function clearFiles() {
     setAttachments([]);
     setFileErrors([]);
+    setSavedNotes(new Map());
   }
 
   /**
@@ -404,10 +438,33 @@ export function CoauthorChat({
     }
   }
 
+  // A request to fill goes into the field before what is typed there, once per request, with the
+  // caret at the end (web/workspace, «Задача «Под заявку»»). The field changes while rendering, as
+  // React adjusts state to a new prop; focus and caret wait for the field to show it.
+  if (request !== null && request.mode === "fill" && request.id !== filled) {
+    setFilled(request.id);
+    setDraft(request.text + draft);
+  }
+  useEffect(() => {
+    if (filled === null) return;
+    onRequestTaken(filled);
+    const el = field.current;
+    if (el === null)
+      throw new Error("Поля ввода чата нет: просьба не вставлена.");
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+    // The request that went into the field is what starts the effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filled]);
   // A check from a document goes like a typed question, once per request.
   const taken = useRef<string | null>(null);
   useEffect(() => {
-    if (request === null || taken.current === request.id) return;
+    if (
+      request === null ||
+      request.mode === "fill" ||
+      taken.current === request.id
+    )
+      return;
     taken.current = request.id;
     onRequestTaken(request.id);
     void send(request.text, "check");
@@ -789,18 +846,27 @@ export function CoauthorChat({
                     проверяется…
                   </span>
                 ) : (
-                  <button
-                    type="button"
-                    aria-label={`Убрать файл «${a.name}»`}
-                    onClick={() =>
-                      setAttachments((list) =>
-                        list.filter((x) => x.key !== a.key),
-                      )
-                    }
-                    className="grid size-5 place-items-center rounded-full hover:bg-accent"
-                  >
-                    <X className="size-3.5" />
-                  </button>
+                  <>
+                    <NoteOfFile
+                      saved={savedNotes.get(a.key)}
+                      onSave={() => void saveToNotes(a.key, a.id!)}
+                      onOpen={(id) =>
+                        navigate(docPath(openDraft, { kind: "note", id }))
+                      }
+                    />
+                    <button
+                      type="button"
+                      aria-label={`Убрать файл «${a.name}»`}
+                      onClick={() =>
+                        setAttachments((list) =>
+                          list.filter((x) => x.key !== a.key),
+                        )
+                      }
+                      className="grid size-5 place-items-center rounded-full hover:bg-accent"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  </>
                 )}
               </li>
             ))}
@@ -828,6 +894,7 @@ export function CoauthorChat({
             <Paperclip />
           </Button>
           <GrowingTextarea
+            ref={field}
             variant="bare"
             minRows={1}
             limit={{ screen: 1 / 3 }}
@@ -895,5 +962,39 @@ export function CoauthorChat({
         )}
       </div>
     </section>
+  );
+}
+
+/** «В заметки» of an attached file; after it, the link to the note. */
+function NoteOfFile({
+  saved,
+  onSave,
+  onOpen,
+}: {
+  /** undefined: not saved; null: being saved; a string: the id of the note. */
+  saved: string | null | undefined;
+  onSave: () => void;
+  onOpen: (noteId: string) => void;
+}) {
+  if (typeof saved === "string")
+    return (
+      <button
+        type="button"
+        onClick={() => onOpen(saved)}
+        className="inline-flex items-center gap-1 rounded-full px-1.5 text-primary hover:bg-accent"
+      >
+        <NotebookPen className="size-3.5" />в заметках
+      </button>
+    );
+  return (
+    <button
+      type="button"
+      disabled={saved === null}
+      onClick={onSave}
+      className="inline-flex items-center gap-1 rounded-full px-1.5 text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-60"
+    >
+      <NotebookPen className="size-3.5" />
+      {saved === null ? "сохраняем…" : "В заметки"}
+    </button>
   );
 }

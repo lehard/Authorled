@@ -1,3 +1,4 @@
+import { Upload } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,8 @@ type Props = {
   kinds: DocKind[];
   initialKind: DocKind;
   onSubmit: (kind: DocKind, name: string) => Promise<void>;
+  /** «Загрузить файл»: a note from a file instead of a name. */
+  onUploadFile: () => void;
 };
 
 /** «Добавить документ»: structured entities and notes, no other free documents or folders. */
@@ -39,6 +42,7 @@ function AddDocumentForm({
   kinds,
   initialKind,
   onSubmit,
+  onUploadFile,
 }: Omit<Props, "open">) {
   const id = useId();
   const [kind, setKind] = useState<DocKind>(initialKind);
@@ -109,6 +113,20 @@ function AddDocumentForm({
         )}
       </div>
       <DialogFooter>
+        {kind === "note" && (
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-full sm:mr-auto"
+            onClick={() => {
+              onOpenChange(false);
+              onUploadFile();
+            }}
+          >
+            <Upload />
+            Загрузить файл
+          </Button>
+        )}
         <Button
           type="button"
           variant="ghost"

@@ -99,6 +99,21 @@ def test_check_limit_without_subscription() -> None:
         billing.check_limit(uuid.uuid4(), NOW)
 
 
+def test_storage_limit_of_beta(engine: Engine) -> None:
+    user_id = uuid.uuid4()
+    billing.ensure_subscription(user_id, START)
+    later = START + timedelta(days=40)
+    assert billing.storage_limit(user_id, later) == 524_288_000
+    with engine.connect() as connection:
+        stored = connection.execute(select(subscriptions.c.period_start).where(subscriptions.c.user_id == user_id))
+        assert stored.scalar_one() == datetime(2027, 12, 7, 10, tzinfo=UTC)
+
+
+def test_storage_limit_without_subscription() -> None:
+    with pytest.raises(billing.NoSubscription):
+        billing.storage_limit(uuid.uuid4(), NOW)
+
+
 def test_report_names_users_by_identifier() -> None:
     user_id = uuid.uuid4()
     billing.ensure_subscription(user_id, START)

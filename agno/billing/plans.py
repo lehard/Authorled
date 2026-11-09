@@ -38,6 +38,8 @@ class Plan:
     price_rub: Decimal
     period_months: int
     limit_rub: Decimal
+    # Place for the originals of notes of all the user's stories, in megabytes.
+    storage_mb: int
     purchasable: bool
 
 
@@ -130,12 +132,15 @@ def parse_plans(data: dict[str, Any], source: str) -> Plans:
         where = f"{source}: plans.{code}"
         if not _PLAN_CODE.fullmatch(code):
             raise DataFileError(f"{where}: the code must match [a-z0-9-]+")
-        fields = _fields(where, table, ("name", "price_rub", "period_months", "limit_rub", "purchasable"))
+        fields = _fields(where, table, ("name", "price_rub", "period_months", "limit_rub", "storage_mb", "purchasable"))
         name, months, purchasable = fields["name"], fields["period_months"], fields["purchasable"]
+        storage = fields["storage_mb"]
         if not isinstance(name, str) or not name.strip():
             raise DataFileError(f"{where}.name must be a non-empty string")
         if isinstance(months, bool) or not isinstance(months, int) or months < 1:
             raise DataFileError(f"{where}.period_months must be an integer of at least 1")
+        if isinstance(storage, bool) or not isinstance(storage, int) or storage < 1:
+            raise DataFileError(f"{where}.storage_mb must be an integer of at least 1")
         if not isinstance(purchasable, bool):
             raise DataFileError(f"{where}.purchasable must be true or false")
         by_code[code] = Plan(
@@ -144,6 +149,7 @@ def parse_plans(data: dict[str, Any], source: str) -> Plans:
             price_rub=_rubles(f"{where}.price_rub", fields["price_rub"]),
             period_months=months,
             limit_rub=_rubles(f"{where}.limit_rub", fields["limit_rub"]),
+            storage_mb=storage,
             purchasable=purchasable,
         )
     signup = top["signup_plan"]

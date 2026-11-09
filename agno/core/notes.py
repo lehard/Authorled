@@ -1,6 +1,8 @@
-"""Notes of the author (openspec/specs/api/stories: «Заметки истории» … «Заметки и драфты»).
+"""Notes of the author (openspec/specs/api/stories: «Заметки истории» … «Место для оригиналов заметок»).
 
-A note belongs to the story: only the trash of the story stops a change, never a draft or its lock.
+A note belongs to the story: only the trash of the story stops a change, never a draft or its lock. A note made from a
+file keeps the file as its original (purpose `note`): the text is the author's to edit, the original never changes and
+goes only together with the note.
 """
 
 import uuid
@@ -11,8 +13,23 @@ from typing import Any
 from sqlalchemy import Connection, delete, func, insert, select, update
 
 from core.documents import ensure_project_open
-from core.errors import Conflict, Invalid, NotFound
-from core.tables import notes
+from core.errors import Conflict, Invalid, NotFound, TooLarge
+from core.files import CheckedFile, checked_of_stored, get_file, store_file
+from core.tables import files, notes, users
+
+# The longest text of a note made from a file: longer ones slow the screen and fill the co-author's context.
+MAX_FILE_TEXT_CHARS = 500_000
+MIB = 1024 * 1024
+
+
+@dataclass(frozen=True)
+class NoteFile:
+    """The original of a note."""
+
+    id: uuid.UUID
+    name: str
+    media_type: str
+    size_bytes: int
 
 
 @dataclass(frozen=True)
@@ -26,9 +43,29 @@ class Note:
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None
+    file: NoteFile | None
+
+
+_COLUMNS = (
+    *notes.c,
+    files.c.name.label("file_name"),
+    files.c.media_type.label("file_media_type"),
+    files.c.size_bytes.label("file_size_bytes"),
+)
+
+
+def _select() -> Any:
+    return select(*_COLUMNS).select_from(notes.outerjoin(files, files.c.id == notes.c.file_id))
 
 
 def _note(row: Any) -> Note:
+    original = (
+        None
+        if row.file_id is None
+        else NoteFile(
+            id=row.file_id, name=row.file_name, media_type=row.file_media_type, size_bytes=row.file_size_bytes
+        )
+    )
     return Note(
         id=row.id,
         project_id=row.project_id,
@@ -39,6 +76,7 @@ def _note(row: Any) -> Note:
         created_at=row.created_at,
         updated_at=row.updated_at,
         deleted_at=row.deleted_at,
+        file=original,
     )
 
 
@@ -55,9 +93,9 @@ def _body(value: Any) -> str:
 
 
 def note_row(connection: Connection, note_id: uuid.UUID, for_update: bool = False) -> Note:
-    query = select(notes).where(notes.c.id == note_id)
+    query = _select().where(notes.c.id == note_id)
     if for_update:
-        query = query.with_for_update()
+        query = query.with_for_update(of=notes)
     row = connection.execute(query).one_or_none()
     if row is None:
         raise NotFound(f"Заметки {note_id} нет.")
@@ -70,26 +108,90 @@ def project_of_note(connection: Connection, note_id: uuid.UUID) -> uuid.UUID:
 
 def list_notes(connection: Connection, project_id: uuid.UUID) -> list[Note]:
     rows = connection.execute(
-        select(notes).where(notes.c.project_id == project_id).order_by(notes.c.created_at, notes.c.id)
+        _select().where(notes.c.project_id == project_id).order_by(notes.c.created_at, notes.c.id)
     ).all()
     return [_note(row) for row in rows]
 
 
-def create_note(connection: Connection, project_id: uuid.UUID, title: Any, body: Any, user_id: uuid.UUID) -> Note:
-    ensure_project_open(connection, project_id)
-    row = connection.execute(
+def _insert(
+    connection: Connection,
+    project_id: uuid.UUID,
+    title: str,
+    body: str,
+    user_id: uuid.UUID,
+    file_id: uuid.UUID | None = None,
+) -> Note:
+    note_id = connection.execute(
         insert(notes)
         .values(
             # The time of the statement: notes of one transaction keep their order.
             created_at=func.clock_timestamp(),
             project_id=project_id,
-            title=_title(title),
-            body=_body(body),
+            title=title,
+            body=body,
             updated_by=user_id,
+            file_id=file_id,
         )
-        .returning(notes)
-    ).one()
-    return _note(row)
+        .returning(notes.c.id)
+    ).scalar_one()
+    return note_row(connection, note_id)
+
+
+def create_note(connection: Connection, project_id: uuid.UUID, title: Any, body: Any, user_id: uuid.UUID) -> Note:
+    ensure_project_open(connection, project_id)
+    return _insert(connection, project_id, _title(title), _body(body), user_id)
+
+
+def _count(number: int) -> str:
+    return f"{number:,}".replace(",", " ")
+
+
+def _megabytes(size: int) -> str:
+    return f"{size / MIB:.1f}".removesuffix(".0").replace(".", ",")
+
+
+def create_note_from_file(
+    connection: Connection, project_id: uuid.UUID, user_id: uuid.UUID, checked: CheckedFile, limit_bytes: int
+) -> Note:
+    """A note with the file as its original and the file's text, if the text fits and the user's place does.
+
+    The place is the originals of notes of all the user's stories, the trash included; `limit_bytes` comes from the
+    user's plan. The user's row stays locked to the end of the transaction, so two uploads cannot both fit.
+    """
+    ensure_project_open(connection, project_id)
+    title = checked.name.rsplit(".", 1)[0].strip()
+    if not title:
+        raise Invalid("У файла нет имени: заметке нужно название.", "file")
+    if len(checked.text) > MAX_FILE_TEXT_CHARS:
+        raise Invalid(
+            f"Текст файла длиннее {_count(MAX_FILE_TEXT_CHARS)} знаков: в нём {_count(len(checked.text))}. "
+            "Загрузите часть файла.",
+            "file",
+        )
+    connection.execute(select(users.c.id).where(users.c.id == user_id).with_for_update()).one()
+    used = connection.execute(
+        select(func.coalesce(func.sum(files.c.size_bytes), 0)).where(
+            files.c.purpose == "note", files.c.uploaded_by == user_id
+        )
+    ).scalar_one()
+    if used + len(checked.data) > limit_bytes:
+        raise TooLarge(
+            f"Место для файлов заметок кончилось: занято {_megabytes(used)} МБ из {_megabytes(limit_bytes)} МБ."
+        )
+    stored = store_file(connection, project_id, user_id, "note", None, checked)
+    return _insert(connection, project_id, title, checked.text, user_id, stored.id)
+
+
+def create_note_from_chat_file(
+    connection: Connection, file_id: uuid.UUID, user_id: uuid.UUID, limit_bytes: int
+) -> Note:
+    """A note with a copy of a file of a conversation; the file of the conversation stays as it is."""
+    stored = get_file(connection, file_id)
+    if stored.purpose != "chat":
+        raise Invalid("В заметку сохраняется только файл беседы.", "file")
+    return create_note_from_file(
+        connection, stored.project_id, user_id, checked_of_stored(connection, file_id), limit_bytes
+    )
 
 
 def update_note(
@@ -113,13 +215,12 @@ def update_note(
         values["title"] = _title(changes["title"])
     if "body" in changes:
         values["body"] = _body(changes["body"])
-    row = connection.execute(
+    connection.execute(
         update(notes)
         .where(notes.c.id == note_id)
         .values(**values, revision=notes.c.revision + 1, updated_by=user_id, updated_at=func.now())
-        .returning(notes)
-    ).one()
-    return _note(row)
+    )
+    return note_row(connection, note_id)
 
 
 def update_note_by_coauthor(
@@ -147,10 +248,8 @@ def trash_note(connection: Connection, note_id: uuid.UUID) -> Note:
     ensure_project_open(connection, note.project_id)
     if note.deleted_at is not None:
         raise Conflict("Заметка уже в корзине.")
-    row = connection.execute(
-        update(notes).where(notes.c.id == note_id).values(deleted_at=func.now()).returning(notes)
-    ).one()
-    return _note(row)
+    connection.execute(update(notes).where(notes.c.id == note_id).values(deleted_at=func.now()))
+    return note_row(connection, note_id)
 
 
 def restore_note(connection: Connection, note_id: uuid.UUID) -> Note:
@@ -158,14 +257,26 @@ def restore_note(connection: Connection, note_id: uuid.UUID) -> Note:
     ensure_project_open(connection, note.project_id)
     if note.deleted_at is None:
         raise Conflict("Заметка не в корзине.")
-    row = connection.execute(update(notes).where(notes.c.id == note_id).values(deleted_at=None).returning(notes)).one()
-    return _note(row)
+    connection.execute(update(notes).where(notes.c.id == note_id).values(deleted_at=None))
+    return note_row(connection, note_id)
+
+
+def delete_notes(connection: Connection, note_ids: list[uuid.UUID]) -> None:
+    """Delete notes for good together with their originals."""
+    originals = (
+        connection.execute(select(notes.c.file_id).where(notes.c.id.in_(note_ids), notes.c.file_id.is_not(None)))
+        .scalars()
+        .all()
+    )
+    connection.execute(delete(notes).where(notes.c.id.in_(note_ids)))
+    if originals:
+        connection.execute(delete(files).where(files.c.id.in_(originals)))
 
 
 def delete_note(connection: Connection, note_id: uuid.UUID) -> None:
-    """Delete for good a note from the trash."""
+    """Delete for good a note from the trash, with its original."""
     note = note_row(connection, note_id, for_update=True)
     ensure_project_open(connection, note.project_id)
     if note.deleted_at is None:
         raise Conflict("Удалить навсегда можно только заметку из корзины.")
-    connection.execute(delete(notes).where(notes.c.id == note_id))
+    delete_notes(connection, [note_id])

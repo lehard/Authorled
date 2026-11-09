@@ -110,6 +110,9 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   containers. `./scripts/check_auth_boundary.sh` (part of `validate.sh`) enforces the boundary
   and that the blueprint groups match `GROUP_SCOPES` (token contract in `openspec/specs/auth`).
 - `agno/app/interfaces.py`: MCP OAuth, `agno` and built-in MCP tools.
+- `agno/app/tracing.py`: the journal of agent runs (openspec/specs/agent-tracing): an own, non-global TracerProvider
+  with Agno's instrumentor sends spans without text to Phoenix (`PHOENIX_URL`, required, checked at startup); Agno's trace
+  tables are not written. A lost batch is logged as an error and the run goes on (owner, 2026-11-09).
 - `agno/app/company.py`: Product and Source declarations. `agno/app/config.yaml`: component
   descriptions, quick prompts and optional additional Products.
 - `agno/app/registry.py`: Studio palette, web tools, shared knowledge, learning and notes.
@@ -117,7 +120,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 - `agno/app/sandbox.py`: providers, repository URL/branch and checkpoint paths.
 - `agno/agents/`: application agents, including the Claude engineer (Claude Code on DeepSeek) and the co-author
   with its tools (`coauthor_tools.py`: read and search the story of the conversation, propose an edit of the screenplay, and by
-  the author's request change notes, documents and comments; in-process functions that call the core; every changing
+  the author's request change notes (also save a file of the conversation as a note), documents and comments;
+  long notes are read in parts of 20 000 characters; in-process functions that call the core; every changing
   call pauses the run until the chat answers it, the author in the co-author mode `ask`, the chat itself in `auto`;
   the list is static, AgentOS 3.1.10 refuses tools built per run; the document tools type profile fields as strings
   and list the fields of each kind from `FIELD_HINTS` in `core/fields.py`) and its hooks (`coauthor_usage.py`: the limit check before a run, the usage journal
@@ -134,7 +138,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   `engine.py` (the core's own connection pool), `users.py` (account operations), `projects.py`, `drafts.py`,
   `documents.py`, `fields.py`, `texts.py`, `notes.py`, `snapshots.py`, `saves.py`, `review.py`, `files.py`, `search.py`, `imports.py` and
   `importers/` (stories, their equal drafts and the documents of a draft, the editor text with revisions, notes of a story, snapshots
-  of a document and points of a draft, comments and suggestions, uploads, search of a draft and its story, manuscript import), `clamav.py` (antivirus
+  of a document and points of a draft, comments and suggestions, uploads, search of a draft and its story, manuscript import;
+  a note made from a file keeps it as its original, purpose `note`, counted against the place of the user's plan), `clamav.py` (antivirus
   client), `errors.py` (refusals the routes answer with), `writing.py` (words of the screenplay by one rule shared with
   `web/src/editor/wordCount.cases.json`, the words the author's saves add by period of 15 minutes, days in the reader's
   time zone, the daily goal and the goal of a story) and `feedback.py` (the author's marks of the co-author's
@@ -145,8 +150,9 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   `agno/tests/`: pytest for the core and billing on real PostgreSQL (`./scripts/dev.sh test`).
 - `agno/billing/`: the billing module (openspec/specs/billing/module), kept apart to become a service later. Its only
   entrance is `billing/__init__.py`: operations with plain values, each in its own transaction (`ensure_subscription`,
-  `check_limit`, `record_runs`, `recorded_run_ids`, `run_session`, `report`, `set_plan`, prices). Inside: `plans.py` with
-  the data files `plans.toml` and `model_prices.toml` (plans and model prices in rubles; a broken file or a co-author
+  `check_limit`, `storage_limit`, `record_runs`, `recorded_run_ids`, `run_session`, `report`, `set_plan`, prices). Inside:
+  `plans.py` with the data files `plans.toml` and `model_prices.toml` (plans with the coauthor's limit in rubles and the
+  place for originals of notes `storage_mb`, model prices in rubles; a broken file or a co-author
   model without a price stops startup), `subscriptions.py` (one active subscription per user, its periods and renewal),
   `usage.py` (the usage journal, the limit check and the report), `tables.py` (schema `billing`, a user kept by value,
   no keys to other schemas), `connection.py` and `engine.py` (its own pool from the same `DB_*`). `billing/migrations/`
@@ -181,7 +187,9 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   `soavtor.app` (`deploy/Caddyfile`: static files, of the API only the beta request route; `deploy/check_site.sh`
   checks it); the sign-in screen of `web/` links to it through `SITE_ORIGIN`. Landing skills: `landing-page-design`, `copywriting`, `unslop`; motion — `design-to-motion` (existing frames), `stageshow` (faux UI); Russian copy — `chukovsky`.
 - `compose.yaml`: local PostgreSQL, the LiteLLM proxy, the antivirus ClamAV (`clamav`, required by the API through
-  `CLAMAV_HOST` and `CLAMAV_PORT`) and development API. The API connects
+  `CLAMAV_HOST` and `CLAMAV_PORT`), Phoenix, the journal of agent runs (`phoenix` on `127.0.0.1:6006`, schema `phoenix`
+  under its own role prepared by `phoenix-db-init` from `agno/phoenix/init.sql` with `PHOENIX_DB_PASSWORD`; the API waits
+  for it, in production it is reached only through an SSH tunnel) and development API. The API connects
   as the non-superuser role `agentos` (`AGENTOS_DB_PASSWORD`), prepared by `agentos-db-init`
   from `agno/db/init.sql` (schemas `ai`, `authorled` and `billing`); the one-shot `agentos-migrate` then
   applies the core migrations and then those of billing, and the API starts only after it succeeds. `agno/litellm/config.yaml`:
@@ -190,13 +198,13 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 ## Local development
 
 Run commands from the repository root. Copy `example.env` to `.env` only if absent,
-fill its Required block (LiteLLM, DeepSeek, GigaChat and Cloud.ru keys, `EMBEDDINGS_MODEL`, `AGENTOS_DB_PASSWORD`, and the Authentik and `AUTH_*`
+fill its Required block (LiteLLM, DeepSeek, GigaChat and Cloud.ru keys, `EMBEDDINGS_MODEL`, `AGENTOS_DB_PASSWORD`, `PHOENIX_DB_PASSWORD`, and the Authentik and `AUTH_*`
 settings), check that the committed
 `agno/litellm/certs/ca-bundle.pem` exists (rebuild: `./agno/scripts/build_ca_bundle.sh`), then use `docker compose up -d --build`. Compose exposes ports
 on loopback; token checks are on in `dev` too, so API calls need a token from Authentik
 (README, "Module auth"; `./scripts/auth_check.sh` checks the chain).
 
-To run the API on the host with `--reload`, use `./scripts/dev.sh api` (Postgres, LiteLLM and
+To run the API on the host with `--reload`, use `./scripts/dev.sh api` (Postgres, LiteLLM, ClamAV, Phoenix and
 Authentik in Docker; it migrates the schemas of the core and billing and exports the Authentik keys before the API
 starts). `./scripts/dev.sh migrate` applies the migrations of the core and billing; `./scripts/dev.sh test` runs the core tests on a
 fresh database `ai_test`, never on `ai`. New migration: `alembic revision --rev-id <NNNN>_<what> -m "..."` from `agno/`,
@@ -344,7 +352,8 @@ owner 2026-11-08, `business-intents/coauthor-tool-contracts.md`).
   Uses the application's `.env`, database and workspace; sessions and results persist
   for the AgentOS UI. The CLI requires `RUNTIME_ENV` (`dev` or `prd`, no default) and does not
   start the API or scheduler. Even `--help` and `--list` require PostgreSQL because the
-  application initializes knowledge storage on import.
+  application initializes knowledge storage on import, and a running Phoenix with `PHOENIX_URL` because it sets up the
+  journal of agent runs on import (the same for `python -m evals.coauthor`).
 - `python -m evals --tag coauthor`: runs the co-author case as the verified development user `writer`
   (`agno/evals/caller.py` over `dev_writer_caller` of the auth module); on the host only, after
   `./scripts/dev.sh auth-users` with `AUTH_DEV_WRITER_TOKEN`. It spends the limit of `writer`.
@@ -353,7 +362,7 @@ owner 2026-11-08, `business-intents/coauthor-tool-contracts.md`).
 - `python -m evals.routing --domains base|wide --split work|holdout --variant team|team-route|skills --model <alias>`
   (from `agno/`; `.env` gives it `LITELLM_URL=http://127.0.0.1:4000`): the routing exam of the orchestrator on
   domain stubs; spends model calls, needs the LiteLLM proxy but no database, writes its report to `tmp/routing/` (`agno/evals/routing/README.md`).
-- `python -m evals.coauthor setup` (once) and `python -m evals.coauthor run --set wide | --set demo --part work|holdout|checks`
+- `python -m evals.coauthor setup` (once) and `python -m evals.coauthor run --set wide | --set demo --part work|holdout|checks|docs`
   `--all | --sample N [--repeat K]` (from `agno/`, with the `DB_*` of `./scripts/dev.sh api`): the real co-author answers
   the sample of the routing exam's wide set or the own demo cases on demo stories of its own user, changes only
   proposed and rejected, judged by `claude-sonnet`; spends model calls, writes its report to `tmp/coauthor-eval/`.
@@ -369,6 +378,9 @@ owner 2026-11-08, `business-intents/coauthor-tool-contracts.md`).
   `--prompt` spends model calls. Set `MCP_CHECK_HOST=1` for the host API.
 - Verify direct engineer execution, HTTP execution, team delegation and Company Task
   acceptance/completion separately. API startup does not establish these capabilities.
+
+- The journal of agent runs: open Phoenix at `http://127.0.0.1:6006` (on the server through
+  `ssh -L 6006:127.0.0.1:6006 authorled`); a run is one trace with the agent run as its root, without texts.
 
 Record checks and limits in `tmp/VERIFY.md`, separating static, deterministic, model,
 container and hosted results. Do not infer deployed readiness from local checks.

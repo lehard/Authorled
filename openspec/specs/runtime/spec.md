@@ -7,7 +7,7 @@
 
 ### Requirement: Контейнеры разработки
 Корневой `compose.yaml` MUST объявлять `agentos-db` (`agnohq/pgvector:18`, порт `127.0.0.1:5432`, том `pgdata`) и подключать через `include` фрагменты модулей:
-- `agno/compose.yaml` — `agentos-db-init`, `agentos-migrate`, `litellm`, `agentos-api`;
+- `agno/compose.yaml` — `agentos-db-init`, `agentos-migrate`, `litellm`, `phoenix-db-init`, `phoenix`, `agentos-api`;
 - `auth/compose.yaml` — `authentik-db-init`, `authentik-server`, `authentik-worker`, `authentik-jwks-export`.
 
 `agentos-api`:
@@ -24,6 +24,11 @@
 Порядок и поведение сервисов модуля бэкенда:
 - `agentos-db-init` MUST идемпотентно готовить роль `agentos` и схемы `ai` и `authorled` до `agentos-migrate`;
 - `agentos-migrate` MUST быть одноразовым сервисом на образе цели `agentos`: после успешного `agentos-db-init` он MUST применять миграции схемы `authorled` под ролью `agentos` и завершаться; `agentos-api` MUST стартовать только после его успешного завершения. В `compose.prod.yaml` порядок и поведение `agentos-migrate` MUST быть теми же.
+
+Порядок и поведение журнала агентов (спека `agent-tracing`):
+- `phoenix-db-init` MUST однократно и идемпотентно создавать роль Phoenix и схему `phoenix` в `agentos-db` до старта `phoenix`; пароль роли MUST браться из `.env` без значения по умолчанию;
+- `phoenix` MUST использовать образ Phoenix с закреплённой версией, хранить данные в схеме `phoenix`, иметь healthcheck, лимит памяти, выключенную телеметрию и срок хранения трасс 30 дней, и публиковать порт только на `127.0.0.1`;
+- `agentos-api` MUST стартовать только после статуса `healthy` у `phoenix` и MUST получать адрес Phoenix внутри сети контейнеров.
 
 Для `agentos-db` MUST быть задан healthcheck `pg_isready` для пользователя и базы `ai` по TCP (`127.0.0.1`). Он MUST считать контейнер здоровым только когда база принимает сетевые соединения (на первом запуске PostgreSQL сначала отвечает только через сокет).
 
@@ -75,8 +80,19 @@
 - THEN `agentos-migrate` MUST завершиться ненулевым кодом
 - AND `agentos-api` MUST NOT стартовать
 
+#### Scenario: Порядок запуска журнала
+- GIVEN `.env` заполнен, `agentos-db` здорова
+- WHEN выполняется `docker compose up -d --build`
+- THEN `phoenix-db-init` MUST завершиться успешно до старта `phoenix`
+- AND `agentos-api` MUST стартовать только после статуса `healthy` у `phoenix`
+
+#### Scenario: Нет пароля роли Phoenix
+- GIVEN в `.env` нет пароля роли Phoenix
+- WHEN выполняется `docker compose up`
+- THEN команда MUST завершиться ошибкой, называющей переменную
+
 ### Requirement: Production-override
-`compose.prod.yaml` MUST переключать `RUNTIME_ENV=prd`, `AGNO_DEBUG=False`, убирать bind-mount и reload, брать `AGENTOS_URL` и `MCP_CONNECT_SECRET` из `.env` и привязывать PostgreSQL к `127.0.0.1:5432`. Для сервисов Authentik `compose.prod.yaml` MUST требовать секреты из `.env` (без значений по умолчанию), включая `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS`, передавать эту настройку в контейнеры, привязывать порты к `127.0.0.1` и MUST NOT публиковать их на внешних интерфейсах. Том `/data` для AgentCore MUST оставаться закомментированным, пока AgentCore не включён.
+`compose.prod.yaml` MUST переключать `RUNTIME_ENV=prd`, `AGNO_DEBUG=False`, убирать bind-mount и reload, брать `AGENTOS_URL` и `MCP_CONNECT_SECRET` из `.env` и привязывать PostgreSQL к `127.0.0.1:5432`. Для сервисов Authentik `compose.prod.yaml` MUST требовать секреты из `.env` (без значений по умолчанию), включая `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS`, передавать эту настройку в контейнеры, привязывать порты к `127.0.0.1` и MUST NOT публиковать их на внешних интерфейсах. Для `phoenix` `compose.prod.yaml` MUST привязывать порт к `127.0.0.1` и MUST NOT публиковать его на внешних интерфейсах; обратный прокси MUST NOT проксировать Phoenix. Том `/data` для AgentCore MUST оставаться закомментированным, пока AgentCore не включён.
 
 #### Scenario: Запуск production
 - GIVEN `.env` содержит секреты Authentik, а `authentik-jwks-export` выгрузил ключ проверки JWT
@@ -92,6 +108,11 @@
 - GIVEN в `.env` нет `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS`
 - WHEN выполняется `docker compose -f compose.yaml -f compose.prod.yaml config`
 - THEN команда MUST завершиться ошибкой с именем этой настройки
+
+#### Scenario: Порт Phoenix в production
+- GIVEN запущена конфигурация production
+- WHEN проверяются опубликованные порты `phoenix`
+- THEN они MUST быть привязаны к `127.0.0.1`
 
 ### Requirement: Адреса привязки
 `python -m app.main` MUST запускать `agent_os.serve(app="app.main:app", host="127.0.0.1", port=8000, reload=False)`: локальный loopback — намеренно. Контейнер `agentos` MUST слушать `0.0.0.0:8000` (CMD образа); доступность снаружи ограничивает compose-публикация порта только на `127.0.0.1:8000`. Различие `127.0.0.1` / `0.0.0.0` задумано и MUST NOT считаться дефектом.

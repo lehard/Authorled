@@ -17,8 +17,16 @@ import type { SaveStatus } from "@/screens/shared/useAutosave";
 
 import type { DocRef } from "./docRef";
 
-/** A request to the co-author from a document, waiting for the chat to send it. */
-export type CoauthorRequest = { id: string; text: string };
+/**
+ * A request to the co-author from a document, waiting for the chat: `send` sends it, `fill` puts it
+ * into the field before what is typed there (web/workspace, «Задача «Под заявку»»).
+ */
+export type CoauthorRequestMode = "send" | "fill";
+export type CoauthorRequest = {
+  id: string;
+  text: string;
+  mode: CoauthorRequestMode;
+};
 
 /** Everything the window of one story has loaded; documents read it instead of refetching. */
 export type ProjectData = {
@@ -50,11 +58,11 @@ export type ProjectData = {
   /** Shows the chat where it is hidden (narrow screens); on wide screens it is always shown. */
   openChat: () => void;
   /**
-   * Sends `text` to the co-author in the current conversation, as if the author typed it, and
-   * opens the chat (web/workspace, «Проверки над выделением»). Throws while `coauthorBusy`: the
-   * screens do not offer it then.
+   * Opens the chat and, by `mode`, sends `text` to the co-author in the current conversation as if
+   * the author typed it (web/workspace, «Проверки над выделением») or puts it into the field
+   * («Задача «Под заявку»»). Throws while `coauthorBusy`: the screens do not offer it then.
    */
-  askCoauthor: (text: string) => void;
+  askCoauthor: (text: string, mode: CoauthorRequestMode) => void;
   /** The co-author is answering, or the chat cannot send yet: no request goes now. */
   coauthorBusy: boolean;
   /**

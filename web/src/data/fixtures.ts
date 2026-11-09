@@ -27,11 +27,13 @@ export type FixtureThread = Omit<CommentThread, "own" | "replies"> & {
 
 export const FIXTURES = demo as unknown as {
   projects: Omit<Project, "draftsCount" | "openDraftId">[];
-  scripts: Script[];
+  // The sample has no core: a script's document id is given when the store is filled.
+  scripts: Omit<Script, "documentId">[];
   characters: Character[];
   locations: Location[];
   worlds: World[];
-  notes: Note[];
+  /** Sample notes have no originals: files need the core. */
+  notes: Omit<Note, "file">[];
   comments: FixtureThread[];
   suggestions: Suggestion[];
   drafts: Draft[];

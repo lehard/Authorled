@@ -233,10 +233,10 @@ export function ProjectScreen() {
     currentScene,
     setCurrentScene,
     openChat,
-    askCoauthor: (text) => {
+    askCoauthor: (text, mode) => {
       if (coauthorBusy)
         throw new Error("Соавтор ещё отвечает: новая просьба не отправлена.");
-      setCoauthorRequest({ id: crypto.randomUUID(), text });
+      setCoauthorRequest({ id: crypto.randomUUID(), text, mode });
       openChat();
     },
     coauthorBusy,

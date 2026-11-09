@@ -1,9 +1,9 @@
 """python -m evals.coauthor setup | run | compare: the quality measurement of the current co-author.
 
 openspec/specs/coauthor-eval, README.md here. `setup` creates the user of the measurement with its demo stories.
-`run --set wide|demo [--part work|holdout|checks] (--all | --sample N) [--repeat K]` checks the set, the user and the
-prices before the first model call, then runs every case K times through the real co-author (two at a time) and has the
-judge rate it. The report goes to tmp/coauthor-eval/<UTC time>.json and .md, the cases for the owner to
+`run --set wide|demo [--part work|holdout|checks|docs] (--all | --sample N) [--repeat K]` checks the set, the user and
+the prices before the first model call, then runs every case K times through the real co-author (two at a time) and has
+the judge rate it. The report goes to tmp/coauthor-eval/<UTC time>.json and .md, the cases for the owner to
 <UTC time>-review.md; the log holds only case ids. `compare <before.json> <after.json>` compares two reports of one
 set and part without model calls. `rejudge <report.json> --domain D` judges the cases of domain D again from the saved
 answers, with the current service help, and writes a new report.
@@ -53,7 +53,7 @@ def _arguments(argv: list[str]) -> argparse.Namespace:
     run = commands.add_parser("run", help="run a set through the co-author and the judge (spends model calls)")
     run.add_argument("--set", required=True, choices=SETS, dest="set_name", help="wide: the sample; demo: own cases")
     run.add_argument(
-        "--part", choices=("work", "holdout", "checks"), help="the part of the demo set (required for demo)"
+        "--part", choices=("work", "holdout", "checks", "docs"), help="the part of the demo set (required for demo)"
     )
     which = run.add_mutually_exclusive_group(required=True)
     which.add_argument("--all", action="store_true", help="every case of the set")
@@ -81,7 +81,7 @@ def _arguments(argv: list[str]) -> argparse.Namespace:
         if arguments.repeat < 1:
             parser.error("--repeat must be at least 1")
         if arguments.set_name == "demo" and arguments.part is None:
-            parser.error("--set demo needs --part work, --part holdout or --part checks")
+            parser.error("--set demo needs --part work, --part holdout, --part checks or --part docs")
         if arguments.set_name == "wide" and arguments.part is not None:
             parser.error("--part belongs to --set demo; the wide set is one sample")
     return arguments
@@ -199,7 +199,7 @@ async def _run(arguments: argparse.Namespace) -> int:
     from app.auth import set_project_access_source
     from billing import prices
     from core.projects import ProjectAccess
-    from evals.coauthor.context import CONTEXT_DESCRIPTION, chat_context, open_scene
+    from evals.coauthor.context import CONTEXT_DESCRIPTION, chat_context, open_doc, open_scene
     from evals.coauthor.demo_set import load_demo_part
     from evals.coauthor.judge import JUDGE_MODEL, judge, prompt_service_help
     from evals.coauthor.run import run_case
@@ -213,12 +213,18 @@ async def _run(arguments: argparse.Namespace) -> int:
         sampled = sampled[: arguments.sample]
     where = places(QUALITY)
     # The chat's context of every case, read from the core before the first model call: a check of the mentor
-    # opens the screenplay of its draft and selects a scene (spec «Случай с открытым текстом сценария»).
+    # opens the screenplay of its draft and selects a scene (spec «Случай с открытым текстом сценария»), a task of a
+    # document opens the logline or the synopsis (spec «Случай с открытым документом»).
     contexts = {}
     for item in sampled:
-        scene = None if item.expected is None else item.expected.open
         place = where[item.place]
-        contexts[item.case.id] = chat_context(place, None if scene is None else open_scene(place, scene))
+        expected = item.expected
+        if expected is not None and expected.open is not None:
+            contexts[item.case.id] = chat_context(place, open_scene(place, expected.open))
+        elif expected is not None and expected.doc is not None:
+            contexts[item.case.id] = chat_context(place, open_doc(place, expected.doc))
+        else:
+            contexts[item.case.id] = chat_context(place)
     coauthor_price, judge_price = prices().get(COAUTHOR_MODEL), prices().get(JUDGE_MODEL)
     # What the co-author knows about the service in this run; the judge sees the same (design, decision 6).
     help_text = prompt_service_help()

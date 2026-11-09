@@ -10,6 +10,7 @@ import type {
 import type { ScreenplayDoc } from "@/editor/document.ts";
 
 import {
+  apiBlob,
   apiRequest,
   HttpError,
   isConflict,
@@ -30,6 +31,7 @@ import type {
   NewReply,
   NewThread,
   Note,
+  NoteFile,
   Point,
   Project,
   Role,
@@ -399,6 +401,18 @@ function readNote(body: unknown): Note {
     title: field("заметку", o, "title", isString),
     body: field("заметку", o, "body", isString),
     deletedAt: field("заметку", o, "deleted_at", isTime),
+    file: o.file === null ? null : readNoteFile(o.file),
+  };
+}
+
+function readNoteFile(body: unknown): NoteFile {
+  const what = "оригинал заметки";
+  const o = shape(what, body);
+  return {
+    id: field(what, o, "id", isString),
+    name: field(what, o, "name", isString),
+    mediaType: field(what, o, "media_type", isString),
+    sizeBytes: field(what, o, "size_bytes", isNumber),
   };
 }
 
@@ -525,6 +539,7 @@ function toScript(draftId: string, d: Doc, t: Text): Script {
   return {
     id: draftId,
     draftId,
+    documentId: d.id,
     logline: text(what, d.fields, "logline"),
     // Not set yet: every part is shown, as in a new story of the screens.
     show: show === undefined ? ALL_PARTS : (show as Script["show"]),
@@ -1262,6 +1277,23 @@ async function operation(
         return { text: t.content };
       });
     }
+    case "noteFromUpload": {
+      const { projectId, file } = op.payload;
+      const form = new FormData();
+      form.append("file", file, file.name);
+      return readNote(
+        await request(`/projects/${projectId}/notes/files`, {
+          method: "POST",
+          form,
+        }),
+      );
+    }
+    case "noteFromChatFile":
+      return readNote(
+        await request(`/files/${op.payload.fileId}/note`, { method: "POST" }),
+      );
+    case "fileContent":
+      return apiBlob(`/files/${op.payload.fileId}/content`);
     case "createFromFile": {
       const { title, file } = op.payload;
       const form = new FormData();
