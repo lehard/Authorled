@@ -3,8 +3,10 @@ import { useState } from "react";
 import { SCRIPT_PARTS, type Script } from "@/data/model";
 import { GrowingTextarea } from "@/design-system";
 import { useAutosave } from "@/screens/shared/useAutosave";
+import { useServerChanges } from "@/screens/shared/useServerChanges";
 
 import { useProjectData } from "../ProjectContext";
+import { DocTasksButton } from "../chat/DocTasksMenu";
 import { DocHead } from "./DocHead";
 import { SaveHistory } from "./SaveHistory";
 import { useFindInDoc } from "./useFindInDoc";
@@ -19,11 +21,15 @@ export function ProseDoc({ part }: { part: "logline" | "synopsis" }) {
   const { draft, script } = useProjectData();
   const { save, status } = useAutosave<Script>("scripts", script.id);
   const [text, setText] = useState(script[part]);
+  // The co-author may write the logline or the synopsis while it is open: its text shows without a
+  // reload, and what the author typed stays (web/workspace, «Экраны после действия соавтора»).
+  useServerChanges(script[part], setText);
   useFindInDoc(part);
   return (
     <>
       <DocHead title={SCRIPT_PARTS[part]} status={status}>
         <SaveHistory target={{ draftId: draft.id, part: "fields" }} />
+        <DocTasksButton part={part} />
       </DocHead>
       <div className="sheet sheet-prose">
         <GrowingTextarea

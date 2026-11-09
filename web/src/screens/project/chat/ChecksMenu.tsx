@@ -111,7 +111,7 @@ export function ChecksAtSelection({
         <ChecksItems
           disabled={coauthorBusy}
           onPick={(request) => {
-            askCoauthor(request);
+            askCoauthor(request, "send");
             onClose();
           }}
         />

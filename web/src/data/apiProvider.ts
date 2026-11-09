@@ -525,6 +525,7 @@ function toScript(draftId: string, d: Doc, t: Text): Script {
   return {
     id: draftId,
     draftId,
+    documentId: d.id,
     logline: text(what, d.fields, "logline"),
     // Not set yet: every part is shown, as in a new story of the screens.
     show: show === undefined ? ALL_PARTS : (show as Script["show"]),
