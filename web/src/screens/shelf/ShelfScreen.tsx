@@ -15,7 +15,6 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MANUSCRIPT_TYPES } from "@/data/files";
 import { useProjects } from "@/data/hooks";
 import { COVER_COLORS, isCoverColor, type Project } from "@/data/model";
 import { NameDialog } from "@/screens/shared/NameDialog";
@@ -23,6 +22,7 @@ import { DataErrorScreen } from "@/screens/system/DataErrorScreen";
 import { MessageScreen } from "@/screens/system/MessageScreen";
 import "@/screens/workspace.css";
 
+import { NewStoryDialog } from "./NewStoryDialog";
 import { TopBar } from "./TopBar";
 import { useStoryActions } from "./storyActions";
 
@@ -195,21 +195,11 @@ export function ShelfScreen() {
         )}
       </main>
 
-      <NameDialog
+      <NewStoryDialog
         open={creating}
         onOpenChange={setCreating}
-        title="Новая история"
-        description="Полнометражный сценарий. Название можно поменять потом."
-        label="Название"
-        submitLabel="Создать"
-        emptyError="Введите название истории."
-        file={{
-          label: "Рукопись (необязательно)",
-          accept: MANUSCRIPT_TYPES,
-          hint: "Fountain, Final Draft, STARC, DOCX или TXT: история создастся из текста файла.",
-        }}
-        onSubmit={async (title, file) => {
-          const id = await createStory(title, file);
+        onSubmit={async (title, file, template) => {
+          const id = await createStory(title, file, template);
           navigate(`/p/${id}/text`);
         }}
       />

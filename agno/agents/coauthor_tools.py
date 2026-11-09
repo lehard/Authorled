@@ -20,7 +20,7 @@ from agno.tools.function import Function
 
 from app.auth import can_access_project, run_principal
 from core import documents as docs
-from core import notes, review, search, texts
+from core import notes, review, search, story_templates, texts
 from core.engine import get_engine
 from core.errors import Conflict, Invalid, Locked, NotFound
 from core.fields import FIELD_HINTS, Role, field_guide
@@ -146,6 +146,26 @@ def read_screenplay(run_context: RunContext, scene_uid: str = "") -> str:
                 out.append(f"\nСцена {scene.number}, uid {scene.uid}")
             out.extend(_lines([block]))
         return "\n".join(out).strip()
+
+    return _answer(work)
+
+
+def list_story_templates(run_context: RunContext) -> str:
+    """Каркасы структуры историй сервиса: id, название, описание, акты и точки с подсказками.
+
+    Используй, когда автор просит разложить историю по каркасу (три акта, путешествие героя и т. п.):
+    других каркасов, кроме этих, в сервисе нет.
+    """
+
+    def work() -> Any:
+        _draft(run_context)
+        out: list[str] = []
+        for found in story_templates.templates():
+            out.append(f"Каркас «{found.name}» (id {found.id}): {found.description}")
+            for act in found.acts:
+                out.append(f"  Акт «{act.name}»")
+                out.extend(f"    — {point.name}: {point.hint}" for point in act.points)
+        return "\n".join(out)
 
     return _answer(work)
 
@@ -468,6 +488,7 @@ READING_TOOLS: list[Callable[..., str]] = [
     read_chat_file,
     list_story_notes,
     read_story_note,
+    list_story_templates,
     suggest_edit,
 ]
 

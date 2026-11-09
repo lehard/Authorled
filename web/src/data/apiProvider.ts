@@ -26,6 +26,7 @@ import type {
   Location,
   NewDraft,
   NewNote,
+  NewProject,
   NewReply,
   NewThread,
   Note,
@@ -33,6 +34,7 @@ import type {
   Project,
   Role,
   Script,
+  StoryTemplate,
   Suggestion,
   TitlePage,
   Version,
@@ -742,6 +744,29 @@ async function projects(trash: boolean): Promise<Project[]> {
   ).map(readListedProject);
 }
 
+function readTemplate(raw: unknown): StoryTemplate {
+  const what = "каркас истории";
+  const o = shape(what, raw);
+  return {
+    id: field(what, o, "id", isString),
+    name: field(what, o, "name", isString),
+    description: field(what, o, "description", isString),
+    acts: field(what, o, "acts", isArray).map((rawAct) => {
+      const act = shape("акт каркаса", rawAct);
+      return {
+        name: field("акт каркаса", act, "name", isString),
+        points: field("акт каркаса", act, "points", isArray).map((rawPoint) => {
+          const point = shape("точку каркаса", rawPoint);
+          return {
+            name: field("точку каркаса", point, "name", isString),
+            hint: field("точку каркаса", point, "hint", isString),
+          };
+        }),
+      };
+    }),
+  };
+}
+
 async function getList(
   resource: string,
   filters: CrudFilter[],
@@ -752,6 +777,10 @@ async function getList(
       throw new Error("Истории читаются списком полки или корзины.");
     return projects(q.deleted);
   }
+  if (resource === "story-templates")
+    return list("каркасы историй", await request("/story-templates")).map(
+      readTemplate,
+    );
   if (resource === "drafts") {
     if (q.projectId === null)
       throw new Error("Драфты читаются только по истории.");
@@ -848,12 +877,18 @@ async function create(
   meta: MetaQuery | undefined,
 ): Promise<BaseRecord> {
   if (resource === "projects") {
-    const values = variables as Pick<Project, "title" | "desc">;
+    const values = variables as NewProject;
     const o = shape(
       "новую историю",
       await request("/projects", {
         method: "POST",
-        json: { title: values.title, description: values.desc },
+        json: {
+          title: values.title,
+          description: values.desc,
+          ...(values.template === undefined
+            ? {}
+            : { template: values.template }),
+        },
       }),
     );
     const project = readProject(o.project);
