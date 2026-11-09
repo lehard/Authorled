@@ -96,7 +96,9 @@ services:
     container_name: agentos-migrate
     restart: "no"
     working_dir: /app/agno
-    command: ["alembic", "upgrade", "head"]
+    # The core first, then the billing module, whose first migration moves its tables out of the core
+    # (openspec/specs/billing/module, «Миграции биллинга»).
+    command: ["sh", "-c", "alembic upgrade head && alembic -c billing/alembic.ini upgrade head"]
     volumes:
       - ..:/app
     environment:

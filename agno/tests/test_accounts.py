@@ -7,7 +7,8 @@ from collections.abc import Iterator
 import pytest
 from sqlalchemy import Connection, Engine, delete, func, select, update
 
-from core.tables import subscriptions, usage_records, user_settings, users
+from billing.tables import subscriptions, usage_records
+from core.tables import user_settings, users
 from core.users import AccountDeleted, AccountNotFound, get_or_create_user, update_account
 
 EMAIL = "anna@example.com"

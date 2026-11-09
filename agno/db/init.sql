@@ -1,7 +1,7 @@
 -- Idempotent bootstrap of the role the API connects with (openspec/specs/architecture,
 -- "Подключение к БД"). Run by the agentos-db-init service under the bootstrap superuser with
 --   psql -v ON_ERROR_STOP=1 -v agentos_password=... -f init.sql
--- The role is not a superuser: it owns schemas `ai` and `authorled` and gets no grants on schema `authentik`
+-- The role is not a superuser: it owns schemas `ai`, `authorled` and `billing` and gets no grants on schema `authentik`
 -- (owned by the role of the auth module), so PostgreSQL denies it the Authentik data.
 
 SELECT format('CREATE ROLE agentos LOGIN PASSWORD %L', :'agentos_password')
@@ -23,6 +23,10 @@ ALTER SCHEMA ai OWNER TO agentos;
 -- Tables of the product core (openspec/specs/core/database); Alembic migrates them, the API never does.
 CREATE SCHEMA IF NOT EXISTS authorled AUTHORIZATION agentos;
 ALTER SCHEMA authorled OWNER TO agentos;
+
+-- Tables of the billing module (openspec/specs/billing/module); its own Alembic chain migrates them.
+CREATE SCHEMA IF NOT EXISTS billing AUTHORIZATION agentos;
+ALTER SCHEMA billing OWNER TO agentos;
 
 -- Agno runs CREATE EXTENSION IF NOT EXISTS vector, which needs a superuser only when the
 -- extension is missing. An existing extension stays in its schema.

@@ -92,22 +92,32 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   registered team (the routing exam builds its teams in `agno/evals/routing/` and does not register them).
 - `agno/db/`: cached OS database and distinct knowledge content adapters.
 - `agno/core/`: the product core, independent of Agno: `connection.py` (database URL from `DB_*`),
-  `tables.py` (tables of schema `authorled`: users and settings, stories, drafts, documents, texts, notes, snapshots and points, review, files,
-  subscriptions and the usage journal),
+  `tables.py` (tables of schema `authorled`: users and settings, stories, drafts, documents, texts, notes, snapshots and points, review, files and
+  requests for the beta),
   `engine.py` (the core's own connection pool), `users.py` (account operations), `projects.py`, `drafts.py`,
   `documents.py`, `fields.py`, `texts.py`, `notes.py`, `snapshots.py`, `saves.py`, `review.py`, `files.py`, `imports.py` and
   `importers/` (stories, their equal drafts and the documents of a draft, the editor text with revisions, notes of a story, snapshots
   of a document and points of a draft, comments and suggestions, uploads, manuscript import), `clamav.py` (antivirus
-  client), `errors.py` (refusals the routes answer with), `plans.py` with the data files `plans.toml` and
-  `model_prices.toml` (plans and model prices in rubles; a broken file or a co-author model without a price stops
-  startup), `subscriptions.py` (one active subscription per user, its periods and renewal) and `usage.py` (the usage
-  journal, the limit check and the report). `agno/migrations/` and `agno/alembic.ini`: Alembic for
-  schema `authorled` only, forward-only, one head; never migrate Agno or Authentik schemas there.
-  `agno/tests/`: pytest for the core on real PostgreSQL (`./scripts/dev.sh test`).
+  client) and `errors.py` (refusals the routes answer with). The core never calls billing. `agno/migrations/` and
+  `agno/alembic.ini`: Alembic for schema `authorled` only, forward-only, one head; never migrate Agno or Authentik
+  schemas there.
+  `agno/tests/`: pytest for the core and billing on real PostgreSQL (`./scripts/dev.sh test`).
+- `agno/billing/`: the billing module (openspec/specs/billing/module), kept apart to become a service later. Its only
+  entrance is `billing/__init__.py`: operations with plain values, each in its own transaction (`ensure_subscription`,
+  `check_limit`, `record_runs`, `recorded_run_ids`, `run_session`, `report`, `set_plan`, prices). Inside: `plans.py` with
+  the data files `plans.toml` and `model_prices.toml` (plans and model prices in rubles; a broken file or a co-author
+  model without a price stops startup), `subscriptions.py` (one active subscription per user, its periods and renewal),
+  `usage.py` (the usage journal, the limit check and the report), `tables.py` (schema `billing`, a user kept by value,
+  no keys to other schemas), `connection.py` and `engine.py` (its own pool from the same `DB_*`). `billing/migrations/`
+  and `billing/alembic.ini`: its own Alembic chain, run after the core; `b0001_from_core` moved the tables out of
+  `authorled`. Billing imports nothing of the core, `app/`, `agents/`, the commands or Agno, and others import only
+  `billing`; `./scripts/check_billing_boundary.sh` (part of `validate.sh`) enforces it. The application layer joins
+  them: `GET /api/v1/me` gives the subscription, the co-author's hooks find the user of the core and call billing.
 - `agno/evals/`: application cases and the Agno eval CLI entrypoint.
 - `agno/demo/`: `python -m demo`, the loader of the demo stories through the core; `./scripts/dev.sh seed` runs it. Their
   content is `web/src/data/demo.json`, shared with the `fixtures` data source.
-- `agno/admin/`: `python -m admin report|set-plan <e-mail> <plan>`, the administrator's commands over the core;
+- `agno/admin/`: `python -m admin report|set-plan <e-mail> <plan>`, the administrator's commands over billing and the
+  core (it joins the spending of billing with the e-mails of the core);
   `./scripts/usage.sh local|prod` runs them in the API container.
 - `scripts/`: local setup, validation and builds. Deployment files: `compose.prod.yaml`, `deploy/` (the release
   script, the checks of the frontend build and of the deployed site, and the Caddy configuration) and `.github/workflows/deploy.yml`.
@@ -130,8 +140,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 - `compose.yaml`: local PostgreSQL, the LiteLLM proxy, the antivirus ClamAV (`clamav`, required by the API through
   `CLAMAV_HOST` and `CLAMAV_PORT`) and development API. The API connects
   as the non-superuser role `agentos` (`AGENTOS_DB_PASSWORD`), prepared by `agentos-db-init`
-  from `agno/db/init.sql` (schemas `ai` and `authorled`); the one-shot `agentos-migrate` then
-  applies the core migrations, and the API starts only after it succeeds. `agno/litellm/config.yaml`:
+  from `agno/db/init.sql` (schemas `ai`, `authorled` and `billing`); the one-shot `agentos-migrate` then
+  applies the core migrations and then those of billing, and the API starts only after it succeeds. `agno/litellm/config.yaml`:
   model aliases and provider keys of the proxy. `agno/Dockerfile`: shared API and sandbox dependencies.
 
 ## Local development
@@ -144,10 +154,11 @@ on loopback; token checks are on in `dev` too, so API calls need a token from Au
 (README, "Module auth"; `./scripts/auth_check.sh` checks the chain).
 
 To run the API on the host with `--reload`, use `./scripts/dev.sh api` (Postgres, LiteLLM and
-Authentik in Docker; it migrates the core schema and exports the Authentik keys before the API starts).
-`./scripts/dev.sh migrate` applies the core migrations; `./scripts/dev.sh test` runs the core tests on a
+Authentik in Docker; it migrates the schemas of the core and billing and exports the Authentik keys before the API
+starts). `./scripts/dev.sh migrate` applies the migrations of the core and billing; `./scripts/dev.sh test` runs the core tests on a
 fresh database `ai_test`, never on `ai`. New migration: `alembic revision --rev-id <NNNN>_<what> -m "..."` from `agno/`,
-written by hand to match `agno/core/tables.py`.
+written by hand to match `agno/core/tables.py`; a migration of billing: `alembic -c billing/alembic.ini revision
+--rev-id b<NNNN>_<what> -m "..."`, written by hand to match `agno/billing/tables.py`.
 `./scripts/dev.sh seed` loads the demo stories for the development users into `ai` after `auth-users`.
 `./scripts/dev.sh db|stop|reset-db --yes|psql` manage the database (`reset-db` also wipes the
 Authentik data);
@@ -273,7 +284,8 @@ historical sessions, notes and Company work; migrate saved references deliberate
 
 ## Verification
 
-`./scripts/validate.sh` checks formatting, lint and types, that the core migrations have one head,
+`./scripts/validate.sh` checks formatting, lint and types, the boundaries of the modules `auth` and billing, that the
+migrations of the core and of billing have one head each,
 and for `web/` also builds the app and checks design tokens and their contrast; CI uses the same command.
 `./scripts/dev.sh test` runs pytest for the core on real PostgreSQL (not in CI yet).
 Also run `git diff --check`. Keep evals in `agno/evals/__main__.py` and `agno/evals/cases.py`, using

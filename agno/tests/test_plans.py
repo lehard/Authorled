@@ -1,6 +1,6 @@
 """Plans and model prices as data.
 
-openspec/specs/core/subscriptions: «Тарифы как данные», «Цены моделей как данные».
+openspec/specs/billing/subscriptions: «Тарифы как данные», «Цены моделей как данные».
 """
 
 from decimal import Decimal
@@ -9,7 +9,7 @@ from typing import Any
 import pytest
 
 from app.settings import DEEPSEEK_FAST, DEEPSEEK_THINKING
-from core.plans import DataFileError, UnknownModel, UnknownPlan, parse_plans, parse_prices, plans, prices
+from billing.plans import DataFileError, UnknownModel, UnknownPlan, parse_plans, parse_prices, plans, prices
 
 BETA = {"name": "Бета", "price_rub": 0, "period_months": 1, "limit_rub": 500, "purchasable": False}
 PRICE = {"input_rub": 30, "cache_read_rub": Decimal("0.6"), "output_rub": 120}

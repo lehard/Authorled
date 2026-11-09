@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 from sqlalchemy import Connection, Engine, delete, select, update
 
+from billing.tables import subscriptions
 from core.documents import (
     create_documents,
     delete_document,
@@ -30,7 +31,7 @@ from core.projects import (
     update_project,
     user_id_of,
 )
-from core.tables import document_versions, drafts, projects, subscriptions, user_settings, users
+from core.tables import document_versions, drafts, projects, user_settings, users
 from core.texts import get_text
 from core.users import AccountNotFound, get_or_create_user
 

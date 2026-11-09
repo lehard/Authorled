@@ -2,7 +2,7 @@
 
 ############################################################################
 #
-#    Spending of the co-author and plans of users (openspec/specs/core/subscriptions)
+#    Spending of the co-author and plans of users (openspec/specs/billing/subscriptions)
 #
 #    Usage:
 #      ./scripts/usage.sh local report                  The local stand (compose.yaml)

@@ -12,7 +12,7 @@ from agno.eval.agent_as_judge import AgentAsJudgeEval
 from agno.metrics import RunMetrics
 
 from app.settings import CLAUDE_SONNET, claude_sonnet_model
-from core.plans import ModelPrice
+from billing import ModelPrice
 from evals.coauthor.records import CHANGING, CaseRun, Expectation, Usage
 from evals.coauthor.score import Judged
 from evals.routing.cases import Case

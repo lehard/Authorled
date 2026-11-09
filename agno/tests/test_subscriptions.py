@@ -1,5 +1,5 @@
-"""Subscriptions and their periods (openspec/specs/core/subscriptions: «Подписка пользователя», «Продление выданной
-подписки», «Смена тарифа»; openspec/specs/core/database, «Таблица подписок»)."""
+"""Subscriptions and their periods (openspec/specs/billing/subscriptions: «Подписка пользователя», «Продление выданной
+подписки», «Смена тарифа», «Подписка при входе»; openspec/specs/billing/module, «Таблица подписок биллинга»)."""
 
 import uuid
 from datetime import UTC, datetime
@@ -8,18 +8,18 @@ import pytest
 from sqlalchemy import Connection, func, insert, select, text, update
 from sqlalchemy.exc import IntegrityError
 
-from core.plans import UnknownPlan
-from core.subscriptions import (
+from billing.plans import UnknownPlan
+from billing.subscriptions import (
     NoSubscription,
     SubscriptionEnded,
     add_months,
     current_subscription,
+    ensure_signup_subscription,
     next_period,
     set_plan,
     start_subscription,
 )
-from core.tables import subscriptions, users
-from core.users import get_or_create_user
+from billing.tables import subscriptions
 
 
 def _at(year: int, month: int, day: int, hour: int = 10) -> datetime:
@@ -27,13 +27,8 @@ def _at(year: int, month: int, day: int, hour: int = 10) -> datetime:
 
 
 def _user(connection: Connection) -> uuid.UUID:
-    subject = f"test-{uuid.uuid4()}"
-    user_id: uuid.UUID = connection.execute(
-        insert(users)
-        .values(auth_subject=subject, email=f"{subject}@example.com", display_name="Автор")
-        .returning(users.c.id)
-    ).scalar_one()
-    return user_id
+    """A user of the core is only an identifier to billing: no row of authorled.users is needed."""
+    return uuid.uuid4()
 
 
 def _count(connection: Connection, user_id: uuid.UUID) -> int:
@@ -56,16 +51,33 @@ def test_add_months_needs_a_time_zone() -> None:
         add_months(datetime(2027, 1, 1), 1, _at(2027, 1, 1))
 
 
-def test_new_account_gets_one_subscription(connection: Connection) -> None:
-    subject = f"test-{uuid.uuid4()}"
-    account = get_or_create_user(connection, subject, "anna@example.com", "Анна")
-    get_or_create_user(connection, subject, "anna@example.com", "Анна")
-    row = connection.execute(select(subscriptions).where(subscriptions.c.user_id == account.id)).one()
-    created = connection.execute(select(users.c.created_at).where(users.c.id == account.id)).scalar_one()
+def test_first_sign_in_gets_one_subscription(connection: Connection) -> None:
+    user_id, created = _user(connection), _at(2027, 10, 7)
+    started = ensure_signup_subscription(connection, user_id, created)
+    assert ensure_signup_subscription(connection, user_id, _at(2027, 10, 8)) is None
+    row = connection.execute(select(subscriptions).where(subscriptions.c.user_id == user_id)).one()
+    assert started is not None and started.id == row.id
     assert (row.plan, row.source, row.status) == ("beta", "granted", "active")
-    assert row.started_at == row.period_start == created
-    assert row.period_end == add_months(created, 1, created)
-    assert _count(connection, account.id) == 1
+    assert (row.started_at, row.period_start, row.period_end) == (created, created, _at(2027, 11, 7))
+
+
+def test_sign_in_keeps_a_changed_plan(connection: Connection) -> None:
+    user_id = _user(connection)
+    started = start_subscription(connection, user_id, "beta", "granted", _at(2027, 1, 1))
+    connection.execute(update(subscriptions).where(subscriptions.c.id == started.id).values(plan="beta-plus"))
+    assert ensure_signup_subscription(connection, user_id, _at(2027, 1, 1)) is None
+    row = connection.execute(select(subscriptions).where(subscriptions.c.user_id == user_id)).one()
+    assert (row.plan, row.period_start, row.period_end) == ("beta-plus", _at(2027, 1, 1), _at(2027, 2, 1))
+
+
+def test_sign_in_after_an_ended_subscription(connection: Connection) -> None:
+    user_id = _user(connection)
+    started = start_subscription(connection, user_id, "beta", "granted", _at(2027, 1, 1))
+    connection.execute(
+        update(subscriptions).where(subscriptions.c.id == started.id).values(status="ended", ended_at=_at(2027, 1, 5))
+    )
+    assert ensure_signup_subscription(connection, user_id, _at(2027, 1, 1)) is None
+    assert _count(connection, user_id) == 1
 
 
 def test_start_ends_the_previous(connection: Connection) -> None:
@@ -178,18 +190,24 @@ def test_constraints(connection: Connection, changes: dict[str, object], constra
         connection.execute(insert(subscriptions).values(_row(_user(connection), **changes)))
 
 
-def test_user_with_a_subscription_cannot_be_deleted(connection: Connection) -> None:
-    user_id = _user(connection)
-    start_subscription(connection, user_id, "beta", "granted", _at(2027, 1, 1))
-    with pytest.raises(IntegrityError, match="fk_subscriptions_user_id_users"):
-        connection.execute(users.delete().where(users.c.id == user_id))
+def test_no_key_leaves_schema_billing(connection: Connection) -> None:
+    """The user of the core is kept by value (openspec/specs/billing/module, «Схема данных биллинга»)."""
+    keys = connection.execute(
+        text(
+            "SELECT conname, confrelid::regclass::text FROM pg_constraint "
+            "WHERE contype = 'f' AND connamespace = 'billing'::regnamespace"
+        )
+    ).all()
+    assert [(name, target) for name, target in keys] == [
+        ("fk_usage_records_subscription_id_subscriptions", "billing.subscriptions")
+    ]
 
 
 def test_other_source_does_not_renew_itself(connection: Connection) -> None:
     """A source of payments-tochka is not allowed yet; the check is lifted inside this rolled-back transaction."""
     user_id = _user(connection)
     started = start_subscription(connection, user_id, "beta", "granted", _at(2027, 1, 1))
-    connection.execute(text("ALTER TABLE authorled.subscriptions DROP CONSTRAINT ck_subscriptions_source_known"))
+    connection.execute(text("ALTER TABLE billing.subscriptions DROP CONSTRAINT ck_subscriptions_source_known"))
     connection.execute(update(subscriptions).where(subscriptions.c.id == started.id).values(source="tochka"))
     assert current_subscription(connection, user_id, _at(2027, 1, 15)).source == "tochka"
     with pytest.raises(SubscriptionEnded, match="'tochka'") as ended:

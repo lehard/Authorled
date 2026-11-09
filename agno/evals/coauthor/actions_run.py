@@ -17,11 +17,11 @@ from agno.run.authorization import authorization_scope
 from agno.run.base import RunStatus
 
 from agents.coauthor import coauthor
+from billing import ModelPrice
 from core import notes, review, texts
 from core.documents import list_documents
 from core.drafts import create_draft
 from core.engine import get_engine
-from core.plans import ModelPrice
 from evals.coauthor.actions import ActionRun, Card, Changes, Request
 from evals.coauthor.run import caller, calls_of, chat_context, session_db, usage_of
 from evals.coauthor.user import EvalUser, Place

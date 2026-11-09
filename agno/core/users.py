@@ -2,14 +2,13 @@
 
 import uuid
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from typing import Final, Literal
 
 from sqlalchemy import Connection, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 
-from core.plans import plans
-from core.subscriptions import start_subscription
 from core.tables import user_settings, users
 
 Theme = Literal["light", "sepia", "dark"]
@@ -32,6 +31,8 @@ class Account:
     display_name: str
     theme: Theme | None
     coauthor_mode: CoauthorMode
+    # The moment the account was created: billing starts the first period of its subscription here.
+    created_at: datetime
 
 
 class AccountDeleted(Exception):
@@ -49,6 +50,7 @@ def _account(connection: Connection, subject: str) -> Account:
             users.c.email,
             users.c.display_name,
             users.c.deleted_at,
+            users.c.created_at,
             user_settings.c.theme,
             user_settings.c.coauthor_mode,
         )
@@ -60,7 +62,12 @@ def _account(connection: Connection, subject: str) -> Account:
     if row.deleted_at is not None:
         raise AccountDeleted(f"Account {row.id} is deleted")
     return Account(
-        id=row.id, email=row.email, display_name=row.display_name, theme=row.theme, coauthor_mode=row.coauthor_mode
+        id=row.id,
+        email=row.email,
+        display_name=row.display_name,
+        theme=row.theme,
+        coauthor_mode=row.coauthor_mode,
+        created_at=row.created_at,
     )
 
 
@@ -81,14 +88,14 @@ def get_or_create_user(connection: Connection, subject: str, email: str, name: s
 
     The name of the token is used only on creation; later the user changes it. The e-mail and
     last_seen_at follow every call. Run inside one transaction: concurrent first calls of one
-    subject meet at the unique auth_subject and create one row. A new account gets a subscription to the plan of
-    new accounts with its period from the creation (openspec/specs/api/me).
+    subject meet at the unique auth_subject and create one row. The subscription of a new account is given by
+    billing, called by GET /api/v1/me after this transaction (openspec/specs/api/me).
     """
     inserted = connection.execute(
         insert(users)
         .values(auth_subject=subject, email=email, display_name=name)
         .on_conflict_do_nothing(index_elements=[users.c.auth_subject])
-        .returning(users.c.id, users.c.created_at)
+        .returning(users.c.id)
     ).one_or_none()
     if inserted is None:
         row = connection.execute(
@@ -105,7 +112,6 @@ def get_or_create_user(connection: Connection, subject: str, email: str, name: s
         user_id = row.id
     else:
         user_id = inserted.id
-        start_subscription(connection, user_id, plans().signup.code, "granted", inserted.created_at)
     connection.execute(
         insert(user_settings).values(user_id=user_id).on_conflict_do_nothing(index_elements=[user_settings.c.user_id])
     )
@@ -138,3 +144,29 @@ def update_account(
             .values(coauthor_mode=coauthor_mode, updated_at=func.now())
         )
     return _account(connection, subject)
+
+
+@dataclass(frozen=True)
+class AccountEmail:
+    id: uuid.UUID
+    email: str
+
+
+def active_accounts(connection: Connection) -> list[AccountEmail]:
+    """Accounts outside the trash by e-mail, for the administrator's report."""
+    rows = connection.execute(
+        select(users.c.id, users.c.email).where(users.c.deleted_at.is_(None)).order_by(users.c.email, users.c.id)
+    ).all()
+    return [AccountEmail(id=row.id, email=row.email) for row in rows]
+
+
+def user_id_by_email(connection: Connection, email: str) -> uuid.UUID:
+    """The one account outside the trash with this e-mail; none or several is an error."""
+    found = (
+        connection.execute(select(users.c.id).where(users.c.email == email, users.c.deleted_at.is_(None)))
+        .scalars()
+        .all()
+    )
+    if len(found) != 1:
+        raise LookupError(f"Expected one account with e-mail {email!r}, found {len(found)}")
+    return found[0]

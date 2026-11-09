@@ -13,19 +13,19 @@ model is called and written to the usage journal of the core after it (agents/co
 
 from agno.agent import Agent
 
+import billing
 from agents.coauthor_tools import COAUTHOR_TOOLS
 from agents.coauthor_usage import check_usage_limit, record_usage
 from agents.prompts import agent_prompt
 from app.settings import default_model
-from core.plans import plans, prices
 from db import get_postgres_db
 
 COAUTHOR_ID = "coauthor"
 
 model = default_model()
 # Startup stops when the plans file is broken or the model of the co-author has no price.
-plans()
-prices().get(model.id)
+billing.validate_data()
+billing.check_model_price(model.id)
 
 
 coauthor = Agent(

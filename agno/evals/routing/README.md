@@ -88,7 +88,7 @@ Id уникальны в обеих частях состава, ожидаем�
 ## Прогон
 
 Из `agno/` с активированным `agno/.venv` (нужны `.env` с `LITELLM_URL=http://127.0.0.1:4000`, как в
-`example.env`, LiteLLM-прокси и цены моделей в `core/model_prices.toml`; база не нужна):
+`example.env`, LiteLLM-прокси и цены моделей в `billing/model_prices.toml`; база не нужна):
 
 ```sh
 python -m evals.routing --domains base --split work --variant team --model deepseek-fast --sample 20

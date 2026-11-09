@@ -8,7 +8,7 @@
 #      ./scripts/dev.sh db              Start agentos-db and wait until healthy
 #      ./scripts/dev.sh api             Start agentos-db, litellm, clamav and Authentik, migrate the core schema,
 #                                       export the Authentik keys, run the API on the host with --reload
-#      ./scripts/dev.sh migrate         Prepare the database and apply the migrations of schema authorled
+#      ./scripts/dev.sh migrate         Prepare the database and apply the migrations of schemas authorled and billing
 #      ./scripts/dev.sh test            Run the core tests (agno/tests) on a fresh database ai_test (with clamav)
 #      ./scripts/dev.sh stop            Stop the services, keep the data
 #      ./scripts/dev.sh reset-db --yes  Delete the agentos-db container and volume
@@ -30,7 +30,7 @@ usage() {
     echo 'Usage: ./scripts/dev.sh db | api | migrate | test | stop | reset-db --yes | psql | auth-users | seed'
     echo '  db            start agentos-db and wait until healthy'
     echo '  api           start agentos-db, litellm, clamav and Authentik, migrate, export the Authentik keys, run the API on the host (--reload)'
-    echo '  migrate       prepare the database (agentos-db-init) and apply the migrations of schema authorled'
+    echo '  migrate       prepare the database (agentos-db-init) and apply the migrations of schemas authorled and billing'
     echo '  test          start clamav, recreate the database ai_test, prepare and migrate it, run pytest in agno/tests'
     echo '  stop          stop agentos-api, litellm, clamav, Authentik and agentos-db; data is kept'
     echo '  reset-db      delete the agentos-db container and its volume, with the Authentik data (requires --yes)'
@@ -129,6 +129,7 @@ case "${command}" in
         export CLAMAV_HOST=127.0.0.1 CLAMAV_PORT=3310
         cd agno
         uv run --no-project --with-requirements requirements.txt alembic upgrade head
+        uv run --no-project --with-requirements requirements.txt alembic -c billing/alembic.ini upgrade head
         exec uv run --no-project --with-requirements requirements.txt --with pytest pytest tests
         ;;
     stop)

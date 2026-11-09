@@ -15,7 +15,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, delete, select
 
 from app.api import attach_api
-from core.tables import projects, subscriptions, usage_records, user_settings, users
+from billing.tables import subscriptions, usage_records
+from core.tables import projects, user_settings, users
 
 PROBLEM = "application/problem+json"
 

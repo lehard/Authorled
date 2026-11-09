@@ -15,6 +15,7 @@ pytest_plugins = ["tests.routes"]
 
 TEST_DATABASE = "ai_test"
 ALEMBIC_INI = Path(__file__).resolve().parents[1] / "alembic.ini"
+BILLING_ALEMBIC_INI = Path(__file__).resolve().parents[1] / "billing" / "alembic.ini"
 
 
 @pytest.fixture(scope="session")
@@ -42,6 +43,11 @@ def connection(engine: Engine) -> Iterator[Connection]:
 @pytest.fixture(scope="session")
 def alembic_config() -> Config:
     return Config(str(ALEMBIC_INI))
+
+
+@pytest.fixture(scope="session")
+def billing_alembic_config() -> Config:
+    return Config(str(BILLING_ALEMBIC_INI))
 
 
 @pytest.fixture(scope="session", autouse=True)

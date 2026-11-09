@@ -191,7 +191,7 @@ def _json_default(value: Any) -> Any:
 async def _run(arguments: argparse.Namespace) -> int:
     # Imported after .env is loaded: the co-author builds its model and checks its prices on import.
     from app.auth import set_project_access_source
-    from core.plans import prices
+    from billing import prices
     from core.projects import ProjectAccess
     from evals.coauthor.demo_set import load_demo_part
     from evals.coauthor.judge import JUDGE_MODEL, judge
@@ -312,8 +312,8 @@ def _commit() -> str:
 async def _actions_run(arguments: argparse.Namespace) -> int:
     # Imported after .env is loaded: the co-author builds its model and checks its prices on import.
     from app.auth import set_project_access_source
+    from billing import prices
     from core.engine import get_engine
-    from core.plans import prices
     from core.projects import ProjectAccess, user_id_of
     from evals.coauthor.actions import check, load_set, markdown, summarize
     from evals.coauthor.actions_run import run_request

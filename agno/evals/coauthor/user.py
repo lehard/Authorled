@@ -8,10 +8,10 @@ import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
+import billing
 from core.documents import draft_row
 from core.engine import get_engine
 from core.projects import list_projects, user_id_of
-from core.subscriptions import current_subscription
 from core.users import AccountNotFound, get_or_create_user
 from demo.load import ensure_migrated, load_demo
 
@@ -79,9 +79,13 @@ def setup(user: EvalUser) -> int:
         ensure_migrated(connection)
         account = get_or_create_user(connection, user.subject, user.email, user.name)
         editor = get_or_create_user(connection, user.editor_subject, user.editor_email, user.editor_name)
-        plan = current_subscription(connection, account.id, datetime.now(UTC)).plan
-        if plan != PLAN:
-            raise RuntimeError(f"The user {user.subject} has plan {plan!r}, expected {PLAN!r}")
+    # Accounts get their subscriptions from billing, as at a sign-in (GET /api/v1/me).
+    for person in (account, editor):
+        billing.ensure_subscription(person.id, person.created_at)
+    (spending,) = billing.report([account.id], datetime.now(UTC))
+    if spending.plan != PLAN:
+        raise RuntimeError(f"The user {user.subject} has plan {spending.plan!r}, expected {PLAN!r}")
+    with get_engine().begin() as connection:
         return load_demo(connection, {DEMO_WRITER: account.id, DEMO_EDITOR: editor.id})
 
 
