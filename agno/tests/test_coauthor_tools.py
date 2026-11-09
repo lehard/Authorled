@@ -334,6 +334,10 @@ def test_document_tools_describe_fields_as_the_core_checks_them() -> None:
         values = properties["fields"]["additionalProperties"]
         assert values == ({"anyOf": [{"type": "string"}, {"type": "null"}]} if nullable else {"type": "string"})
         assert properties["role"]["enum"] == ["main", "secondary", "episodic"]
+        # The core requires the role of a new character or location and refuses one for a world (core/documents.py).
+        assert "у мира роли нет" in properties["role"]["description"]
+        if not nullable:
+            assert "обязательна" in properties["role"]["description"]
         for kind in kinds:
             for name in FIELD_HINTS[kind]:
                 assert f"{name} — {FIELD_HINTS[kind][name]}" in described["description"]
