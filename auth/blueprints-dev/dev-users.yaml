@@ -4,10 +4,20 @@
 # confirmed e-mail code device (blueprints cannot set `confirmed`), so sign-in goes straight to
 # the code, which arrives in Mailpit. `writer` also gets an app password from AUTH_DEV_WRITER_TOKEN: the eval
 # of the co-author takes its token with it (openspec/specs/runtime, «Eval соавтора от имени пользователя разработки»).
+# It also opens the local sign-up to every address (openspec/specs/auth, «Список разрешённых почт»):
+# the list lives in the attribute allowed_emails of the group screenwriters, which the blueprints of
+# /blueprints never set.
 version: 1
 metadata:
   name: Authorled development users
 entries:
+  - model: authentik_core.group
+    identifiers:
+      name: screenwriters
+    attrs:
+      attributes:
+        allowed_emails:
+          - "*"
   - model: authentik_core.user
     id: user-writer
     identifiers:

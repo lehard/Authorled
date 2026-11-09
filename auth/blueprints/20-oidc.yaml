@@ -11,13 +11,22 @@ entries:
     id: stage-logout
     identifiers:
       name: authorled-logout
+  # Admin interface (openspec/specs/auth, «Настройки админки»): name, title. The `created` entry
+  # makes the flow on an empty schema and is skipped afterwards; the `present` entry restores only
+  # the designation, so edits of the title in the admin interface survive releases.
   - model: authentik_flows.flow
     id: flow-invalidation
+    state: created
     identifiers:
       slug: authorled-invalidation
     attrs:
       name: Authorled sign-out
       title: Выход из Соавтора
+      designation: invalidation
+  - model: authentik_flows.flow
+    identifiers:
+      slug: authorled-invalidation
+    attrs:
       designation: invalidation
   - model: authentik_flows.flowstagebinding
     identifiers:
