@@ -1,9 +1,10 @@
 """Tables of the stories (openspec/specs/core/database: «Таблица историй» … «Таблицы файлов»)."""
 
 import uuid
+from datetime import UTC, date, datetime
 
 import pytest
-from sqlalchemy import Connection, delete, func, insert, inspect, select
+from sqlalchemy import Connection, delete, func, insert, inspect, select, update
 from sqlalchemy.exc import IntegrityError
 
 from core.tables import (
@@ -21,6 +22,7 @@ from core.tables import (
     screenplay_texts,
     suggestions,
     users,
+    writing_progress,
 )
 
 
@@ -82,7 +84,18 @@ def _version(connection: Connection, document: uuid.UUID, owner: uuid.UUID, reas
 
 def test_projects_columns(connection: Connection) -> None:
     columns = [column["name"] for column in inspect(connection).get_columns("projects", schema=SCHEMA)]
-    assert columns == ["id", "owner_id", "title", "description", "format", "created_at", "updated_at", "deleted_at"]
+    assert columns == [
+        "id",
+        "owner_id",
+        "title",
+        "description",
+        "format",
+        "created_at",
+        "updated_at",
+        "deleted_at",
+        "word_goal",
+        "goal_deadline",
+    ]
 
 
 def test_unknown_format_is_rejected(connection: Connection) -> None:
@@ -266,6 +279,11 @@ def test_story_deletion_cascades(connection: Connection) -> None:
     )
     connection.execute(insert(draft_opens).values(user_id=owner, project_id=project, draft_id=draft))
     _version(connection, script, owner)
+    connection.execute(
+        insert(writing_progress).values(
+            user_id=owner, project_id=project, period_start=datetime(2026, 11, 9, 10, 15, tzinfo=UTC), words=40
+        )
+    )
 
     connection.execute(delete(projects).where(projects.c.id == project))
 
@@ -281,6 +299,7 @@ def test_story_deletion_cascades(connection: Connection) -> None:
         suggestions,
         files,
         file_contents,
+        writing_progress,
     ):
         assert connection.execute(select(func.count()).select_from(table)).scalar_one() == 0, table.name
 
@@ -382,3 +401,48 @@ def test_old_kind_draft_is_rejected(connection: Connection) -> None:
     project = _project(connection, _user(connection))
     with pytest.raises(IntegrityError, match="ck_documents_kind_known"):
         _document(connection, project, "draft")
+
+
+def test_story_goal_in_range(connection: Connection) -> None:
+    project = _project(connection, _user(connection))
+    connection.execute(
+        update(projects).where(projects.c.id == project).values(word_goal=20_000, goal_deadline=date(2026, 11, 30))
+    )
+
+
+@pytest.mark.parametrize("goal", [0, 1_000_001])
+def test_story_goal_out_of_range_is_rejected(connection: Connection, goal: int) -> None:
+    project = _project(connection, _user(connection))
+    with pytest.raises(IntegrityError, match="ck_projects_word_goal_range"):
+        connection.execute(update(projects).where(projects.c.id == project).values(word_goal=goal))
+
+
+def test_deadline_without_goal_is_rejected(connection: Connection) -> None:
+    project = _project(connection, _user(connection))
+    with pytest.raises(IntegrityError, match="ck_projects_deadline_needs_goal"):
+        connection.execute(update(projects).where(projects.c.id == project).values(goal_deadline=date(2026, 11, 30)))
+
+
+def test_writing_progress_columns(connection: Connection) -> None:
+    columns = [column["name"] for column in inspect(connection).get_columns("writing_progress", schema=SCHEMA)]
+    assert columns == ["user_id", "project_id", "period_start", "words"]
+
+
+def test_period_off_the_boundary_is_rejected(connection: Connection) -> None:
+    owner = _user(connection)
+    project = _project(connection, owner)
+    with pytest.raises(IntegrityError, match="ck_writing_progress_period_on_boundary"):
+        connection.execute(
+            insert(writing_progress).values(
+                user_id=owner, project_id=project, period_start=datetime(2026, 11, 9, 10, 7, tzinfo=UTC), words=1
+            )
+        )
+
+
+def test_second_row_of_a_period_is_rejected(connection: Connection) -> None:
+    owner = _user(connection)
+    project = _project(connection, owner)
+    row = {"user_id": owner, "project_id": project, "period_start": datetime(2026, 11, 9, 10, 15, tzinfo=UTC)}
+    connection.execute(insert(writing_progress).values(**row, words=-3))
+    with pytest.raises(IntegrityError, match="pk_writing_progress"):
+        connection.execute(insert(writing_progress).values(**row, words=0))

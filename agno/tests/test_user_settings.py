@@ -19,7 +19,7 @@ def _user(connection: Connection) -> uuid.UUID:
 
 def test_columns(connection: Connection) -> None:
     columns = [column["name"] for column in inspect(connection).get_columns("user_settings", schema=SCHEMA)]
-    assert columns == ["user_id", "theme", "updated_at", "coauthor_mode"]
+    assert columns == ["user_id", "theme", "updated_at", "coauthor_mode", "daily_word_goal"]
 
 
 def test_defaults(connection: Connection) -> None:
@@ -29,6 +29,7 @@ def test_defaults(connection: Connection) -> None:
     assert row.theme is None
     assert row.updated_at is not None
     assert row.coauthor_mode == "ask"
+    assert row.daily_word_goal is None
 
 
 @pytest.mark.parametrize("theme", ["light", "sepia", "dark"])
@@ -75,3 +76,17 @@ def test_unknown_coauthor_mode_is_rejected(connection: Connection, mode: str | N
     connection.execute(insert(user_settings).values(user_id=user_id))
     with pytest.raises(IntegrityError, match="ck_user_settings_coauthor_mode_known|coauthor_mode"):
         connection.execute(update(user_settings).values(coauthor_mode=mode))
+
+
+@pytest.mark.parametrize("goal", [1, 500, 1_000_000])
+def test_daily_word_goal_in_range(connection: Connection, goal: int) -> None:
+    user_id = _user(connection)
+    connection.execute(insert(user_settings).values(user_id=user_id, daily_word_goal=goal))
+
+
+@pytest.mark.parametrize("goal", [0, -5, 1_000_001])
+def test_daily_word_goal_out_of_range_is_rejected(connection: Connection, goal: int) -> None:
+    user_id = _user(connection)
+    connection.execute(insert(user_settings).values(user_id=user_id))
+    with pytest.raises(IntegrityError, match="ck_user_settings_daily_word_goal_range"):
+        connection.execute(update(user_settings).values(daily_word_goal=goal))

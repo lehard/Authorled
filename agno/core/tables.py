@@ -7,6 +7,7 @@ from sqlalchemy import (
     Boolean,
     CheckConstraint,
     Column,
+    Date,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
@@ -61,6 +62,8 @@ users = Table(
 THEMES = ("light", "sepia", "dark")
 # Modes of the co-author: `ask` waits for the author before each change, `auto` makes it at once.
 COAUTHOR_MODES = ("ask", "auto")
+# Upper bound of the daily goal and of the goal of a story, in words.
+MAX_WORD_GOAL = 1_000_000
 
 # Settings of a user, one row per user. Each new setting is a column added by its own migration.
 user_settings = Table(
@@ -71,8 +74,11 @@ user_settings = Table(
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     # The mode a new user starts with is `ask` (business-intents/coauthor-actions.md).
     Column("coauthor_mode", Text, nullable=False, server_default="ask"),
+    # Words a day the author aims at, for all their stories; NULL is no goal (openspec/specs/api/writing).
+    Column("daily_word_goal", Integer),
     CheckConstraint("theme IN ('light', 'sepia', 'dark')", name="theme_known"),
     CheckConstraint("coauthor_mode IN ('ask', 'auto')", name="coauthor_mode_known"),
+    CheckConstraint(f"daily_word_goal BETWEEN 1 AND {MAX_WORD_GOAL}", name="daily_word_goal_range"),
 )
 
 # Stories of the authors (openspec/specs/api/stories). MVP: one format, the feature film; one owner.
@@ -88,8 +94,13 @@ projects = Table(
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     # Set while the story lies in the trash; only the author empties it, there is no expiry.
     Column("deleted_at", DateTime(timezone=True)),
+    # The goal of the story in words and its deadline; the deadline goes only with a goal (openspec/specs/api/writing).
+    Column("word_goal", Integer),
+    Column("goal_deadline", Date),
     CheckConstraint("title <> ''", name="title_not_empty"),
     CheckConstraint("format IN ('feature')", name="format_known"),
+    CheckConstraint(f"word_goal BETWEEN 1 AND {MAX_WORD_GOAL}", name="word_goal_range"),
+    CheckConstraint("goal_deadline IS NULL OR word_goal IS NOT NULL", name="deadline_needs_goal"),
     Index("ix_projects_owner_id_deleted_at", "owner_id", "deleted_at"),
 )
 
@@ -373,4 +384,24 @@ coauthor_feedback = Table(
     CheckConstraint("run_id <> '' AND session_id <> ''", name="ids_not_empty"),
     CheckConstraint("value IN ('useful', 'not_useful')", name="value_known"),
     Index("ix_coauthor_feedback_updated_at", "updated_at"),
+)
+
+# Length of a period of the writing journal; every UTC offset in use is a multiple of it, so a period lies in one local
+# day of any time zone (openspec/changes/writing-goals/design.md, decision 3).
+WRITING_PERIOD = "15 minutes"
+WRITING_EPOCH = "2000-01-01 00:00+00"
+
+# Words the author added to the screenplay of a story in a period of 15 minutes (openspec/specs/api/writing): the sum
+# of the differences of the author's saves. Counts only, no text of the work.
+writing_progress = Table(
+    "writing_progress",
+    metadata,
+    Column("user_id", Uuid, ForeignKey(users.c.id, ondelete="RESTRICT"), primary_key=True),
+    Column("project_id", Uuid, ForeignKey(projects.c.id, ondelete="CASCADE"), primary_key=True),
+    Column("period_start", DateTime(timezone=True), primary_key=True),
+    Column("words", Integer, nullable=False),
+    CheckConstraint(
+        f"date_bin('{WRITING_PERIOD}', period_start, TIMESTAMPTZ '{WRITING_EPOCH}') = period_start",
+        name="period_on_boundary",
+    ),
 )
