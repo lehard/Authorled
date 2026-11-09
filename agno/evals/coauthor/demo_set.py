@@ -3,7 +3,8 @@
 Two parts, cases/demo-work.toml and cases/demo-holdout.toml. A case has the fields of a routing case (`id`, `section`,
 `message`, `expect` with domains of the wide set, `history`) and its own: `place` (the story it runs in), `action`
 (`"none"` or the changing tools of which one is needed), `mention` (groups of stems the answer must contain), `refs`
-(what of the story it asks about) and `absent` (what it asks about that the story does not have). Every reference is
+(what of the story it asks about), `absent` (what it asks about that the story does not have) and, optionally, `open`
+(`{ scene = N }`: the screenplay is open and scene N selected, as a check of the mentor sends it). Every reference is
 checked against web/src/data/demo.json — the file `setup` loaded for the user of the measurement — in the draft the
 story opens; a broken case stops the measurement before any model call (openspec/specs/coauthor-eval).
 """
@@ -22,9 +23,12 @@ from evals.routing.cases import CaseError, parse_case
 from evals.routing.components import DOMAIN_SETS
 
 CASES_DIR = Path(__file__).parent / "cases"
-PARTS = {"work": "demo-work.toml", "holdout": "demo-holdout.toml"}
+PARTS = {"work": "demo-work.toml", "holdout": "demo-holdout.toml", "checks": "demo-checks.toml"}
+# The checks of the mentor are one domain over a selected scene: the coverage of domains and sections is not theirs
+# (spec «Наборы замера»).
+COVERED_PARTS = ("work", "holdout")
 NO_ACTION = "none"
-_OWN = {"place", "action", "mention", "refs", "absent"}
+_OWN = {"place", "action", "mention", "refs", "absent", "open"}
 _CARD_GROUPS = {"character": "characters", "location": "locations", "world": "worlds"}
 
 
@@ -105,6 +109,15 @@ def _mention(where: str, value: Any) -> tuple[tuple[str, ...], ...]:
     return tuple(groups)
 
 
+def _open(where: str, value: Any) -> int:
+    if not isinstance(value, dict) or set(value) != {"scene"}:
+        raise SampleError(f"{where} must be a table {{ scene = N }}")
+    scene = value["scene"]
+    if not isinstance(scene, int) or isinstance(scene, bool):
+        raise SampleError(f"{where}: a scene is named by its number")
+    return scene
+
+
 def parse_demo_case(source: str, index: int, data: Any, stories: dict[str, Story]) -> Sampled:
     if not isinstance(data, dict):
         raise SampleError(f"{source}: case {index} must be a table")
@@ -128,16 +141,20 @@ def parse_demo_case(source: str, index: int, data: Any, stories: dict[str, Story
     for ref in absent:
         if story.has(ref):
             raise SampleError(f"{where}: absent {ref.kind} {ref.name!r} exists in «{PLACES[place]}»")
+    opened = _open(f"{where}.open", data["open"]) if "open" in data else None
+    if opened is not None and not story.has(Ref("scene", str(opened))):
+        raise SampleError(f"{where}: «{PLACES[place]}» has no scene {opened} to open")
     expected = Expectation(
         action=_action(where, data["action"]),
         mention=_mention(where, data.get("mention", [])),
         refs=refs,
         absent=absent,
+        open=opened,
     )
     return Sampled(case, place, expected)
 
 
-def parse_demo_part(source: str, data: dict[str, Any], stories: dict[str, Story]) -> list[Sampled]:
+def parse_demo_part(source: str, data: dict[str, Any], stories: dict[str, Story], *, covered: bool) -> list[Sampled]:
     if set(data) != {"case"} or not isinstance(data["case"], list) or not data["case"]:
         raise SampleError(f"{source}: the file must hold only a non-empty list of [[case]] tables")
     cases = [parse_demo_case(source, index, item, stories) for index, item in enumerate(data["case"])]
@@ -146,7 +163,8 @@ def parse_demo_part(source: str, data: dict[str, Any], stories: dict[str, Story]
         if item.case.id in seen:
             raise SampleError(f"{source}: case {item.case.id!r} repeats")
         seen.add(item.case.id)
-    check_coverage(source, cases)
+    if covered:
+        check_coverage(source, cases)
     return cases
 
 
@@ -167,10 +185,13 @@ def _read(path: Path) -> dict[str, Any]:
 
 
 def load_demo_part(part: str, cases_dir: Path = CASES_DIR) -> list[Sampled]:
-    """One part of the demo set; both parts are loaded and checked together, so an id never sits in both."""
+    """One part of the demo set; all parts are loaded and checked together, so an id never sits in two."""
     if part not in PARTS:
         raise SampleError(f"Part {part!r} is unknown; use one of: {', '.join(PARTS)}")
     stories = demo_stories()
-    parts = {name: parse_demo_part(file, _read(cases_dir / file), stories) for name, file in PARTS.items()}
+    parts = {
+        name: parse_demo_part(file, _read(cases_dir / file), stories, covered=name in COVERED_PARTS)
+        for name, file in PARTS.items()
+    }
     check_parts(parts)
     return parts[part]

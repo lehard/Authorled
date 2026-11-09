@@ -1,8 +1,8 @@
 """python -m evals.coauthor setup | run | compare: the quality measurement of the current co-author.
 
 openspec/specs/coauthor-eval, README.md here. `setup` creates the user of the measurement with its demo stories.
-`run --set wide|demo [--part work|holdout] (--all | --sample N) [--repeat K]` checks the set, the user and the prices
-before the first model call, then runs every case K times through the real co-author (two at a time) and has the
+`run --set wide|demo [--part work|holdout|checks] (--all | --sample N) [--repeat K]` checks the set, the user and the
+prices before the first model call, then runs every case K times through the real co-author (two at a time) and has the
 judge rate it. The report goes to tmp/coauthor-eval/<UTC time>.json and .md, the cases for the owner to
 <UTC time>-review.md; the log holds only case ids. `compare <before.json> <after.json>` compares two reports of one
 set and part without model calls.
@@ -51,7 +51,9 @@ def _arguments(argv: list[str]) -> argparse.Namespace:
     commands.add_parser("setup", help="create the user of the measurement and its demo stories")
     run = commands.add_parser("run", help="run a set through the co-author and the judge (spends model calls)")
     run.add_argument("--set", required=True, choices=SETS, dest="set_name", help="wide: the sample; demo: own cases")
-    run.add_argument("--part", choices=("work", "holdout"), help="the part of the demo set (required for demo)")
+    run.add_argument(
+        "--part", choices=("work", "holdout", "checks"), help="the part of the demo set (required for demo)"
+    )
     which = run.add_mutually_exclusive_group(required=True)
     which.add_argument("--all", action="store_true", help="every case of the set")
     which.add_argument("--sample", type=int, help="only the first N cases of the set")
@@ -75,7 +77,7 @@ def _arguments(argv: list[str]) -> argparse.Namespace:
         if arguments.repeat < 1:
             parser.error("--repeat must be at least 1")
         if arguments.set_name == "demo" and arguments.part is None:
-            parser.error("--set demo needs --part work or --part holdout")
+            parser.error("--set demo needs --part work, --part holdout or --part checks")
         if arguments.set_name == "wide" and arguments.part is not None:
             parser.error("--part belongs to --set demo; the wide set is one sample")
     return arguments
@@ -193,9 +195,10 @@ async def _run(arguments: argparse.Namespace) -> int:
     from app.auth import set_project_access_source
     from billing import prices
     from core.projects import ProjectAccess
+    from evals.coauthor.context import CONTEXT_DESCRIPTION, chat_context, open_scene
     from evals.coauthor.demo_set import load_demo_part
     from evals.coauthor.judge import JUDGE_MODEL, judge
-    from evals.coauthor.run import CONTEXT_DESCRIPTION, chat_context, run_case
+    from evals.coauthor.run import run_case
     from evals.coauthor.sample import load_sample
     from evals.coauthor.score import Result, review_pick, spent, summarize
     from evals.coauthor.user import QUALITY, places
@@ -205,6 +208,13 @@ async def _run(arguments: argparse.Namespace) -> int:
     if arguments.sample is not None:
         sampled = sampled[: arguments.sample]
     where = places(QUALITY)
+    # The chat's context of every case, read from the core before the first model call: a check of the mentor
+    # opens the screenplay of its draft and selects a scene (spec «Случай с открытым текстом сценария»).
+    contexts = {}
+    for item in sampled:
+        scene = None if item.expected is None else item.expected.open
+        place = where[item.place]
+        contexts[item.case.id] = chat_context(place, None if scene is None else open_scene(place, scene))
     coauthor_price, judge_price = prices().get(COAUTHOR_MODEL), prices().get(JUDGE_MODEL)
     # The co-author's tools ask the core who may open a story, as in the API (app/main.py).
     set_project_access_source(ProjectAccess())
@@ -214,8 +224,8 @@ async def _run(arguments: argparse.Namespace) -> int:
 
     async def one(item: Sampled, repeat: int) -> Result:
         async with gate:
-            run = await run_case(item.case, where[item.place], COAUTHOR_MODEL, coauthor_price)
-            context = chat_context(where[item.place])[CONTEXT_DESCRIPTION]
+            run = await run_case(item.case, where[item.place], contexts[item.case.id], COAUTHOR_MODEL, coauthor_price)
+            context = contexts[item.case.id][CONTEXT_DESCRIPTION]
             judged = (
                 None if run.outcome == "error" else await judge(item.case, run, context, judge_price, item.expected)
             )

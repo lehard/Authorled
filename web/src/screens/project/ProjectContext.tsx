@@ -17,6 +17,9 @@ import type { SaveStatus } from "@/screens/shared/useAutosave";
 
 import type { DocRef } from "./docRef";
 
+/** A request to the co-author from a document, waiting for the chat to send it. */
+export type CoauthorRequest = { id: string; text: string };
+
 /** Everything the window of one story has loaded; documents read it instead of refetching. */
 export type ProjectData = {
   project: Project;
@@ -46,6 +49,14 @@ export type ProjectData = {
   setCurrentScene: (scene: number | null) => void;
   /** Shows the chat where it is hidden (narrow screens); on wide screens it is always shown. */
   openChat: () => void;
+  /**
+   * Sends `text` to the co-author in the current conversation, as if the author typed it, and
+   * opens the chat (web/workspace, «Проверки над выделением»). Throws while `coauthorBusy`: the
+   * screens do not offer it then.
+   */
+  askCoauthor: (text: string) => void;
+  /** The co-author is answering, or the chat cannot send yet: no request goes now. */
+  coauthorBusy: boolean;
   /**
    * «Открыть свежую версию» after a conflict: reads the story again and opens the document anew
    * from the saved data; unsaved edits of the window are dropped.

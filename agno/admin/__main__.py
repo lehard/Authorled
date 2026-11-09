@@ -1,5 +1,6 @@
-"""python -m admin report | set-plan <e-mail> <plan> | beta-requests: spending and plans of users, requests for the
-beta (openspec/specs/billing/subscriptions and openspec/specs/api/beta-requests, «Команды администратора»).
+"""python -m admin report | set-plan <e-mail> <plan> | beta-requests | coauthor-feedback: spending and plans of users,
+requests for the beta, marks of the co-author's answers (openspec/specs/billing/subscriptions and
+openspec/specs/api/beta-requests, «Команды администратора»).
 
 Run in the API container through ./scripts/usage.sh. Spending and plans go through the interface of billing, accounts,
 e-mails and requests through the core; this command joins them. A failure exits non-zero with its reason.
@@ -7,13 +8,14 @@ e-mails and requests through the core; this command joins them. A failure exits 
 
 import argparse
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import billing
 from billing import NoSubscription, ReportRow, UnknownPlan
 from core.beta_requests import BetaRequest, list_requests
 from core.engine import get_engine
+from core.feedback import FeedbackReport, feedback_report
 from core.users import active_accounts, user_id_by_email
 
 _COLUMNS = (
@@ -86,6 +88,30 @@ def print_requests(rows: list[BetaRequest]) -> None:
     )
 
 
+FEEDBACK_DAYS = 30
+_FEEDBACK_COLUMNS = ("время (UTC)", "почта", "беседа", "запуск")
+
+
+def print_feedback(found: FeedbackReport) -> None:
+    total = found.useful + found.not_useful
+    if total == 0:
+        print("Оценок нет.")
+        return
+    share = round(100 * found.not_useful / total)
+    print(f"За {FEEDBACK_DAYS} дней: «Полезно» {found.useful}, «Не то» {found.not_useful}, доля «Не то» {share} %.")
+    if not found.recent_not_useful:
+        return
+    print()
+    print("Последние «Не то»:")
+    _print_table(
+        _FEEDBACK_COLUMNS,
+        [
+            (f"{line.updated_at.astimezone(UTC):%Y-%m-%d %H:%M}", line.email, line.session_id, line.run_id)
+            for line in found.recent_not_useful
+        ],
+    )
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="python -m admin")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -94,6 +120,7 @@ def main(argv: list[str]) -> int:
     change.add_argument("email")
     change.add_argument("plan")
     commands.add_parser("beta-requests", help="requests for the beta, the newest first")
+    commands.add_parser("coauthor-feedback", help=f"marks of the co-author's answers in the last {FEEDBACK_DAYS} days")
     args = parser.parse_args(argv)
 
     now = datetime.now(UTC)
@@ -107,6 +134,11 @@ def main(argv: list[str]) -> int:
         with get_engine().begin() as connection:
             requests = list_requests(connection)
         print_requests(requests)
+        return 0
+    if args.command == "coauthor-feedback":
+        with get_engine().begin() as connection:
+            marks = feedback_report(connection, now - timedelta(days=FEEDBACK_DAYS))
+        print_feedback(marks)
         return 0
     try:
         with get_engine().begin() as connection:

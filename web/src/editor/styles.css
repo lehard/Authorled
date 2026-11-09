@@ -397,6 +397,18 @@
   background: var(--accent);
   color: var(--primary);
 }
+.pw-bubble-menu [hidden] {
+  display: none;
+}
+.pw-bubble-menu .pw-coauthor-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: auto;
+  padding: 0 8px;
+  color: var(--ai);
+  font-weight: 600;
+}
 .pw-bubble-menu .pw-separator {
   width: 1px;
   height: 18px;
@@ -539,6 +551,10 @@
       right: 8px;
       top: auto !important;
       max-width: none;
+    }
+    /* «Соавтор» is the icon only on a narrow screen; its name stays in aria-label. */
+    .pw-editor.pw-continuous .pw-bubble-menu .pw-coauthor-button span {
+      display: none;
     }
   }
 }

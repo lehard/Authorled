@@ -23,38 +23,22 @@ from agno.session.agent import AgentSession
 from agents.coauthor import COAUTHOR_ID, coauthor
 from app.auth.authorization import GROUP_SCOPES
 from billing import ModelPrice
+
+# Re-exported: the chat's context is built in context.py, without the agent, so tests can import it.
+from evals.coauthor.context import CONTEXT_DESCRIPTION as CONTEXT_DESCRIPTION
+from evals.coauthor.context import chat_context as chat_context
 from evals.coauthor.records import Call, CaseRun, Usage
 from evals.coauthor.user import QUALITY, Place
 from evals.routing.cases import Case
 
 # The group of screenwriters (openspec/specs/auth, GROUP_SCOPES): the scopes a writer's token gives.
 AUTHOR_GROUP = "screenwriters"
-# What the chat attaches to every message (web/src/screens/project/chat/CoauthorChat.tsx, docContext.ts).
-CONTEXT_DESCRIPTION = "Что сейчас открыто у автора в Соавторе"
 REJECTION = "Автор отклонил это действие."
 # A run that keeps pausing after this many rejections is a failed case, not an endless loop.
 MAX_PAUSES = 4
 # Whole results for the judge: the demo screenplays are about 2,300 characters; a cut one made later scenes look
 # invented to the judge (rerun 2026-11-08).
 RESULT_CHARS = 12000
-
-
-def chat_context(place: Place) -> dict[str, str]:
-    """The chat's context with the story card open (docContext.ts, kind «info»).
-
-    AG-UI passes the chat's context as run dependencies with add_dependencies_to_context, and Agno appends them to
-    the author's message as an <additional context> block (agno os/interfaces/agui/router.py, agent/_messages.py);
-    the measurement runs the agent the same way.
-    """
-    value = "\n".join(
-        [
-            f"История: «{place.title}» (полнометражный сценарий), драфт «{place.draft_name}».",
-            "Открыт документ: История.",
-            "Содержимое документа:",
-            f"Название: {place.title}\nТэглайн: {place.tagline}",
-        ]
-    )
-    return {CONTEXT_DESCRIPTION: value}
 
 
 def caller(subject: str) -> RunAuthorization:
@@ -114,10 +98,9 @@ def usage_of(output: RunOutput, model: str, price: ModelPrice) -> Usage:
     )
 
 
-async def run_case(case: Case, place: Place, model: str, price: ModelPrice) -> CaseRun:
+async def run_case(case: Case, place: Place, context: dict[str, str], model: str, price: ModelPrice) -> CaseRun:
     session_id = f"{place.project_id}:{place.draft_id}:{uuid.uuid4()}"
     agent = coauthor.deep_copy(update={"db": session_db(session_id, QUALITY.subject, case)})
-    context = chat_context(place)
     proposed: set[str] = set()
     started = time.monotonic()
     try:
