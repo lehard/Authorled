@@ -128,7 +128,9 @@ def _update_project(project_id: uuid.UUID, body: dict[str, Any]) -> ProjectOut:
 
 
 @router.patch(
-    "/projects/{project_id}", response_model=ProjectOut, summary="Rename or describe a story, or set its goal in words"
+    "/projects/{project_id}",
+    response_model=ProjectOut,
+    summary="Rename or describe a story, set its goal in words or change the colour of its cover",
 )
 async def update_project(
     project_id: str, request: Request, principal: Principal = Depends(current_principal)

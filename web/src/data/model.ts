@@ -6,11 +6,34 @@ import type { ScreenplayDoc } from "@/editor/document.ts";
 export type Role = "main" | "secondary" | "episodic";
 export type EntityKind = "char" | "loc" | "world";
 
+/** Colours of a story's cover, in the order the core gives them to new stories. */
+export const COVER_COLORS = {
+  blue: "Синий",
+  teal: "Бирюзовый",
+  amber: "Янтарный",
+  crimson: "Малиновый",
+  plum: "Сливовый",
+  graphite: "Графит",
+} as const;
+export type CoverColor = keyof typeof COVER_COLORS;
+
+export function isCoverColor(value: unknown): value is CoverColor {
+  return typeof value === "string" && Object.hasOwn(COVER_COLORS, value);
+}
+
+/** The colour after `last` in the palette, from the first one; the core's rule for a new story. */
+export function nextCoverColor(last: CoverColor | undefined): CoverColor {
+  const order = Object.keys(COVER_COLORS) as CoverColor[];
+  return last === undefined
+    ? order[0]
+    : order[(order.indexOf(last) + 1) % order.length];
+}
+
 export type Project = {
   id: string;
   title: string;
   desc: string;
-  cover: boolean;
+  coverColor: CoverColor;
   updatedAt: string;
   deletedAt: string | null;
   /** Drafts outside the trash. */

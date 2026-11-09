@@ -18,6 +18,7 @@ class ProjectOut(_Out):
     format: str
     word_goal: int | None
     goal_deadline: date | None
+    cover_color: str
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None

@@ -40,6 +40,7 @@ import type {
   VersionTarget,
   World,
 } from "./model";
+import { isCoverColor } from "./model";
 import type { SaveOperation } from "./saves";
 import type {
   EntityHit,
@@ -157,8 +158,7 @@ function readProject(body: unknown): SavedProject {
     id: field("историю", o, "id", isString),
     title: field("историю", o, "title", isString),
     desc: field("историю", o, "description", isString),
-    // Covers come at stage 2 (openspec/context/backlog-stage-2.md); the core keeps none.
-    cover: false,
+    coverColor: field("историю", o, "cover_color", isCoverColor),
     updatedAt: field("историю", o, "updated_at", isString),
     deletedAt: field("историю", o, "deleted_at", isTime),
     wordGoal: field("историю", o, "word_goal", isCountOrNull),
@@ -976,6 +976,7 @@ async function update(
       else if (key === "desc") changes.description = value;
       else if (key === "wordGoal") changes.word_goal = value;
       else if (key === "goalDeadline") changes.goal_deadline = value;
+      else if (key === "coverColor") changes.cover_color = value;
       else throw new Error(`Источник api не меняет поле «${key}» истории.`);
     }
     await request(`/projects/${id}`, { method: "PATCH", json: changes });

@@ -316,6 +316,26 @@
   --mark-3-fill: var(--teal-4);
   --mark-4-fill: var(--blue-4);
 
+  /* Layer 3: story covers — a gradient from the top colour to the deep one, the title on both */
+  --cover-blue-from: var(--blue-9);
+  --cover-blue-to: var(--blue-12);
+  --cover-blue-foreground: var(--neutral-1);
+  --cover-teal-from: var(--teal-9);
+  --cover-teal-to: var(--teal-12);
+  --cover-teal-foreground: var(--neutral-1);
+  --cover-amber-from: var(--amber-9);
+  --cover-amber-to: var(--amber-12);
+  --cover-amber-foreground: var(--neutral-1);
+  --cover-crimson-from: var(--crimson-9);
+  --cover-crimson-to: var(--crimson-12);
+  --cover-crimson-foreground: var(--neutral-1);
+  --cover-plum-from: var(--plum-9);
+  --cover-plum-to: var(--plum-12);
+  --cover-plum-foreground: var(--neutral-1);
+  --cover-graphite-from: var(--neutral-10);
+  --cover-graphite-to: var(--neutral-12);
+  --cover-graphite-foreground: var(--neutral-1);
+
   /* Layer 3: the printed manuscript, black on white in every theme */
   --print-ink: oklch(0 0 0);
   --print-paper: oklch(1 0 0);
@@ -355,6 +375,25 @@
     0 40px 80px -30px oklch(0 0 0 / 0.6);
   --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 0.9 0 0 0 0 0.75 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   --grain-opacity: 0.04;
+  /* covers are muted under the lamp: the light title on mid steps of the scales */
+  --cover-blue-from: var(--blue-7);
+  --cover-blue-to: var(--blue-5);
+  --cover-blue-foreground: var(--neutral-12);
+  --cover-teal-from: var(--teal-7);
+  --cover-teal-to: var(--teal-5);
+  --cover-teal-foreground: var(--neutral-12);
+  --cover-amber-from: var(--amber-7);
+  --cover-amber-to: var(--amber-5);
+  --cover-amber-foreground: var(--neutral-12);
+  --cover-crimson-from: var(--crimson-7);
+  --cover-crimson-to: var(--crimson-5);
+  --cover-crimson-foreground: var(--neutral-12);
+  --cover-plum-from: var(--plum-7);
+  --cover-plum-to: var(--plum-5);
+  --cover-plum-foreground: var(--neutral-12);
+  --cover-graphite-from: var(--neutral-7);
+  --cover-graphite-to: var(--neutral-5);
+  --cover-graphite-foreground: var(--neutral-12);
   color-scheme: dark;
 }
 
