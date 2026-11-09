@@ -29,6 +29,7 @@ import {
   type EntityKind,
   type ScriptPart,
 } from "@/data/model";
+import { searchActive } from "@/data/search";
 import { TruncatedText } from "@/design-system";
 import { scenes, screenTime } from "@/editor/document.ts";
 import {
@@ -55,6 +56,7 @@ import { useEntityActions } from "./entityActions";
 import { NodeMenu, type MenuEntry } from "./NodeMenu";
 import { useNoteActions } from "./noteActions";
 import { useProjectData } from "./ProjectContext";
+import { StorySearchField, StorySearchResults } from "./StorySearch";
 
 const GROUP_ICON: Record<EntityKind, LucideIcon> = {
   char: Users,
@@ -409,7 +411,10 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
           </button>
         </p>
       )}
-      {mode === "tree" ? (
+      <StorySearchField />
+      {searchActive(data.searchText) ? (
+        <StorySearchResults onNavigate={onNavigate} />
+      ) : mode === "tree" ? (
         <ul className="min-h-0 flex-1 overflow-auto px-2 pb-2">
           {rows.map((r) => node(r, 0))}
         </ul>

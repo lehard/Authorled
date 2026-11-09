@@ -35,6 +35,7 @@ import { useProjectData } from "../ProjectContext";
 import { DocHead, FieldCard } from "./DocHead";
 import { Field } from "./Field";
 import { SaveHistory } from "./SaveHistory";
+import { useFindInDoc } from "./useFindInDoc";
 
 const GENDERS: { value: Gender; label: string }[] = [
   { value: "", label: "Не указан" },
@@ -68,6 +69,7 @@ function EntityForm({ kind, record }: { kind: EntityKind; record: Entity }) {
     record.id,
   );
   const [x, setX] = useState<Entity>(record);
+  useFindInDoc();
   // The co-author may change the card while it is open: its fields show without a reload.
   useServerChanges(record, setX);
   const words = ENTITY_WORDS[kind];
@@ -119,6 +121,7 @@ function EntityForm({ kind, record }: { kind: EntityKind; record: Entity }) {
       >
         <FieldCard>
           <Field
+            name="name"
             label={words.nameLabel}
             value={x.name}
             onChange={(name) => set({ name })}
@@ -151,6 +154,7 @@ function EntityForm({ kind, record }: { kind: EntityKind; record: Entity }) {
           {kind === "char" && (
             <div className="grid gap-3.5 sm:grid-cols-2">
               <Field
+                name="age"
                 label="Возраст"
                 value={(x as Character).age}
                 onChange={(age) => set({ age } as Partial<Character>)}
@@ -189,11 +193,13 @@ function EntityForm({ kind, record }: { kind: EntityKind; record: Entity }) {
             </div>
           )}
           <Field
+            name="one"
             label="Одной фразой"
             value={x.one}
             onChange={(one) => set({ one })}
           />
           <Field
+            name="long"
             label="Подробное описание"
             value={x.long}
             area
@@ -201,6 +207,7 @@ function EntityForm({ kind, record }: { kind: EntityKind; record: Entity }) {
           />
           {"overview" in x && (
             <Field
+              name="overview"
               label="Обзор мира"
               value={x.overview}
               area
@@ -230,6 +237,7 @@ function EntityForm({ kind, record }: { kind: EntityKind; record: Entity }) {
                 {section.fields.map((f) => (
                   <Field
                     key={f.key}
+                    name={f.key}
                     label={f.label}
                     area
                     rows={3}

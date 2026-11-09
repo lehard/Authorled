@@ -19,6 +19,10 @@ export function docTitle(
     | "coauthorBusy"
     | "openFresh"
     | "generation"
+    | "searchText"
+    | "setSearchText"
+    | "searchFocusAsked"
+    | "searchFocusTaken"
   >,
   ref: DocRef,
 ): string {

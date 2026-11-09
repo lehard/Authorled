@@ -19,6 +19,7 @@ import { useNoteActions } from "../noteActions";
 import { useProjectData } from "../ProjectContext";
 import { DocHead, FieldCard } from "./DocHead";
 import { Field } from "./Field";
+import { useFindInDoc } from "./useFindInDoc";
 
 /** A note: title and plain text on a sheet of paper; no draft and no lock of a draft close it. */
 export function NoteDoc({ id }: { id: string }) {
@@ -33,6 +34,7 @@ export function NoteDoc({ id }: { id: string }) {
   // The co-author may change the note while it is open: its changes show without a reload.
   useServerChanges(note.title, setTitle);
   useServerChanges(note.body, setBody);
+  useFindInDoc();
   const words = DOC_WORDS.note;
 
   return (
@@ -67,6 +69,7 @@ export function NoteDoc({ id }: { id: string }) {
       <div className="mx-auto mb-4 max-w-[900px]">
         <FieldCard>
           <Field
+            name="title"
             label={words.nameLabel}
             value={title}
             onChange={(v) => {
@@ -80,6 +83,7 @@ export function NoteDoc({ id }: { id: string }) {
       <div className="sheet sheet-prose">
         <GrowingTextarea
           aria-label="Текст заметки"
+          data-field="body"
           placeholder="Начните заметку"
           value={body}
           onChange={(e) => {
