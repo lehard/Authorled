@@ -75,7 +75,7 @@ def test_first_call_creates_the_account(client: TestClient, subjects: list[str],
     assert (body["email"], body["display_name"], body["settings"]) == (
         "anna@example.com",
         "Анна Петрова",
-        {"theme": None, "coauthor_mode": "ask"},
+        {"theme": None, "coauthor_mode": "ask", "daily_word_goal": None},
     )
     uuid.UUID(body["id"])
     with engine.connect() as connection:
@@ -139,8 +139,19 @@ def test_patch_coauthor_mode_keeps_the_theme(client: TestClient, subjects: list[
     client.get("/api/v1/me", headers=headers)
     client.patch("/api/v1/me", headers=headers, json={"theme": "dark"})
     body = client.patch("/api/v1/me", headers=headers, json={"coauthor_mode": "auto"}).json()
-    assert body["settings"] == {"theme": "dark", "coauthor_mode": "auto"}
+    assert body["settings"] == {"theme": "dark", "coauthor_mode": "auto", "daily_word_goal": None}
     assert client.get("/api/v1/me", headers=headers).json()["settings"]["coauthor_mode"] == "auto"
+
+
+def test_patch_daily_word_goal_keeps_the_rest(client: TestClient, subjects: list[str]) -> None:
+    headers = _claims(subjects)
+    client.get("/api/v1/me", headers=headers)
+    client.patch("/api/v1/me", headers=headers, json={"theme": "dark", "coauthor_mode": "auto"})
+    body = client.patch("/api/v1/me", headers=headers, json={"daily_word_goal": 500}).json()
+    assert body["settings"] == {"theme": "dark", "coauthor_mode": "auto", "daily_word_goal": 500}
+    assert client.get("/api/v1/me", headers=headers).json()["settings"]["daily_word_goal"] == 500
+    taken = client.patch("/api/v1/me", headers=headers, json={"daily_word_goal": None}).json()
+    assert taken["settings"]["daily_word_goal"] is None
 
 
 @pytest.mark.parametrize(
@@ -152,6 +163,11 @@ def test_patch_coauthor_mode_keeps_the_theme(client: TestClient, subjects: list[
         ({"coauthor_mode": "always"}, "coauthor_mode"),
         ({"coauthor_mode": None}, "coauthor_mode"),
         ({"email": "other@example.com"}, "email"),
+        ({"daily_word_goal": 0}, "daily_word_goal"),
+        ({"daily_word_goal": 1_000_001}, "daily_word_goal"),
+        ({"daily_word_goal": "500"}, "daily_word_goal"),
+        ({"daily_word_goal": 12.5}, "daily_word_goal"),
+        ({"daily_word_goal": True}, "daily_word_goal"),
         ({}, None),
     ],
 )
@@ -169,7 +185,7 @@ def test_patch_rejects_bad_bodies(
     assert (me["email"], me["display_name"], me["settings"]) == (
         "anna@example.com",
         "Анна Петрова",
-        {"theme": None, "coauthor_mode": "ask"},
+        {"theme": None, "coauthor_mode": "ask", "daily_word_goal": None},
     )
 
 
@@ -233,7 +249,7 @@ def test_only_own_record_changes(client: TestClient, subjects: list[str]) -> Non
 def test_openapi_publishes_the_patch_body(client: TestClient) -> None:
     operation = client.get("/openapi.json").json()["paths"]["/api/v1/me"]["patch"]
     schema = operation["requestBody"]["content"]["application/json"]["schema"]
-    assert set(schema["properties"]) == {"display_name", "theme", "coauthor_mode"}
+    assert set(schema["properties"]) == {"display_name", "theme", "coauthor_mode", "daily_word_goal"}
 
 
 def test_routes_come_before_a_root_mount(subjects: list[str]) -> None:

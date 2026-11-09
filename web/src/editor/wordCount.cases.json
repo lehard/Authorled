@@ -1,0 +1,434 @@
+[
+  {
+    "name": "Тире без букв не слово, слово с дефисом — одно",
+    "doc": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "sceneHeading",
+          "attrs": {
+            "alt": "",
+            "day": "",
+            "color": null,
+            "tags": [],
+            "uid": "s1"
+          }
+        },
+        {
+          "type": "action",
+          "content": [
+            {
+              "type": "text",
+              "text": "Вера — кто-то стоит у воды..."
+            }
+          ]
+        }
+      ]
+    },
+    "words": 5
+  },
+  {
+    "name": "Биты и заметки не считаются",
+    "doc": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "sceneHeading",
+          "attrs": {
+            "alt": "",
+            "day": "",
+            "color": null,
+            "tags": [],
+            "uid": "s1"
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "ИНТ. КУХНЯ — ДЕНЬ"
+            }
+          ]
+        },
+        {
+          "type": "beat",
+          "content": [
+            {
+              "type": "text",
+              "text": "Вера решает"
+            }
+          ]
+        },
+        {
+          "type": "inlineNote",
+          "content": [
+            {
+              "type": "text",
+              "text": "проверить"
+            }
+          ]
+        }
+      ]
+    },
+    "words": 3
+  },
+  {
+    "name": "Пустой текст",
+    "doc": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "sceneHeading",
+          "attrs": {
+            "alt": "",
+            "day": "",
+            "color": null,
+            "tags": [],
+            "uid": "s1"
+          }
+        }
+      ]
+    },
+    "words": 0
+  },
+  {
+    "name": "Числа — слова",
+    "doc": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "sceneHeading",
+          "attrs": {
+            "alt": "",
+            "day": "",
+            "color": null,
+            "tags": [],
+            "uid": "s1"
+          }
+        },
+        {
+          "type": "action",
+          "content": [
+            {
+              "type": "text",
+              "text": "В 1984 году — 3 дня."
+            }
+          ]
+        }
+      ]
+    },
+    "words": 5
+  },
+  {
+    "name": "Реплика: персонаж, ремарка и речь",
+    "doc": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "sceneHeading",
+          "attrs": {
+            "alt": "",
+            "day": "",
+            "color": null,
+            "tags": [],
+            "uid": "s1"
+          }
+        },
+        {
+          "type": "character",
+          "content": [
+            {
+              "type": "text",
+              "text": "ВЕРА"
+            }
+          ]
+        },
+        {
+          "type": "parenthetical",
+          "content": [
+            {
+              "type": "text",
+              "text": "(тихо)"
+            }
+          ]
+        },
+        {
+          "type": "dialogue",
+          "content": [
+            {
+              "type": "text",
+              "text": "Не надо."
+            }
+          ]
+        }
+      ]
+    },
+    "words": 4
+  },
+  {
+    "name": "Акты и группы сцен не считаются",
+    "doc": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "act",
+          "content": [
+            {
+              "type": "text",
+              "text": "Акт первый"
+            }
+          ]
+        },
+        {
+          "type": "sequence",
+          "content": [
+            {
+              "type": "text",
+              "text": "Озеро"
+            }
+          ]
+        },
+        {
+          "type": "sceneHeading",
+          "attrs": {
+            "alt": "",
+            "day": "",
+            "color": null,
+            "tags": [],
+            "uid": "s1"
+          }
+        },
+        {
+          "type": "action",
+          "content": [
+            {
+              "type": "text",
+              "text": "Тишина."
+            }
+          ]
+        }
+      ]
+    },
+    "words": 1
+  },
+  {
+    "name": "Прочие типы абзацев считаются",
+    "doc": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "sceneHeading",
+          "attrs": {
+            "alt": "",
+            "day": "",
+            "color": null,
+            "tags": [],
+            "uid": "s1"
+          }
+        },
+        {
+          "type": "sceneCharacters",
+          "content": [
+            {
+              "type": "text",
+              "text": "Вера"
+            }
+          ]
+        },
+        {
+          "type": "lyrics",
+          "content": [
+            {
+              "type": "text",
+              "text": "песня"
+            }
+          ]
+        },
+        {
+          "type": "shot",
+          "content": [
+            {
+              "type": "text",
+              "text": "КРУПНО"
+            }
+          ]
+        },
+        {
+          "type": "transition",
+          "content": [
+            {
+              "type": "text",
+              "text": "СКЛЕЙКА:"
+            }
+          ]
+        },
+        {
+          "type": "unformatted",
+          "content": [
+            {
+              "type": "text",
+              "text": "текст"
+            }
+          ]
+        }
+      ]
+    },
+    "words": 5
+  },
+  {
+    "name": "Несколько пробелов и неразрывный пробел",
+    "doc": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "sceneHeading",
+          "attrs": {
+            "alt": "",
+            "day": "",
+            "color": null,
+            "tags": [],
+            "uid": "s1"
+          }
+        },
+        {
+          "type": "action",
+          "content": [
+            {
+              "type": "text",
+              "text": "  Вера  идёт   к воде "
+            }
+          ]
+        }
+      ]
+    },
+    "words": 4
+  },
+  {
+    "name": "Слово, разрезанное метками, остаётся одним",
+    "doc": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "sceneHeading",
+          "attrs": {
+            "alt": "",
+            "day": "",
+            "color": null,
+            "tags": [],
+            "uid": "s1"
+          }
+        },
+        {
+          "type": "action",
+          "content": [
+            {
+              "type": "text",
+              "text": "Ве",
+              "marks": [
+                {
+                  "type": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "ра идёт"
+            }
+          ]
+        }
+      ]
+    },
+    "words": 2
+  },
+  {
+    "name": "Знаки без букв и цифр не слова",
+    "doc": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "sceneHeading",
+          "attrs": {
+            "alt": "",
+            "day": "",
+            "color": null,
+            "tags": [],
+            "uid": "s1"
+          }
+        },
+        {
+          "type": "action",
+          "content": [
+            {
+              "type": "text",
+              "text": "— … «» Да ..."
+            }
+          ]
+        }
+      ]
+    },
+    "words": 1
+  },
+  {
+    "name": "Латиница с апострофом и дефисами",
+    "doc": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "sceneHeading",
+          "attrs": {
+            "alt": "",
+            "day": "",
+            "color": null,
+            "tags": [],
+            "uid": "s1"
+          }
+        },
+        {
+          "type": "action",
+          "content": [
+            {
+              "type": "text",
+              "text": "O'Neil rock-n-roll"
+            }
+          ]
+        }
+      ]
+    },
+    "words": 2
+  },
+  {
+    "name": "Разрыв страницы без текста",
+    "doc": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "sceneHeading",
+          "attrs": {
+            "alt": "",
+            "day": "",
+            "color": null,
+            "tags": [],
+            "uid": "s1"
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "НАТ. ОЗЕРО"
+            }
+          ]
+        },
+        {
+          "type": "pageBreak"
+        },
+        {
+          "type": "action",
+          "content": [
+            {
+              "type": "text",
+              "text": "Вода."
+            }
+          ]
+        }
+      ]
+    },
+    "words": 3
+  }
+]

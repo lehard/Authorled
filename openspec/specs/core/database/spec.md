@@ -93,7 +93,7 @@
 #### Scenario: Состав полей user_settings
 - GIVEN все миграции применены
 - WHEN перечисляются колонки `authorled.user_settings`
-- THEN MUST присутствовать ровно `user_id`, `theme`, `coauthor_mode`, `updated_at`
+- THEN MUST присутствовать ровно `user_id`, `theme`, `coauthor_mode`, `daily_word_goal`, `updated_at`
 
 ### Requirement: Тесты хранения на чистой базе
 Тесты хранения данных продукта MUST выполняться на настоящем PostgreSQL без моков базы. Команда `./scripts/dev.sh test` MUST создавать под загрузочным пользователем чистую базу `ai_test` в `agentos-db`, готовить её тем же шагом инициализации, что и основную, применять миграции под ролью `agentos` и запускать pytest под ролью `agentos`. Основная база `ai` при этом MUST NOT меняться. Если база `ai_test` уже существует, команда MUST пересоздать её до тестов.
@@ -114,6 +114,7 @@
 - `user_id` — `uuid`, первичный ключ, ссылка на `users.id`;
 - `theme` — `light`, `sepia`, `dark` или пусто («как в системе»), другое база отклоняет;
 - `coauthor_mode` — обязательный режим соавтора `ask` или `auto`, по умолчанию `ask`; другое и пусто база отклоняет;
+- `daily_word_goal` — дневная цель по словам, целое от 1 до 1 000 000 или пусто («цели нет»); другое база отклоняет;
 - `updated_at` — обязательное время с часовым поясом, по умолчанию время вставки.
 Следующие настройки MUST добавляться колонками миграциями, не полем произвольной структуры.
 
@@ -142,6 +143,16 @@
 - WHEN применяется миграция
 - THEN у каждой строки `coauthor_mode` MUST быть `ask`
 
+#### Scenario: Неверная дневная цель
+- GIVEN запись пользователя и его строка `user_settings`
+- WHEN в `daily_word_goal` записывается 0 или -5
+- THEN база MUST отклонить запись
+
+#### Scenario: Дневная цель существующих пользователей
+- GIVEN строки `user_settings` созданы до миграции дневной цели
+- WHEN применяется миграция
+- THEN у каждой строки `daily_word_goal` MUST быть пусто
+
 ### Requirement: Запись пользователя по входу
 Ядро MUST предоставлять операцию «получить или создать пользователя» по `sub`, почте и имени из токена. Если записи нет, MUST в одной транзакции создаваться запись `users` и строка `user_settings` с пустой темой; одновременные первые вызовы одного `sub` MUST NOT создавать двух записей. Если запись удалена мягко, операция MUST завершаться явной ошибкой и MUST NOT менять запись.
 
@@ -164,7 +175,7 @@
 - THEN `email` записи MUST стать `new@example.com`, а `id` MUST остаться прежним
 
 ### Requirement: Таблица историй
-Схема `authorled` MUST содержать таблицу `projects`, одну запись на историю: `id` (`uuid`, создаёт база), `owner_id` (ссылка на `users.id`, удаление пользователя с историями запрещено), непустой `title`, `description` (текст, по умолчанию пустой), `format` (только `feature`), `created_at`, `updated_at`, `deleted_at`.
+Схема `authorled` MUST содержать таблицу `projects`, одну запись на историю: `id` (`uuid`, создаёт база), `owner_id` (ссылка на `users.id`, удаление пользователя с историями запрещено), непустой `title`, `description` (текст, по умолчанию пустой), `format` (только `feature`), `word_goal` (цель истории по словам, целое от 1 до 1 000 000 или пусто), `goal_deadline` (дата срока или пусто; заполнена только вместе с `word_goal`), `created_at`, `updated_at`, `deleted_at`.
 
 #### Scenario: Неизвестный формат
 - GIVEN все миграции применены
@@ -174,7 +185,16 @@
 #### Scenario: Состав полей projects
 - GIVEN все миграции применены
 - WHEN перечисляются колонки `authorled.projects`
-- THEN MUST присутствовать ровно `id`, `owner_id`, `title`, `description`, `format`, `created_at`, `updated_at`, `deleted_at`
+- THEN MUST присутствовать ровно `id`, `owner_id`, `title`, `description`, `format`, `word_goal`, `goal_deadline`, `created_at`, `updated_at`, `deleted_at`
+
+#### Scenario: Срок без цели
+- GIVEN история без `word_goal`
+- WHEN в `goal_deadline` записывается дата
+- THEN база MUST отклонить запись
+
+#### Scenario: Неверная цель истории
+- WHEN в `word_goal` истории записывается 0
+- THEN база MUST отклонить запись
 
 ### Requirement: Таблица документов
 Схема `authorled` MUST содержать таблицу `documents`: `id`, `project_id` (ссылка на `projects.id`, удаляется вместе с историей), `draft_id` (обязательная ссылка на драфт той же истории, удаляется вместе с драфтом), `kind` (`script`, `character`, `location`, `world`), непустой `name`, `role` (`main`, `secondary`, `episodic` или пусто; заполнена только у `character` и `location`), `summary`, `position` (не меньше 0), `fields` (JSON-объект), `revision` (не меньше 1), `updated_by` (ссылка на `users.id`), `created_at`, `updated_at`, `deleted_at`. У драфта MUST быть не больше одного документа `script`.
@@ -380,3 +400,31 @@
 - GIVEN у пользователя есть строки `coauthor_feedback`
 - WHEN его запись `users` удаляется
 - THEN база MUST отклонить удаление
+
+### Requirement: Таблица учёта письма
+Схема `authorled` MUST содержать таблицу `writing_progress` — прирост слов по отрезкам 15 минут:
+- `user_id` — ссылка на `users.id`, удаление пользователя с записями запрещено;
+- `project_id` — ссылка на `projects.id`, удаляется с историей;
+- `period_start` — время с поясом, кратное 15 минутам UTC;
+- `words` — прирост, целое, может быть ≤ 0.
+
+Первичный ключ — `user_id`, `project_id`, `period_start`. Текста произведения в таблице MUST NOT быть.
+
+#### Scenario: Состав полей writing_progress
+- GIVEN все миграции применены
+- WHEN перечисляются колонки `authorled.writing_progress`
+- THEN MUST присутствовать ровно `user_id`, `project_id`, `period_start`, `words`
+
+#### Scenario: Отрезок не на границе
+- WHEN вставляется строка с `period_start` 10:07 UTC
+- THEN база MUST отклонить запись
+
+#### Scenario: Вторая строка того же отрезка
+- GIVEN есть строка пользователя по истории с `period_start` 10:15 UTC
+- WHEN вставляется ещё одна строка с той же тройкой ключа
+- THEN база MUST отклонить вставку
+
+#### Scenario: История удалена навсегда
+- GIVEN у истории есть строки `writing_progress`
+- WHEN история удаляется из `projects`
+- THEN её строки `writing_progress` MUST NOT остаться
