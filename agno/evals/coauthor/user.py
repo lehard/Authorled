@@ -36,7 +36,7 @@ class EvalUser:
 
 
 # The quality measurement (openspec/specs/coauthor-eval) and the measurement of actions
-# (openspec/changes/coauthor-tool-contracts, design, decision 5): separate accounts, so the actions applied by one
+# (openspec/specs/coauthor-actions-eval): separate accounts, so the actions applied by one
 # never reach the stories of the other.
 QUALITY = EvalUser(
     "coauthor-eval",
