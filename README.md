@@ -305,7 +305,7 @@ A published GitHub release from `main` goes to the server by itself
 tag with `./scripts/validate.sh`, builds the frontend and the product site (`site/`), sends both to the
 server and runs `deploy/deploy.sh`: database copy, code of the tag, `up -d --build`, the new frontend and
 site, Caddy reload. Then it checks the public `/os/health`, that `/os/agents` refuses a request without a
-token, and the site with `deploy/check_site.sh` (the home page, the policy, a 404 and an empty beta request
+token, and the site with `deploy/check_site.sh` (the home page, the policies, the offer, the pricing, a 404 and an empty beta request
 that the API refuses), and the admin interface with `deploy/check_admin.sh` (`admin.soavtor.app` refuses a
 connection without the owner's client certificate, `/if/admin/` on `auth.soavtor.app` and default flows of
 Authentik answer 404). The release stops before any change if `/etc/authorled/admin-client-ca.pem` is missing or
@@ -451,8 +451,11 @@ The dev server opens the design-system showcase at http://127.0.0.1:5173.
 
 ### Product site
 
-The public site of the product lives in [site/](site/): the main page, the policy for personal data and the request
-for the closed beta. It is prerendered to static HTML and takes the tokens and fonts of `web/`, so install both:
+The public site of the product lives in [site/](site/): the main page, the policy for personal data of the request
+for the closed beta, and the documents of the service: the offer (`/legal/offer/`), the policy for personal data of the
+service (`/legal/privacy/`) and the pricing (`/pricing/`). The text of each document is its file in
+[docs/legal/](docs/legal/), rendered at build time; the build refuses a document with a placeholder in square brackets,
+the mark «ЧЕРНОВИК» or no date of the edition. It is prerendered to static HTML and takes the tokens and fonts of `web/`, so install both:
 
 ```sh
 npm ci --prefix web

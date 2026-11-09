@@ -1,7 +1,13 @@
 import type { ReactNode } from "react";
 
-import { APP_URL, PAGES } from "../site";
+import { APP_URL, PAGES, type PageKey } from "../site";
 import { buttonClass } from "./ui";
+
+const FOOTER_DOCUMENTS: [PageKey, string][] = [
+  ["pricing", "Тарифы"],
+  ["legalOffer", "Публичная оферта"],
+  ["legalPrivacy", "Политика обработки персональных данных"],
+];
 
 function BrandMark() {
   return (
@@ -51,14 +57,18 @@ export function Layout({ children }: { children: ReactNode }) {
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 border-t border-border pt-8 body-6 text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>Соавтор, закрытая бета, 2026</p>
           <ul className="flex flex-wrap gap-x-6 gap-y-2">
-            <li>
-              <a
-                className="hover:text-foreground hover:underline"
-                href={PAGES.privacy.path}
-              >
-                Политика обработки персональных данных
-              </a>
-            </li>
+            {/* The documents of the service (openspec/specs/web/site, «Документы в подвале»); the policy of
+                the beta request is linked only from the consent of the form. */}
+            {FOOTER_DOCUMENTS.map(([key, label]) => (
+              <li key={key}>
+                <a
+                  className="hover:text-foreground hover:underline"
+                  href={PAGES[key].path}
+                >
+                  {label}
+                </a>
+              </li>
+            ))}
             <li>
               <a
                 className="hover:text-foreground hover:underline"

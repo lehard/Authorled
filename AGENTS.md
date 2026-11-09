@@ -16,8 +16,8 @@ generic manager behavior belongs in Agno. `CLAUDE.md` links to this file.
   MCP mount at the root (see `openspec/context/ADR/ADR-002-own-routes-via-base-app.md`). Do not pass
   `base_app`: with it Agno drops its error handlers for its own routes. Every other API surface stays
   with Agno; today the own routes are `/api/v1/me`, the story routes (stories, documents, texts,
-  drafts, notes, comments, suggestions, saves, files, import, search) and the marks of the co-author's answers
-  (`/api/v1/coauthor-feedback`).
+  drafts, notes, comments, suggestions, saves, files, import, search), the writing statistics of a draft
+  (`/api/v1/drafts/{id}/writing`) and the marks of the co-author's answers (`/api/v1/coauthor-feedback`).
 - Check framework behavior against the Agno version pinned in `agno/pyproject.toml`.
   Do not bypass framework rejections or add compatibility adapters to this template.
 - Keep the starter lean. Add abstractions, tests and infrastructure only for a concrete
@@ -98,7 +98,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 
 - `agno/app/main.py`: AgentOS registration, shared database, OS Manager, Company and queue.
 - `agno/app/api/`: own product routes (`me.py`; `stories.py`, `notes.py`, `review.py`, `saves.py`, `files.py`, `search.py` for stories;
-  `feedback.py` for the marks «Полезно» and «Не то» of the co-author's answers) and their
+  `writing.py` for the writing statistics of a draft; `feedback.py` for the marks «Полезно» and «Не то» of the
+  co-author's answers) and their
   `application/problem+json` errors, handled only for the product's own exception types (`Problem`, `core/errors.py`).
   `body.py`: JSON body, `If-Match`, the caller and the project access check every story route does first.
 - `agno/app/auth/` and `auth/`: the auth module. `agno/app/auth/` is the only code that reads JWT
@@ -128,13 +129,15 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   registered team (the routing exam builds its teams in `agno/evals/routing/` and does not register them).
 - `agno/db/`: cached OS database and distinct knowledge content adapters.
 - `agno/core/`: the product core, independent of Agno: `connection.py` (database URL from `DB_*`),
-  `tables.py` (tables of schema `authorled`: users and settings, stories, drafts, documents, texts, notes, snapshots and points, review, files and
-  requests for the beta),
+  `tables.py` (tables of schema `authorled`: users and settings, stories, drafts, documents, texts, notes, snapshots and points, review, files,
+  requests for the beta and the journal of written words),
   `engine.py` (the core's own connection pool), `users.py` (account operations), `projects.py`, `drafts.py`,
   `documents.py`, `fields.py`, `texts.py`, `notes.py`, `snapshots.py`, `saves.py`, `review.py`, `files.py`, `search.py`, `imports.py` and
   `importers/` (stories, their equal drafts and the documents of a draft, the editor text with revisions, notes of a story, snapshots
   of a document and points of a draft, comments and suggestions, uploads, search of a draft and its story, manuscript import), `clamav.py` (antivirus
-  client), `errors.py` (refusals the routes answer with) and `feedback.py` (the author's marks of the co-author's
+  client), `errors.py` (refusals the routes answer with), `writing.py` (words of the screenplay by one rule shared with
+  `web/src/editor/wordCount.cases.json`, the words the author's saves add by period of 15 minutes, days in the reader's
+  time zone, the daily goal and the goal of a story) and `feedback.py` (the author's marks of the co-author's
   answers by run, the report of the marks; the route gives it the conversation of the run from billing). The core
   never calls billing. `agno/migrations/` and
   `agno/alembic.ini`: Alembic for schema `authorled` only, forward-only, one head; never migrate Agno or Authentik
@@ -169,7 +172,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   `VITE_DATA_SOURCE`. `web/src/editor/`: the screenplay editor; it exports only, the core imports manuscripts;
   `anchors.ts` places co-author suggestions by scene `uid` and quote.
 - `site/`: the product site (openspec/specs/web/site): static pages prerendered to HTML (`scripts/prerender.mjs`,
-  checked by `scripts/check-build.mjs`), no server and no data of its own. It imports the tokens and fonts of
+  checked by `scripts/check-build.mjs`), no server and no data of its own. The documents of the service (offer,
+  policy, pricing on `/legal/offer/`, `/legal/privacy/`, `/pricing/`) are rendered from `docs/legal/*.md`. It imports the tokens and fonts of
   `web/src/design-system` (so its build needs `web/node_modules`) and takes `SITE_ORIGIN` and `SITE_APP_URL` from
   `.env`. Its beta request form posts to `/os/api/v1/beta-requests` on its own origin: the route `app/api/beta.py`,
   the only product route without a token (`PUBLIC_ROUTES` in `app/auth/authorization.py`), stores requests in the

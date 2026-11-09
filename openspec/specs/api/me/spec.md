@@ -11,14 +11,15 @@
 - `email`;
 - `display_name`;
 - `settings.theme` — `light`, `sepia`, `dark` или `null` («как в системе»);
-- `settings.coauthor_mode` — режим соавтора: `ask` («Спрашивать») или `auto` («Сам»); у нового пользователя `ask`.
+- `settings.coauthor_mode` — режим соавтора: `ask` («Спрашивать») или `auto` («Сам»); у нового пользователя `ask`;
+- `settings.daily_word_goal` — дневная цель по словам или `null` («цели нет»); у нового пользователя `null`.
 
 Повторные вызовы MUST NOT создавать новых записей и подписок.
 
 #### Scenario: Первый вызов нового пользователя
 - GIVEN в `authorled.users` нет записи с `auth_subject` = `sub` токена
 - WHEN пользователь с почтой `anna@example.com` и именем «Анна Петрова» в токене вызывает `GET /api/v1/me`
-- THEN ответ MUST быть `200` с `email` = `anna@example.com`, `display_name` = «Анна Петрова», `settings.theme` = `null` и `settings.coauthor_mode` = `ask`
+- THEN ответ MUST быть `200` с `email` = `anna@example.com`, `display_name` = «Анна Петрова», `settings.theme` = `null`, `settings.coauthor_mode` = `ask` и `settings.daily_word_goal` = `null`
 - AND в `authorled.users` и `authorled.user_settings` MUST появиться ровно по одной строке этого пользователя
 - AND в `billing.subscriptions` MUST появиться одна действующая подписка `beta` с периодом в месяц от `users.created_at`
 
@@ -34,7 +35,7 @@
 - THEN ответ MUST быть `200`, а в `billing.subscriptions` MUST появиться одна действующая подписка `beta` с периодом от `users.created_at`
 
 ### Requirement: PATCH /api/v1/me
-Система MUST предоставлять маршрут `PATCH /api/v1/me` с необязательными полями `display_name`, `theme` и `coauthor_mode`. Переданные поля MUST сохраняться, остальные MUST NOT меняться. Ответ `200` MUST иметь ту же форму, что `GET /api/v1/me`, с новыми значениями; изменение MUST обновлять `updated_at` изменённой записи. `PATCH` до первого `GET /api/v1/me` MUST получать `404`.
+Система MUST предоставлять маршрут `PATCH /api/v1/me` с необязательными полями `display_name`, `theme`, `coauthor_mode` и `daily_word_goal`. Переданные поля MUST сохраняться, остальные MUST NOT меняться. Ответ `200` MUST иметь ту же форму, что `GET /api/v1/me`, с новыми значениями; изменение MUST обновлять `updated_at` изменённой записи. `PATCH` до первого `GET /api/v1/me` MUST получать `404`.
 
 #### Scenario: Смена имени
 - GIVEN пользователь с именем «Анна Петрова»
@@ -58,8 +59,18 @@
 - THEN ответ MUST содержать `settings.coauthor_mode` = `auto`, а `settings.theme` MUST остаться прежней
 - AND чат MUST со следующего сообщения подтверждать меняющие действия соавтора сам, без карточки
 
+#### Scenario: Дневная цель
+- GIVEN у пользователя `settings.daily_word_goal` = `null`
+- WHEN он отправляет `PATCH /api/v1/me` с `daily_word_goal` = 500
+- THEN ответ MUST содержать `settings.daily_word_goal` = 500, а `settings.theme` и `settings.coauthor_mode` MUST остаться прежними
+
+#### Scenario: Снять дневную цель
+- GIVEN у пользователя `settings.daily_word_goal` = 500
+- WHEN он отправляет `PATCH /api/v1/me` с `daily_word_goal` = `null`
+- THEN ответ MUST содержать `settings.daily_word_goal` = `null`
+
 ### Requirement: Значения PATCH /api/v1/me
-Тело `PATCH /api/v1/me` MUST содержать хотя бы одно поле и MUST NOT содержать других полей. `display_name` после обрезки пробелов MUST быть непустым. `theme` MUST быть `light`, `sepia`, `dark` или `null` («как в системе»). `coauthor_mode` MUST быть `ask` или `auto`; `null` MUST NOT приниматься. Нарушение MUST давать `422` с `detail`, называющим поле, и MUST NOT менять данные.
+Тело `PATCH /api/v1/me` MUST содержать хотя бы одно поле и MUST NOT содержать других полей. `display_name` после обрезки пробелов MUST быть непустым. `theme` MUST быть `light`, `sepia`, `dark` или `null` («как в системе»). `coauthor_mode` MUST быть `ask` или `auto`; `null` MUST NOT приниматься. `daily_word_goal` MUST быть целым от 1 до 1 000 000 или `null` («цели нет»); строка, дробное число и логическое значение MUST NOT приниматься. Нарушение MUST давать `422` с `detail`, называющим поле, и MUST NOT менять данные.
 
 #### Scenario: Пустое тело
 - GIVEN пользователь вызвал `GET /api/v1/me`
@@ -75,6 +86,11 @@
 - GIVEN пользователь вызвал `GET /api/v1/me`
 - WHEN он отправляет `PATCH /api/v1/me` с `coauthor_mode` = `always` или `null`
 - THEN система MUST вернуть `422` с `detail`, называющим `coauthor_mode`, и режим MUST NOT измениться
+
+#### Scenario: Неверная дневная цель
+- GIVEN пользователь вызвал `GET /api/v1/me`
+- WHEN он отправляет `PATCH /api/v1/me` с `daily_word_goal` = 0, `"500"` или 12.5
+- THEN система MUST вернуть `422` с `detail`, называющим `daily_word_goal`, и цель MUST NOT измениться
 
 ### Requirement: Ошибки /api/v1/me
 Ошибки, которые формируют маршруты `/api/v1/me`, MUST возвращаться в формате `application/problem+json` (RFC 9457) с понятным `detail`. Отказ `401` (нет токена или он недействителен) возвращает проверка токена AgentOS в своём формате до маршрута.

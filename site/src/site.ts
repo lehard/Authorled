@@ -25,9 +25,33 @@ export const PAGES = {
   privacy: {
     path: "/privacy/",
     file: "privacy/index.html",
-    title: "Политика обработки персональных данных — Соавтор",
+    title: "Политика обработки данных заявки в бету — Соавтор",
     description:
       "Какие данные собирает заявка в бету Соавтора, зачем, где они хранятся и как отозвать согласие.",
+    index: true,
+  },
+  legalOffer: {
+    path: "/legal/offer/",
+    file: "legal/offer/index.html",
+    title: "Публичная оферта — Соавтор",
+    description:
+      "Условия, на которых Соавтор предоставляет доступ к сервису: тарифы, оплата, возврат, права на тексты и ИИ.",
+    index: true,
+  },
+  legalPrivacy: {
+    path: "/legal/privacy/",
+    file: "legal/privacy/index.html",
+    title: "Политика обработки персональных данных — Соавтор",
+    description:
+      "Какие персональные данные обрабатывает сервис Соавтор, зачем, кому передаёт, где хранит и как их удалить.",
+    index: true,
+  },
+  pricing: {
+    path: "/pricing/",
+    file: "pricing/index.html",
+    title: "Тарифы — Соавтор",
+    description:
+      "Тарифы Соавтора: бесплатный редактор и подписка с ИИ-соавтором, порядок оплаты и возврата.",
     index: true,
   },
   notFound: {
@@ -44,8 +68,9 @@ export type PageKey = keyof typeof PAGES;
 /** The page for a path of the browser; anything unknown is the 404 page. */
 export function pageForPath(pathname: string): PageKey {
   const path = pathname.endsWith("/") ? pathname : `${pathname}/`;
-  if (path === "/") return "home";
-  if (path === PAGES.privacy.path) return "privacy";
+  for (const key of Object.keys(PAGES) as PageKey[]) {
+    if (key !== "notFound" && PAGES[key].path === path) return key;
+  }
   return "notFound";
 }
 
