@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { appConfig } from "@/app/config";
+import { NO_TRAINING } from "@/app/legal";
 import { InkLoader } from "@/design-system";
 
 import { CodeInput } from "./CodeInput";
@@ -465,7 +466,7 @@ export function LoginScreen() {
           )}
         </div>
         <p className="mx-1 mt-4 text-center text-xs text-muted-foreground">
-          Ваши тексты не используются для обучения моделей.
+          {NO_TRAINING}
         </p>
         {/* The way to the product site after signing out (openspec/specs/web/workspace). */}
         <p className="mx-1 mt-2 text-center text-xs">

@@ -172,7 +172,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   `VITE_DATA_SOURCE`. `web/src/editor/`: the screenplay editor; it exports only, the core imports manuscripts;
   `anchors.ts` places co-author suggestions by scene `uid` and quote.
 - `site/`: the product site (openspec/specs/web/site): static pages prerendered to HTML (`scripts/prerender.mjs`,
-  checked by `scripts/check-build.mjs`), no server and no data of its own. It imports the tokens and fonts of
+  checked by `scripts/check-build.mjs`), no server and no data of its own. The documents of the service (offer,
+  policy, pricing on `/legal/offer/`, `/legal/privacy/`, `/pricing/`) are rendered from `docs/legal/*.md`. It imports the tokens and fonts of
   `web/src/design-system` (so its build needs `web/node_modules`) and takes `SITE_ORIGIN` and `SITE_APP_URL` from
   `.env`. Its beta request form posts to `/os/api/v1/beta-requests` on its own origin: the route `app/api/beta.py`,
   the only product route without a token (`PUBLIC_ROUTES` in `app/auth/authorization.py`), stores requests in the
