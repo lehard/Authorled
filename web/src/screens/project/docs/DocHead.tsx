@@ -4,8 +4,9 @@ import { SaveStatus } from "@/screens/shared/SaveStatus";
 import type { SaveStatus as Status } from "@/screens/shared/useAutosave";
 
 import { useProjectData } from "../ProjectContext";
+import { headPlace } from "./headPlace";
 
-/** Heading row of a document: title, save status, actions. */
+/** Heading row of a document: title, save status, actions; as tall as the account menu. */
 export function DocHead({
   title,
   status,
@@ -20,7 +21,7 @@ export function DocHead({
   const { openFresh } = useProjectData();
   return (
     <div
-      className={`mx-auto mb-4 flex flex-wrap items-center gap-2.5 ${wide ? "max-w-[1000px]" : "max-w-[900px]"}`}
+      className={`mb-4 flex min-h-9 flex-wrap items-center gap-2.5 ${headPlace(wide)}`}
     >
       <h1 className="min-w-[min(100%,14rem)] flex-1 truncate text-heading-1 font-medium">
         {title}
