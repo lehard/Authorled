@@ -80,7 +80,7 @@ ST-03,нет,,не нужно,Структура фиксирована мето
 ST-04,в коде,web/src/screens/project/docs/SceneBoard.tsx:376; web/src/editor/document.ts:15,must-have,Теги сцены; статусов документов и сцен нет.
 ST-05,в коде,web/src/screens/project/docs/SceneBoard.tsx:350; web/src/editor/document.ts:22,nice-to-have,Цвет сцены на карточке.
 ST-06,в коде,web/src/screens/shelf/ProjectTrashScreen.tsx; web/src/screens/project/docs/BinDoc.tsx; web/src/screens/project/Navigator.tsx:261,nice-to-have,Корзина историй и корзина документов и заметок истории; для сцен нет.
-ST-07,в спеке,openspec/context/02-domain-glossary.md (Д12 включает вид и шаблон формата); openspec/context/_raw/research/Разбор STARC для интеграции/Отчёт.md (Д12),must-have,"Шаблоны формата включаются в Д12, не при создании истории."
+ST-07,в коде,"agno/core/story_templates.toml, agno/core/story_templates.py (каркасы структуры); web/src/screens/shelf/NewStoryDialog.tsx",must-have,"Только каркасы структуры при создании истории (три акта, путешествие героя, 15 опорных точек, эпизод сериала) и раскладка соавтора по каркасу в заметку; шаблонов формата и жанра нет (2026-11-09)."
 ST-08,в коде,web/src/screens/project/docs/DocView.tsx; web/src/screens/project/docs/NotesDoc.tsx; web/src/screens/project/docs/EntityDoc.tsx,must-have,"Сценарий, логлайн, синопсис, поэпизодник, персонажи, локации, миры и свободные заметки в одной истории."
 ST-09,в коде,web/src/screens/project/Navigator.tsx:471,must-have,"Список сцен с актами и группами, переход к сцене."
 ST-10,в коде,web/src/screens/project/docs/TextDoc.tsx; web/src/editor/elements.ts:211,nice-to-have,"Поэпизодник: тот же текст, только заголовки, биты, группы и акты."

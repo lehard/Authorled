@@ -110,6 +110,9 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   containers. `./scripts/check_auth_boundary.sh` (part of `validate.sh`) enforces the boundary
   and that the blueprint groups match `GROUP_SCOPES` (token contract in `openspec/specs/auth`).
 - `agno/app/interfaces.py`: MCP OAuth, `agno` and built-in MCP tools.
+- `agno/app/tracing.py`: the journal of agent runs (openspec/specs/agent-tracing): an own, non-global TracerProvider
+  with Agno's instrumentor sends spans without text to Phoenix (`PHOENIX_URL`, required, checked at startup); Agno's trace
+  tables are not written. A lost batch is logged as an error and the run goes on (owner, 2026-11-09).
 - `agno/app/company.py`: Product and Source declarations. `agno/app/config.yaml`: component
   descriptions, quick prompts and optional additional Products.
 - `agno/app/registry.py`: Studio palette, web tools, shared knowledge, learning and notes.
@@ -184,7 +187,9 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   `soavtor.app` (`deploy/Caddyfile`: static files, of the API only the beta request route; `deploy/check_site.sh`
   checks it); the sign-in screen of `web/` links to it through `SITE_ORIGIN`. Landing skills: `landing-page-design`, `copywriting`, `unslop`; motion — `design-to-motion` (existing frames), `stageshow` (faux UI); Russian copy — `chukovsky`.
 - `compose.yaml`: local PostgreSQL, the LiteLLM proxy, the antivirus ClamAV (`clamav`, required by the API through
-  `CLAMAV_HOST` and `CLAMAV_PORT`) and development API. The API connects
+  `CLAMAV_HOST` and `CLAMAV_PORT`), Phoenix, the journal of agent runs (`phoenix` on `127.0.0.1:6006`, schema `phoenix`
+  under its own role prepared by `phoenix-db-init` from `agno/phoenix/init.sql` with `PHOENIX_DB_PASSWORD`; the API waits
+  for it, in production it is reached only through an SSH tunnel) and development API. The API connects
   as the non-superuser role `agentos` (`AGENTOS_DB_PASSWORD`), prepared by `agentos-db-init`
   from `agno/db/init.sql` (schemas `ai`, `authorled` and `billing`); the one-shot `agentos-migrate` then
   applies the core migrations and then those of billing, and the API starts only after it succeeds. `agno/litellm/config.yaml`:
@@ -193,13 +198,13 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 ## Local development
 
 Run commands from the repository root. Copy `example.env` to `.env` only if absent,
-fill its Required block (LiteLLM, DeepSeek, GigaChat and Cloud.ru keys, `EMBEDDINGS_MODEL`, `AGENTOS_DB_PASSWORD`, and the Authentik and `AUTH_*`
+fill its Required block (LiteLLM, DeepSeek, GigaChat and Cloud.ru keys, `EMBEDDINGS_MODEL`, `AGENTOS_DB_PASSWORD`, `PHOENIX_DB_PASSWORD`, and the Authentik and `AUTH_*`
 settings), check that the committed
 `agno/litellm/certs/ca-bundle.pem` exists (rebuild: `./agno/scripts/build_ca_bundle.sh`), then use `docker compose up -d --build`. Compose exposes ports
 on loopback; token checks are on in `dev` too, so API calls need a token from Authentik
 (README, "Module auth"; `./scripts/auth_check.sh` checks the chain).
 
-To run the API on the host with `--reload`, use `./scripts/dev.sh api` (Postgres, LiteLLM and
+To run the API on the host with `--reload`, use `./scripts/dev.sh api` (Postgres, LiteLLM, ClamAV, Phoenix and
 Authentik in Docker; it migrates the schemas of the core and billing and exports the Authentik keys before the API
 starts). `./scripts/dev.sh migrate` applies the migrations of the core and billing; `./scripts/dev.sh test` runs the core tests on a
 fresh database `ai_test`, never on `ai`. New migration: `alembic revision --rev-id <NNNN>_<what> -m "..."` from `agno/`,
@@ -347,7 +352,8 @@ owner 2026-11-08, `business-intents/coauthor-tool-contracts.md`).
   Uses the application's `.env`, database and workspace; sessions and results persist
   for the AgentOS UI. The CLI requires `RUNTIME_ENV` (`dev` or `prd`, no default) and does not
   start the API or scheduler. Even `--help` and `--list` require PostgreSQL because the
-  application initializes knowledge storage on import.
+  application initializes knowledge storage on import, and a running Phoenix with `PHOENIX_URL` because it sets up the
+  journal of agent runs on import (the same for `python -m evals.coauthor`).
 - `python -m evals --tag coauthor`: runs the co-author case as the verified development user `writer`
   (`agno/evals/caller.py` over `dev_writer_caller` of the auth module); on the host only, after
   `./scripts/dev.sh auth-users` with `AUTH_DEV_WRITER_TOKEN`. It spends the limit of `writer`.
@@ -356,7 +362,7 @@ owner 2026-11-08, `business-intents/coauthor-tool-contracts.md`).
 - `python -m evals.routing --domains base|wide --split work|holdout --variant team|team-route|skills --model <alias>`
   (from `agno/`; `.env` gives it `LITELLM_URL=http://127.0.0.1:4000`): the routing exam of the orchestrator on
   domain stubs; spends model calls, needs the LiteLLM proxy but no database, writes its report to `tmp/routing/` (`agno/evals/routing/README.md`).
-- `python -m evals.coauthor setup` (once) and `python -m evals.coauthor run --set wide | --set demo --part work|holdout|checks`
+- `python -m evals.coauthor setup` (once) and `python -m evals.coauthor run --set wide | --set demo --part work|holdout|checks|docs`
   `--all | --sample N [--repeat K]` (from `agno/`, with the `DB_*` of `./scripts/dev.sh api`): the real co-author answers
   the sample of the routing exam's wide set or the own demo cases on demo stories of its own user, changes only
   proposed and rejected, judged by `claude-sonnet`; spends model calls, writes its report to `tmp/coauthor-eval/`.
@@ -372,6 +378,9 @@ owner 2026-11-08, `business-intents/coauthor-tool-contracts.md`).
   `--prompt` spends model calls. Set `MCP_CHECK_HOST=1` for the host API.
 - Verify direct engineer execution, HTTP execution, team delegation and Company Task
   acceptance/completion separately. API startup does not establish these capabilities.
+
+- The journal of agent runs: open Phoenix at `http://127.0.0.1:6006` (on the server through
+  `ssh -L 6006:127.0.0.1:6006 authorled`); a run is one trace with the agent run as its root, without texts.
 
 Record checks and limits in `tmp/VERIFY.md`, separating static, deterministic, model,
 container and hosted results. Do not infer deployed readiness from local checks.

@@ -27,7 +27,8 @@ export type FixtureThread = Omit<CommentThread, "own" | "replies"> & {
 
 export const FIXTURES = demo as unknown as {
   projects: Omit<Project, "draftsCount" | "openDraftId">[];
-  scripts: Script[];
+  // The sample has no core: a script's document id is given when the store is filled.
+  scripts: Omit<Script, "documentId">[];
   characters: Character[];
   locations: Location[];
   worlds: World[];

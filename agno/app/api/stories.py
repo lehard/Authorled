@@ -21,14 +21,25 @@ from app.api.body import (
     require_project,
 )
 from app.api.problems import Problem
-from app.api.schemas import CreatedProject, DocumentOut, DraftOut, ListedProjectOut, ProjectOut, TextOut
+from app.api.schemas import (
+    CreatedProject,
+    DocumentOut,
+    DraftOut,
+    ListedProjectOut,
+    ProjectOut,
+    StoryTemplateOut,
+    TextOut,
+)
 from app.auth import Principal, current_principal
 from core import documents as docs
-from core import drafts, imports, texts, writing
+from core import drafts, imports, story_templates, texts, writing
 from core import projects as stories
 from core.engine import get_engine
 
 router = APIRouter(prefix="/api/v1", tags=["Stories"])
+
+# A broken templates file stops the API at startup (openspec/specs/api/stories, «Каркасы историй»).
+story_templates.templates()
 
 
 def _etag(response: Response, revision: int) -> None:
@@ -68,14 +79,16 @@ def list_projects(trash: bool = False, principal: Principal = Depends(current_pr
 
 
 def _create_project(principal: Principal, body: dict[str, Any]) -> CreatedProject:
-    unknown = set(body) - {"title", "description"}
+    unknown = set(body) - {"title", "description", "template"}
     if unknown:
         name = sorted(unknown)[0]
         raise Problem(422, "Unprocessable Content", f"Поле «{name}» нельзя задать при создании.")
+    # Without a template the core writes one empty scene heading; with it, the text of the template.
+    text = story_templates.screenplay(body["template"]) if "template" in body else None
     with get_engine().begin() as connection:
         owner = caller_id(connection, principal)
         project, draft_id, script_id = stories.create_project(
-            connection, owner, body.get("title"), body.get("description", "")
+            connection, owner, body.get("title"), body.get("description", ""), text
         )
     return CreatedProject(project=ProjectOut.model_validate(project), draft_id=draft_id, script_id=script_id)
 
@@ -100,7 +113,14 @@ def _create_project_from_file(principal: Principal, title: str | None, name: str
                     "schema": {
                         "type": "object",
                         "required": ["title"],
-                        "properties": {"title": {"type": "string"}, "description": {"type": "string"}},
+                        "properties": {
+                            "title": {"type": "string"},
+                            "description": {"type": "string"},
+                            "template": {
+                                "type": "string",
+                                "description": "id of a structure template from GET /api/v1/story-templates",
+                            },
+                        },
                     }
                 },
                 "multipart/form-data": {
@@ -116,10 +136,22 @@ def _create_project_from_file(principal: Principal, title: str | None, name: str
 )
 async def create_project(request: Request, principal: Principal = Depends(current_principal)) -> CreatedProject:
     if is_multipart(request):
-        values, name, data = await read_upload(request, {"title"})
+        # `template` is read only to refuse it by name: a story from a manuscript starts from its text.
+        values, name, data = await read_upload(request, {"title", "template"})
+        if "template" in values:
+            raise Problem(422, "Unprocessable Content", "Поле «template»: история из рукописи создаётся без каркаса.")
         return await run_in_threadpool(_create_project_from_file, principal, values.get("title"), name, data)
     body = await read_object(request)
     return await run_in_threadpool(_create_project, principal, body)
+
+
+@router.get(
+    "/story-templates",
+    response_model=list[StoryTemplateOut],
+    summary="Structure templates of a new story: acts and their points with hints",
+)
+def list_story_templates(principal: Principal = Depends(current_principal)) -> list[StoryTemplateOut]:
+    return [StoryTemplateOut.model_validate(found) for found in story_templates.templates()]
 
 
 def _update_project(project_id: uuid.UUID, body: dict[str, Any]) -> ProjectOut:
@@ -128,7 +160,9 @@ def _update_project(project_id: uuid.UUID, body: dict[str, Any]) -> ProjectOut:
 
 
 @router.patch(
-    "/projects/{project_id}", response_model=ProjectOut, summary="Rename or describe a story, or set its goal in words"
+    "/projects/{project_id}",
+    response_model=ProjectOut,
+    summary="Rename or describe a story, set its goal in words or change the colour of its cover",
 )
 async def update_project(
     project_id: str, request: Request, principal: Principal = Depends(current_principal)

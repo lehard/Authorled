@@ -36,7 +36,7 @@ MAX_CONTINUATIONS = 6
 @dataclass(frozen=True)
 class Snapshot:
     cards: dict[uuid.UUID, tuple[int, Card]]  # documents of the copy: revision and state
-    notes: dict[uuid.UUID, tuple[int, str]]  # notes of the story: revision and title
+    notes: dict[uuid.UUID, tuple[int, str, str]]  # notes of the story: revision, title and text
     comments: int
     suggestions: int
     open_draft: dict[uuid.UUID, tuple[int, str]]  # documents of the open draft: revision and name
@@ -63,7 +63,7 @@ def snapshot(project_id: uuid.UUID, draft_id: uuid.UUID, open_draft_id: uuid.UUI
         screenplay = texts.screenplay_id(connection, draft_id)
         return Snapshot(
             cards,
-            {note.id: (note.revision, note.title) for note in notes.list_notes(connection, project_id)},
+            {note.id: (note.revision, note.title, note.body) for note in notes.list_notes(connection, project_id)},
             len(review.list_threads(connection, screenplay)),
             len(review.list_suggestions(connection, screenplay, None)),
             {document.id: (document.revision, document.name) for document in list_documents(connection, open_draft_id)},
@@ -78,10 +78,11 @@ def diff(before: Snapshot, after: Snapshot) -> Changes:
             for key, (revision, card) in after.cards.items()
             if key in before.cards and before.cards[key][0] != revision
         ),
-        notes_created=tuple(title for key, (_, title) in after.notes.items() if key not in before.notes),
+        notes_created=tuple(title for key, (_, title, _) in after.notes.items() if key not in before.notes),
+        notes_created_text=tuple(body for key, (_, _, body) in after.notes.items() if key not in before.notes),
         notes_updated=tuple(
             before.notes[key][1]
-            for key, (revision, _) in after.notes.items()
+            for key, (revision, _, _) in after.notes.items()
             if key in before.notes and before.notes[key][0] != revision
         ),
         comments=after.comments - before.comments,

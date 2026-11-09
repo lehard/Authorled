@@ -1,7 +1,7 @@
 """Originals of notes: files with purpose `note`, linked from authorled.notes.file_id.
 
-Revision ID: 0014_note_files
-Revises: 0013_writing_goals
+Revision ID: 0015_note_files
+Revises: 0014_story_cover_colors
 Create Date: 2026-11-09
 """
 
@@ -10,8 +10,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0014_note_files"
-down_revision: str | None = "0013_writing_goals"
+revision: str = "0015_note_files"
+down_revision: str | None = "0014_story_cover_colors"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

@@ -18,6 +18,7 @@ class ProjectOut(_Out):
     format: str
     word_goal: int | None
     goal_deadline: date | None
+    cover_color: str
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None
@@ -32,6 +33,23 @@ class CreatedProject(BaseModel):
     project: ProjectOut
     draft_id: uuid.UUID
     script_id: uuid.UUID
+
+
+class TemplatePointOut(_Out):
+    name: str
+    hint: str
+
+
+class TemplateActOut(_Out):
+    name: str
+    points: list[TemplatePointOut]
+
+
+class StoryTemplateOut(_Out):
+    id: str
+    name: str
+    description: str
+    acts: list[TemplateActOut]
 
 
 class DraftOut(_Out):

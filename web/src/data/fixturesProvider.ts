@@ -22,6 +22,7 @@ import type {
   Entity,
   NewDraft,
   NewNote,
+  NewProject,
   NewReply,
   NewThread,
   Point,
@@ -31,6 +32,7 @@ import type {
   VersionReason,
   VersionTarget,
 } from "./model";
+import { nextCoverColor } from "./model";
 import type { SaveOperation } from "./saves";
 import type { SearchOperation } from "./search";
 import type { Writing, WritingOperation } from "./writing";
@@ -63,6 +65,11 @@ const store = {
     ...structuredClone(note),
     file: null,
   })),
+  // No core here: the id of a script's document is its own id (the co-author does not run on the sample).
+  scripts: FIXTURES.scripts.map((s) => ({
+    ...structuredClone(s),
+    documentId: s.id,
+  })),
   versions: [],
   points: [],
 } as unknown as Record<Resource, Row[]>;
@@ -74,6 +81,10 @@ export const FIXTURES_NO_SEARCH =
 
 export const FIXTURES_UNAVAILABLE =
   "Недоступно с данными примера: импорт, файлы в чат и в заметки работают только с источником данных api.";
+
+/** Structure templates live in the core only (design of story-structure-templates, decision 6). */
+export const FIXTURES_NO_TEMPLATES =
+  "Недоступно с данными примера: каркасы историй работают только с источником данных api.";
 
 function table(resource: string): Row[] {
   if (!(RESOURCES as readonly string[]).includes(resource)) {
@@ -126,6 +137,7 @@ function copyDraft(base: string, draftId: string): void {
     ...structuredClone(script),
     id: draftId,
     draftId,
+    documentId: draftId,
     text: stripMarks(script.text, ["comment", "suggestion"]),
   } as unknown as Row);
   for (const resource of CARDS)
@@ -455,6 +467,7 @@ export const fixturesProvider: DataProvider = {
 
   getList: async ({ resource, filters = [], sorters = [], pagination }) => {
     checkPagination(pagination);
+    if (resource === "story-templates") throw new Error(FIXTURES_NO_TEMPLATES);
     let rows = table(resource).filter((row) =>
       filters.every((f) => matches(row, f)),
     );
@@ -478,12 +491,16 @@ export const fixturesProvider: DataProvider = {
     let row: Row;
     if (resource === "projects") {
       // A story comes with its first draft and screenplay, as in the core.
-      const project = variables as Pick<Project, "title" | "desc">;
+      const project = variables as NewProject;
+      if (project.template !== undefined)
+        throw new Error(FIXTURES_NO_TEMPLATES);
       row = {
         id: crypto.randomUUID(),
         title: project.title,
         desc: project.desc,
-        cover: false,
+        coverColor: nextCoverColor(
+          (table("projects").at(-1) as Project | undefined)?.coverColor,
+        ),
         updatedAt: now(),
         deletedAt: null,
         wordGoal: null,
@@ -502,6 +519,7 @@ export const fixturesProvider: DataProvider = {
       const script: Script = {
         id: draftId,
         draftId,
+        documentId: draftId,
         logline: "",
         show: {
           title: true,
@@ -596,7 +614,12 @@ export const fixturesProvider: DataProvider = {
         "suggestion",
       );
     Object.assign(row, variables as object);
-    if (resource === "projects") row.updatedAt = now();
+    // The colour of the cover is not a change of the story: the shelf keeps its place, as in the core.
+    if (
+      resource === "projects" &&
+      Object.keys(variables as object).some((key) => key !== "coverColor")
+    )
+      row.updatedAt = now();
     return { data: await out(resource, row) };
   },
 

@@ -56,6 +56,17 @@ services:
     environment:
       PGPASSWORD: ${DB_PASS:?DB_PASS must be set in .env}
 
+  # The journal of agent runs (openspec/specs/agent-tracing): its role is created under the bootstrap
+  # superuser like the others; Phoenix stays on loopback, reached only through an SSH tunnel
+  # (`ssh -L 6006:127.0.0.1:6006 <server>`); deploy/Caddyfile has no route to it.
+  phoenix-db-init:
+    environment:
+      PGPASSWORD: ${DB_PASS:?DB_PASS must be set in .env}
+
+  phoenix:
+    ports: !override
+      - "127.0.0.1:6006:6006"
+
   # Module auth. The Authentik secrets (AUTHENTIK_SECRET_KEY, AUTHENTIK_DB_PASSWORD,
   # AUTHENTIK_BOOTSTRAP_*, AUTH_*) are required by compose.yaml and have no defaults.
   # Authentik listens on 127.0.0.1:9000 only: publish it on its own domain through a

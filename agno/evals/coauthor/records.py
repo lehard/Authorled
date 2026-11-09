@@ -53,6 +53,8 @@ class Expectation:
     refs: tuple[Ref, ...] = ()
     absent: tuple[Ref, ...] = ()  # what the case asks about and the story does not have
     open: int | None = None  # the scene selected in the open screenplay; None: the story card is open
+    doc: str | None = None  # the open «Логлайн» or «Синопсис» (evals/coauthor/doc_tasks.py), instead of a scene
+    task: str | None = None  # the task of «Соавтор» at that document the case sends
 
 
 @dataclass(frozen=True)

@@ -36,7 +36,7 @@
 - THEN ответ MUST быть `422`, и `detail` MUST называть поле `color`
 
 ### Requirement: Список историй
-`GET /api/v1/projects` MUST возвращать истории вызывающего: `id`, `title`, `description`, `format`, `word_goal`, `goal_deadline`, `created_at`, `updated_at`, `deleted_at`, `drafts_count` (драфты не в корзине), `open_draft_id` (драфт, в котором история откроется у вызывающего), по убыванию `updated_at`. Без параметра или с `trash=false` MUST возвращаться истории не в корзине, с `trash=true` — только истории в корзине.
+`GET /api/v1/projects` MUST возвращать истории вызывающего: `id`, `title`, `description`, `format`, `word_goal`, `goal_deadline`, `cover_color`, `created_at`, `updated_at`, `deleted_at`, `drafts_count` (драфты не в корзине), `open_draft_id` (драфт, в котором история откроется у вызывающего), по убыванию `updated_at`. Без параметра или с `trash=false` MUST возвращаться истории не в корзине, с `trash=true` — только истории в корзине.
 
 #### Scenario: Полка и корзина
 - WHEN у автора истории «Маяк» и «Паром», и «Паром» удалена в корзину
@@ -50,8 +50,12 @@
 - WHEN автор создал историю и не задавал ей цели
 - THEN в списке у неё MUST быть `word_goal` = `null` и `goal_deadline` = `null`
 
+#### Scenario: Цвет в списке
+- WHEN у автора история «Маяк» с цветом `teal`
+- THEN `GET /api/v1/projects` MUST вернуть её с `cover_color` `teal`
+
 ### Requirement: Создание истории
-`POST /api/v1/projects` с непустым `title` MUST создавать историю вызывающего с `format` `feature`, драфт «Драфт 1» и его сценарий: документ вида `script` с именем, равным названию, и пустым текстом из одного заголовка сцены с новым `uid`. Ответ `201` MUST содержать историю, `id` драфта и `id` сценария. Пустое или пробельное `title` MUST давать `422`.
+`POST /api/v1/projects` с непустым `title` MUST создавать историю вызывающего с `format` `feature`, драфт «Драфт 1» и его сценарий: документ вида `script` с именем, равным названию. Без `template` текст сценария MUST быть пустым текстом из одного заголовка сцены с новым `uid`; с `template` — текстом каркаса (требование «Текст из каркаса»). Ответ `201` MUST содержать историю, `id` драфта и `id` сценария. Пустое или пробельное `title` MUST давать `422`.
 
 #### Scenario: Новая история
 - WHEN автор вызывает `POST /api/v1/projects` с `{"title": "Маяк"}`
@@ -61,8 +65,20 @@
 - WHEN автор вызывает `POST /api/v1/projects` с `{"title": "  "}`
 - THEN ответ MUST быть `422`, история MUST NOT создаваться
 
+#### Scenario: Без каркаса
+- WHEN автор вызывает `POST /api/v1/projects` с `{"title": "Маяк"}`
+- THEN текст сценария MUST состоять из одного пустого заголовка сцены
+
+#### Scenario: Цвет в ответе создания
+- WHEN автор вызывает `POST /api/v1/projects` с `{"title": "Маяк"}`
+- THEN история в ответе MUST содержать `cover_color`, назначенный ядром
+
+#### Scenario: Цвет при создании не принимается
+- WHEN автор вызывает `POST /api/v1/projects` с `{"title": "Маяк", "cover_color": "plum"}`
+- THEN ответ MUST быть `422`, и `detail` MUST называть поле `cover_color`
+
 ### Requirement: Изменение истории
-`PATCH /api/v1/projects/{id}` MUST менять `title`, `description`, `word_goal` и `goal_deadline` истории не в корзине; пустое `title` MUST давать `422`. `word_goal` MUST быть целым от 1 до 1 000 000 или `null`, `goal_deadline` — датой `YYYY-MM-DD` или `null`; иное MUST давать `422` с `detail`, называющим поле. Срок без цели (после изменения `goal_deadline` задан, а `word_goal` — `null`) MUST давать `422` с `detail`, называющим `goal_deadline`. Срок в прошлом MUST приниматься. Изменение MUST обновлять `updated_at`, ответ MUST содержать все поля истории из «Список историй», кроме `drafts_count` и `open_draft_id`.
+`PATCH /api/v1/projects/{id}` MUST менять `title`, `description`, `word_goal`, `goal_deadline` и `cover_color` истории не в корзине; пустое `title` MUST давать `422`. `word_goal` MUST быть целым от 1 до 1 000 000 или `null`, `goal_deadline` — датой `YYYY-MM-DD` или `null`, `cover_color` — цветом палитры («Цвет обложки истории»); иное MUST давать `422` с `detail`, называющим поле. Срок без цели (после изменения `goal_deadline` задан, а `word_goal` — `null`) MUST давать `422` с `detail`, называющим `goal_deadline`. Срок в прошлом MUST приниматься. Изменение MUST обновлять `updated_at`, кроме изменения одного только `cover_color`: оно `updated_at` MUST NOT менять. Ответ MUST содержать все поля истории из «Список историй», кроме `drafts_count` и `open_draft_id`.
 
 #### Scenario: Переименование
 - WHEN автор меняет название истории на «Маяк. Версия 2»
@@ -81,6 +97,48 @@
 - GIVEN у истории цель 20 000 и срок
 - WHEN автор отправляет `PATCH /api/v1/projects/{id}` с `word_goal` = `null` и `goal_deadline` = `null`
 - THEN ответ MUST содержать `word_goal` = `null` и `goal_deadline` = `null`
+
+#### Scenario: Смена цвета
+- GIVEN история «Маяк» с цветом `blue` и `updated_at` 2026-11-01
+- WHEN автор вызывает `PATCH /api/v1/projects/{id}` с `{"cover_color": "amber"}`
+- THEN ответ MUST содержать `cover_color` `amber`, а `updated_at` MUST остаться 2026-11-01
+
+#### Scenario: Цвет вне палитры
+- WHEN автор вызывает `PATCH /api/v1/projects/{id}` с `{"cover_color": "pink"}`
+- THEN ответ MUST быть `422`, `detail` MUST называть поле `cover_color`, и история MUST NOT меняться
+
+### Requirement: Цвет обложки истории
+У каждой истории MUST быть цвет обложки `cover_color` — одно из значений `blue`, `teal`, `amber`, `crimson`, `plum`, `graphite`; пустого значения MUST NOT быть. Новой истории ядро MUST назначать цвет, следующий в этом порядке за цветом последней созданной истории того же автора (включая истории в корзине), после `graphite` — `blue`; у первой истории автора цвет MUST быть `blue`. Правило MUST быть одним для истории из JSON и из рукописи.
+
+#### Scenario: Три истории подряд
+- GIVEN у автора нет историй
+- WHEN автор создаёт истории «Маяк», «Паром» и «Дача»
+- THEN их `cover_color` MUST быть `blue`, `teal` и `amber`
+
+#### Scenario: После последнего цвета
+- GIVEN последняя созданная история автора имеет `cover_color` `graphite`
+- WHEN автор создаёт новую историю
+- THEN её `cover_color` MUST быть `blue`
+
+#### Scenario: История из рукописи
+- GIVEN последняя созданная история автора имеет `cover_color` `teal`
+- WHEN автор создаёт историю из файла `паром.fountain`
+- THEN её `cover_color` MUST быть `amber`
+
+#### Scenario: Цвет выбран автором
+- GIVEN автор сменил цвет последней созданной истории на `plum`
+- WHEN автор создаёт новую историю
+- THEN её `cover_color` MUST быть `graphite`
+
+#### Scenario: Истории другого автора
+- GIVEN у автора А три истории, у автора Б историй нет
+- WHEN автор Б создаёт историю
+- THEN её `cover_color` MUST быть `blue`
+
+#### Scenario: Истории до появления цвета
+- GIVEN истории автора созданы до появления `cover_color`
+- WHEN применены миграции
+- THEN у каждой истории MUST быть цвет, по кругу палитры в порядке их создания, начиная с `blue`
 
 ### Requirement: Корзина историй
 `POST /api/v1/projects/{id}/trash` MUST помещать историю в корзину (заполнять `deleted_at`), `POST /api/v1/projects/{id}/restore` — возвращать её со всеми документами. Автоматической очистки корзины MUST NOT быть: история лежит в корзине, пока автор её не удалит. Изменение истории в корзине и её документов MUST давать `409`.
@@ -448,6 +506,45 @@
 #### Scenario: Отказ до создания аккаунта
 - WHEN пользователь с верным токеном, у которого ещё нет записи в `users`, вызывает `GET /api/v1/projects`
 - THEN ответ MUST быть `404` с причиной «Аккаунта ещё нет: сначала вызовите GET /api/v1/me» и заголовком `Cache-Control: no-store`
+
+### Requirement: Каркасы историй
+Каркасы MUST быть данными ядра в файле репозитория. У каркаса MUST быть уникальный `id`, непустые название и описание и хотя бы один акт; у акта — непустое название и хотя бы одна точка; у точки — непустые название и подсказка. Файл с ошибкой или неизвестным полем MUST останавливать старт API ошибкой, называющей каркас и поле.
+
+#### Scenario: Каркас без точек
+- GIVEN в файле каркасов у акта «Развязка» каркаса `three-acts` нет точек
+- WHEN стартует API
+- THEN старт MUST завершиться ошибкой, называющей `three-acts` и акт «Развязка»
+
+#### Scenario: Набор каркасов
+- WHEN API стартовал с файлом каркасов репозитория
+- THEN в нём MUST быть каркасы `three-acts`, `hero-journey`, `fifteen-points` и `tv-episode`
+
+### Requirement: Список каркасов
+`GET /api/v1/story-templates` MUST возвращать все каркасы в порядке файла: `id`, `name`, `description` и `acts`, у каждого акта — `name` и `points` с `name` и `hint`. Маршрут MUST требовать токен и MUST NOT требовать доступа к истории.
+
+#### Scenario: Список для автора
+- WHEN вошедший автор вызывает `GET /api/v1/story-templates`
+- THEN ответ MUST быть `200` и содержать каркас `three-acts` с названием «Три акта» и его актами и точками
+
+#### Scenario: Без токена
+- WHEN `GET /api/v1/story-templates` вызван без `Authorization`
+- THEN ответ MUST быть `401`
+
+### Requirement: Текст из каркаса
+С `template` текст сценария MUST идти по актам и точкам каркаса в их порядке: абзац акта с его названием, затем на каждую точку абзац группы с названием точки, пустой заголовок сцены с новым `uid` и абзац бита с подсказкой точки. Неизвестный или не строковый `template` MUST давать `422`, называющий значение; история MUST NOT создаваться.
+
+#### Scenario: Три акта
+- WHEN автор вызывает `POST /api/v1/projects` с `{"title": "Маяк", "template": "three-acts"}`
+- THEN текст сценария MUST начинаться абзацем акта с названием первого акта «Три акта», за ним — группой с названием первой точки, пустым заголовком сцены и битом с её подсказкой
+- AND число заголовков сцен MUST равняться числу точек каркаса, а их `uid` MUST быть разными
+
+#### Scenario: Неизвестный каркас
+- WHEN автор вызывает `POST /api/v1/projects` с `{"title": "Маяк", "template": "save-the-dog"}`
+- THEN ответ MUST быть `422`, `detail` MUST называть `save-the-dog`, и история MUST NOT создаваться
+
+#### Scenario: Каркас и рукопись
+- WHEN автор создаёт историю multipart-запросом с файлом рукописи и полем `template`
+- THEN ответ MUST быть `422`, называющий поле `template`, и история MUST NOT создаваться
 
 ### Requirement: Поиск по драфту истории
 `GET /api/v1/drafts/{id}/search?q=<запрос>` MUST искать запрос в драфте и его истории: в тексте сценария, в логлайне и синопсисе сценария, в имени, кратком описании и текстовых полях персонажей, локаций и миров вне корзины, в названии и тексте заметок истории вне корзины. Совпадение MUST искаться по подстроке без учёта регистра и разницы «ё» и «е». Поиск MUST NOT менять данные и MUST работать и в запертом драфте.

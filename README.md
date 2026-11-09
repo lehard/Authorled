@@ -56,8 +56,9 @@ cp example.env .env
 ```
 
 Open `.env` and fill the Required block: `LITELLM_MASTER_KEY`, `LITELLM_API_KEY`,
-`DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`, `CLOUDRU_API_KEY`, `EMBEDDINGS_MODEL` and `AGENTOS_DB_PASSWORD` (password
-of the database role `agentos` the API connects with), and the block of the
+`DEEPSEEK_API_KEY`, `GIGACHAT_CREDENTIALS`, `GIGACHAT_SCOPE`, `CLOUDRU_API_KEY`, `EMBEDDINGS_MODEL`, `AGENTOS_DB_PASSWORD` (password
+of the database role `agentos` the API connects with) and `PHOENIX_DB_PASSWORD` (password of the role of the journal of
+agent runs, see [Journal of agent runs](#journal-of-agent-runs)), and the block of the
 [auth module](#module-auth): `AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`,
 `AUTHENTIK_BOOTSTRAP_EMAIL`, `AUTHENTIK_BOOTSTRAP_PASSWORD`, `AUTH_FRONTEND_CLIENT_ID`,
 `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_DEV_SERVICE_TOKEN`, `AUTH_BRAND_DOMAIN` and `AUTH_ISSUER`. The CA bundle for
@@ -88,6 +89,25 @@ printf 'zPING\0' | nc -w 3 127.0.0.1 3310
 The answer is `PONG`. The API reads its address from `CLAMAV_HOST` and `CLAMAV_PORT` and refuses
 to start without them; Compose and `./scripts/dev.sh` set both.
 
+#### Journal of agent runs
+
+Every run of an agent or a team is written to [Phoenix](https://arize.com/docs/phoenix), the journal of agent runs
+(`openspec/specs/agent-tracing`): the steps of the run (model calls, tools, members of a team), their durations, the
+model, the tokens and the errors. Compose starts it as `phoenix` (image `arizephoenix/phoenix`, data in schema
+`phoenix` of the shared database under its own role `phoenix`, password `PHOENIX_DB_PASSWORD`) and the API waits until
+it is healthy. Open it at [http://127.0.0.1:6006](http://127.0.0.1:6006).
+
+- One trace is one run: its root is the run of the agent, with the agent, the user (`sub` of the token) and the
+  conversation (`session.id`), so the journal filters by them. Requests to the API (`/api/v1/...`, `/health`) are not
+  traced.
+- The journal holds no text: messages, prompts, answers, inputs and outputs of agents and tools are hidden. To read a
+  conversation, open its session in Agno by the `session.id` of the trace.
+- Phoenix keeps traces 30 days (it deletes older ones every Sunday) and makes no requests to the internet of its own.
+- The API sends spans to `PHOENIX_URL` (`http://phoenix:6006` in Compose) and refuses to start without the variable or
+  when Phoenix does not answer. If Phoenix stops while the API runs, the runs of authors go on and the API logs
+  `Lost N spans: export to Phoenix at ... failed`; the spans of that time are lost.
+- The trace routes of Agno (`/traces`, `/trace_session_stats`, `/traces/search`) stay, but nothing is written to them.
+
 Check that AI apps can connect through MCP (export `MCP_CHECK_TOKEN` first, see
 [Module auth](#module-auth)):
 
@@ -99,7 +119,7 @@ The check should report `9 tools; required tools available`.
 
 ### Develop with the API on the host
 
-For code changes without rebuilding the image, run PostgreSQL, LiteLLM, ClamAV and Authentik in Docker
+For code changes without rebuilding the image, run PostgreSQL, LiteLLM, ClamAV, Phoenix and Authentik in Docker
 and the API on your computer with `--reload` (needs [uv](https://docs.astral.sh/uv/) and a filled
 `.env`). The command also exports the Authentik keys to `auth/jwks/jwks.json` before
 the API starts:
@@ -237,7 +257,8 @@ place `agno/litellm/certs/ca-bundle.pem`, and set `AGENTOS_URL` to your public H
 a strong `DB_PASS` (password of the bootstrap superuser of PostgreSQL, used only by the init
 services and administration), a strong `AGENTOS_DB_PASSWORD` (the role `agentos` the API
 connects with), and `MCP_CONNECT_SECRET` (generate one with
-`openssl rand -base64 32`). Compose passes the file through unchanged, so replace
+`openssl rand -base64 32`), and a strong `PHOENIX_DB_PASSWORD` (the role `phoenix` of the journal of agent
+runs). Compose passes the file through unchanged, so replace
 every `***` placeholder: a placeholder reaches the containers as a real value and
 model calls fail on authentication.
 
@@ -273,6 +294,14 @@ reverse proxy or tunnel must reach the API from the host.
 
 Check `/health` and `/docs` on your public URL. Confirm `/agents` rejects requests
 without a token, then connect through the AgentOS UI with a valid token.
+
+Phoenix, the [journal of agent runs](#journal-of-agent-runs), listens on `127.0.0.1:6006` of the server only and has
+no route in the reverse proxy and no login of its own. Open it through an SSH tunnel and then
+[http://127.0.0.1:6006](http://127.0.0.1:6006) in your browser:
+
+```sh
+ssh -L 6006:127.0.0.1:6006 authorled
+```
 
 ### Connect your AI apps
 
@@ -413,8 +442,9 @@ PostgreSQL must be running, even when you only want to list the tests. The evals
 application, so on the host they also need the auth settings in `.env` (`AUTH_ISSUER`,
 `AUTH_FRONTEND_CLIENT_ID`) and `JWT_JWKS_FILE` pointing at the exported keys
 (`auth/jwks/jwks.json`, written by `./scripts/dev.sh api` or
-`docker compose run --rm authentik-jwks-export`); without them they stop with an error naming the
-missing variable.
+`docker compose run --rm authentik-jwks-export`) and a running Phoenix with `PHOENIX_URL=http://127.0.0.1:6006`
+(see [Journal of agent runs](#journal-of-agent-runs)); without them they stop with an error naming the
+missing variable or address.
 
 Add your own cases in [agno/evals/cases.py](agno/evals/cases.py), or use
 [/create-evals](.agents/skills/create-evals/SKILL.md). To save a report, add
@@ -673,6 +703,8 @@ add the others when you need them. Docker Compose reads `.env` for both local an
 | `AGENTOS_URL` | Public URL used by scheduled jobs and MCP. Set it to your public HTTPS URL. |
 | `MCP_CONNECT_SECRET` | Connect browser MCP clients. Generate it before deployment. |
 | `AGENTOS_DB_PASSWORD` | Password of the database role `agentos` the API connects with (required; not a superuser, no access to schema `authentik`). |
+| `PHOENIX_DB_PASSWORD` | Password of the database role `phoenix` of the journal of agent runs (required by Compose; owns only schema `phoenix`, no access to the data of the product). |
+| `PHOENIX_URL` | Address of Phoenix the API sends spans to (required by the API, no default). Compose sets `http://phoenix:6006`, `./scripts/dev.sh api` sets `http://127.0.0.1:6006`; set it yourself for other host processes such as `python -m evals`. |
 | `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASS`, `DB_DATABASE` | PostgreSQL connection settings of the API. Compose and `./scripts/dev.sh api` set them (`DB_USER=agentos`); in the production `.env`, `DB_PASS` is the bootstrap superuser password. |
 | `RUNTIME_ENV` | `prd` by default. Local Compose uses `dev`; token checks are on in both. |
 

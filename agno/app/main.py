@@ -8,7 +8,6 @@ from os import environ
 from agno.job_queue import QueueConfig
 from agno.os import AgentOS, CompanyConfig, OSManager
 from agno.os.interfaces.agui import AGUI
-from agno.tracing import setup_tracing
 
 from agents.coauthor import COAUTHOR_ID, coauthor
 from agents.engineers import engineers
@@ -19,6 +18,7 @@ from app.interfaces import attach_interfaces, mcp_auth
 from app.paths import REPO_ROOT
 from app.registry import registry, shared_knowledge, shared_learning
 from app.settings import manager_model
+from app.tracing import setup_agent_tracing
 from core.clamav import scanner_address
 from core.projects import ProjectAccess
 from db import get_postgres_db
@@ -41,11 +41,11 @@ if environ.get("AGNO_TELEMETRY") != "false":
     raise RuntimeError(f"AGNO_TELEMETRY must be exactly 'false', got {environ.get('AGNO_TELEMETRY')!r}")
 db = get_postgres_db()
 
-# Tracing of Agno, written in batches by a background thread (openspec/specs/overview, «Возможности
-# AgentOS»). AgentOS(tracing=True) sets it up with a synchronous processor: every span, including
-# the HTTP spans FastAPI makes on its own, was written to PostgreSQL inside the request, ~80 ms
-# each, and parallel requests waited for one another. A failed setup stops the start.
-setup_tracing(db=db, batch_processing=True)
+# The journal of agent runs goes to Phoenix in batches by a background thread, never into Agno's
+# trace tables (openspec/specs/agent-tracing). AgentOS(tracing=True) would write every span, the
+# HTTP spans FastAPI makes on its own included, to PostgreSQL inside the request. No PHOENIX_URL, no
+# answer from Phoenix or a failed setup stops the start.
+setup_agent_tracing()
 
 agent_os = AgentOS(
     db=db,

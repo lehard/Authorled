@@ -57,6 +57,32 @@ def test_unknown_field_is_named(authors: Any) -> None:
     assert "color" in response.json()["detail"]
 
 
+def test_cover_colour_on_the_shelf(authors: Any) -> None:
+    author = authors()
+    created = author.post("/api/v1/projects", json={"title": "Маяк"}).json()["project"]
+    assert created["cover_color"] == "blue"
+    changed = author.patch(f"/api/v1/projects/{created['id']}", json={"cover_color": "amber"})
+    assert changed.status_code == 200, changed.text
+    assert (changed.json()["cover_color"], changed.json()["updated_at"]) == ("amber", created["updated_at"])
+    assert [p["cover_color"] for p in author.get("/api/v1/projects").json()] == ["amber"]
+
+
+def test_cover_colour_outside_the_palette(authors: Any) -> None:
+    author = authors()
+    story = author.story()
+    response = author.patch(f"/api/v1/projects/{story['project']['id']}", json={"cover_color": "pink"})
+    assert response.status_code == 422
+    assert response.headers["content-type"] == PROBLEM
+    assert "cover_color" in response.json()["detail"]
+    assert author.get("/api/v1/projects").json()[0]["cover_color"] == "blue"
+
+
+def test_cover_colour_is_not_chosen_at_creation(authors: Any) -> None:
+    response = authors().post("/api/v1/projects", json={"title": "Маяк", "cover_color": "plum"})
+    assert response.status_code == 422
+    assert "cover_color" in response.json()["detail"]
+
+
 def test_story_without_a_goal(authors: Any) -> None:
     author = authors()
     author.story()
@@ -297,3 +323,71 @@ def test_saved_text_records_the_words(authors: Any, engine: Engine) -> None:
             select(writing_progress.c.words).where(writing_progress.c.project_id == story["project"]["id"])
         ).scalar_one()
     assert words == 7  # «ИНТ. КУХНЯ — ДЕНЬ» and «Вера идёт к воде»; the new story starts with an empty heading
+
+
+def _text(author: Any, story: dict[str, Any]) -> dict[str, Any]:
+    response = author.get(f"/api/v1/documents/{story['script_id']}/text")
+    assert response.status_code == 200, response.text
+    content: dict[str, Any] = response.json()["content"]
+    return content
+
+
+def _block_text(block: dict[str, Any]) -> str:
+    return "".join(node["text"] for node in block.get("content", []))
+
+
+def test_story_templates(authors: Any) -> None:
+    response = authors().get("/api/v1/story-templates")
+    assert response.status_code == 200, response.text
+    found = {t["id"]: t for t in response.json()}
+    assert list(found) == ["three-acts", "hero-journey", "fifteen-points", "tv-episode"]
+    three = found["three-acts"]
+    assert three["name"] == "Три акта" and three["description"]
+    first = three["acts"][0]
+    assert first["name"] and set(first["points"][0]) == {"name", "hint"}
+
+
+def test_story_templates_without_token(client: Any) -> None:
+    assert client.get("/api/v1/story-templates").status_code == 401
+
+
+def test_story_from_a_template(authors: Any) -> None:
+    author = authors()
+    three = next(t for t in author.get("/api/v1/story-templates").json() if t["id"] == "three-acts")
+    response = author.post("/api/v1/projects", json={"title": "Маяк", "template": "three-acts"})
+    assert response.status_code == 201, response.text
+    blocks = _text(author, response.json())["content"]
+    act, point = three["acts"][0], three["acts"][0]["points"][0]
+    assert [b["type"] for b in blocks[:4]] == ["act", "sequence", "sceneHeading", "beat"]
+    assert [_block_text(b) for b in blocks[:4]] == [act["name"], point["name"], "", point["hint"]]
+    headings = [b for b in blocks if b["type"] == "sceneHeading"]
+    assert len(headings) == sum(len(a["points"]) for a in three["acts"])
+    assert len({b["attrs"]["uid"] for b in headings}) == len(headings)
+
+
+def test_story_without_a_template(authors: Any) -> None:
+    author = authors()
+    blocks = _text(author, author.story())["content"]
+    assert [(b["type"], _block_text(b)) for b in blocks] == [("sceneHeading", "")]
+
+
+@pytest.mark.parametrize("value", ["save-the-dog", None, 7])
+def test_unknown_template(authors: Any, value: Any) -> None:
+    author = authors()
+    response = author.post("/api/v1/projects", json={"title": "Маяк", "template": value})
+    assert response.status_code == 422
+    assert response.headers["content-type"] == PROBLEM
+    assert str(value) in response.json()["detail"]
+    assert author.get("/api/v1/projects").json() == []
+
+
+def test_template_with_a_manuscript(authors: Any) -> None:
+    author = authors()
+    response = author.post(
+        "/api/v1/projects",
+        data={"title": "Маяк", "template": "three-acts"},
+        files={"file": ("маяк.fountain", "INT. КУХНЯ - ДЕНЬ\n".encode())},
+    )
+    assert response.status_code == 422
+    assert "template" in response.json()["detail"]
+    assert author.get("/api/v1/projects").json() == []

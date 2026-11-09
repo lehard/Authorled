@@ -38,7 +38,7 @@ def _row(**own: Any) -> dict[str, Any]:
 
 def test_release_set_loads() -> None:
     requests = load_set()
-    assert 55 <= len(requests) <= 70
+    assert 55 <= len(requests) <= 75
     assert {r.expect for r in requests} == {*ACTION_TOOLS, "none"}
     assert {r.kind for r in requests if r.expect == "create_story_document"} == {"character", "location", "world"}
     assert any(r.id == "character-vasily" for r in requests)
@@ -58,6 +58,19 @@ def test_release_set_loads() -> None:
         ({"expect": "update_story_note", "target": "Нет такой", "kind": None, "fields": None}, "no note «Нет такой»"),
         ({"expect": "none", "kind": None}, "r1: fields do not belong"),
         ({"surprise": 1}, "r1: unknown keys surprise"),
+        ({"expect": "update_story_document", "target": "Сценарий", "kind": None, "fields": ["show"]}, "field 'show'"),
+        ({"expect": "none", "kind": None, "fields": None, "max_words": 35}, "r1: max_words do not belong"),
+        ({"max_words": 35}, "r1: max_words do not belong to a request for create_story_document"),
+        (
+            {
+                "expect": "update_story_document",
+                "target": "Сценарий",
+                "kind": None,
+                "fields": ["logline"],
+                "max_words": 0,
+            },
+            "max_words must be a positive whole number",
+        ),
     ],
 )
 def test_set_refused(change: dict[str, Any], reason: str) -> None:
@@ -174,3 +187,51 @@ def test_failed_run_is_a_failure() -> None:
     summary = summarize([verdict])
     assert summary.errors == 1
     assert summary.failures == ("r1",)
+
+
+# The logline and the synopsis (openspec/changes/logline-synopsis-generation, design, decision 6).
+
+LOGLINE = Request(
+    "logline-write",
+    "tihaya-voda",
+    "Замени логлайн",
+    "update_story_document",
+    "script",
+    "Сценарий",
+    (("logline",),),
+    max_words=35,
+)
+
+
+def _script(logline: str) -> Card:
+    return _card(name="Сценарий", kind="script", fields={"logline": logline, "synopsis": "Синопсис."})
+
+
+def _logline_call() -> Call:
+    return Call("update_story_document", {"document_id": "d1"}, False, '{"done": "Изменён документ «Сценарий»"}')
+
+
+def test_script_is_a_target() -> None:
+    (request,) = parse_set(
+        [_row(expect="update_story_document", target="Сценарий", kind=None, fields=["logline"], max_words=35)]
+    )
+    assert (request.kind, request.fields, request.max_words) == ("script", (("logline",),), 35)
+
+
+def test_long_logline_fails() -> None:
+    long = " ".join(["слово"] * 48)
+    changes = Changes(updated=(("Сценарий", _script(long)),))
+    verdict = check(LOGLINE, ActionRun("logline-write", "done", "Записал.", 1.0, (_logline_call(),), changes))
+    assert verdict.action_ok and not verdict.missing
+    assert verdict.too_long == ("logline: 48 слов, предел 35",)
+    assert not verdict.passed
+    short = Changes(updated=(("Сценарий", _script("Аня ищет правду о гибели дяди.")),))
+    assert check(LOGLINE, ActionRun("logline-write", "done", "Записал.", 1.0, (_logline_call(),), short)).passed
+
+
+def test_long_note_fails() -> None:
+    request = Request("viewer", "tihaya-voda", "Сохрани аннотацию", "create_story_note", max_words=100)
+    call = Call("create_story_note", {"title": "Синопсис: для зрителя"}, False, '{"done": "Создана заметка"}')
+    changes = Changes(notes_created=("Синопсис: для зрителя",), notes_created_text=(" ".join(["слово"] * 120),))
+    verdict = check(request, ActionRun("viewer", "done", "Сохранил.", 1.0, (call,), changes))
+    assert verdict.too_long == ("заметка «Синопсис: для зрителя»: 120 слов, предел 100",)

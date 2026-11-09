@@ -168,6 +168,8 @@ def _story(connection: Connection, demo: Item, project: Item, owner: uuid.UUID, 
     story, first_id, document_id = projects.create_project(
         connection, owner, project["title"], project["desc"], _text(script["text"], threads)
     )
+    # The colour of the sample data, so the `fixtures` source and the database show the same shelf.
+    story = projects.update_project(connection, story.id, {"cover_color": project["coverColor"]})
     revision = documents.document_row(connection, document_id).revision
     documents.update_document(connection, document_id, revision, {"fields": _passport(script)}, owner)
     cards = _cards(demo, first["id"])

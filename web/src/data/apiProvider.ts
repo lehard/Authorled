@@ -27,6 +27,7 @@ import type {
   Location,
   NewDraft,
   NewNote,
+  NewProject,
   NewReply,
   NewThread,
   Note,
@@ -35,6 +36,7 @@ import type {
   Project,
   Role,
   Script,
+  StoryTemplate,
   Suggestion,
   TitlePage,
   Version,
@@ -42,6 +44,7 @@ import type {
   VersionTarget,
   World,
 } from "./model";
+import { isCoverColor } from "./model";
 import type { SaveOperation } from "./saves";
 import type {
   EntityHit,
@@ -159,8 +162,7 @@ function readProject(body: unknown): SavedProject {
     id: field("историю", o, "id", isString),
     title: field("историю", o, "title", isString),
     desc: field("историю", o, "description", isString),
-    // Covers come at stage 2 (openspec/context/backlog-stage-2.md); the core keeps none.
-    cover: false,
+    coverColor: field("историю", o, "cover_color", isCoverColor),
     updatedAt: field("историю", o, "updated_at", isString),
     deletedAt: field("историю", o, "deleted_at", isTime),
     wordGoal: field("историю", o, "word_goal", isCountOrNull),
@@ -537,6 +539,7 @@ function toScript(draftId: string, d: Doc, t: Text): Script {
   return {
     id: draftId,
     draftId,
+    documentId: d.id,
     logline: text(what, d.fields, "logline"),
     // Not set yet: every part is shown, as in a new story of the screens.
     show: show === undefined ? ALL_PARTS : (show as Script["show"]),
@@ -756,6 +759,29 @@ async function projects(trash: boolean): Promise<Project[]> {
   ).map(readListedProject);
 }
 
+function readTemplate(raw: unknown): StoryTemplate {
+  const what = "каркас истории";
+  const o = shape(what, raw);
+  return {
+    id: field(what, o, "id", isString),
+    name: field(what, o, "name", isString),
+    description: field(what, o, "description", isString),
+    acts: field(what, o, "acts", isArray).map((rawAct) => {
+      const act = shape("акт каркаса", rawAct);
+      return {
+        name: field("акт каркаса", act, "name", isString),
+        points: field("акт каркаса", act, "points", isArray).map((rawPoint) => {
+          const point = shape("точку каркаса", rawPoint);
+          return {
+            name: field("точку каркаса", point, "name", isString),
+            hint: field("точку каркаса", point, "hint", isString),
+          };
+        }),
+      };
+    }),
+  };
+}
+
 async function getList(
   resource: string,
   filters: CrudFilter[],
@@ -766,6 +792,10 @@ async function getList(
       throw new Error("Истории читаются списком полки или корзины.");
     return projects(q.deleted);
   }
+  if (resource === "story-templates")
+    return list("каркасы историй", await request("/story-templates")).map(
+      readTemplate,
+    );
   if (resource === "drafts") {
     if (q.projectId === null)
       throw new Error("Драфты читаются только по истории.");
@@ -862,12 +892,18 @@ async function create(
   meta: MetaQuery | undefined,
 ): Promise<BaseRecord> {
   if (resource === "projects") {
-    const values = variables as Pick<Project, "title" | "desc">;
+    const values = variables as NewProject;
     const o = shape(
       "новую историю",
       await request("/projects", {
         method: "POST",
-        json: { title: values.title, description: values.desc },
+        json: {
+          title: values.title,
+          description: values.desc,
+          ...(values.template === undefined
+            ? {}
+            : { template: values.template }),
+        },
       }),
     );
     const project = readProject(o.project);
@@ -990,6 +1026,7 @@ async function update(
       else if (key === "desc") changes.description = value;
       else if (key === "wordGoal") changes.word_goal = value;
       else if (key === "goalDeadline") changes.goal_deadline = value;
+      else if (key === "coverColor") changes.cover_color = value;
       else throw new Error(`Источник api не меняет поле «${key}» истории.`);
     }
     await request(`/projects/${id}`, { method: "PATCH", json: changes });

@@ -391,7 +391,8 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
         aria-current={docSegment === "info" ? "page" : undefined}
       >
         <span
-          className={project.cover ? "book-mini art" : "book-mini"}
+          className="book-mini"
+          data-cover={project.coverColor}
           aria-hidden
         />
         <span className="min-w-0">

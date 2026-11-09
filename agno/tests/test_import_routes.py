@@ -113,3 +113,15 @@ def test_chat_file_is_not_imported(authors: Any) -> None:
         ).json()["revision"]
         == 1
     )
+
+
+def test_story_from_a_file_takes_the_next_colour(authors: Any) -> None:
+    author = authors()
+    first = author.post("/api/v1/projects", json={"title": "Маяк"}).json()["project"]
+    response = author.post(
+        "/api/v1/projects",
+        data={"title": "Паром"},
+        files={"file": ("all-types.fountain", (SAMPLES / "all-types.fountain").read_bytes())},
+    )
+    assert response.status_code == 201, response.text
+    assert (first["cover_color"], response.json()["project"]["cover_color"]) == ("blue", "teal")

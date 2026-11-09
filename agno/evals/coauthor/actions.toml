@@ -7,7 +7,9 @@
 # - for create_story_document: `kind` (character, location, world);
 # - for update_story_document and update_story_note: `target`, the name of the card or the title of the note;
 # - `fields`: profile fields the request names directly; "a|b" means one of them is enough;
-# - for update_story_document: optional `role` and `name` the card must have after the request.
+# - for update_story_document: optional `role` and `name` the card must have after the request; the target may be
+#   «Сценарий», the screenplay of the draft, with the fields `logline` and `synopsis`;
+# - for update_story_document and create_story_note: optional `max_words`, the limit of words of the written text.
 # The set is checked against core/fields.py and the demo stories before any model call (evals/coauthor/actions.py).
 
 # --- Персонажи ---
@@ -447,6 +449,26 @@ place = "posledniy-parom"
 message = "Оставь комментарий к последней сцене, про яблоко на подоконнике: хороший финал, но нужен крупный план."
 expect = "comment_on_screenplay"
 
+# --- Раскладка по каркасу ---
+
+[[request]]
+id = "layout-three-acts"
+place = "tihaya-voda"
+message = "Разложи мою историю по трём актам."
+expect = "create_story_note"
+
+[[request]]
+id = "layout-hero-journey"
+place = "posledniy-parom"
+message = "посмотри, как сцены ложатся на путешествие героя, и запиши раскладку"
+expect = "create_story_note"
+
+[[request]]
+id = "layout-unknown-template"
+place = "tihaya-voda"
+message = "Разложи сценарий по семи точкам Уэллса."
+expect = "none"
+
 # --- Без действия ---
 
 [[request]]
@@ -489,4 +511,37 @@ expect = "none"
 id = "none-retell"
 place = "posledniy-parom"
 message = "Перескажи коротко вторую сцену."
+expect = "none"
+
+# --- Логлайн и синопсис (openspec/changes/logline-synopsis-generation, design, decision 6) ---
+
+[[request]]
+id = "logline-write"
+place = "tihaya-voda"
+message = "Напиши новый логлайн для этой истории и сразу замени им нынешний."
+expect = "update_story_document"
+target = "Сценарий"
+fields = ["logline"]
+max_words = 35
+
+[[request]]
+id = "synopsis-write"
+place = "posledniy-parom"
+message = "Перепиши синопсис на страницу, до 400 слов, и сразу запиши вместо нынешнего."
+expect = "update_story_document"
+target = "Сценарий"
+fields = ["synopsis"]
+max_words = 400
+
+[[request]]
+id = "synopsis-viewer-note"
+place = "tihaya-voda"
+message = "Сделай аннотацию для зрителя без финала и сразу сохрани заметкой «Синопсис: для зрителя»."
+expect = "create_story_note"
+max_words = 100
+
+[[request]]
+id = "logline-variants-ask"
+place = "tihaya-voda"
+message = "Предложи три варианта логлайна для этой истории: герой, его цель, главное препятствие и ставки, до 35 слов каждый. Опирайся на сценарий и документы драфта. Ничего не записывай, пока я не выберу."
 expect = "none"
