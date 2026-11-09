@@ -19,5 +19,29 @@
       "Bash(jq:*)",
       "WebFetch(domain:docs.agno.com)"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/scripts/hook_session_start.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/scripts/hook_stop.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }
