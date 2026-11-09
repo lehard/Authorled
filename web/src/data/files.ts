@@ -1,5 +1,6 @@
 import { useCustomMutation } from "@refinedev/core";
 
+import type { Note } from "@/data/model";
 import type { ScreenplayDoc } from "@/editor/document.ts";
 
 // Files of a story through the `custom` operations of the data source (design of
@@ -23,7 +24,13 @@ export type Upload = {
 export type FileOperation =
   | { operation: "upload"; payload: Upload }
   | { operation: "import"; payload: { draftId: string; fileId: string } }
-  | { operation: "createFromFile"; payload: { title: string; file: File } };
+  | { operation: "createFromFile"; payload: { title: string; file: File } }
+  | { operation: "noteFromUpload"; payload: { projectId: string; file: File } }
+  | { operation: "noteFromChatFile"; payload: { fileId: string } }
+  | { operation: "fileContent"; payload: { fileId: string } };
+
+/** Files that become notes (openspec/specs/api/stories, «Заметка из файла»): the same as chat files. */
+export const NOTE_FILE_TYPES = ".docx,.pdf,.txt,.md,.fountain,.fdx,.starc";
 
 /** A new story: its id and the id of «Драфт 1». */
 export type NewStory = { id: string; draftId: string };
@@ -57,5 +64,14 @@ export function useStoryFiles() {
         operation: "createFromFile",
         payload: { title, file },
       }),
+    /** A note of the story from a file, with the file as its original. */
+    noteFromUpload: (projectId: string, file: File) =>
+      run<Note>({ operation: "noteFromUpload", payload: { projectId, file } }),
+    /** A note from a file of a conversation, with a copy of the file. */
+    noteFromChatFile: (fileId: string) =>
+      run<Note>({ operation: "noteFromChatFile", payload: { fileId } }),
+    /** The bytes of a stored file. */
+    content: (fileId: string) =>
+      run<Blob>({ operation: "fileContent", payload: { fileId } }),
   };
 }

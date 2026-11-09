@@ -17,7 +17,7 @@ from sqlalchemy import Connection, Row, delete, insert, select
 
 from core.clamav import scan
 from core.documents import ensure_project_open
-from core.errors import Invalid, NotFound, TooLarge
+from core.errors import Conflict, Invalid, NotFound, TooLarge
 from core.importers.fdx import parse_fdx
 from core.importers.fountain import parse_fountain
 from core.importers.plain import text_of_docx, text_of_txt
@@ -48,7 +48,11 @@ FORMATS = {
 ALLOWED = {
     "chat": (".docx", ".pdf", ".txt", ".md", ".fountain", ".fdx", ".starc"),
     "import": (".fountain", ".fdx", ".starc", ".docx", ".txt"),
+    # The original of a note (openspec/specs/api/stories, «Заметка из файла»): the same as a file of a conversation.
+    "note": (".docx", ".pdf", ".txt", ".md", ".fountain", ".fdx", ".starc"),
 }
+# Purposes the upload route takes; originals of notes come only through the notes routes.
+UPLOAD_PURPOSES = ("chat", "import")
 
 
 @dataclass(frozen=True)
@@ -121,7 +125,7 @@ def extract_text(format: Format, data: bytes) -> str:
 
 
 def check_session(project_id: uuid.UUID, purpose: str, session_id: str | None) -> None:
-    if purpose not in ALLOWED:
+    if purpose not in UPLOAD_PURPOSES:
         raise Invalid("Поле «purpose» должно быть chat или import.", "purpose")
     if purpose == "chat":
         if not session_id or not session_id.startswith(f"{project_id}:"):
@@ -217,6 +221,14 @@ def file_text(connection: Connection, file_id: uuid.UUID) -> str:
     return text
 
 
+def checked_of_stored(connection: Connection, file_id: uuid.UUID) -> CheckedFile:
+    """A stored file as it was checked on upload: it passed size, type, the antivirus and text extraction then."""
+    stored = get_file(connection, file_id)
+    extension = "." + stored.name.rsplit(".", 1)[-1].lower()
+    return CheckedFile(stored.name, FORMATS[extension], file_bytes(connection, file_id), file_text(connection, file_id))
+
+
 def delete_file(connection: Connection, file_id: uuid.UUID) -> None:
-    get_file(connection, file_id)
+    if get_file(connection, file_id).purpose == "note":
+        raise Conflict("Оригинал заметки удаляется только вместе с заметкой.")
     connection.execute(delete(files).where(files.c.id == file_id))

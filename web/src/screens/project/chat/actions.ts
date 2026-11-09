@@ -14,6 +14,7 @@ import { readOutcome, type Target } from "./outcome";
 
 export const CHANGING_TOOLS = [
   "create_story_note",
+  "save_chat_file_to_notes",
   "update_story_note",
   "create_story_document",
   "update_story_document",
@@ -93,6 +94,8 @@ export function describeAction(
         title: `Создать заметку «${text(args, "title")}»`,
         detail: text(args, "body"),
       };
+    case "save_chat_file_to_notes":
+      return { title: "Сохранить файл в заметки", detail: "" };
     case "update_story_note": {
       const note = noteName(data, text(args, "note_id"));
       if (text(args, "append") !== "")

@@ -1,6 +1,6 @@
 """Tools of the co-author: it reads the draft of the conversation, proposes edits of the screenplay and, by the
-author's request, changes notes, documents and comments (openspec/specs/api/agents, «Инструменты соавтора»,
-«Действия соавтора», «Комментарий соавтором»).
+author's request, changes notes (also from a file of the conversation), documents and comments
+(openspec/specs/api/agents, «Инструменты соавтора», «Действия соавтора», «Комментарий соавтором»).
 
 The draft comes only from the conversation (session id `<projectId>:<draftId>:<uuid>`), the caller only from the run;
 access goes through the auth module, as in the product routes. The screenplay text changes only through suggestions,
@@ -13,22 +13,27 @@ a done change is JSON with `done` for the model and `target` for the chat, which
 import json
 import uuid
 from collections.abc import Callable
+from datetime import UTC, datetime
 from typing import Any
 
 from agno.run import RunContext
 from agno.tools.function import Function
 
+import billing
 from app.auth import can_access_project, run_principal
 from core import documents as docs
 from core import notes, review, search, story_templates, texts
 from core.engine import get_engine
-from core.errors import Conflict, Invalid, Locked, NotFound
+from core.errors import Conflict, Invalid, Locked, NotFound, TooLarge
 from core.fields import FIELD_HINTS, Role, field_guide
 from core.files import file_text as stored_file_text
 from core.files import get_file
 from core.users import active_user_id
 
 STORY_NOT_FOUND = "Отказ: история не найдена."
+# One part of a note the co-author reads at a time: the same as the open document in the chat context
+# (web/src/screens/project/chat/docContext.ts, MAX_CHARS).
+NOTE_PART_CHARS = 20_000
 
 
 class Refusal(Exception):
@@ -57,7 +62,7 @@ def _answer(work: Callable[[], Any]) -> str:
         result = work()
     except Refusal as refusal:
         return str(refusal)
-    except (NotFound, Invalid, Conflict, Locked) as error:
+    except (NotFound, Invalid, Conflict, Locked, TooLarge) as error:
         return f"Отказ: {error}"
     return result if isinstance(result, str) else json.dumps(result, ensure_ascii=False, default=str)
 
@@ -298,7 +303,8 @@ def _note_of_story(connection: Any, project_id: uuid.UUID, note_id: str) -> note
 
 
 def list_story_notes(run_context: RunContext) -> str:
-    """Заметки истории этой беседы (общие для всех драфтов, без корзины): id, название и начало текста.
+    """Заметки истории этой беседы (общие для всех драфтов, без корзины): id, название, начало текста, длина текста
+    в знаках и `file` — имя файла-оригинала, если заметка сделана из файла (материал), иначе null.
 
     Используй, чтобы найти заметку, о которой говорит автор, и затем прочитать её через read_story_note.
     """
@@ -307,7 +313,13 @@ def list_story_notes(run_context: RunContext) -> str:
         draft = _draft(run_context)
         with get_engine().connect() as connection:
             return [
-                {"id": n.id, "title": n.title, "start": n.body[:200]}
+                {
+                    "id": n.id,
+                    "title": n.title,
+                    "start": n.body[:200],
+                    "length": len(n.body),
+                    "file": None if n.file is None else n.file.name,
+                }
                 for n in notes.list_notes(connection, draft.project_id)
                 if n.deleted_at is None
             ]
@@ -315,18 +327,30 @@ def list_story_notes(run_context: RunContext) -> str:
     return _answer(work)
 
 
-def read_story_note(run_context: RunContext, note_id: str) -> str:
-    """Заметка истории целиком: название и текст.
+def read_story_note(run_context: RunContext, note_id: str, part: int = 1) -> str:
+    """Заметка истории частями по 20 000 знаков: название, `part` — номер этой части, `parts` — сколько их всего,
+    `body` — текст части. Длинную заметку читай по частям, пока не найдёшь нужное.
 
     Args:
         note_id: id заметки из list_story_notes.
+        part: номер части, с 1.
     """
 
     def work() -> Any:
         draft = _draft(run_context)
         with get_engine().connect() as connection:
             note = _note_of_story(connection, draft.project_id, note_id)
-        return {"id": note.id, "title": note.title, "body": note.body}
+        parts = max(1, -(-len(note.body) // NOTE_PART_CHARS))
+        if not 1 <= part <= parts:
+            raise Refusal(f"Отказ: в заметке {parts} частей, части {part} нет.")
+        start = (part - 1) * NOTE_PART_CHARS
+        return {
+            "id": note.id,
+            "title": note.title,
+            "part": part,
+            "parts": parts,
+            "body": note.body[start : start + NOTE_PART_CHARS],
+        }
 
     return _answer(work)
 
@@ -344,6 +368,36 @@ def create_story_note(run_context: RunContext, title: str, body: str = "") -> st
         with get_engine().begin() as connection:
             note = notes.create_note(connection, draft.project_id, title, body, _caller(connection, run_context))
         return _done(f"Создана заметка «{note.title}»", "note", note.id)
+
+    return _answer(work)
+
+
+def save_chat_file_to_notes(run_context: RunContext, file_id: str) -> str:
+    """Сохранить файл, который автор прикрепил к этой беседе, в заметки истории: заметка получит текст файла и сам
+    файл как оригинал. Только по прямой просьбе автора («сохрани в заметки», «положи в материалы»).
+
+    Args:
+        file_id: id файла из сообщения автора.
+    """
+
+    def work() -> Any:
+        draft = _draft(run_context)
+        try:
+            found = uuid.UUID(file_id)
+        except ValueError as error:
+            raise Refusal("Отказ: файл не найден в этой беседе.") from error
+        with get_engine().connect() as connection:
+            stored = get_file(connection, found)
+            user = _caller(connection, run_context)
+        if stored.project_id != draft.project_id or stored.session_id != run_context.session_id:
+            raise Refusal("Отказ: файл не найден в этой беседе.")
+        try:
+            place = billing.storage_limit(user, datetime.now(UTC))
+        except billing.SubscriptionEnded as error:
+            raise Refusal("Отказ: подписка закончилась, файлы в заметки не сохраняются.") from error
+        with get_engine().begin() as connection:
+            note = notes.create_note_from_chat_file(connection, found, user, place)
+        return _done(f"Файл сохранён в заметку «{note.title}»", "note", note.id)
 
     return _answer(work)
 
@@ -496,6 +550,7 @@ READING_TOOLS: list[Callable[..., str]] = [
 # Their names are the contract with the chat, which shows the confirmation and what was done.
 CHANGING_TOOLS: list[Callable[..., str]] = [
     create_story_note,
+    save_chat_file_to_notes,
     update_story_note,
     create_story_document,
     update_story_document,

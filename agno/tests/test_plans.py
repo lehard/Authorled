@@ -11,7 +11,7 @@ import pytest
 from app.settings import DEEPSEEK_FAST, DEEPSEEK_THINKING
 from billing.plans import DataFileError, UnknownModel, UnknownPlan, parse_plans, parse_prices, plans, prices
 
-BETA = {"name": "Бета", "price_rub": 0, "period_months": 1, "limit_rub": 500, "purchasable": False}
+BETA = {"name": "Бета", "price_rub": 0, "period_months": 1, "limit_rub": 500, "storage_mb": 500, "purchasable": False}
 PRICE = {"input_rub": 30, "cache_read_rub": Decimal("0.6"), "output_rub": 120}
 
 
@@ -22,10 +22,11 @@ def _plans(**changes: Any) -> dict[str, Any]:
 def test_release_beta_plan() -> None:
     beta = plans().signup
     assert beta == plans().get("beta")
-    assert (beta.price_rub, beta.period_months, beta.limit_rub, beta.purchasable) == (
+    assert (beta.price_rub, beta.period_months, beta.limit_rub, beta.storage_mb, beta.purchasable) == (
         Decimal(0),
         1,
         Decimal(500),
+        500,
         False,
     )
 
@@ -53,6 +54,13 @@ def test_missing_field() -> None:
         parse_plans(data, "plans.toml")
 
 
+def test_missing_storage() -> None:
+    data = _plans()
+    del data["plans"]["beta"]["storage_mb"]
+    with pytest.raises(DataFileError, match=r"plans\.beta: missing field storage_mb"):
+        parse_plans(data, "plans.toml")
+
+
 def test_unknown_field() -> None:
     with pytest.raises(DataFileError, match=r"plans\.beta: unknown field discount"):
         parse_plans(_plans(discount=10), "plans.toml")
@@ -64,6 +72,9 @@ def test_unknown_field() -> None:
         ({"limit_rub": -1}, "limit_rub"),
         ({"price_rub": "0"}, "price_rub"),
         ({"period_months": 0}, "period_months"),
+        ({"storage_mb": 0}, "storage_mb"),
+        ({"storage_mb": Decimal("0.5")}, "storage_mb"),
+        ({"storage_mb": True}, "storage_mb"),
         ({"purchasable": "no"}, "purchasable"),
         ({"name": " "}, "name"),
     ],
@@ -100,7 +111,7 @@ def test_money_is_exact() -> None:
     import tomllib
 
     text = 'signup_plan = "beta"\n[plans.beta]\nname = "Бета"\nprice_rub = 990.90\nperiod_months = 1\n'
-    text += "limit_rub = 500.10\npurchasable = false\n"
+    text += "limit_rub = 500.10\nstorage_mb = 500\npurchasable = false\n"
     plan = parse_plans(tomllib.loads(text, parse_float=Decimal), "plans.toml").signup
     assert (plan.price_rub, plan.limit_rub) == (Decimal("990.90"), Decimal("500.10"))
     assert isinstance(plan.limit_rub, Decimal)

@@ -46,7 +46,7 @@ def plans_with_plus(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator
     path.write_text(
         plans_module.PLANS_FILE.read_text(encoding="utf-8")
         + '\n[plans.beta-plus]\nname = "Бета+"\nprice_rub = 0\nperiod_months = 1\n'
-        + "limit_rub = 1500\npurchasable = false\n",
+        + "limit_rub = 1500\nstorage_mb = 1000\npurchasable = false\n",
         encoding="utf-8",
     )
     monkeypatch.setattr(plans_module, "PLANS_FILE", path)

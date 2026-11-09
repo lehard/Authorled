@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 
@@ -7,6 +7,7 @@ import { NameDialog } from "@/screens/shared/NameDialog";
 
 import { DOC_WORDS, docPath } from "../docRef";
 import { firstLine, useNoteActions } from "../noteActions";
+import { NoteUploadDialog } from "../NoteUploadDialog";
 import { useProjectData } from "../ProjectContext";
 import { DocHead } from "./DocHead";
 
@@ -16,11 +17,20 @@ export function NotesDoc() {
   const navigate = useNavigate();
   const actions = useNoteActions(project.id);
   const [adding, setAdding] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const words = DOC_WORDS.note;
 
   return (
     <>
       <DocHead title={words.group}>
+        <Button
+          variant="outline"
+          className="rounded-full"
+          onClick={() => setUploading(true)}
+        >
+          <Upload />
+          Загрузить файл
+        </Button>
         <Button className="rounded-full" onClick={() => setAdding(true)}>
           <Plus />
           {words.add}
@@ -32,8 +42,8 @@ export function NotesDoc() {
             <b className="mb-2 block text-heading-3 text-foreground">
               Пока пусто
             </b>
-            Записывайте мысли по разработке сценария, чтобы они не терялись.
-            Заметки общие для всех драфтов.
+            Записывайте мысли по разработке сценария, чтобы они не терялись, и
+            загружайте материалы из файлов. Заметки общие для всех драфтов.
           </p>
         ) : (
           notes.map((n) => (
@@ -50,6 +60,12 @@ export function NotesDoc() {
           ))
         )}
       </div>
+      <NoteUploadDialog
+        open={uploading}
+        onOpenChange={setUploading}
+        projectId={project.id}
+        onDone={(id) => navigate(docPath(draft, { kind: "note", id }))}
+      />
       <NameDialog
         open={adding}
         onOpenChange={setAdding}

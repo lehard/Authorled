@@ -18,7 +18,7 @@ from evals.routing.components import DOMAIN_SETS
 ALLOWED: dict[str, frozenset[str]] = {
     "wide-characters": frozenset({"create_story_document", "update_story_document"}),
     "wide-world": frozenset({"create_story_document", "update_story_document"}),
-    "wide-notes": frozenset({"create_story_note", "update_story_note"}),
+    "wide-notes": frozenset({"create_story_note", "save_chat_file_to_notes", "update_story_note"}),
     "wide-text": frozenset({"suggest_edit"}),
     "wide-dialogue": frozenset({"suggest_edit"}),
     "wide-review": frozenset({"comment_on_screenplay", "suggest_edit"}),

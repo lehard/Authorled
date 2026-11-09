@@ -61,6 +61,10 @@ type Resource = (typeof RESOURCES)[number];
 
 const store = {
   ...structuredClone(FIXTURES),
+  notes: FIXTURES.notes.map((note) => ({
+    ...structuredClone(note),
+    file: null,
+  })),
   // No core here: the id of a script's document is its own id (the co-author does not run on the sample).
   scripts: FIXTURES.scripts.map((s) => ({
     ...structuredClone(s),
@@ -76,7 +80,7 @@ export const FIXTURES_NO_SEARCH =
   "Поиск по истории работает только с источником данных api.";
 
 export const FIXTURES_UNAVAILABLE =
-  "Недоступно с данными примера: импорт и файлы в чат работают только с источником данных api.";
+  "Недоступно с данными примера: импорт, файлы в чат и в заметки работают только с источником данных api.";
 
 /** Structure templates live in the core only (design of story-structure-templates, decision 6). */
 export const FIXTURES_NO_TEMPLATES =
@@ -570,6 +574,7 @@ export const fixturesProvider: DataProvider = {
         title: values.title,
         body: "",
         deletedAt: null,
+        file: null,
       };
     } else if (resource === "points") {
       const values = variables as Pick<Point, "draftId" | "name">;

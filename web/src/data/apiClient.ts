@@ -86,7 +86,7 @@ export function apiRequest(
   return started;
 }
 
-async function send(path: string, request: ApiRequest): Promise<ApiResponse> {
+async function respond(path: string, request: ApiRequest): Promise<Response> {
   const user = await activeUser();
   if (user === null) throw new HttpError("Вход истёк. Войдите снова.", 401);
   const headers: Record<string, string> = {
@@ -122,6 +122,16 @@ async function send(path: string, request: ApiRequest): Promise<ApiResponse> {
     }
     throw new HttpError(describe(response.status, detail), response.status);
   }
+  return response;
+}
+
+async function send(path: string, request: ApiRequest): Promise<ApiResponse> {
+  const response = await respond(path, request);
   const body: unknown = response.status === 204 ? null : await response.json();
   return { body, revision: etag(response) };
+}
+
+/** The bytes of a response, for a file the author downloads (the original of a note). */
+export async function apiBlob(path: string): Promise<Blob> {
+  return (await respond(path, {})).blob();
 }

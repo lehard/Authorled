@@ -48,6 +48,7 @@ def test_columns(connection: Connection) -> None:
         "created_at",
         "updated_at",
         "deleted_at",
+        "file_id",
     ]
 
 

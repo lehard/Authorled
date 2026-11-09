@@ -120,7 +120,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 - `agno/app/sandbox.py`: providers, repository URL/branch and checkpoint paths.
 - `agno/agents/`: application agents, including the Claude engineer (Claude Code on DeepSeek) and the co-author
   with its tools (`coauthor_tools.py`: read and search the story of the conversation, propose an edit of the screenplay, and by
-  the author's request change notes, documents and comments; in-process functions that call the core; every changing
+  the author's request change notes (also save a file of the conversation as a note), documents and comments;
+  long notes are read in parts of 20 000 characters; in-process functions that call the core; every changing
   call pauses the run until the chat answers it, the author in the co-author mode `ask`, the chat itself in `auto`;
   the list is static, AgentOS 3.1.10 refuses tools built per run; the document tools type profile fields as strings
   and list the fields of each kind from `FIELD_HINTS` in `core/fields.py`) and its hooks (`coauthor_usage.py`: the limit check before a run, the usage journal
@@ -137,7 +138,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   `engine.py` (the core's own connection pool), `users.py` (account operations), `projects.py`, `drafts.py`,
   `documents.py`, `fields.py`, `texts.py`, `notes.py`, `snapshots.py`, `saves.py`, `review.py`, `files.py`, `search.py`, `imports.py` and
   `importers/` (stories, their equal drafts and the documents of a draft, the editor text with revisions, notes of a story, snapshots
-  of a document and points of a draft, comments and suggestions, uploads, search of a draft and its story, manuscript import), `clamav.py` (antivirus
+  of a document and points of a draft, comments and suggestions, uploads, search of a draft and its story, manuscript import;
+  a note made from a file keeps it as its original, purpose `note`, counted against the place of the user's plan), `clamav.py` (antivirus
   client), `errors.py` (refusals the routes answer with), `writing.py` (words of the screenplay by one rule shared with
   `web/src/editor/wordCount.cases.json`, the words the author's saves add by period of 15 minutes, days in the reader's
   time zone, the daily goal and the goal of a story) and `feedback.py` (the author's marks of the co-author's
@@ -148,8 +150,9 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   `agno/tests/`: pytest for the core and billing on real PostgreSQL (`./scripts/dev.sh test`).
 - `agno/billing/`: the billing module (openspec/specs/billing/module), kept apart to become a service later. Its only
   entrance is `billing/__init__.py`: operations with plain values, each in its own transaction (`ensure_subscription`,
-  `check_limit`, `record_runs`, `recorded_run_ids`, `run_session`, `report`, `set_plan`, prices). Inside: `plans.py` with
-  the data files `plans.toml` and `model_prices.toml` (plans and model prices in rubles; a broken file or a co-author
+  `check_limit`, `storage_limit`, `record_runs`, `recorded_run_ids`, `run_session`, `report`, `set_plan`, prices). Inside:
+  `plans.py` with the data files `plans.toml` and `model_prices.toml` (plans with the coauthor's limit in rubles and the
+  place for originals of notes `storage_mb`, model prices in rubles; a broken file or a co-author
   model without a price stops startup), `subscriptions.py` (one active subscription per user, its periods and renewal),
   `usage.py` (the usage journal, the limit check and the report), `tables.py` (schema `billing`, a user kept by value,
   no keys to other schemas), `connection.py` and `engine.py` (its own pool from the same `DB_*`). `billing/migrations/`

@@ -59,6 +59,7 @@ export function useConfirmations(
   );
   // One per changing tool of the backend (actions.ts, CHANGING_TOOLS).
   useAnswered("create_story_note", handler);
+  useAnswered("save_chat_file_to_notes", handler);
   useAnswered("update_story_note", handler);
   useAnswered("create_story_document", handler);
   useAnswered("update_story_document", handler);
