@@ -84,7 +84,8 @@ case "${command}" in
         command -v uv > /dev/null || fail "uv not found. Install: https://docs.astral.sh/uv/"
         agentos_db_password="$(sed -n 's/^AGENTOS_DB_PASSWORD=//p' .env | tail -n 1)"
         [[ -n "${agentos_db_password}" ]] || fail "AGENTOS_DB_PASSWORD is not set in .env (password of the database role agentos)."
-        docker compose up -d --wait agentos-db litellm clamav authentik-server authentik-worker
+        # Phoenix, the journal of agent runs: the API refuses to start without it (openspec/specs/agent-tracing).
+        docker compose up -d --wait agentos-db litellm clamav authentik-server authentik-worker phoenix
         # The role the API connects with (agno/db/init.sql); fails loudly like any compose step.
         docker compose run --rm agentos-db-init
         # The core schema `authorled` (openspec/specs/core/database); a failed migration stops here.
@@ -101,6 +102,7 @@ case "${command}" in
         export AGENTOS_URL=http://127.0.0.1:8000 LITELLM_URL=http://127.0.0.1:4000
         export JWT_JWKS_FILE="$(pwd)/auth/jwks/jwks.json"
         export CLAMAV_HOST=127.0.0.1 CLAMAV_PORT=3310
+        export PHOENIX_URL=http://127.0.0.1:6006
         # The backend module runs from agno/; .env stays at the repository root.
         env_file="$(pwd)/.env"
         cd agno
@@ -134,7 +136,7 @@ case "${command}" in
         exec uv run --no-project --with-requirements requirements.txt --with pytest pytest tests
         ;;
     stop)
-        docker compose stop agentos-api litellm clamav authentik-server authentik-worker agentos-db
+        docker compose stop agentos-api litellm clamav phoenix authentik-server authentik-worker agentos-db
         ;;
     reset-db)
         [[ "${2:-}" == "--yes" ]] || fail "reset-db deletes all data in the agentos-db volume. Re-run with --yes to confirm."
