@@ -177,3 +177,8 @@ jobs:
       # The product site and its beta request route; the empty body is refused, nothing is stored.
       - name: Check the site
         run: deploy/check_site.sh "$SITE_ORIGIN"
+
+      # The admin interface of Authentik only with the owner's client certificate, its path closed on the
+      # Authentik host, default flows closed on the public hosts. The hosts are those of deploy/Caddyfile.
+      - name: Check the admin interface
+        run: deploy/check_admin.sh admin.soavtor.app https://auth.soavtor.app "$PUBLIC_URL"

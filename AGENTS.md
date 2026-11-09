@@ -16,12 +16,33 @@ generic manager behavior belongs in Agno. `CLAUDE.md` links to this file.
   MCP mount at the root (see `openspec/context/ADR/ADR-002-own-routes-via-base-app.md`). Do not pass
   `base_app`: with it Agno drops its error handlers for its own routes. Every other API surface stays
   with Agno; today the own routes are `/api/v1/me`, the story routes (stories, documents, texts,
-  drafts, notes, comments, suggestions, saves, files, import) and the marks of the co-author's answers
-  (`/api/v1/coauthor-feedback`).
+  drafts, notes, comments, suggestions, saves, files, import, search), the writing statistics of a draft
+  (`/api/v1/drafts/{id}/writing`) and the marks of the co-author's answers (`/api/v1/coauthor-feedback`).
 - Check framework behavior against the Agno version pinned in `agno/pyproject.toml`.
   Do not bypass framework rejections or add compatibility adapters to this template.
 - Keep the starter lean. Add abstractions, tests and infrastructure only for a concrete
   application need. Never print or commit credentials.
+
+## Parallel sessions
+
+`main` is the only long-lived branch; releases come only from it (openspec/specs/dev-workflow).
+
+- The main checkout (the repository root, not a worktree) stays on `main` and is for reading and
+  `git pull` only: do not edit or commit there.
+- Every session works in its own worktree under `.claude/worktrees/`, created from `origin/main`, in a
+  branch `claude/<change>`, and reaches `main` only through a pull request.
+- Changes in `git status` that you did not make belong to another session: do not revert,
+  format, stage or commit them.
+- Never run `git stash`, `git reset --hard`, `git checkout -- <path>`, `git restore`, `git clean`,
+  switch branches, `git add -A` or `git commit -a`. Stage and commit only your own files, by path.
+- Do not run `./scripts/format.sh` in a shared checkout; format only the files you changed.
+- Docker, the database and ports are shared: `dev.sh reset-db`, `docker compose down` and
+  container restarts only with the user's approval.
+- One session works on one OpenSpec change, from apply to merge.
+- Two hooks in `.claude/settings.json` remind of this flow and change nothing:
+  `scripts/hook_session_start.sh` warns when a session starts in the main checkout or the main checkout is
+  not on `main`; `scripts/hook_stop.sh` asks the session once to finish verify and archive when all tasks of
+  a change its branch touched are checked and the change is not archived.
 
 ## OpenSpec is mandatory
 
@@ -36,11 +57,23 @@ The flow from discussion to code:
    `business-intents/<slug>.md` in the format of the existing intents (status line,
    Why, What Changes, Scope, Non-goals, Constraints, Acceptance criteria, Risks,
    Open Questions, References), then stop.
-3. OpenSpec: the user runs `/opsx:propose`, `/opsx:update`, `/opsx:apply`, `/opsx:verify`
-   and `/opsx:archive` themselves. Do not start them on your own; when a request
-   needs code and no active change covers it, say so and point to the intent.
-   Inside a command the user started, follow its skill; keep `/opsx:apply` within
-   `tasks.md` and ask the user to run `/opsx:update` when the plan must change.
+3. OpenSpec: the user runs `/opsx:propose`, `/opsx:update` and `/opsx:apply` themselves.
+   Do not start them on your own; when a request needs code and no active change covers it,
+   say so and point to the intent. Inside a command the user started, follow its skill; keep
+   `/opsx:apply` within `tasks.md` and ask the user to run `/opsx:update` when the plan must change.
+4. Finish in the same session, without a separate command of the user, once every task of
+   `tasks.md` is checked. This rule is the user's standing permission to commit, push and merge
+   in this step:
+   1. Verify (skill `openspec-verify-change`). On any CRITICAL issue stop and show the issues.
+   2. Archive (skill `openspec-archive-change`, specs synced) in the same branch; name the
+      WARNING and SUGGESTION issues in the report.
+   3. Merge `origin/main` into the branch (`git merge`, not rebase); on a conflict stop and ask.
+   4. Run `./scripts/validate.sh`, `git diff --check` and the tests the change needs; on a failure
+      stop and name the failed check.
+   5. Commit your own files by path, push, open the pull request into `main`, wait for its checks
+      with `gh pr checks <PR> --watch --fail-fast` and merge it with `gh pr merge <PR> --merge`.
+   Do not create a release unless the user asks. The server check after a release goes in a small
+   pull request of its own from a fresh `origin/main`; no `-archive` or `-close` branches.
 - Exempt: typos, formatting, comments, edits under `openspec/` itself, and read-only
   questions or investigation (`/opsx:explore`). If unsure whether a request is exempt, ask.
 - Also exempt: texts and images of the product site in `site/` (owner, 2026-11-08). New pages,
@@ -64,8 +97,9 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 ## Where changes belong
 
 - `agno/app/main.py`: AgentOS registration, shared database, OS Manager, Company and queue.
-- `agno/app/api/`: own product routes (`me.py`; `stories.py`, `notes.py`, `review.py`, `saves.py`, `files.py` for stories;
-  `feedback.py` for the marks «Полезно» and «Не то» of the co-author's answers) and their
+- `agno/app/api/`: own product routes (`me.py`; `stories.py`, `notes.py`, `review.py`, `saves.py`, `files.py`, `search.py` for stories;
+  `writing.py` for the writing statistics of a draft; `feedback.py` for the marks «Полезно» and «Не то» of the
+  co-author's answers) and their
   `application/problem+json` errors, handled only for the product's own exception types (`Problem`, `core/errors.py`).
   `body.py`: JSON body, `If-Match`, the caller and the project access check every story route does first.
 - `agno/app/auth/` and `auth/`: the auth module. `agno/app/auth/` is the only code that reads JWT
@@ -82,25 +116,28 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   `agno/app/settings.py`: application model factories.
 - `agno/app/sandbox.py`: providers, repository URL/branch and checkpoint paths.
 - `agno/agents/`: application agents, including the Claude engineer (Claude Code on DeepSeek) and the co-author
-  with its tools (`coauthor_tools.py`: read the story of the conversation, propose an edit of the screenplay, and by
+  with its tools (`coauthor_tools.py`: read and search the story of the conversation, propose an edit of the screenplay, and by
   the author's request change notes, documents and comments; in-process functions that call the core; every changing
   call pauses the run until the chat answers it, the author in the co-author mode `ask`, the chat itself in `auto`;
   the list is static, AgentOS 3.1.10 refuses tools built per run; the document tools type profile fields as strings
   and list the fields of each kind from `FIELD_HINTS` in `core/fields.py`) and its hooks (`coauthor_usage.py`: the limit check before a run, the usage journal
   after it). The co-author never deletes, trashes or decides; the screenplay text changes only by suggestions.
   `agno/skills/<agent_id>/SKILL.md`: an agent's prompt as an Anthropic Agent Skill (`name` equals the id,
-  the body is the prompt), loaded by `agents/prompts.py`; restart the API after editing it.
+  the body is the prompt), loaded by `agents/prompts.py`; restart the API after editing it. The co-author's prompt holds
+  a short help about the service (section «О сервисе «Соавтор»»): a change to a screen it describes updates it too.
   `agno/teams/`: the place for the application's teams; the folder does not exist yet and appears with the first
   registered team (the routing exam builds its teams in `agno/evals/routing/` and does not register them).
 - `agno/db/`: cached OS database and distinct knowledge content adapters.
 - `agno/core/`: the product core, independent of Agno: `connection.py` (database URL from `DB_*`),
-  `tables.py` (tables of schema `authorled`: users and settings, stories, drafts, documents, texts, notes, snapshots and points, review, files and
-  requests for the beta),
+  `tables.py` (tables of schema `authorled`: users and settings, stories, drafts, documents, texts, notes, snapshots and points, review, files,
+  requests for the beta and the journal of written words),
   `engine.py` (the core's own connection pool), `users.py` (account operations), `projects.py`, `drafts.py`,
-  `documents.py`, `fields.py`, `texts.py`, `notes.py`, `snapshots.py`, `saves.py`, `review.py`, `files.py`, `imports.py` and
+  `documents.py`, `fields.py`, `texts.py`, `notes.py`, `snapshots.py`, `saves.py`, `review.py`, `files.py`, `search.py`, `imports.py` and
   `importers/` (stories, their equal drafts and the documents of a draft, the editor text with revisions, notes of a story, snapshots
-  of a document and points of a draft, comments and suggestions, uploads, manuscript import), `clamav.py` (antivirus
-  client), `errors.py` (refusals the routes answer with) and `feedback.py` (the author's marks of the co-author's
+  of a document and points of a draft, comments and suggestions, uploads, search of a draft and its story, manuscript import), `clamav.py` (antivirus
+  client), `errors.py` (refusals the routes answer with), `writing.py` (words of the screenplay by one rule shared with
+  `web/src/editor/wordCount.cases.json`, the words the author's saves add by period of 15 minutes, days in the reader's
+  time zone, the daily goal and the goal of a story) and `feedback.py` (the author's marks of the co-author's
   answers by run, the report of the marks; the route gives it the conversation of the run from billing). The core
   never calls billing. `agno/migrations/` and
   `agno/alembic.ini`: Alembic for schema `authorled` only, forward-only, one head; never migrate Agno or Authentik
@@ -124,7 +161,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   core (it joins the spending of billing with the e-mails of the core);
   `./scripts/usage.sh local|prod` runs them in the API container.
 - `scripts/`: local setup, validation and builds. Deployment files: `compose.prod.yaml`, `deploy/` (the release
-  script, the checks of the frontend build and of the deployed site, and the Caddy configuration) and `.github/workflows/deploy.yml`.
+  script, the checks of the frontend build, of the deployed site and of the admin interface, and the Caddy configuration;
+  `scripts/admin_cert.sh` makes the owner's client certificate for `admin.soavtor.app`) and `.github/workflows/deploy.yml`.
 - `web/`: the frontend (Vite + React + TypeScript, thin client without its own database, ADR-001/ADR-004).
   `web/src/design-system/`: tokens, themes, fonts and base components; screens use only its
   semantic tokens (`./web/scripts/check_web_tokens.sh` rejects raw colors). `web/src/components/ui/`:
@@ -134,7 +172,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   `VITE_DATA_SOURCE`. `web/src/editor/`: the screenplay editor; it exports only, the core imports manuscripts;
   `anchors.ts` places co-author suggestions by scene `uid` and quote.
 - `site/`: the product site (openspec/specs/web/site): static pages prerendered to HTML (`scripts/prerender.mjs`,
-  checked by `scripts/check-build.mjs`), no server and no data of its own. It imports the tokens and fonts of
+  checked by `scripts/check-build.mjs`), no server and no data of its own. The documents of the service (offer,
+  policy, pricing on `/legal/offer/`, `/legal/privacy/`, `/pricing/`) are rendered from `docs/legal/*.md`. It imports the tokens and fonts of
   `web/src/design-system` (so its build needs `web/node_modules`) and takes `SITE_ORIGIN` and `SITE_APP_URL` from
   `.env`. Its beta request form posts to `/os/api/v1/beta-requests` on its own origin: the route `app/api/beta.py`,
   the only product route without a token (`PUBLIC_ROUTES` in `app/auth/authorization.py`), stores requests in the
@@ -318,7 +357,8 @@ owner 2026-11-08, `business-intents/coauthor-tool-contracts.md`).
   `--all | --sample N [--repeat K]` (from `agno/`, with the `DB_*` of `./scripts/dev.sh api`): the real co-author answers
   the sample of the routing exam's wide set or the own demo cases on demo stories of its own user, changes only
   proposed and rejected, judged by `claude-sonnet`; spends model calls, writes its report to `tmp/coauthor-eval/`.
-  `python -m evals.coauthor compare <before.json> <after.json>` compares two reports without model calls
+  `python -m evals.coauthor compare <before.json> <after.json>` compares two reports without model calls;
+  `python -m evals.coauthor rejudge <report.json> --domain <domain>` judges one domain again from the saved answers
   (`agno/evals/coauthor/README.md`).
 - `python -m evals.coauthor actions-setup` (once) and `python -m evals.coauthor actions-run --all | --sample N` (from
   `agno/`, with the same `DB_*`): the measurement of actions — the real co-author runs the requests of

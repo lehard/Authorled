@@ -10,6 +10,7 @@ import {
   type Point,
   type Project,
   type Script,
+  type StoryTemplate,
   type Suggestion,
   type Version,
   type VersionContent,
@@ -32,6 +33,18 @@ export function useProjects(inTrash: boolean) {
     pagination: { mode: "off" },
   });
   return { projects: result.data, query };
+}
+
+/** Structure templates of a new story, from the core (openspec/specs/web/workspace, «Выбор каркаса»). */
+export function useStoryTemplates() {
+  const { result, query } = useList<StoryTemplate>({
+    resource: "story-templates",
+    pagination: { mode: "off" },
+    // A failed list leaves «Без каркаса» working and is read again at the next opening of the dialog;
+    // no retries keep the choice from staying locked while they run.
+    queryOptions: { retry: false },
+  });
+  return { templates: result.data, query };
 }
 
 export function useProject(id: string) {

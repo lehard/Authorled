@@ -59,8 +59,9 @@ services:
   # Module auth. The Authentik secrets (AUTHENTIK_SECRET_KEY, AUTHENTIK_DB_PASSWORD,
   # AUTHENTIK_BOOTSTRAP_*, AUTH_*) are required by compose.yaml and have no defaults.
   # Authentik listens on 127.0.0.1:9000 only: publish it on its own domain through a
-  # reverse proxy on the host (README, "Module auth"); behind the proxy set
-  # AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS to the proxy address range.
+  # reverse proxy on the host (README, "Module auth"); set AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS to
+  # the gateway of the network authorled_agentos with /32, the address the host proxy comes from
+  # (deploy/deploy.sh refuses any other value).
   authentik-db-init:
     environment:
       PGPASSWORD: ${DB_PASS:?DB_PASS must be set in .env}

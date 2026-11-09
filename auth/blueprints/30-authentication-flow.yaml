@@ -160,6 +160,49 @@ entries:
       policy: !KeyOf policy-has-password
     attrs:
       order: 0
+  # A superuser (akadmin, the group admins) signs in only on the host of the admin interface
+  # (openspec/specs/auth, «Вход суперпользователя»): in production admin.soavtor.app, which the
+  # reverse proxy opens only with the owner's client certificate. The refusal comes before the
+  # password and the code. The host is the one of the request, not the brand, which Authentik matches
+  # by the end of the name. Authentik takes it from X-Forwarded-Host of a trusted proxy, so the rule
+  # holds because Caddy overwrites that header with the Host it accepted (and refuses a Host that
+  # differs from the TLS name), and Authentik is reachable only through Caddy (127.0.0.1:9000).
+  # A policy that fails refuses the sign-in.
+  - model: authentik_stages_deny.denystage
+    id: stage-admin-only
+    identifiers:
+      name: authorled-authentication-admin-only
+    attrs:
+      deny_message: Администратор входит только через адрес админки.
+  - model: authentik_policies_expression.expressionpolicy
+    id: policy-superuser-outside-admin
+    identifiers:
+      name: authorled-superuser-outside-admin
+    attrs:
+      expression: !Format
+        - |
+          user = request.context["pending_user"]
+          host = request.http_request.get_host().lower()
+          return user.is_superuser and host != "%s".lower()
+        - !Env AUTH_ADMIN_DOMAIN
+  - model: authentik_flows.flowstagebinding
+    id: binding-admin-only
+    identifiers:
+      target: !KeyOf flow-authentication
+      order: 15
+    attrs:
+      stage: !KeyOf stage-admin-only
+      # pending_user is known only after identification, so the policy runs when the stage comes.
+      evaluate_on_plan: false
+      re_evaluate_policies: true
+  - model: authentik_policies.policybinding
+    identifiers:
+      target: !KeyOf binding-admin-only
+      policy: !KeyOf policy-superuser-outside-admin
+    attrs:
+      order: 0
+      # A policy that fails to run refuses the sign-in instead of skipping the refusal.
+      failure_result: true
   - model: authentik_flows.flowstagebinding
     identifiers:
       target: !KeyOf flow-authentication
@@ -317,6 +360,15 @@ entries:
   - model: authentik_brands.brand
     identifiers:
       domain: !Env AUTH_BRAND_DOMAIN
+    attrs:
+      default: false
+      flow_authentication: !KeyOf flow-authentication
+  # The brand of the admin host (openspec/specs/auth, «Вход суперпользователя»): /if/admin/ there
+  # opens the sign-in flow of the product, not a default flow. Locally AUTH_ADMIN_DOMAIN equals
+  # AUTH_BRAND_DOMAIN, and this entry is the brand above with the same flow.
+  - model: authentik_brands.brand
+    identifiers:
+      domain: !Env AUTH_ADMIN_DOMAIN
     attrs:
       default: false
       flow_authentication: !KeyOf flow-authentication

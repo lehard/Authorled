@@ -1,6 +1,7 @@
 import { renderToString } from "react-dom/server";
 
-import { App } from "./App";
+import { App, DOCUMENT_PAGES, isDocumentPage, STATIC_PAGES } from "./App";
+import { LegalDocument } from "./pages/LegalDocument";
 import { PAGES, SITE_ORIGIN, pageUrl, type PageKey } from "./site";
 
 // Rendering of every page to HTML at build time (scripts/prerender.mjs, openspec/specs/web/site).
@@ -36,8 +37,14 @@ function head(key: PageKey): string {
   return tags.join("\n    ");
 }
 
+function page(key: PageKey): React.JSX.Element {
+  if (isDocumentPage(key)) return <LegalDocument doc={DOCUMENT_PAGES[key]} />;
+  const Page = STATIC_PAGES[key];
+  return <Page />;
+}
+
 export function render(key: PageKey): { html: string; head: string } {
-  return { html: renderToString(<App page={key} />), head: head(key) };
+  return { html: renderToString(<App>{page(key)}</App>), head: head(key) };
 }
 
 export { PAGES, SITE_ORIGIN };

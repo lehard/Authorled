@@ -44,6 +44,9 @@ import { ActionLines } from "./ActionLines";
 import { changedResources, firstChangingCalls, toolText } from "./actions";
 import { useConfirmations } from "./confirmations";
 import { useAccount } from "@/account/useAccount";
+import { NO_TRAINING, offerUrl } from "@/app/legal";
+import { newLineKey, sendKey } from "@/screens/shared/keys";
+import { useMediaQuery } from "@/screens/shared/useMediaQuery";
 import {
   ChatError,
   COAUTHOR_ID,
@@ -164,6 +167,9 @@ export function CoauthorChat({
   const { data: account } = useAccount();
   const confirmations = useConfirmations(account?.coauthorMode);
   const runs = useChatRuns();
+  // Key hints only with a mouse or a touchpad (openspec/specs/web/workspace,
+  // «Подсказка клавиш в поле чата»).
+  const keyHints = useMediaQuery("(any-pointer: fine)");
 
   useAgentContext({
     description: "Что сейчас открыто у автора в Соавторе",
@@ -496,6 +502,22 @@ export function CoauthorChat({
       last.role === "user" ||
       (textOf(last) === "" && callsOf(last).length === 0));
   const changingCalls = firstChangingCalls(messages);
+  const sendButton = (
+    <Button
+      size="icon"
+      className="rounded-full"
+      aria-label="Отправить"
+      disabled={
+        (draft.trim() === "" && !attachments.some((a) => a.id !== null)) ||
+        checking ||
+        agent.isRunning ||
+        busy
+      }
+      onClick={() => void send(draft, "field")}
+    >
+      <ArrowUp />
+    </Button>
+  );
 
   /**
    * An answer of the co-author: its text, or the changing calls it carries. The text Agno puts
@@ -810,28 +832,34 @@ export function CoauthorChat({
             minRows={1}
             limit={{ screen: 1 / 3 }}
             value={draft}
-            placeholder="Напишите соавтору"
+            placeholder={
+              keyHints ? `${newLineKey}: новая строка` : "Напишите соавтору"
+            }
+            // Small and muted: the hint does not compete with the author's text; the field stays
+            // one line, its height is set by the copy in the field's font.
+            placeholderClassName="placeholder:text-xs placeholder:leading-6 placeholder:text-muted-foreground/45"
             aria-label="Сообщение соавтору"
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={onKeyDown}
             onPaste={onPaste}
             className="min-w-0 flex-1 py-1.5"
           />
-          <Button
-            size="icon"
-            className="rounded-full"
-            aria-label="Отправить"
-            disabled={
-              (draft.trim() === "" &&
-                !attachments.some((a) => a.id !== null)) ||
-              checking ||
-              agent.isRunning ||
-              busy
-            }
-            onClick={() => void send(draft, "field")}
-          >
-            <ArrowUp />
-          </Button>
+          {keyHints ? (
+            <TooltipProvider delayDuration={400}>
+              <Tooltip>
+                {/* The trigger wraps the button: a disabled button gets no pointer events. */}
+                <TooltipTrigger asChild>
+                  <span className="shrink-0">{sendButton}</span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Отправить
+                  <span className="ml-2 text-muted-foreground">{sendKey}</span>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            sendButton
+          )}
         </div>
         <div className="flex items-start justify-between gap-2">
           <ModeSwitch />
@@ -840,6 +868,21 @@ export function CoauthorChat({
             onPick={(text) => void send(text, "check")}
           />
         </div>
+        {/* The promise about the author's texts, only in an empty conversation and below the field, so the
+            field does not move when it goes (openspec/specs/web/workspace, «Обещание о текстах в чате»). */}
+        {messages.length === 0 && (
+          <p className="text-caption text-muted-foreground">
+            {NO_TRAINING}{" "}
+            <a
+              href={offerUrl("materials")}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              Подробнее
+            </a>
+          </p>
+        )}
         {fileErrors.length > 0 && (
           <ul
             role="alert"

@@ -1,7 +1,23 @@
 # Reverse proxy of the production server (openspec/specs/runtime, «Обратный прокси»).
 # /etc/caddy/Caddyfile imports this file; deploy/deploy.sh reloads Caddy on each release.
 
+# Flows of Authentik on the public hosts (openspec/specs/auth, «Потоки на публичных адресах»): only the
+# flows of the product and the consent flow of its OIDC provider. Any other flow, the default flows of
+# Authentik included, answers 404, so a superuser cannot sign in there past the refusal of the product
+# flow. The first pattern catches every form of a flow path, the second lets through the exact ones.
+(public_flows) {
+	@foreign_flow {
+		path_regexp (?i)/(if/flow|flows/executor)/
+		not path_regexp ^/(if/flow|api/v3/flows/executor)/(authorled-authentication|authorled-enrollment|authorled-invalidation|default-provider-authorization-implicit-consent)/$
+	}
+	handle @foreign_flow {
+		respond 404
+	}
+}
+
 app.soavtor.app {
+	import public_flows
+
 	# AgentOS: the frontend reaches it on its own origin under /os/.
 	handle_path /os/* {
 		reverse_proxy 127.0.0.1:8000
@@ -26,7 +42,33 @@ app.soavtor.app {
 	}
 }
 
+# Authentik for the users: sign-in, consent, profile. The admin interface is only on admin.soavtor.app.
 auth.soavtor.app {
+	import public_flows
+
+	@admin path /if/admin /if/admin/*
+	handle @admin {
+		respond 404
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:9000
+	}
+}
+
+# The admin interface of Authentik (openspec/specs/auth, «Интерфейс Authentik»; openspec/specs/runtime,
+# «Обратный прокси»): a TLS connection only with a client certificate signed by the owner's CA
+# (scripts/admin_cert.sh makes both). Without the file of the CA the configuration does not load.
+# With client_auth Caddy turns strict_sni_host on, so a Host of this site over another TLS name is
+# refused; deploy/check_admin.sh checks it after each release.
+admin.soavtor.app {
+	tls {
+		client_auth {
+			mode require_and_verify
+			trust_pool file /etc/authorled/admin-client-ca.pem
+		}
+	}
+
 	reverse_proxy 127.0.0.1:9000
 }
 

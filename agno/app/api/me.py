@@ -1,6 +1,7 @@
 """The user's own account: GET and PATCH /api/v1/me (openspec/specs/api/me)."""
 
 import uuid
+from typing import cast
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator, model_validator
@@ -21,6 +22,7 @@ from core.users import (
     get_or_create_user,
     update_account,
 )
+from core.writing import GOAL_RULE, is_goal
 
 router = APIRouter(prefix="/api/v1", tags=["Account"])
 
@@ -28,6 +30,7 @@ router = APIRouter(prefix="/api/v1", tags=["Account"])
 class Settings(BaseModel):
     theme: Theme | None
     coauthor_mode: CoauthorMode
+    daily_word_goal: int | None
 
 
 class Me(BaseModel):
@@ -46,6 +49,17 @@ class MeChanges(BaseModel):
     theme: Theme | None = None
     # None only marks "not passed": a null in the body is refused by the validator below.
     coauthor_mode: CoauthorMode | None = None
+    # Words a day for all stories of the author; null takes the goal away.
+    daily_word_goal: int | None = None
+
+    @field_validator("daily_word_goal", mode="before")
+    @classmethod
+    def _goal_in_range(cls, value: object) -> int | None:
+        if value is None:
+            return None
+        if not is_goal(value):
+            raise ValueError(f"Цель должна быть {GOAL_RULE}.")
+        return cast(int, value)
 
     @field_validator("coauthor_mode")
     @classmethod
@@ -64,7 +78,7 @@ class MeChanges(BaseModel):
     @model_validator(mode="after")
     def _something_to_change(self) -> MeChanges:
         if not self.model_fields_set:
-            raise ValueError("Передайте display_name, theme или coauthor_mode.")
+            raise ValueError("Передайте display_name, theme, coauthor_mode или daily_word_goal.")
         return self
 
 
@@ -73,7 +87,9 @@ def _me(account: Account) -> Me:
         id=account.id,
         email=account.email,
         display_name=account.display_name,
-        settings=Settings(theme=account.theme, coauthor_mode=account.coauthor_mode),
+        settings=Settings(
+            theme=account.theme, coauthor_mode=account.coauthor_mode, daily_word_goal=account.daily_word_goal
+        ),
     )
 
 
@@ -105,6 +121,7 @@ def _update(principal: Principal, changes: MeChanges) -> Account:
                 display_name=changes.display_name if "display_name" in fields and changes.display_name else UNSET,
                 theme=changes.theme if "theme" in fields else UNSET,
                 coauthor_mode=changes.coauthor_mode if "coauthor_mode" in fields and changes.coauthor_mode else UNSET,
+                daily_word_goal=changes.daily_word_goal if "daily_word_goal" in fields else UNSET,
             )
     except AccountDeleted as error:
         raise _GONE from error
@@ -134,7 +151,7 @@ def get_me(
 @router.patch(
     "/me",
     response_model=Me,
-    summary="Change the caller's name, theme or co-author mode",
+    summary="Change the caller's name, theme, co-author mode or daily word goal",
     openapi_extra={
         "requestBody": {
             "required": True,

@@ -251,11 +251,12 @@ existing database the same step makes `agentos` the owner of schema `ai` and its
 Fill the auth block of `.env` (see [Module auth](#module-auth)): strong values for
 `AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`, `AUTHENTIK_BOOTSTRAP_PASSWORD` and
 `AUTH_DEV_SERVICE_TOKEN`, the real redirect URI of the frontend in
-`AUTH_FRONTEND_REDIRECT_URI`, `AUTH_BRAND_DOMAIN` (the Authentik host name) and `AUTH_ISSUER` set to the public address of Authentik plus
+`AUTH_FRONTEND_REDIRECT_URI`, `AUTH_BRAND_DOMAIN` (the Authentik host name), `AUTH_ADMIN_DOMAIN` (the host of the
+admin interface, `admin.soavtor.app`) and `AUTH_ISSUER` set to the public address of Authentik plus
 `/application/o/authorled/`. Sign-up stays closed until the list of allowed e-mails is set in the
 admin interface (see [Module auth](#module-auth), «Admin interface»). Authentik listens on `127.0.0.1:9000`: publish it on its own
 HTTPS domain through the reverse proxy of the host (set `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS`
-for the proxy's address range). The Authentik data lives in the `authentik` schema of the same
+to the gateway of the network `authorled_agentos` with `/32`, the address the proxy comes from). The Authentik data lives in the `authentik` schema of the same
 database, so the database backup covers it.
 
 ### 3. Start the production services
@@ -304,8 +305,12 @@ A published GitHub release from `main` goes to the server by itself
 tag with `./scripts/validate.sh`, builds the frontend and the product site (`site/`), sends both to the
 server and runs `deploy/deploy.sh`: database copy, code of the tag, `up -d --build`, the new frontend and
 site, Caddy reload. Then it checks the public `/os/health`, that `/os/agents` refuses a request without a
-token, and the site with `deploy/check_site.sh` (the home page, the policy, a 404 and an empty beta request
-that the API refuses). The site is served on `soavtor.app` as static files; of the API only
+token, and the site with `deploy/check_site.sh` (the home page, the policies, the offer, the pricing, a 404 and an empty beta request
+that the API refuses), and the admin interface with `deploy/check_admin.sh` (`admin.soavtor.app` refuses a
+connection without the owner's client certificate, `/if/admin/` on `auth.soavtor.app` and default flows of
+Authentik answer 404). The release stops before any change if `/etc/authorled/admin-client-ca.pem` is missing or
+`AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS` is not the gateway of `authorled_agentos` with `/32`.
+The site is served on `soavtor.app` as static files; of the API only
 `/os/api/v1/beta-requests` is reachable there.
 It never loads demo stories or development users. A failed step leaves the run red and rolls nothing back.
 
@@ -446,8 +451,11 @@ The dev server opens the design-system showcase at http://127.0.0.1:5173.
 
 ### Product site
 
-The public site of the product lives in [site/](site/): the main page, the policy for personal data and the request
-for the closed beta. It is prerendered to static HTML and takes the tokens and fonts of `web/`, so install both:
+The public site of the product lives in [site/](site/): the main page, the policy for personal data of the request
+for the closed beta, and the documents of the service: the offer (`/legal/offer/`), the policy for personal data of the
+service (`/legal/privacy/`) and the pricing (`/pricing/`). The text of each document is its file in
+[docs/legal/](docs/legal/), rendered at build time; the build refuses a document with a placeholder in square brackets,
+the mark «ЧЕРНОВИК» or no date of the edition. It is prerendered to static HTML and takes the tokens and fonts of `web/`, so install both:
 
 ```sh
 npm ci --prefix web
@@ -562,11 +570,33 @@ on are the token contract in `openspec/specs/auth`. The API accepts only tokens 
   Authentik admin interface and with full API access), `plugins` (service accounts). What each
   group may call is in `agno/app/auth/authorization.py`.
 - **Admin interface.** Authentik settings that change without a release are edited at
-  `/if/admin/` of the Authentik host (in production `https://auth.soavtor.app/if/admin/`).
+  `/if/admin/` of the admin host `AUTH_ADMIN_DOMAIN`: in production
+  `https://admin.soavtor.app/if/admin/`, locally `http://localhost:9000/if/admin/`.
   Sign in as `akadmin`: the password is `AUTHENTIK_BOOTSTRAP_PASSWORD` from the env file of the
   server (it sets the password on the first start only; after a change in the profile the new one
   holds), the code comes to `AUTHENTIK_BOOTSTRAP_EMAIL`. Do not add personal accounts to `admins`:
   that group also gets the administrative scopes of the API.
+  - *Only with the owner's certificate.* In production `admin.soavtor.app` accepts only a TLS
+    connection with a client certificate of the owner's CA; without it the browser gets no page at
+    all. `https://auth.soavtor.app/if/admin/` answers 404, and a superuser (`akadmin`, the group
+    `admins`) who signs in on `auth.soavtor.app` or `app.soavtor.app` is refused with «Администратор
+    входит только через адрес админки.» before the password. On the public hosts only the flows of the
+    product and the consent flow of the provider are open; others answer 404. Keep `akadmin` without
+    API tokens and app passwords: they would sign in without the admin host. Locally there is no
+    certificate: `AUTH_ADMIN_DOMAIN` equals `AUTH_BRAND_DOMAIN` (`localhost:9000`).
+  - *Certificate.* On the owner's Mac run `scripts/admin_cert.sh init`: it makes the CA (10 years) and
+    a client certificate (2 years) in `~/.config/authorled/admin-ca/` and asks for the password of
+    `client.p12`. Import `client.p12` into the login keychain (open the file); Safari and Chrome take
+    it from the keychain and ask which certificate to use, choose «Authorled admin» (Firefox has its
+    own store). Put `ca.pem` on the server as `/etc/authorled/admin-client-ca.pem` (root, 0644): the
+    release refuses to start without it, and Caddy does not load its configuration. The keys never
+    leave the Mac.
+  - *Renewal and loss.* Before the client certificate expires (the script prints the date), run
+    `scripts/admin_cert.sh client`: a new certificate of the same CA, nothing changes on the server.
+    If the Mac or the keys are lost, run `scripts/admin_cert.sh init --replace-ca` on another
+    computer, replace `/etc/authorled/admin-client-ca.pem` and run `sudo systemctl reload caddy`;
+    the old certificate stops working at once. Without the e-mail of the codes too, use `ak` in the
+    `authentik-server` container on the server.
   - *Owned by the admin interface* (the blueprints set them only when the object is created, a
     release keeps your edits): titles and names of the flows `authorled-authentication`,
     `authorled-enrollment` and `authorled-invalidation`, the title of the brand of
@@ -630,9 +660,10 @@ add the others when you need them. Docker Compose reads `.env` for both local an
 | `AUTH_FRONTEND_CLIENT_ID`, `AUTH_FRONTEND_REDIRECT_URI`, `AUTH_FRONTEND_LOGOUT_URI` | Client ID of the Authentik application (also the expected token audience), the frontend's redirect URI after sign-in and its sign-in screen after sign-out (required). |
 | `AUTH_DEV_SERVICE_TOKEN` | Secret of the development service account `sa-dev` (required). |
 | `AUTH_BRAND_DOMAIN` | Host of Authentik as users open it, with the port if the address has one (locally `localhost:9000`); the product sign-in flow applies to this host (required). |
+| `AUTH_ADMIN_DOMAIN` | Host of the Authentik admin interface, with the port if the address has one: a superuser signs in only on this host (required). In production `admin.soavtor.app`, open only with the owner's client certificate; locally equal to `AUTH_BRAND_DOMAIN` (`localhost:9000`). See [Module auth](#module-auth), «Admin interface». |
 | `AUTHENTIK_EMAIL__HOST`, `__PORT`, `__USERNAME`, `__PASSWORD`, `__USE_TLS`, `__USE_SSL`, `__FROM` | Outgoing mail of Authentik (sign-in codes); locally Mailpit (required; `USERNAME` and `PASSWORD` may be empty). `FROM` carries the sender name in quotes: `"Соавтор <noreply@example.com>"`. |
 | `AUTHENTIK_COOKIE_DOMAIN` | Production only: parent domain of the product, so the session set through the frontend reaches Authentik (required by `compose.prod.yaml`). |
-| `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS` | Production only: address range of the reverse proxy as Authentik sees it (required by `compose.prod.yaml`). A proxy on the host comes through the Docker gateway: `172.16.0.0/12`. |
+| `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS` | Production only: the address of the reverse proxy as Authentik sees it (required by `compose.prod.yaml`). A proxy on the host comes through the gateway of the network `authorled_agentos`: `<gateway>/32` (`docker network inspect authorled_agentos`; in production `172.18.0.1/32`). A wider range lets any container of the network forge `X-Forwarded-Host` and pass the superuser rule; `deploy/deploy.sh` stops the release on any other value. |
 | `AUTH_DEV_USER_PASSWORD` | Development only: password of the development users and the quick sign-in (`./scripts/dev.sh auth-users`). |
 | `AUTH_DEV_WRITER_TOKEN` | Development only: app password of `writer@authorled.test`, set by `./scripts/dev.sh auth-users` and used by `python -m evals --tag coauthor` to take a token of `writer` (required by both; generate with `openssl rand -hex 24`). Compose does not need it. |
 | `VITE_DATA_SOURCE` | Data source of the web frontend: `api` (stories in the core) or `fixtures` (sample data in page memory); required by the frontend. |

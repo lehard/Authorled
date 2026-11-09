@@ -6,17 +6,57 @@ import type { ScreenplayDoc } from "@/editor/document.ts";
 export type Role = "main" | "secondary" | "episodic";
 export type EntityKind = "char" | "loc" | "world";
 
+/** Colours of a story's cover, in the order the core gives them to new stories. */
+export const COVER_COLORS = {
+  blue: "Синий",
+  teal: "Бирюзовый",
+  amber: "Янтарный",
+  crimson: "Малиновый",
+  plum: "Сливовый",
+  graphite: "Графит",
+} as const;
+export type CoverColor = keyof typeof COVER_COLORS;
+
+export function isCoverColor(value: unknown): value is CoverColor {
+  return typeof value === "string" && Object.hasOwn(COVER_COLORS, value);
+}
+
+/** The colour after `last` in the palette, from the first one; the core's rule for a new story. */
+export function nextCoverColor(last: CoverColor | undefined): CoverColor {
+  const order = Object.keys(COVER_COLORS) as CoverColor[];
+  return last === undefined
+    ? order[0]
+    : order[(order.indexOf(last) + 1) % order.length];
+}
+
 export type Project = {
   id: string;
   title: string;
   desc: string;
-  cover: boolean;
+  coverColor: CoverColor;
   updatedAt: string;
   deletedAt: string | null;
   /** Drafts outside the trash. */
   draftsCount: number;
   /** The draft this story opens in for the signed-in user. */
   openDraftId: string;
+  /** The goal of the story in words (openspec/specs/api/writing); null is no goal. */
+  wordGoal: number | null;
+  /** Deadline of the goal, `YYYY-MM-DD`; only with a goal. */
+  goalDeadline: string | null;
+};
+
+/** A new story: its title and, without a manuscript, the structure template it starts from. */
+export type NewProject = Pick<Project, "title" | "desc"> & {
+  template?: string;
+};
+
+/** A structure template of a new story (openspec/specs/api/stories, «Список каркасов»). */
+export type StoryTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  acts: { name: string; points: { name: string; hint: string }[] }[];
 };
 
 export const SCRIPT_PARTS = {

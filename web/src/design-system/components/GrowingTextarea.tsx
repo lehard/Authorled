@@ -1,5 +1,5 @@
 import { cn } from "cn";
-import type { ComponentProps } from "react";
+import { type ComponentProps, useLayoutEffect, useRef } from "react";
 
 /** How far the field grows before it scrolls inside: lines of its text, a share of the window height, or not at all. */
 export type GrowLimit = { rows: number } | { screen: number } | "none";
@@ -37,6 +37,12 @@ function maxHeight(limit: GrowLimit): string | undefined {
  * measuring and no CSS sizing of the field that old Safari lacks. The copy carries the lowest
  * height and the limit; past the
  * limit the field scrolls inside. A space after the text makes an empty last line count.
+ *
+ * After each change of the value the focused field moves its selection to the start and straight
+ * back: when the field changes height, WebKit keeps the caret it drew before as a trail on the old
+ * line until the caret is placed anew, and it skips a selection set to where it already is
+ * (openspec/specs/web/design-system, «Каретка без следа в растущем поле»). Not while a composition
+ * (IME) is open, which a new selection would break.
  */
 export function GrowingTextarea({
   value,
@@ -46,8 +52,24 @@ export function GrowingTextarea({
   className,
   placeholderClassName,
   placeholder,
+  ref,
+  onCompositionStart,
+  onCompositionEnd,
   ...props
 }: GrowingTextareaProps) {
+  const field = useRef<HTMLTextAreaElement | null>(null);
+  const composing = useRef(false);
+  useLayoutEffect(() => {
+    const el = field.current;
+    if (el === null || el !== document.activeElement || composing.current) {
+      return;
+    }
+    const { selectionStart, selectionEnd, selectionDirection, scrollTop } = el;
+    el.setSelectionRange(0, 0);
+    el.setSelectionRange(selectionStart, selectionEnd, selectionDirection);
+    // The trip to the start scrolls a field past its limit to the top; keep where it was.
+    el.scrollTop = scrollTop;
+  }, [value]);
   const copy = value === "" ? (placeholder ?? "") : value;
   return (
     <div
@@ -69,6 +91,19 @@ export function GrowingTextarea({
       </span>
       <textarea
         {...props}
+        ref={(el) => {
+          field.current = el;
+          if (typeof ref === "function") return ref(el);
+          if (ref) ref.current = el;
+        }}
+        onCompositionStart={(e) => {
+          composing.current = true;
+          onCompositionStart?.(e);
+        }}
+        onCompositionEnd={(e) => {
+          composing.current = false;
+          onCompositionEnd?.(e);
+        }}
         rows={1}
         value={value}
         placeholder={placeholder}

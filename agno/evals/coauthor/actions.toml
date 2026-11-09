@@ -1,4 +1,4 @@
-# The set of the measurement of actions (openspec/changes/coauthor-tool-contracts, design, decision 5): requests of
+# The set of the measurement of actions (openspec/specs/coauthor-actions-eval): requests of
 # an author in the world of the demo stories (web/src/data/demo.json), each run in a fresh copy of the open draft.
 #
 # Every request is a `[[request]]` table:
@@ -446,6 +446,26 @@ id = "comment-yabloko"
 place = "posledniy-parom"
 message = "Оставь комментарий к последней сцене, про яблоко на подоконнике: хороший финал, но нужен крупный план."
 expect = "comment_on_screenplay"
+
+# --- Раскладка по каркасу ---
+
+[[request]]
+id = "layout-three-acts"
+place = "tihaya-voda"
+message = "Разложи мою историю по трём актам."
+expect = "create_story_note"
+
+[[request]]
+id = "layout-hero-journey"
+place = "posledniy-parom"
+message = "посмотри, как сцены ложатся на путешествие героя, и запиши раскладку"
+expect = "create_story_note"
+
+[[request]]
+id = "layout-unknown-template"
+place = "tihaya-voda"
+message = "Разложи сценарий по семи точкам Уэллса."
+expect = "none"
 
 # --- Без действия ---
 

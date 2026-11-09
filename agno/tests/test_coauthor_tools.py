@@ -21,10 +21,12 @@ from agents.coauthor_tools import (
     create_story_note,
     list_story_documents,
     list_story_notes,
+    list_story_templates,
     read_chat_file,
     read_screenplay,
     read_story_document,
     read_story_note,
+    search_story,
     suggest_edit,
     update_story_document,
     update_story_note,
@@ -89,11 +91,30 @@ def test_read_the_story(authors: Any) -> None:
     assert read_screenplay(run, "s9").startswith("Отказ")
 
 
+def test_search_the_story(authors: Any) -> None:
+    author = authors()
+    project_id, draft_id, _ = _story_with_vera(author)
+    note = author.post(f"/api/v1/projects/{project_id}/notes", json={"title": "Финал", "body": "Вера молчит до конца."})
+    assert note.status_code == 201
+    run = _run(author.subject, f"{project_id}:{draft_id}:{uuid.uuid4()}")
+    vera = next(d for d in json.loads(list_story_documents(run)) if d["name"] == "Вера")
+    found = search_story(run, "ВЕРА").splitlines()
+    assert found[0] == "Найдено по запросу «ВЕРА» (регистр и ё/е не различаются):"
+    assert "- Сцена 1, uid s3 (совпадений 1): «Вера» молчит." in found
+    assert f"- персонаж «Вера», id {vera['id']}, поле «имя или название» (совпадений 1): «Вера»" in found
+    assert f"- «Финал», id {note.json()['id']}, в тексте (совпадений 1): «Вера» молчит до конца." in found
+    fear = search_story(run, "правду")
+    assert "поле «главный страх»" in fear and "Сцены:" not in fear
+    assert search_story(run, "дирижабль") == "Ничего не нашлось по запросу «дирижабль»."
+    assert search_story(run, "в") == "Отказ: Запрос слишком короткий: нужно не меньше 2 символов."
+
+
 def test_foreign_story(authors: Any) -> None:
     owner, stranger = authors(), authors()
     project_id, draft_id, _ = _story_with_vera(owner)
     run = _run(stranger.subject, f"{project_id}:{draft_id}:{uuid.uuid4()}")
     assert list_story_documents(run) == STORY_NOT_FOUND
+    assert search_story(run, "Вера") == STORY_NOT_FOUND
     assert suggest_edit(run, "s3", "Вера молчит", "Вера плачет", "") == STORY_NOT_FOUND
 
 
@@ -305,7 +326,7 @@ def test_no_tool_deletes_trashes_or_decides() -> None:
         "update_story_document",
         "comment_on_screenplay",
     }
-    assert tools.suggest_edit in READING_TOOLS
+    assert tools.suggest_edit in READING_TOOLS and tools.search_story in READING_TOOLS
 
 
 # --- the pause before every change
@@ -319,7 +340,7 @@ def test_every_change_waits_for_an_answer() -> None:
         for tool in COAUTHOR_TOOLS
     }
     assert {name for name, waiting in waits.items() if waiting} == {tool.__name__ for tool in CHANGING_TOOLS}
-    assert waits["suggest_edit"] is False and waits["read_screenplay"] is False
+    assert waits["suggest_edit"] is False and waits["read_screenplay"] is False and waits["search_story"] is False
     assert len(waits) == len(READING_TOOLS) + len(CHANGING_TOOLS)
 
 
@@ -342,3 +363,23 @@ def test_document_tools_describe_fields_as_the_core_checks_them() -> None:
             for name in FIELD_HINTS[kind]:
                 assert f"{name} — {FIELD_HINTS[kind][name]}" in described["description"]
         assert "title_page" not in described["description"]
+
+
+# --- structure templates
+
+
+def test_templates_are_those_of_the_core(authors: Any) -> None:
+    author = authors()
+    project_id, draft_id, _ = _story_with_vera(author)
+    answer = list_story_templates(_run(author.subject, f"{project_id}:{draft_id}:{uuid.uuid4()}"))
+    for found in author.get("/api/v1/story-templates").json():
+        assert f"(id {found['id']})" in answer and found["name"] in answer
+        for act in found["acts"]:
+            assert act["name"] in answer
+            for point in act["points"]:
+                assert f"{point['name']}: {point['hint']}" in answer
+
+
+def test_templates_without_story() -> None:
+    answer = list_story_templates(_run("someone", "not-a-draft"))
+    assert answer.startswith("Отказ:")
