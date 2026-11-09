@@ -40,6 +40,8 @@ export type TitlePage = {
 export type Script = {
   id: string;
   draftId: string;
+  /** Id of the screenplay's document in the core: the co-author's calls name the screenplay by it. */
+  documentId: string;
   logline: string;
   show: Record<ScriptPart, boolean>;
   titlePage: TitlePage;

@@ -4,7 +4,9 @@ Two parts, cases/demo-work.toml and cases/demo-holdout.toml. A case has the fiel
 `message`, `expect` with domains of the wide set, `history`) and its own: `place` (the story it runs in), `action`
 (`"none"` or the changing tools of which one is needed), `mention` (groups of stems the answer must contain), `refs`
 (what of the story it asks about), `absent` (what it asks about that the story does not have) and, optionally, `open`
-(`{ scene = N }`: the screenplay is open and scene N selected, as a check of the mentor sends it). Every reference is
+(`{ scene = N }`: the screenplay is open and scene N selected, as a check of the mentor sends it; `{ doc = "logline" }`
+or `{ doc = "synopsis" }`: that document is open). A case of the part `docs` names the task of «Соавтор» it sends
+(`task`, evals/coauthor/doc_tasks.py) over the document of that task. Every reference is
 checked against web/src/data/demo.json — the file `setup` loaded for the user of the measurement — in the draft the
 story opens; a broken case stops the measurement before any model call (openspec/specs/coauthor-eval).
 """
@@ -16,6 +18,7 @@ from typing import Any
 
 from core.texts import scenes
 from demo.load import read_demo
+from evals.coauthor.doc_tasks import DOC_TASKS, DOC_TITLES, matches
 from evals.coauthor.records import CHANGING, REF_KINDS, Expectation, Ref
 from evals.coauthor.sample import Sampled, SampleError, check_coverage
 from evals.coauthor.user import PLACES
@@ -23,12 +26,19 @@ from evals.routing.cases import CaseError, parse_case
 from evals.routing.components import DOMAIN_SETS
 
 CASES_DIR = Path(__file__).parent / "cases"
-PARTS = {"work": "demo-work.toml", "holdout": "demo-holdout.toml", "checks": "demo-checks.toml"}
-# The checks of the mentor are one domain over a selected scene: the coverage of domains and sections is not theirs
-# (spec «Наборы замера»).
+PARTS = {
+    "work": "demo-work.toml",
+    "holdout": "demo-holdout.toml",
+    "checks": "demo-checks.toml",
+    "docs": "demo-docs.toml",
+}
+# The checks of the mentor are one domain over a selected scene, the tasks of documents a few domains over an open
+# logline or synopsis: the coverage of domains and sections is not theirs (spec «Наборы замера»).
 COVERED_PARTS = ("work", "holdout")
+# Only the cases of this part name a task of «Соавтор» at a document, and every one of them does.
+TASK_PART = "docs"
 NO_ACTION = "none"
-_OWN = {"place", "action", "mention", "refs", "absent", "open"}
+_OWN = {"place", "action", "mention", "refs", "absent", "open", "task"}
 _CARD_GROUPS = {"character": "characters", "location": "locations", "world": "worlds"}
 
 
@@ -109,16 +119,33 @@ def _mention(where: str, value: Any) -> tuple[tuple[str, ...], ...]:
     return tuple(groups)
 
 
-def _open(where: str, value: Any) -> int:
-    if not isinstance(value, dict) or set(value) != {"scene"}:
-        raise SampleError(f"{where} must be a table {{ scene = N }}")
+def _open(where: str, value: Any) -> tuple[int | None, str | None]:
+    """The scene selected in the open screenplay or the open document; exactly one of them."""
+    if not isinstance(value, dict) or set(value) not in ({"scene"}, {"doc"}):
+        raise SampleError(f'{where} must be a table {{ scene = N }} or {{ doc = "logline" | "synopsis" }}')
+    if "doc" in value:
+        doc = value["doc"]
+        if doc not in DOC_TITLES:
+            raise SampleError(f"{where}: document {doc!r} is not one of {', '.join(DOC_TITLES)}")
+        return None, doc
     scene = value["scene"]
     if not isinstance(scene, int) or isinstance(scene, bool):
         raise SampleError(f"{where}: a scene is named by its number")
-    return scene
+    return scene, None
 
 
-def parse_demo_case(source: str, index: int, data: Any, stories: dict[str, Story]) -> Sampled:
+def _task(where: str, value: Any, doc: str | None, message: str) -> str:
+    if value not in DOC_TASKS:
+        raise SampleError(f"{where}: task {value!r} is not one of {', '.join(DOC_TASKS)}")
+    task = DOC_TASKS[value]
+    if doc != task.doc:
+        raise SampleError(f"{where}: task {value!r} stands on {{ doc = {task.doc!r} }}, the case opens {doc!r}")
+    if not matches(task, message):
+        raise SampleError(f"{where}: the message is not the request of task {value!r}")
+    return str(value)
+
+
+def parse_demo_case(source: str, index: int, data: Any, stories: dict[str, Story], *, tasked: bool) -> Sampled:
     if not isinstance(data, dict):
         raise SampleError(f"{source}: case {index} must be a table")
     try:
@@ -141,23 +168,32 @@ def parse_demo_case(source: str, index: int, data: Any, stories: dict[str, Story
     for ref in absent:
         if story.has(ref):
             raise SampleError(f"{where}: absent {ref.kind} {ref.name!r} exists in «{PLACES[place]}»")
-    opened = _open(f"{where}.open", data["open"]) if "open" in data else None
+    opened, doc = _open(f"{where}.open", data["open"]) if "open" in data else (None, None)
     if opened is not None and not story.has(Ref("scene", str(opened))):
         raise SampleError(f"{where}: «{PLACES[place]}» has no scene {opened} to open")
+    if tasked and "task" not in data:
+        raise SampleError(f"{where}: a case of the part {TASK_PART} names its task")
+    if not tasked and "task" in data:
+        raise SampleError(f"{where}: only a case of the part {TASK_PART} names a task")
+    task = _task(where, data["task"], doc, case.message) if tasked else None
     expected = Expectation(
         action=_action(where, data["action"]),
         mention=_mention(where, data.get("mention", [])),
         refs=refs,
         absent=absent,
         open=opened,
+        doc=doc,
+        task=task,
     )
     return Sampled(case, place, expected)
 
 
-def parse_demo_part(source: str, data: dict[str, Any], stories: dict[str, Story], *, covered: bool) -> list[Sampled]:
+def parse_demo_part(
+    source: str, data: dict[str, Any], stories: dict[str, Story], *, covered: bool, tasked: bool
+) -> list[Sampled]:
     if set(data) != {"case"} or not isinstance(data["case"], list) or not data["case"]:
         raise SampleError(f"{source}: the file must hold only a non-empty list of [[case]] tables")
-    cases = [parse_demo_case(source, index, item, stories) for index, item in enumerate(data["case"])]
+    cases = [parse_demo_case(source, index, item, stories, tasked=tasked) for index, item in enumerate(data["case"])]
     seen: set[str] = set()
     for item in cases:
         if item.case.id in seen:
@@ -190,7 +226,9 @@ def load_demo_part(part: str, cases_dir: Path = CASES_DIR) -> list[Sampled]:
         raise SampleError(f"Part {part!r} is unknown; use one of: {', '.join(PARTS)}")
     stories = demo_stories()
     parts = {
-        name: parse_demo_part(file, _read(cases_dir / file), stories, covered=name in COVERED_PARTS)
+        name: parse_demo_part(
+            file, _read(cases_dir / file), stories, covered=name in COVERED_PARTS, tasked=name == TASK_PART
+        )
         for name, file in PARTS.items()
     }
     check_parts(parts)

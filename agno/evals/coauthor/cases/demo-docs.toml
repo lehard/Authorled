@@ -1,0 +1,105 @@
+# Tasks of «Соавтор» at the logline and the synopsis (openspec/changes/logline-synopsis-generation, design, decision 5):
+# the request of web/src/screens/project/chat/docTasks.ts word for word (evals/coauthor/doc_tasks.py), sent over the
+# open document of the task in the first draft of the story. «Под заявку» goes into the field and the author finishes
+# it; the chat trims what it sends. No task changes the story by itself: every case expects no action. The part is not
+# covered by domains and sections (spec «Наборы замера»).
+
+[[case]]
+id = "dd-logline-variants"
+section = "single"
+message = "Предложи три варианта логлайна для этой истории: герой, его цель, главное препятствие и ставки, до 35 слов каждый. Опирайся на сценарий и документы драфта. Ничего не записывай, пока я не выберу."
+expect = ["wide-structure"]
+place = "tihaya-voda"
+action = "none"
+open = { doc = "logline" }
+task = "logline-variants"
+
+[[case]]
+id = "dd-logline-check"
+section = "single"
+message = "Проверь мой логлайн: видно ли в нём героя, его цель, препятствие и ставки? Скажи, чего не хватает, и спроси меня об этом. Не переписывай его за меня."
+expect = ["wide-review"]
+place = "tihaya-voda"
+action = "none"
+open = { doc = "logline" }
+task = "logline-check"
+
+[[case]]
+id = "dd-synopsis-page"
+section = "single"
+message = "Напиши синопсис этой истории на страницу, до 400 слов: завязка, ключевые повороты и финал. Опирайся на сценарий и документы драфта. Покажи его здесь и предложи записать в синопсис драфта."
+expect = ["wide-structure"]
+place = "tihaya-voda"
+action = "none"
+open = { doc = "synopsis" }
+task = "synopsis-page"
+
+[[case]]
+id = "dd-synopsis-short"
+section = "single"
+message = "Напиши короткий синопсис этой истории: один абзац до 120 слов, с финалом. Покажи его здесь и предложи сохранить заметкой «Синопсис: абзац»."
+expect = ["wide-structure"]
+place = "tihaya-voda"
+action = "none"
+open = { doc = "synopsis" }
+task = "synopsis-short"
+
+[[case]]
+id = "dd-synopsis-viewer"
+section = "single"
+message = "Напиши аннотацию этой истории для зрителя: 50–100 слов, без финала и главного поворота. Покажи её здесь и предложи сохранить заметкой «Синопсис: для зрителя»."
+expect = ["wide-structure"]
+place = "tihaya-voda"
+action = "none"
+open = { doc = "synopsis" }
+task = "synopsis-viewer"
+
+[[case]]
+id = "dd-synopsis-application-empty"
+section = "single"
+message = "Напиши синопсис под заявку. Требования:"
+expect = ["wide-structure"]
+place = "tihaya-voda"
+action = "none"
+open = { doc = "synopsis" }
+task = "synopsis-application"
+
+[[case]]
+id = "dd-synopsis-application"
+section = "single"
+message = "Напиши синопсис под заявку. Требования: до 800 знаков, финал не раскрывать"
+expect = ["wide-structure"]
+place = "tihaya-voda"
+action = "none"
+open = { doc = "synopsis" }
+task = "synopsis-application"
+
+[[case]]
+id = "dd-synopsis-check"
+section = "single"
+message = "Проверь мой синопсис: понятны ли завязка, ключевые повороты и финал, нет ли оценок вместо событий? Назови одно–три места и спроси меня о них. Не переписывай его за меня."
+expect = ["wide-review"]
+place = "tihaya-voda"
+action = "none"
+open = { doc = "synopsis" }
+task = "synopsis-check"
+
+[[case]]
+id = "dd-ferry-logline-variants"
+section = "single"
+message = "Предложи три варианта логлайна для этой истории: герой, его цель, главное препятствие и ставки, до 35 слов каждый. Опирайся на сценарий и документы драфта. Ничего не записывай, пока я не выберу."
+expect = ["wide-structure"]
+place = "posledniy-parom"
+action = "none"
+open = { doc = "logline" }
+task = "logline-variants"
+
+[[case]]
+id = "dd-ferry-synopsis-page"
+section = "single"
+message = "Напиши синопсис этой истории на страницу, до 400 слов: завязка, ключевые повороты и финал. Опирайся на сценарий и документы драфта. Покажи его здесь и предложи записать в синопсис драфта."
+expect = ["wide-structure"]
+place = "posledniy-parom"
+action = "none"
+open = { doc = "synopsis" }
+task = "synopsis-page"

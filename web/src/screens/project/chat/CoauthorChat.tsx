@@ -141,6 +141,9 @@ export function CoauthorChat({
     ],
   });
   const [draft, setDraft] = useState("");
+  const field = useRef<HTMLTextAreaElement | null>(null);
+  // The last request to fill that went into the field.
+  const [filled, setFilled] = useState<string | null>(null);
   // A turn of the author, from sending to the end of the co-author's answer, including the time
   // a confirmation card waits for the author: no other message goes meanwhile.
   const [busy, setBusy] = useState(false);
@@ -227,6 +230,9 @@ export function CoauthorChat({
         for (const resource of changedResources(content))
           void invalidate({
             resource,
+            // The screenplay of the draft is read as one record by the draft's id (useScript):
+            // Refine refreshes a detail only by its id.
+            ...(resource === "scripts" ? { id: data.draft.id } : {}),
             invalidates: ["list", "many", "detail"],
           });
       },
@@ -403,10 +409,33 @@ export function CoauthorChat({
     }
   }
 
+  // A request to fill goes into the field before what is typed there, once per request, with the
+  // caret at the end (web/workspace, «Задача «Под заявку»»). The field changes while rendering, as
+  // React adjusts state to a new prop; focus and caret wait for the field to show it.
+  if (request !== null && request.mode === "fill" && request.id !== filled) {
+    setFilled(request.id);
+    setDraft(request.text + draft);
+  }
+  useEffect(() => {
+    if (filled === null) return;
+    onRequestTaken(filled);
+    const el = field.current;
+    if (el === null)
+      throw new Error("Поля ввода чата нет: просьба не вставлена.");
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+    // The request that went into the field is what starts the effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filled]);
   // A check from a document goes like a typed question, once per request.
   const taken = useRef<string | null>(null);
   useEffect(() => {
-    if (request === null || taken.current === request.id) return;
+    if (
+      request === null ||
+      request.mode === "fill" ||
+      taken.current === request.id
+    )
+      return;
     taken.current = request.id;
     onRequestTaken(request.id);
     void send(request.text, "check");
@@ -827,6 +856,7 @@ export function CoauthorChat({
             <Paperclip />
           </Button>
           <GrowingTextarea
+            ref={field}
             variant="bare"
             minRows={1}
             limit={{ screen: 1 / 3 }}
