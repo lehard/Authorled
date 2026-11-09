@@ -70,6 +70,9 @@ services:
       AUTH_FRONTEND_LOGOUT_URI: ${AUTH_FRONTEND_LOGOUT_URI:?AUTH_FRONTEND_LOGOUT_URI must be set in .env}
       AUTH_DEV_SERVICE_TOKEN: ${AUTH_DEV_SERVICE_TOKEN:?AUTH_DEV_SERVICE_TOKEN must be set in .env}
       AUTH_BRAND_DOMAIN: ${AUTH_BRAND_DOMAIN:?AUTH_BRAND_DOMAIN must be set in .env}
+      # Host of the admin interface: the only host where a superuser may sign in (openspec/specs/auth,
+      # «Вход суперпользователя»).
+      AUTH_ADMIN_DOMAIN: ${AUTH_ADMIN_DOMAIN:?AUTH_ADMIN_DOMAIN must be set in .env}
       # Outgoing mail (sign-in codes). Locally the Mailpit service below; in production a real
       # SMTP server. Empty USERNAME and PASSWORD must be written explicitly (no login).
       AUTHENTIK_EMAIL__HOST: ${AUTHENTIK_EMAIL__HOST:?AUTHENTIK_EMAIL__HOST must be set in .env}

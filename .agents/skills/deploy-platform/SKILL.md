@@ -32,7 +32,7 @@ keys (`auth/jwks/jwks.json`) are public and may be shared to complete configurat
   Tokens come from Authentik (module `auth`, services in `auth/compose.yaml`): fill the auth block of
   the production env file with strong values (`AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`,
   `AUTHENTIK_BOOTSTRAP_PASSWORD`, `AUTH_DEV_SERVICE_TOKEN`), the frontend's `AUTH_FRONTEND_*`
-  values, `AUTH_BRAND_DOMAIN` (host name of Authentik) and `AUTH_ISSUER` (public HTTPS address of Authentik plus `/application/o/authorled/`).
+  values, `AUTH_BRAND_DOMAIN` (host name of Authentik), `AUTH_ADMIN_DOMAIN` (host of the admin interface, `admin.soavtor.app`) and `AUTH_ISSUER` (public HTTPS address of Authentik plus `/application/o/authorled/`).
   On a new server sign-up stays closed until `akadmin` sets `allowed_emails` of the group `screenwriters`
   in the admin interface (README, Module auth, «Admin interface»); real addresses stay out of the repository.
   `authentik-jwks-export` writes `JWT_JWKS_FILE` at start; the API does not start without it.
@@ -57,6 +57,25 @@ GitHub variables `SITE_ORIGIN` and `SITE_APP_URL`, and the server needs `/srv/au
 owned by `deploy`. A rollback is a manual run of the same workflow with an earlier tag; for tags before
 `v0.3.5` (no `site/`) run the workflow of that tag (`--ref <tag>`). The server starts empty: never run `dev.sh seed` or `dev.sh auth-users` there.
 
+The Authentik admin interface is only on `admin.soavtor.app`, with the owner's client certificate
+(README, Module auth, «Admin interface»). To turn it on for the first time, each server and DNS step with
+the owner's confirmation:
+
+1. The owner runs `scripts/admin_cert.sh init` on the Mac and imports `client.p12` into the login keychain.
+2. On the server: `ca.pem` → `/etc/authorled/admin-client-ca.pem` (root, 0644);
+   `AUTH_ADMIN_DOMAIN=admin.soavtor.app` and `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS=<gateway>/32` in
+   `/etc/authorled/authorled.env`, the gateway read just before with
+   `docker network inspect authorled_agentos --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}'` (172.18.0.1 now).
+3. DNS: an A record `admin.soavtor.app` → the server IP (Reg.ru, zone `soavtor.app`); check it with
+   `https://dns.google/resolve?name=admin.soavtor.app&type=A`.
+4. The owner checks in the admin interface that `akadmin` has no API tokens and app passwords.
+5. A release from `main`: `deploy.sh` refuses without the CA file, `deploy/check_admin.sh` must pass.
+6. From the Mac: `https://admin.soavtor.app/if/admin/` in Safari and Chrome opens the sign-in, and
+   `akadmin` on `app.soavtor.app` is refused. End the sessions of `akadmin` opened before the release.
+
+Lost Mac or keys: `scripts/admin_cert.sh init --replace-ca` on another computer, replace the CA file on the
+server, `sudo systemctl reload caddy`. Without the e-mail of the codes too: `ak` in `authentik-server`.
+
 Use the provider's status/list commands, saved project identifiers, and local
 configuration to find an existing deployment. A failed health check does not mean
 its resources are gone. Resolve authentication, permission, and network errors
@@ -67,7 +86,9 @@ and the actual teardown command and data it deletes. Run the README's first-depl
 procedure with the intended account and target explicitly selected.
 For owned infrastructure, configure the public URLs of the API and Authentik before first boot.
 Authentik listens on `127.0.0.1:9000`: publish it on its own HTTPS domain through the host's
-reverse proxy and set `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS` to the proxy's address range.
+reverse proxy and set `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS` to the gateway of the network
+`authorled_agentos` with `/32` (`docker network inspect authorled_agentos`): a wider range lets any container
+forge `X-Forwarded-Host`, and `deploy/deploy.sh` refuses it.
 
 For an update, follow the README's code and environment update commands. Read the
 scripts to establish their order and whether updating settings also triggers a
@@ -100,7 +121,9 @@ redeploying.
 Build submission is not successful deployment. Inspect bounded provider logs and
 test the public URL: `/health` must succeed; unauthenticated `/agents` requests and
 MCP initialization POSTs must reject access. `deploy/check_site.sh https://soavtor.app` must pass: the
-site answers, an unknown page is 404, and an empty beta request is refused with 422. A plain `GET /mcp` may return public
+site answers, an unknown page is 404, and an empty beta request is refused with 422. `deploy/check_admin.sh admin.soavtor.app https://auth.soavtor.app https://app.soavtor.app`
+must pass: the admin host asks for the owner's client certificate and refuses a connection without one,
+`/if/admin/` on the Authentik host and default flows on the public hosts answer 404. A plain `GET /mcp` may return public
 server-card metadata; it does not test authorization. With MCP OAuth enabled,
 verify the POST's Bearer challenge. Exercise an authenticated request with an
 existing token, then confirm the UI connects at

@@ -15,6 +15,9 @@ readonly APP="${ROOT}/app"
 readonly WEB="${ROOT}/web"
 readonly SITE="${ROOT}/site"
 readonly BACKUPS="${ROOT}/backups"
+# CA of the owner's client certificate for admin.soavtor.app (deploy/Caddyfile, scripts/admin_cert.sh).
+readonly ADMIN_CLIENT_CA=/etc/authorled/admin-client-ca.pem
+readonly NETWORK=authorled_agentos
 readonly KEEP_BACKUPS=10
 readonly VOLUME=authorled_pgdata
 readonly COMPOSE=(docker compose -p authorled -f compose.yaml -f compose.prod.yaml)
@@ -30,8 +33,23 @@ check_inputs() {
     [[ -d "${APP}/.git" ]] || fail "${APP} is not a clone of the repository"
     [[ -r "${APP}/.env" ]] || fail "${APP}/.env is missing or unreadable"
     [[ -d "${BACKUPS}" ]] || fail "${BACKUPS} is missing"
+    [[ -f "${ADMIN_CLIENT_CA}" ]] || fail "${ADMIN_CLIENT_CA} is missing: put the ca.pem of scripts/admin_cert.sh there"
+    check_trusted_proxy
     [[ -f "${WEB}/incoming/$1/index.html" ]] || fail "frontend of $1 is missing in ${WEB}/incoming"
     [[ -f "${SITE}/incoming/$1/index.html" ]] || fail "site of $1 is missing in ${SITE}/incoming"
+}
+
+# Authentik trusts X-Forwarded-Host only from the gateway of the Docker network: Caddy comes through
+# docker-proxy of 127.0.0.1:9000 from that address, other containers come from their own
+# (openspec/specs/runtime, «Обратный прокси»; openspec/specs/auth, «Вход суперпользователя»).
+check_trusted_proxy() {
+    local gateway trusted
+    gateway="$(docker network inspect "${NETWORK}" --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}')" ||
+        fail "network ${NETWORK} is missing: start the services once by hand (README, Deploy in production)"
+    [[ -n "${gateway}" ]] || fail "network ${NETWORK} has no gateway"
+    trusted="$(sed -n 's/^AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS=//p' "${APP}/.env")"
+    [[ "${trusted}" == "${gateway}/32" ]] ||
+        fail "AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS is '${trusted}', the gateway of ${NETWORK} is ${gateway}: set ${gateway}/32"
 }
 
 fetch_tag() {

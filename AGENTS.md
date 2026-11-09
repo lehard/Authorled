@@ -158,7 +158,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   core (it joins the spending of billing with the e-mails of the core);
   `./scripts/usage.sh local|prod` runs them in the API container.
 - `scripts/`: local setup, validation and builds. Deployment files: `compose.prod.yaml`, `deploy/` (the release
-  script, the checks of the frontend build and of the deployed site, and the Caddy configuration) and `.github/workflows/deploy.yml`.
+  script, the checks of the frontend build, of the deployed site and of the admin interface, and the Caddy configuration;
+  `scripts/admin_cert.sh` makes the owner's client certificate for `admin.soavtor.app`) and `.github/workflows/deploy.yml`.
 - `web/`: the frontend (Vite + React + TypeScript, thin client without its own database, ADR-001/ADR-004).
   `web/src/design-system/`: tokens, themes, fonts and base components; screens use only its
   semantic tokens (`./web/scripts/check_web_tokens.sh` rejects raw colors). `web/src/components/ui/`:
