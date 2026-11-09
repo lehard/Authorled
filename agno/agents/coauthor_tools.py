@@ -23,6 +23,7 @@ from core import documents as docs
 from core import notes, review, texts
 from core.engine import get_engine
 from core.errors import Conflict, Invalid, Locked, NotFound
+from core.fields import Role, field_guide
 from core.files import file_text as stored_file_text
 from core.files import get_file
 from core.users import active_user_id
@@ -302,18 +303,23 @@ def create_story_document(
     run_context: RunContext,
     kind: str,
     name: str,
-    role: str | None = None,
+    role: Role | None = None,
     summary: str = "",
-    fields: dict[str, Any] | None = None,
+    fields: dict[str, str] | None = None,
 ) -> str:
     """Создать персонажа, локацию или мир в драфте этой беседы. Только по прямой просьбе автора.
+
+    Сведения о персонаже, локации или мире клади в поля профиля (fields), а не в summary. Значение каждого поля —
+    строка. Поля по видам (имя — что в нём):
+    {fields}
 
     Args:
         kind: character, location или world.
         name: имя персонажа или название локации, мира.
-        role: роль персонажа или локации (как у других документов этого вида в list_story_documents); у мира нет.
-        summary: коротко, кто это или что это.
-        fields: поля профиля, как в read_story_document; только известные поля этого вида.
+        role: роль персонажа или локации, у них обязательна: main — главная, secondary — второстепенная, episodic —
+            эпизодическая; у мира роли нет, не передавай.
+        summary: одной фразой, кто это или что это.
+        fields: поля профиля этого вида из списка выше, значения — строки.
     """
 
     def work() -> Any:
@@ -333,20 +339,23 @@ def update_story_document(
     run_context: RunContext,
     document_id: str,
     name: str | None = None,
-    role: str | None = None,
+    role: Role | None = None,
     summary: str | None = None,
-    fields: dict[str, Any] | None = None,
+    fields: dict[str, str | None] | None = None,
 ) -> str:
     """Изменить документ драфта: имя, роль, описание или поля профиля. Только по прямой просьбе автора.
 
-    Прежние значения остаются в версиях документа.
+    Прежние значения остаются в версиях документа. Значение каждого поля — строка. Поля по видам (имя — что в нём):
+    {fields}
 
     Args:
         document_id: id документа из list_story_documents.
         name: новое имя; не передавай, если не меняется.
-        role: новая роль; не передавай, если не меняется.
-        summary: новое короткое описание; не передавай, если не меняется.
-        fields: только меняемые поля профиля; null убирает поле, остальные остаются.
+        role: новая роль персонажа или локации (main, secondary или episodic); у мира роли нет; не передавай, если не
+            меняется.
+        summary: новое описание одной фразой; не передавай, если не меняется.
+        fields: только меняемые поля вида документа из списка выше: строка — новое значение, null убирает поле,
+            остальные остаются.
     """
 
     def work() -> Any:
@@ -362,6 +371,18 @@ def update_story_document(
         return _done(f"Изменён документ «{document.name}»", "document", document.id, kind=document.kind)
 
     return _answer(work)
+
+
+def _list_fields(tool: Callable[..., str], kinds: tuple[str, ...]) -> None:
+    """Put the fields of the kinds, from the core, into the description the model gets (design, decision 2)."""
+    marker = "{fields}"
+    if tool.__doc__ is None or marker not in tool.__doc__:
+        raise RuntimeError(f"The docstring of {tool.__name__} has no {marker} for the fields of the kinds")
+    tool.__doc__ = tool.__doc__.replace(marker, field_guide(kinds).replace("\n", "\n    "))
+
+
+_list_fields(create_story_document, ("character", "location", "world"))
+_list_fields(update_story_document, ("character", "location", "world", "script"))
 
 
 def comment_on_screenplay(run_context: RunContext, scene_uid: str, quote: str, text: str) -> str:

@@ -11,10 +11,14 @@ from typing import Any
 
 from agno.knowledge.embedder.openai import OpenAIEmbedder
 from agno.models.deepseek import DeepSeek
+from agno.models.openai.like import OpenAILike
 
 # Proxy aliases declared in litellm/config.yaml.
 DEEPSEEK_FAST = "deepseek-fast"
 DEEPSEEK_THINKING = "deepseek-thinking"
+# Chat models of the routing exam only (evals/routing, openspec/specs/orchestrator); no registered agent uses them.
+CLAUDE_SONNET = "claude-sonnet"
+CLAUDE_OPUS = "claude-opus"
 # Embedding aliases the application accepts in EMBEDDINGS_MODEL. All return
 # EMBEDDING_DIMENSIONS-sized vectors; models with other sizes must not be added
 # (the pgvector HNSW index holds at most 2000 dimensions).
@@ -63,6 +67,21 @@ def default_model() -> DeepSeek:
 def manager_model() -> DeepSeek:
     """Model for OS Manager and Company Product Manager."""
     return _deepseek(DEEPSEEK_THINKING, thinking=True)
+
+
+def _exam_model(alias: str) -> OpenAILike:
+    # No `thinking` parameter: these Claude models cannot turn it off and run adaptive without it.
+    return OpenAILike(id=alias, base_url=f"{litellm_url()}/v1", api_key=litellm_key())
+
+
+def claude_sonnet_model() -> OpenAILike:
+    """Claude Sonnet through the proxy's OpenAI-compatible /v1, for the routing exam only."""
+    return _exam_model(CLAUDE_SONNET)
+
+
+def claude_opus_model() -> OpenAILike:
+    """Claude Opus through the proxy's OpenAI-compatible /v1, for the routing exam only."""
+    return _exam_model(CLAUDE_OPUS)
 
 
 def embeddings_model() -> str:

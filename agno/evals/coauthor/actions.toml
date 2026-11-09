@@ -1,0 +1,492 @@
+# The set of the measurement of actions (openspec/changes/coauthor-tool-contracts, design, decision 5): requests of
+# an author in the world of the demo stories (web/src/data/demo.json), each run in a fresh copy of the open draft.
+#
+# Every request is a `[[request]]` table:
+# - `id`, `place` (tihaya-voda or posledniy-parom), `message`;
+# - `expect`: the changing tool the request needs, or "none" when nothing may change;
+# - for create_story_document: `kind` (character, location, world);
+# - for update_story_document and update_story_note: `target`, the name of the card or the title of the note;
+# - `fields`: profile fields the request names directly; "a|b" means one of them is enough;
+# - for update_story_document: optional `role` and `name` the card must have after the request.
+# The set is checked against core/fields.py and the demo stories before any model call (evals/coauthor/actions.py).
+
+# --- Персонажи ---
+
+[[request]]
+id = "character-vasily"
+place = "tihaya-voda"
+message = "Создай ужасного персонажа Василия, который бомж и дикий шизанутый"
+expect = "create_story_document"
+kind = "character"
+fields = ["personality"]
+
+[[request]]
+id = "character-petr"
+place = "tihaya-voda"
+message = "Заведи персонажа: Пётр, старший брат Веры, живёт в городе, лет пятидесяти пяти. Боится, что Вера его так и не простит."
+expect = "create_story_document"
+kind = "character"
+fields = ["age", "fear", "residence"]
+
+[[request]]
+id = "character-galya"
+place = "tihaya-voda"
+message = "нужна ещё соседка веры, тётя галя, лет 70, всё про всех знает и говорит без остановки, сплетничает"
+expect = "create_story_document"
+kind = "character"
+fields = ["age", "speech|personality|habits"]
+
+[[request]]
+id = "character-kassirsha"
+place = "tihaya-voda"
+message = "Добавь персонажа Зою, кассиршу на пристани. Работает там с девяностых, носит один и тот же синий халат."
+expect = "create_story_document"
+kind = "character"
+fields = ["job", "dress"]
+
+[[request]]
+id = "character-uchastkovy"
+place = "tihaya-voda"
+message = "Создай персонажа — участковый Семёнов, лет сорока, шрам через бровь. Тогда, в 98-м, он вёл дело Миши и закрыл его за два дня."
+expect = "create_story_document"
+kind = "character"
+fields = ["age", "feature", "pastEvent|secrets"]
+
+[[request]]
+id = "character-lena"
+place = "tihaya-voda"
+message = "Заведи Лену, подругу Ани из города. Женщина, 25 лет. Говорит быстро и всё время смеётся не к месту."
+expect = "create_story_document"
+kind = "character"
+fields = ["age", "gender", "speech"]
+
+[[request]]
+id = "character-dyakon"
+place = "posledniy-parom"
+message = "Создай персонажа: Степан, механик с того берега, чинит паромный мотор. Высокий, сутулый, руки в масле. Мечтает уехать на море."
+expect = "create_story_document"
+kind = "character"
+fields = ["job", "height|body", "longGoal|shortGoal"]
+
+[[request]]
+id = "character-inspector"
+place = "posledniy-parom"
+message = "Нужен персонаж — инспектор из района Кравцов, который приезжает закрыть переправу. Вежливый, но непробиваемый. Сделай его второстепенным."
+expect = "create_story_document"
+kind = "character"
+fields = ["personality|job"]
+
+[[request]]
+id = "character-masha"
+place = "posledniy-parom"
+message = "добавь внучку Ефима, Машу, ей 9. Боится воды и поэтому никогда не ездит с дедом на пароме"
+expect = "create_story_document"
+kind = "character"
+fields = ["age", "fear"]
+
+[[request]]
+id = "character-nina"
+place = "posledniy-parom"
+message = "Заведи покойную жену Павла, Нину. Умерла десять лет назад. Это она когда-то уговорила его остаться на переправе. Детство провела в той деревне, что на том берегу."
+expect = "create_story_document"
+kind = "character"
+fields = ["childhood", "pastEvent|plot"]
+
+# --- Локации ---
+
+[[request]]
+id = "location-magazin"
+place = "tihaya-voda"
+message = "Создай локацию «Магазин у остановки»: пахнет хлебом и стиральным порошком, гудит холодильник с мороженым."
+expect = "create_story_document"
+kind = "location"
+fields = ["smell", "sound"]
+
+[[request]]
+id = "location-kladbishe"
+place = "tihaya-voda"
+message = "Заведи локацию: кладбище за посёлком, на холме. Оттуда видно всё озеро. Снимать будем на натуре."
+expect = "create_story_document"
+kind = "location"
+fields = ["sight", "soundstage"]
+
+[[request]]
+id = "location-banya"
+place = "tihaya-voda"
+message = "добавь баню дяди коли. внутри жарко и темно, доски на полке шершавые, пахнет берёзовым веником"
+expect = "create_story_document"
+kind = "location"
+fields = ["smell", "touch|climate"]
+
+[[request]]
+id = "location-shkola"
+place = "tihaya-voda"
+message = "Нужна локация — старая школа посёлка. Раньше там учились Вера и Миша, теперь она закрыта. Рядом футбольное поле, заросшее травой."
+expect = "create_story_document"
+kind = "location"
+fields = ["history", "nearby"]
+
+[[request]]
+id = "location-komnata-ani"
+place = "tihaya-voda"
+message = "Создай локацию «Комната Ани»: узкая кровать, плакаты девяностых на стенах, окно на озеро. Эпизодическая."
+expect = "create_story_document"
+kind = "location"
+fields = ["sight"]
+
+[[request]]
+id = "location-most"
+place = "posledniy-parom"
+message = "Создай локацию «Новый мост»: бетон, фонари, гул машин без перерыва. Ориентир — красные огни на опорах."
+expect = "create_story_document"
+kind = "location"
+fields = ["sound", "landmark"]
+
+[[request]]
+id = "location-derevnya"
+place = "posledniy-parom"
+message = "Заведи локацию: деревня на том берегу. Всегда сыро и ветрено, у воды пахнет рыбой и мазутом."
+expect = "create_story_document"
+kind = "location"
+fields = ["climate", "smell"]
+
+[[request]]
+id = "location-ostanovka"
+place = "posledniy-parom"
+message = "Нужна остановка автобуса у съезда на мост — локация, второстепенная. Её построили одновременно с мостом, рядом заправка."
+expect = "create_story_document"
+kind = "location"
+fields = ["history", "nearby"]
+
+[[request]]
+id = "location-palub"
+place = "posledniy-parom"
+message = "сделай локацию палуба парома: железо холодное и мокрое под рукой, слышно, как вода бьёт в борт"
+expect = "create_story_document"
+kind = "location"
+fields = ["touch", "sound"]
+
+# --- Миры ---
+
+[[request]]
+id = "world-1998"
+place = "tihaya-voda"
+message = "Заведи мир «Посёлок в 1998 году»: денег ни у кого нет, расплачиваются самогоном и рыбой, власти никакой, всё решает председатель."
+expect = "create_story_document"
+kind = "world"
+fields = ["currency|trade", "government"]
+
+[[request]]
+id = "world-son"
+place = "tihaya-voda"
+message = "Создай мир сна Веры: там озеро без берегов, вода говорит голосом Миши, а законы простые — кто посмотрит назад, тот останется."
+expect = "create_story_document"
+kind = "world"
+fields = ["geography", "laws|magic"]
+
+[[request]]
+id = "world-gorod"
+place = "tihaya-voda"
+message = "Добавь мир «Город Ани»: многоэтажки, пробки, все работают в офисах и торговых центрах. Климат — серо и слякотно полгода."
+expect = "create_story_document"
+kind = "world"
+fields = ["climates", "industry|trade"]
+
+[[request]]
+id = "world-ozero-legend"
+place = "tihaya-voda"
+message = "заведи мир легенд озера — местные верят, что озеро забирает по одному человеку раз в двадцать лет, и в церковь ходят только старухи"
+expect = "create_story_document"
+kind = "world"
+fields = ["religions|magic"]
+
+[[request]]
+id = "world-rayon"
+place = "posledniy-parom"
+message = "Создай мир «Район после моста»: торговля переехала в город, на том берегу закрылись магазин и школа, власть — районная администрация, которой нет дела до деревни."
+expect = "create_story_document"
+kind = "world"
+fields = ["trade", "government", "education"]
+
+[[request]]
+id = "world-reka-1980"
+place = "posledniy-parom"
+message = "Нужен мир — река в восьмидесятые, когда Павел только начал работать: паромов три, по реке ходят баржи с лесом, рыбы полно."
+expect = "create_story_document"
+kind = "world"
+fields = ["industry|resources", "animals"]
+
+[[request]]
+id = "world-skazka-efima"
+place = "posledniy-parom"
+message = "Заведи мир сказки, которую Ефим рассказывает внучке: река там живая, у неё свой язык, а понять его может только паромщик."
+expect = "create_story_document"
+kind = "world"
+fields = ["languages", "whoCanUse|magic"]
+
+[[request]]
+id = "world-zima"
+place = "posledniy-parom"
+message = "сделай мир зимней переправы: зимой река встаёт, ездят по льду на санях, лёд проверяют пешнёй, законы такие — первым идёт паромщик"
+expect = "create_story_document"
+kind = "world"
+fields = ["climates|geography", "laws"]
+
+# --- Изменение карточек ---
+
+[[request]]
+id = "update-anya-fear"
+place = "tihaya-voda"
+message = "Допиши Ане страх: боится стать как мать — молчать двадцать лет."
+expect = "update_story_document"
+target = "Аня"
+fields = ["fear"]
+
+[[request]]
+id = "update-misha-role"
+place = "tihaya-voda"
+message = "Сделай Мишу эпизодическим персонажем, он почти не появляется."
+expect = "update_story_document"
+target = "Миша"
+role = "episodic"
+
+[[request]]
+id = "update-kolya-speech"
+place = "tihaya-voda"
+message = "у дяди коли поменяй речь: говорит матом, но при Ане сдерживается"
+expect = "update_story_document"
+target = "Дядя Коля"
+fields = ["speech"]
+
+[[request]]
+id = "update-mostki-sight"
+place = "tihaya-voda"
+message = "Озеру, мосткам добавь, что видно: туман лежит низко, дальний берег не разглядеть."
+expect = "update_story_document"
+target = "Озеро, мостки"
+fields = ["sight"]
+
+[[request]]
+id = "update-posyolok-currency"
+place = "tihaya-voda"
+message = "В мире «Посёлок у озера» запиши про деньги: зарплату в посёлке платят раз в три месяца, живут огородом."
+expect = "update_story_document"
+target = "Посёлок у озера"
+fields = ["currency|resources|industry"]
+
+[[request]]
+id = "update-vera-habits"
+place = "tihaya-voda"
+message = "Вере добавь привычку: по ночам моет уже чистую посуду. И секрет — она знает, кто был на мостках."
+expect = "update_story_document"
+target = "Вера"
+fields = ["habits", "secrets"]
+
+[[request]]
+id = "update-pavel-age"
+place = "posledniy-parom"
+message = "Павлу поставь возраст 62, а не 60."
+expect = "update_story_document"
+target = "Павел"
+fields = ["age"]
+
+[[request]]
+id = "update-lida-role"
+place = "posledniy-parom"
+message = "Лида у нас теперь главная героиня наравне с Павлом, поменяй ей роль. И добавь цель: увезти отца в город до зимы."
+expect = "update_story_document"
+target = "Лида"
+role = "main"
+fields = ["shortGoal|longGoal"]
+
+[[request]]
+id = "update-efim-name"
+place = "posledniy-parom"
+message = "Переименуй Ефима в «Ефим Ильич»."
+expect = "update_story_document"
+target = "Ефим"
+name = "Ефим Ильич"
+
+[[request]]
+id = "update-budka-smell"
+place = "posledniy-parom"
+message = "будке паромщика допиши запах — табак, мокрый ватник и чай"
+expect = "update_story_document"
+target = "Будка паромщика"
+fields = ["smell"]
+
+[[request]]
+id = "update-nizovye-government"
+place = "posledniy-parom"
+message = "В мире «Низовье» заполни власть: решения принимает район, а деревне на том берегу даже не сообщили о закрытии."
+expect = "update_story_document"
+target = "Низовье"
+fields = ["government"]
+
+# --- Заметки ---
+
+[[request]]
+id = "note-final-ideas"
+place = "tihaya-voda"
+message = "Запиши в заметку «Идеи финала»: Вера сама заходит в воду; Аня уезжает, не дождавшись правды."
+expect = "create_story_note"
+
+[[request]]
+id = "note-research"
+place = "tihaya-voda"
+message = "создай заметку что проверить: как в 1998 году оформляли гибель на воде, кто приезжал из милиции"
+expect = "create_story_note"
+
+[[request]]
+id = "note-casting"
+place = "tihaya-voda"
+message = "Сделай заметку «Кастинг» — на Веру смотреть актрис 50+, на Аню нужна непрофессиональная актриса."
+expect = "create_story_note"
+
+[[request]]
+id = "note-ferry-facts"
+place = "posledniy-parom"
+message = "Заведи заметку «Факты о переправах»: паромы на канатной тяге, скорость около 5 км/ч, закрывают обычно после открытия моста."
+expect = "create_story_note"
+
+[[request]]
+id = "note-ferry-title"
+place = "posledniy-parom"
+message = "Запиши в заметки варианты названия: «Последний рейс», «Канат», «Другой берег»."
+expect = "create_story_note"
+
+[[request]]
+id = "note-append-questions"
+place = "tihaya-voda"
+message = "В «Вопросы к читке» допиши: понятно ли, почему Коля молчал?"
+expect = "update_story_note"
+target = "Вопросы к читке"
+
+[[request]]
+id = "note-append-anya"
+place = "tihaya-voda"
+message = "добавь в заметку «Что знает Аня»: в сцене в гараже она ещё ничего не подозревает"
+expect = "update_story_note"
+target = "Что знает Аня"
+
+[[request]]
+id = "note-append-water"
+place = "tihaya-voda"
+message = "Запиши в «Вопросы к читке» ещё один вопрос: не слишком ли часто вода в кадре?"
+expect = "update_story_note"
+target = "Вопросы к читке"
+
+# Notes belong to the story, not to the copy of the draft: the renaming goes after every request that finds the
+# note by its old title.
+[[request]]
+id = "note-rename-questions"
+place = "tihaya-voda"
+message = "Переименуй заметку «Вопросы к читке» в «Вопросы к первой читке»."
+expect = "update_story_note"
+target = "Вопросы к читке"
+
+[[request]]
+id = "note-ferry-schedule"
+place = "posledniy-parom"
+message = "Сохрани в заметку «Расписание последнего дня»: рейсы в 7:00, 10:00, 13:00 и последний в 18:30."
+expect = "create_story_note"
+
+# --- Комментарии к сценарию ---
+
+[[request]]
+id = "comment-kolya-utonul"
+place = "tihaya-voda"
+message = "Оставь комментарий к реплике дяди Коли «Он утонул. Всё.» — слишком в лоб, пусть уходит от ответа."
+expect = "comment_on_screenplay"
+
+[[request]]
+id = "comment-vera-priezzhai"
+place = "tihaya-voda"
+message = "к «Приезжай» во второй сцене оставь коммент: здесь нужна пауза перед словом"
+expect = "comment_on_screenplay"
+
+[[request]]
+id = "comment-chashka"
+place = "tihaya-voda"
+message = "Прокомментируй ремарку про чистую чашку в ночной сцене на кухне: отличная деталь, повторить её в финале."
+expect = "comment_on_screenplay"
+
+[[request]]
+id = "comment-anya-ne-sluchayno"
+place = "tihaya-voda"
+message = "Оставь замечание к фразе Ани, что Миша утонул не случайно: рано раскрываем, может, перенести в третий акт?"
+expect = "comment_on_screenplay"
+
+[[request]]
+id = "comment-pristan-final"
+place = "tihaya-voda"
+message = "на последней сцене, где вера идёт по пристани, напиши комментарий — не хватает звука, может, скрип досок"
+expect = "comment_on_screenplay"
+
+[[request]]
+id = "comment-list-zakryta"
+place = "posledniy-parom"
+message = "Оставь комментарий к листу «С 1 ноября переправа закрыта»: пусть Павел его срывает, а не просто видит."
+expect = "comment_on_screenplay"
+
+[[request]]
+id = "comment-efim-govorit"
+place = "posledniy-parom"
+message = "К реплике Ефима про то, с кем говорить на мосту, оставь комментарий: лучшая строчка, не трогать."
+expect = "comment_on_screenplay"
+
+[[request]]
+id = "comment-lida-bilet"
+place = "posledniy-parom"
+message = "прокомментируй «Один билет.» у Лиды — пусть она платит мелочью, как в детстве"
+expect = "comment_on_screenplay"
+
+[[request]]
+id = "comment-yabloko"
+place = "posledniy-parom"
+message = "Оставь комментарий к последней сцене, про яблоко на подоконнике: хороший финал, но нужен крупный план."
+expect = "comment_on_screenplay"
+
+# --- Без действия ---
+
+[[request]]
+id = "none-brother-ideas"
+place = "tihaya-voda"
+message = "Каким мог бы быть брат Веры? Дай пару вариантов."
+expect = "none"
+
+[[request]]
+id = "none-scene-question"
+place = "tihaya-voda"
+message = "Как думаешь, нужна ли сцена у воды перед финалом?"
+expect = "none"
+
+[[request]]
+id = "none-names"
+place = "posledniy-parom"
+message = "Придумай три имени для инспектора из района, просто список, ничего не заводи."
+expect = "none"
+
+[[request]]
+id = "none-delete-misha"
+place = "tihaya-voda"
+message = "Удали Мишу из персонажей."
+expect = "none"
+
+[[request]]
+id = "none-pavel-advice"
+place = "posledniy-parom"
+message = "что бы ты добавил Павлу в характер, чтобы он был живее?"
+expect = "none"
+
+[[request]]
+id = "none-accept"
+place = "tihaya-voda"
+message = "Прими все предложения в сценарии."
+expect = "none"
+
+[[request]]
+id = "none-retell"
+place = "posledniy-parom"
+message = "Перескажи коротко вторую сцену."
+expect = "none"

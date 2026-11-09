@@ -18,7 +18,7 @@ from core.documents import (
 )
 from core.drafts import empty_trash
 from core.errors import Conflict, Invalid, Locked
-from core.fields import merge_fields, validate_fields
+from core.fields import FIELD_HINTS, FIELDS, field_guide, merge_fields, validate_fields
 from core.projects import (
     ProjectAccess,
     create_project,
@@ -64,6 +64,51 @@ def test_wrong_type_is_named() -> None:
     with pytest.raises(Invalid) as error:
         validate_fields("world", {"overview": 5})
     assert error.value.field == "fields.overview"
+
+
+def test_every_wrong_field_is_named_at_once() -> None:
+    with pytest.raises(Invalid) as error:
+        validate_fields("character", {"speech": {"value": "Бормочет"}, "age": 55, "appearance": "Худой"})
+    detail = str(error.value)
+    assert error.value.field == "fields.speech"
+    assert "«speech»: ожидается строка" in detail
+    assert "«age»: ожидается строка" in detail
+    assert "«appearance» нет у документа этого вида" in detail
+    assert "Поля персонажа: " in detail and "personality" in detail
+    assert detail.index("speech") < detail.index("«age»") < detail.index("appearance")
+
+
+def test_gender_outside_the_list() -> None:
+    with pytest.raises(Invalid) as error:
+        validate_fields("character", {"gender": "male"})
+    assert str(error.value) == "Поле «gender»: допустимые значения — f, m, o или пусто."
+
+
+def test_screenplay_parts_name_what_is_expected() -> None:
+    with pytest.raises(Invalid) as error:
+        validate_fields("script", {"show": {"title": 1}, "title_page": "Маяк"})
+    detail = str(error.value)
+    assert "«show.title»: ожидается да или нет" in detail
+    assert "«show.logline» обязательно" in detail
+    assert "«title_page»: ожидается объект" in detail
+
+
+@pytest.mark.parametrize("kind", sorted(FIELDS))
+def test_every_field_has_wording_for_a_wrong_value(kind: str) -> None:
+    for name in FIELDS[kind].model_fields:
+        with pytest.raises(Invalid) as error:
+            validate_fields(kind, {name: 5})
+        assert f"«{name}" in str(error.value)
+
+
+def test_field_guide_names_every_field_the_coauthor_may_set() -> None:
+    guide = field_guide(("character", "location", "world", "script"))
+    for kind in ("character", "location", "world"):
+        for name in FIELDS[kind].model_fields:
+            assert f"{name} — " in guide
+    assert set(FIELD_HINTS["script"]) == {"logline", "synopsis"}
+    assert "show" not in guide and "title_page" not in guide
+    assert "gender — пол, f женский, m мужской, o другой (f, m, o или пусто)" in guide
 
 
 def test_partial_profile_change_keeps_other_fields() -> None:

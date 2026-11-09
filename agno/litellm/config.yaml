@@ -16,6 +16,20 @@ model_list:
       model: deepseek/deepseek-v4-pro
       api_key: os.environ/DEEPSEEK_API_KEY
 
+  # Routing exam only (agno/evals/routing, openspec/specs/orchestrator): Claude as the
+  # quality reference on synthetic messages; no product agent uses these aliases (ADR-003).
+  # The key is optional by the owner's decision (2026-11-08): without it the proxy starts
+  # and a call to these aliases fails with an authorization error.
+  - model_name: claude-sonnet
+    litellm_params:
+      model: anthropic/claude-sonnet-5-5
+      api_key: os.environ/ANTHROPIC_EXAM_API_KEY
+
+  - model_name: claude-opus
+    litellm_params:
+      model: anthropic/claude-opus-5-5
+      api_key: os.environ/ANTHROPIC_EXAM_API_KEY
+
   # Knowledge embeddings, GigaChat API: Embeddings-2, 1024 dimensions, 512 input tokens.
   # The GigaChat provider reads GIGACHAT_CREDENTIALS and GIGACHAT_SCOPE from the
   # environment. drop_params only here: OpenAIEmbedder always sends `dimensions`,

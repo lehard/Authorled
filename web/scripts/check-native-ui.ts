@@ -4,6 +4,8 @@
 // shadcn components in src/components/ui are generated code and are skipped.
 // «Без системного вида»: the design system keeps one autofill rule outside any CSS layer that
 // sets the text colour and puts off the browser's background, so no field state brings it back.
+// «Одно многострочное поле»: <textarea> lives only in the design system's GrowingTextarea, and
+// no file of web/src (generated components included) uses `field-sizing`.
 //
 // Usage: npm run check:native-ui --prefix web
 
@@ -51,6 +53,13 @@ function topLevel(attrs: string): string {
   return out;
 }
 
+const GROWING_TEXTAREA = path.join(
+  SRC,
+  "design-system",
+  "components",
+  "GrowingTextarea.tsx",
+);
+
 const problems: string[] = [];
 for (const file of files(SRC)) {
   const text = readFileSync(file, "utf8");
@@ -67,12 +76,33 @@ for (const file of files(SRC)) {
     if (/(^|\s)title=/.test(attrs))
       problems.push(`${where}: <${tag} title=…> — native tooltip; use Tooltip`);
     if (tag === "select") problems.push(`${where}: <select> — use Select`);
+    if (tag === "textarea" && file !== GROWING_TEXTAREA)
+      problems.push(`${where}: <textarea> — use GrowingTextarea`);
     if (tag === "input" && /\stype="(checkbox|radio)"/.test(attrs)) {
       problems.push(
         `${where}: <input type="checkbox|radio"> — use Checkbox or a radio group component`,
       );
     }
   }
+}
+
+// `field-sizing` grows fields only in new browsers; GrowingTextarea grows them everywhere.
+function sources(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) return sources(full);
+    return /\.(tsx?|css)$/.test(e.name) ? [full] : [];
+  });
+}
+for (const file of sources(SRC)) {
+  readFileSync(file, "utf8")
+    .split("\n")
+    .forEach((text, i) => {
+      if (text.includes("field-sizing"))
+        problems.push(
+          `${path.relative(path.resolve(SRC, ".."), file)}:${i + 1}: field-sizing — use GrowingTextarea`,
+        );
+    });
 }
 
 // The autofill rule: unlayered (it must beat Tailwind utilities such as transition-colors and the
@@ -125,5 +155,5 @@ if (problems.length > 0) {
   process.exit(1);
 }
 console.log(
-  "check-native-ui: no native tooltips, checkboxes, radio buttons or selects; autofill rule in place",
+  "check-native-ui: no native tooltips, checkboxes, radio buttons, selects or bare textareas; autofill rule in place",
 );

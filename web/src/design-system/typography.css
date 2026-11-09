@@ -74,7 +74,7 @@
     outline: none;
   }
 
-  /* Multi-line fields grow with their text (field-sizing: content); no resize grip. */
+  /* Multi-line fields grow with their text through GrowingTextarea; no resize grip. */
   textarea {
     resize: none;
   }
