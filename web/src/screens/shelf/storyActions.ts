@@ -2,7 +2,7 @@ import { useCreate, useGetIdentity, useUpdate } from "@refinedev/core";
 
 import type { Identity } from "@/auth/authProvider";
 import { useStoryFiles, type NewStory } from "@/data/files";
-import type { Project, Script } from "@/data/model";
+import type { NewProject, Script } from "@/data/model";
 
 const quiet = { successNotification: false, errorNotification: false } as const;
 
@@ -14,17 +14,21 @@ export function useStoryActions() {
   const files = useStoryFiles();
 
   // Only a feature film for now (decision 2026-10-31); the data source creates the screenplay
-  // with one empty scene heading, as the core does, or from a manuscript (import of the core),
-  // and the title page is filled here.
+  // with one empty scene heading, as the core does, from a structure template of the core, or
+  // from a manuscript (import of the core), and the title page is filled here.
   async function createStory(
     title: string,
     file: File | null,
+    template: string | null,
   ): Promise<string> {
     if (me === undefined)
       throw new Error("Профиль пользователя ещё не загружен.");
     let story: NewStory;
+    if (file !== null && template !== null)
+      throw new Error("История из рукописи создаётся без каркаса.");
     if (file === null) {
-      const project: Pick<Project, "title" | "desc"> = { title, desc: "" };
+      const project: NewProject =
+        template === null ? { title, desc: "" } : { title, desc: "", template };
       const { data } = await create({
         resource: "projects",
         values: project,

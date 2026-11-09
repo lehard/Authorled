@@ -21,6 +21,7 @@ from agents.coauthor_tools import (
     create_story_note,
     list_story_documents,
     list_story_notes,
+    list_story_templates,
     read_chat_file,
     read_screenplay,
     read_story_document,
@@ -342,3 +343,23 @@ def test_document_tools_describe_fields_as_the_core_checks_them() -> None:
             for name in FIELD_HINTS[kind]:
                 assert f"{name} — {FIELD_HINTS[kind][name]}" in described["description"]
         assert "title_page" not in described["description"]
+
+
+# --- structure templates
+
+
+def test_templates_are_those_of_the_core(authors: Any) -> None:
+    author = authors()
+    project_id, draft_id, _ = _story_with_vera(author)
+    answer = list_story_templates(_run(author.subject, f"{project_id}:{draft_id}:{uuid.uuid4()}"))
+    for found in author.get("/api/v1/story-templates").json():
+        assert f"(id {found['id']})" in answer and found["name"] in answer
+        for act in found["acts"]:
+            assert act["name"] in answer
+            for point in act["points"]:
+                assert f"{point['name']}: {point['hint']}" in answer
+
+
+def test_templates_without_story() -> None:
+    answer = list_story_templates(_run("someone", "not-a-draft"))
+    assert answer.startswith("Отказ:")

@@ -22,6 +22,7 @@ import type {
   Entity,
   NewDraft,
   NewNote,
+  NewProject,
   NewReply,
   NewThread,
   Point,
@@ -65,6 +66,10 @@ const store = {
 /** Import and chat files need the core (design of story-data-web, decision 7). */
 export const FIXTURES_UNAVAILABLE =
   "Недоступно с данными примера: импорт и файлы в чат работают только с источником данных api.";
+
+/** Structure templates live in the core only (design of story-structure-templates, decision 6). */
+export const FIXTURES_NO_TEMPLATES =
+  "Недоступно с данными примера: каркасы историй работают только с источником данных api.";
 
 function table(resource: string): Row[] {
   if (!(RESOURCES as readonly string[]).includes(resource)) {
@@ -446,6 +451,7 @@ export const fixturesProvider: DataProvider = {
 
   getList: async ({ resource, filters = [], sorters = [], pagination }) => {
     checkPagination(pagination);
+    if (resource === "story-templates") throw new Error(FIXTURES_NO_TEMPLATES);
     let rows = table(resource).filter((row) =>
       filters.every((f) => matches(row, f)),
     );
@@ -469,7 +475,9 @@ export const fixturesProvider: DataProvider = {
     let row: Row;
     if (resource === "projects") {
       // A story comes with its first draft and screenplay, as in the core.
-      const project = variables as Pick<Project, "title" | "desc">;
+      const project = variables as NewProject;
+      if (project.template !== undefined)
+        throw new Error(FIXTURES_NO_TEMPLATES);
       row = {
         id: crypto.randomUUID(),
         title: project.title,
