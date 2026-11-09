@@ -1,8 +1,9 @@
-"""Migrations of schema authorled (openspec/specs/core/database)."""
+"""Migrations of schemas authorled and billing (openspec/specs/core/database, openspec/specs/billing/module)."""
 
 import uuid
 from datetime import UTC, datetime
 
+import pytest
 from alembic import command
 from alembic.autogenerate import compare_metadata
 from alembic.config import Config
@@ -10,6 +11,9 @@ from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from sqlalchemy import Connection, Engine, delete, func, insert, select, text, update
 
+from billing.tables import SCHEMA as BILLING_SCHEMA
+from billing.tables import metadata as billing_metadata
+from billing.tables import subscriptions, usage_records
 from core.documents import create_documents, document_row
 from core.documents import update_document as change
 from core.projects import create_project
@@ -24,7 +28,6 @@ from core.tables import (
     metadata,
     notes,
     projects,
-    subscriptions,
     user_settings,
     users,
 )
@@ -57,29 +60,45 @@ def _undo_beta_requests(connection: Connection) -> None:
 
 
 def _drop_subscriptions(connection: Connection) -> None:
-    """Undo 0011, 0010 and 0009 before a test rewinds the schema to an older revision."""
+    """Undo 0011, 0010 and 0009 before a test rewinds the core to an older revision.
+
+    The tables of 0009 live in schema billing after b0001_from_core, so the billing chain is rewound to its base too;
+    `_upgrade` brings both chains back to head.
+    """
     _undo_beta_requests(connection)
     _undo_coauthor_actions(connection)
-    connection.execute(text("DROP TABLE authorled.usage_records, authorled.subscriptions"))
+    connection.execute(text("DROP TABLE billing.usage_records, billing.subscriptions"))
+    connection.execute(text("DELETE FROM billing.alembic_version"))
 
 
-def _current_revision(engine: Engine) -> str | None:
-    with engine.connect() as connection:
-        return MigrationContext.configure(connection, opts={"version_table_schema": SCHEMA}).get_current_revision()
-
-
-def test_one_head(alembic_config: Config) -> None:
-    assert len(ScriptDirectory.from_config(alembic_config).get_heads()) == 1
-
-
-def test_database_is_at_head(engine: Engine, alembic_config: Config) -> None:
-    assert _current_revision(engine) == ScriptDirectory.from_config(alembic_config).get_current_head()
-
-
-def test_upgrade_again_changes_nothing(engine: Engine, alembic_config: Config) -> None:
-    before = _current_revision(engine)
+def _upgrade(alembic_config: Config, billing_alembic_config: Config) -> None:
+    """The migration step: the core, then billing (openspec/specs/billing/module, «Миграции биллинга»)."""
     command.upgrade(alembic_config, "head")
-    assert _current_revision(engine) == before
+    command.upgrade(billing_alembic_config, "head")
+
+
+def _current_revision(engine: Engine, schema: str = SCHEMA) -> str | None:
+    with engine.connect() as connection:
+        return MigrationContext.configure(connection, opts={"version_table_schema": schema}).get_current_revision()
+
+
+def test_one_head(alembic_config: Config, billing_alembic_config: Config) -> None:
+    assert len(ScriptDirectory.from_config(alembic_config).get_heads()) == 1
+    assert len(ScriptDirectory.from_config(billing_alembic_config).get_heads()) == 1
+
+
+def test_database_is_at_head(engine: Engine, alembic_config: Config, billing_alembic_config: Config) -> None:
+    assert _current_revision(engine) == ScriptDirectory.from_config(alembic_config).get_current_head()
+    assert (
+        _current_revision(engine, BILLING_SCHEMA)
+        == ScriptDirectory.from_config(billing_alembic_config).get_current_head()
+    )
+
+
+def test_upgrade_again_changes_nothing(engine: Engine, alembic_config: Config, billing_alembic_config: Config) -> None:
+    before = (_current_revision(engine), _current_revision(engine, BILLING_SCHEMA))
+    _upgrade(alembic_config, billing_alembic_config)
+    assert (_current_revision(engine), _current_revision(engine, BILLING_SCHEMA)) == before
 
 
 def test_tables_match_the_database(connection: Connection) -> None:
@@ -94,23 +113,40 @@ def test_tables_match_the_database(connection: Connection) -> None:
     assert compare_metadata(context, metadata) == []
 
 
+def test_billing_tables_match_the_database(connection: Connection) -> None:
+    context = MigrationContext.configure(
+        connection,
+        opts={
+            "include_schemas": True,
+            "include_name": lambda name, type_, parent: type_ != "schema" or name == BILLING_SCHEMA,
+            "version_table_schema": BILLING_SCHEMA,
+        },
+    )
+    assert compare_metadata(context, billing_metadata) == []
+
+
 def test_schema_belongs_to_agentos(connection: Connection) -> None:
-    owner = connection.execute(
-        text("SELECT pg_get_userbyid(nspowner) FROM pg_namespace WHERE nspname = :schema"), {"schema": SCHEMA}
-    ).scalar_one()
-    assert owner == "agentos"
+    for schema in (SCHEMA, BILLING_SCHEMA):
+        owner = connection.execute(
+            text("SELECT pg_get_userbyid(nspowner) FROM pg_namespace WHERE nspname = :schema"), {"schema": schema}
+        ).scalar_one()
+        assert owner == "agentos"
 
 
 def test_product_tables_stay_in_their_schema(connection: Connection) -> None:
-    names = [table.name for table in metadata.sorted_tables] + ["alembic_version"]
+    expected = [(SCHEMA, table.name) for table in metadata.sorted_tables]
+    expected += [(BILLING_SCHEMA, table.name) for table in billing_metadata.sorted_tables]
+    expected += [(SCHEMA, "alembic_version"), (BILLING_SCHEMA, "alembic_version")]
     rows = connection.execute(
         text("SELECT table_schema, table_name FROM information_schema.tables WHERE table_name = ANY(:names)"),
-        {"names": names},
+        {"names": sorted({name for _, name in expected})},
     ).all()
-    assert sorted(rows) == sorted((SCHEMA, name) for name in names)
+    assert sorted(rows) == sorted(expected)
 
 
-def test_drafts_migration_clears_stories_and_keeps_users(engine: Engine, alembic_config: Config) -> None:
+def test_drafts_migration_clears_stories_and_keeps_users(
+    engine: Engine, alembic_config: Config, billing_alembic_config: Config
+) -> None:
     """Applied from 0005 on a database with a user and a story; head is restored for the other tests."""
     head = ScriptDirectory.from_config(alembic_config).get_current_head()
     subject = f"test-{uuid.uuid4()}"
@@ -160,7 +196,7 @@ def test_drafts_migration_clears_stories_and_keeps_users(engine: Engine, alembic
             ),
             {"project": project},
         )
-    command.upgrade(alembic_config, "head")
+    _upgrade(alembic_config, billing_alembic_config)
     assert _current_revision(engine) == head
     with engine.begin() as connection:
         assert connection.execute(select(func.count()).select_from(projects)).scalar_one() == 0
@@ -169,7 +205,9 @@ def test_drafts_migration_clears_stories_and_keeps_users(engine: Engine, alembic
         assert connection.execute(delete(users).where(users.c.id == owner)).rowcount == 1
 
 
-def test_script_fields_migration_keeps_stories_and_rollback(engine: Engine, alembic_config: Config) -> None:
+def test_script_fields_migration_keeps_stories_and_rollback(
+    engine: Engine, alembic_config: Config, billing_alembic_config: Config
+) -> None:
     """Applied from 0006 on states of the old form; the migration changes data only."""
     subject = f"test-{uuid.uuid4()}"
     show = {"title": True, "synopsis": False, "treatment": True, "text": True}
@@ -212,7 +250,7 @@ def test_script_fields_migration_keeps_stories_and_rollback(engine: Engine, alem
         connection.execute(text("DROP TABLE authorled.notes"))
         connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0006_drafts_and_saves'"))
 
-    command.upgrade(alembic_config, "head")
+    _upgrade(alembic_config, billing_alembic_config)
 
     new = {"logline": "О воде", "show": {**show, "logline": True}}
     with engine.begin() as connection:
@@ -244,7 +282,7 @@ def test_script_fields_migration_keeps_stories_and_rollback(engine: Engine, alem
         assert connection.execute(delete(users).where(users.c.id == owner)).rowcount == 1
 
 
-def test_notes_migration_keeps_stories(engine: Engine, alembic_config: Config) -> None:
+def test_notes_migration_keeps_stories(engine: Engine, alembic_config: Config, billing_alembic_config: Config) -> None:
     """Applied from 0007 on a database with a story; the new table comes empty."""
     subject = f"test-{uuid.uuid4()}"
     with engine.begin() as connection:
@@ -258,7 +296,7 @@ def test_notes_migration_keeps_stories(engine: Engine, alembic_config: Config) -
         connection.execute(text("DROP TABLE authorled.notes"))
         connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0007_script_fields'"))
 
-    command.upgrade(alembic_config, "head")
+    _upgrade(alembic_config, billing_alembic_config)
 
     with engine.begin() as connection:
         assert connection.execute(select(func.count()).select_from(notes)).scalar_one() == 0
@@ -268,7 +306,9 @@ def test_notes_migration_keeps_stories(engine: Engine, alembic_config: Config) -
         connection.execute(delete(users).where(users.c.id == owner))
 
 
-def test_subscriptions_migration_gives_users_beta(engine: Engine, alembic_config: Config) -> None:
+def test_subscriptions_migration_gives_users_beta(
+    engine: Engine, alembic_config: Config, billing_alembic_config: Config
+) -> None:
     """Applied from 0008: every user outside the trash gets beta with the first period from the creation."""
     subject, gone = f"test-{uuid.uuid4()}", f"test-{uuid.uuid4()}"
     created = datetime(2026, 10, 31, 10, tzinfo=UTC)
@@ -286,7 +326,7 @@ def test_subscriptions_migration_gives_users_beta(engine: Engine, alembic_config
             .returning(users.c.id)
         ).scalar_one()
 
-    command.upgrade(alembic_config, "head")
+    _upgrade(alembic_config, billing_alembic_config)
 
     with engine.begin() as connection:
         rows = connection.execute(select(subscriptions).where(subscriptions.c.user_id.in_([owner, deleted]))).all()
@@ -299,7 +339,9 @@ def test_subscriptions_migration_gives_users_beta(engine: Engine, alembic_config
         connection.execute(delete(users).where(users.c.id.in_([owner, deleted])))
 
 
-def test_coauthor_actions_migration_keeps_settings_and_comments(engine: Engine, alembic_config: Config) -> None:
+def test_coauthor_actions_migration_keeps_settings_and_comments(
+    engine: Engine, alembic_config: Config, billing_alembic_config: Config
+) -> None:
     """Applied from 0009: settings so far get `ask`, messages so far are written by users."""
     subject = f"test-{uuid.uuid4()}"
     with engine.begin() as connection:
@@ -326,7 +368,7 @@ def test_coauthor_actions_migration_keeps_settings_and_comments(engine: Engine, 
             {"thread": thread, "owner": owner},
         )
 
-    command.upgrade(alembic_config, "head")
+    _upgrade(alembic_config, billing_alembic_config)
 
     with engine.begin() as connection:
         assert (
@@ -345,3 +387,83 @@ def test_coauthor_actions_migration_keeps_settings_and_comments(engine: Engine, 
         connection.execute(delete(user_settings).where(user_settings.c.user_id == owner))
         connection.execute(delete(subscriptions).where(subscriptions.c.user_id == owner))
         connection.execute(delete(users).where(users.c.id == owner))
+
+
+def test_billing_move_keeps_rows(engine: Engine, billing_alembic_config: Config) -> None:
+    """b0001_from_core on tables of the core with rows: same identifiers in billing, nothing left in authorled."""
+    with engine.begin() as connection:
+        # Rewind billing to its base: the tables go back to the core with their keys to users, as 0009 made them.
+        connection.execute(text("ALTER TABLE billing.subscriptions SET SCHEMA authorled"))
+        connection.execute(text("ALTER TABLE billing.usage_records SET SCHEMA authorled"))
+        connection.execute(text("DELETE FROM billing.alembic_version"))
+        owner = connection.execute(
+            insert(users)
+            .values(auth_subject=f"test-{uuid.uuid4()}", email="move@authorled.test", display_name="Автор")
+            .returning(users.c.id)
+        ).scalar_one()
+        user_id = owner
+        subscription = connection.execute(
+            text(
+                "INSERT INTO authorled.subscriptions (user_id, plan, source, status, started_at, period_start, "
+                "period_end) VALUES (:user, 'beta', 'granted', 'active', now(), now(), now() + interval '1 month') "
+                "RETURNING id"
+            ),
+            {"user": user_id},
+        ).scalar_one()
+        record = connection.execute(
+            text(
+                "INSERT INTO authorled.usage_records (user_id, subscription_id, run_id, session_id, agent_id, model, "
+                "run_status, input_tokens, cache_read_tokens, output_tokens, cost_rub, occurred_at) VALUES "
+                "(:user, :subscription, :run, 'p:d:c', 'coauthor', 'deepseek-fast', 'completed', 10, 4, 2, 0.1, now()) "
+                "RETURNING id"
+            ),
+            {"user": user_id, "subscription": subscription, "run": f"move-{user_id}"},
+        ).scalar_one()
+        for table in ("subscriptions", "usage_records"):
+            connection.execute(
+                text(
+                    f"ALTER TABLE authorled.{table} ADD CONSTRAINT fk_{table}_user_id_users "
+                    # NOT VALID: rows of other tests keep users of the core by value only.
+                    "FOREIGN KEY (user_id) REFERENCES authorled.users (id) ON DELETE RESTRICT NOT VALID"
+                )
+            )
+        before = {
+            table: connection.execute(text(f"SELECT count(*) FROM authorled.{table}")).scalar_one()
+            for table in ("subscriptions", "usage_records")
+        }
+
+    command.upgrade(billing_alembic_config, "head")
+
+    with engine.begin() as connection:
+        assert connection.execute(select(subscriptions.c.user_id).where(subscriptions.c.id == subscription)).one()
+        assert connection.execute(select(usage_records.c.run_id).where(usage_records.c.id == record)).scalar_one() == (
+            f"move-{user_id}"
+        )
+        after = {
+            "subscriptions": connection.execute(select(func.count()).select_from(subscriptions)).scalar_one(),
+            "usage_records": connection.execute(select(func.count()).select_from(usage_records)).scalar_one(),
+        }
+        assert after == before
+        left = connection.execute(
+            text(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema = 'authorled' "
+                "AND table_name IN ('subscriptions', 'usage_records')"
+            )
+        ).all()
+        assert left == []
+        # Without the key to users the account goes without touching billing.
+        connection.execute(delete(users).where(users.c.id == user_id))
+        connection.execute(delete(usage_records).where(usage_records.c.id == record))
+        connection.execute(delete(subscriptions).where(subscriptions.c.id == subscription))
+
+
+def test_billing_move_needs_the_core_first(engine: Engine, billing_alembic_config: Config) -> None:
+    """Without the tables of 0009 in authorled the first billing migration stops and names what to apply."""
+    with engine.begin() as connection:
+        connection.execute(text("DELETE FROM billing.alembic_version"))
+    try:
+        with pytest.raises(RuntimeError, match="authorled.subscriptions, authorled.usage_records not found"):
+            command.upgrade(billing_alembic_config, "head")
+    finally:
+        with engine.begin() as connection:
+            connection.execute(text("INSERT INTO billing.alembic_version (version_num) VALUES ('b0001_from_core')"))

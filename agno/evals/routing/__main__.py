@@ -21,7 +21,7 @@ from agno.run.base import RunStatus
 from dotenv import load_dotenv
 
 from app.paths import REPO_ROOT
-from core.plans import ModelPrice, prices
+from billing import ModelPrice, prices
 from evals.routing.cases import SPLITS, Case, load_split
 from evals.routing.components import (
     DOMAIN_SETS,

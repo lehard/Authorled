@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator, model_validator
 from starlette.concurrency import run_in_threadpool
 
+import billing
 from app.api.body import read_object
 from app.api.problems import Problem
 from app.auth import Identity, Principal, current_identity, current_principal
@@ -80,11 +81,18 @@ _GONE = Problem(410, "Gone", "Аккаунт удалён.")
 
 
 def _get_or_create(principal: Principal, identity: Identity) -> Account:
+    """The account of the token, then its subscription from billing in a transaction of its own.
+
+    A failed grant is not caught: the call answers 500, the account stays, and the next call grants it
+    (openspec/specs/billing/subscriptions, «Подписка при входе»).
+    """
     try:
         with get_engine().begin() as connection:
-            return get_or_create_user(connection, principal.user_id, identity.email, identity.name)
+            account = get_or_create_user(connection, principal.user_id, identity.email, identity.name)
     except AccountDeleted as error:
         raise _GONE from error
+    billing.ensure_subscription(account.id, account.created_at)
+    return account
 
 
 def _update(principal: Principal, changes: MeChanges) -> Account:

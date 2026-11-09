@@ -130,14 +130,15 @@
 `scripts/validate.sh` MUST выполнять:
 - для бэкенда: `ruff format --check`, `ruff check` и `mypy` по `agno/` с настройками `agno/pyproject.toml`;
 - проверку границ модуля `auth` (`scripts/check_auth_boundary.sh`);
-- проверку, что у миграций схемы `authorled` ровно одна голова (без подключения к базе);
+- проверку границ модуля биллинга (`scripts/check_billing_boundary.sh`, спека `billing/module`);
+- проверку, что у миграций схемы `authorled` и у миграций схемы `billing` по одной голове в каждой цепочке (без подключения к базе);
 - для фронтенда: `prettier --check`, ESLint, проверку типов, сборку, проверку контраста токенов и `web/scripts/check_web_tokens.sh` (сырые цвета вне файла токенов).
 
 Скрипт MUST завершаться ненулевым кодом при любой ошибке. Если зависимости фронтенда не установлены (`web/node_modules` отсутствует), скрипт MUST завершиться ошибкой с подсказкой `npm ci --prefix web` и MUST NOT пропускать проверки фронтенда.
 
 До первой проверки скрипт MUST убедиться, что Python-инструменты взяты из одного окружения проекта: команда `python` находится, `ruff`, `mypy` и `alembic` лежат в том же каталоге, что и она, и `python` импортирует зависимости проекта. Иначе скрипт MUST завершиться кодом `1`, MUST NOT запускать ни одной проверки и MUST назвать недостающую команду или каталог, из которого она взята, с подсказкой `source agno/.venv/bin/activate` (или `./agno/scripts/venv_setup.sh`, если venv нет). Требовать активный venv (`VIRTUAL_ENV`) скрипт MUST NOT: CI ставит зависимости в системный Python.
 
-`scripts/check_auth_boundary.sh` MUST проверять файлы репозитория и MUST NOT искать конфигурацию и сервисы Authentik в `.claude/` (локальные файлы агентов разработки, в том числе их рабочие копии в `.claude/worktrees/`).
+`scripts/check_auth_boundary.sh` и `scripts/check_billing_boundary.sh` MUST проверять файлы репозитория и MUST NOT искать нарушения в `.claude/` (локальные файлы агентов разработки, в том числе их рабочие копии в `.claude/worktrees/`).
 
 CI (`.github/workflows/validate.yml`, Python 3.14, Node.js из `web/.nvmrc`) MUST ставить зависимости бэкенда по `agno/requirements.txt` и `agno/pyproject.toml`, ставить зависимости фронтенда через `npm ci` и выполнять тот же скрипт.
 
@@ -172,6 +173,11 @@ CI (`.github/workflows/validate.yml`, Python 3.14, Node.js из `web/.nvmrc`) MU
 - GIVEN в `.claude/worktrees/<имя>/auth/blueprints/` лежат blueprints Authentik, а в файлах репозитория вне `auth/` их нет
 - WHEN выполняется `./scripts/check_auth_boundary.sh`
 - THEN проверка границы модуля `auth` MUST пройти
+
+#### Scenario: Нарушена граница биллинга
+- GIVEN модуль ядра импортирует биллинг
+- WHEN выполняется `./scripts/validate.sh`
+- THEN скрипт MUST вернуть ненулевой код и назвать файл
 
 ### Requirement: Окружение Python
 `agno/scripts/venv_setup.sh` MUST создавать `agno/.venv` на Python 3.14 через `uv` и ставить `agno/requirements.txt` и проект `-e agno[dev]` с ограничениями `agno/requirements.txt`; при активном venv или без `uv` MUST завершаться кодом `1`. `agno/scripts/generate_requirements.sh` MUST компилировать `agno/requirements.txt` из `agno/pyproject.toml` через `uv pip compile` в режимах standard, `upgrade` и обновления отдельных пакетов.

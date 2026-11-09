@@ -1,6 +1,6 @@
-"""The usage journal, the limit and the administrator's commands (openspec/specs/core/subscriptions: «Журнал расхода
-соавтора», «Проверка лимита до запуска», «Смена тарифа», «Команды администратора»; openspec/specs/core/database,
-«Таблица журнала расхода»)."""
+"""The usage journal, the limit and the administrator's commands (openspec/specs/billing/subscriptions: «Журнал расхода
+соавтора», «Проверка лимита до запуска», «Смена тарифа», «Команды администратора»; openspec/specs/billing/module,
+«Таблица журнала расхода биллинга»)."""
 
 import uuid
 from collections.abc import Iterator
@@ -13,24 +13,27 @@ import pytest
 from sqlalchemy import Connection, insert, select, update
 from sqlalchemy.exc import IntegrityError
 
+import billing.plans as plans_module
 from admin.__main__ import main as admin_main
-from core import plans as plans_module
-from core.plans import UnknownModel
-from core.subscriptions import NoSubscription, set_plan, start_subscription
-from core.tables import subscriptions, usage_records, users
-from core.usage import (
+from admin.__main__ import print_report
+from billing.plans import UnknownModel
+from billing.subscriptions import NoSubscription, set_plan, start_subscription
+from billing.tables import subscriptions, usage_records
+from billing.usage import (
     LimitReached,
     ModelUsage,
     NoTokens,
+    RunNotFound,
     RunUsage,
     check_limit,
     period_spend,
     record_run,
     recorded_run_ids,
     report,
-    user_id_by_email,
+    run_session,
 )
-from core.users import AccountNotFound
+from core.tables import users
+from core.users import user_id_by_email
 
 START = datetime(2027, 11, 7, 10, tzinfo=UTC)
 NOW = START + timedelta(days=3)
@@ -52,15 +55,19 @@ def plans_with_plus(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator
     plans_module.plans.cache_clear()
 
 
-def _author(connection: Connection, email: str | None = None) -> tuple[str, uuid.UUID]:
+def _author(connection: Connection) -> uuid.UUID:
+    """A user of the core with a subscription; billing knows only the identifier."""
+    user_id = uuid.uuid4()
+    start_subscription(connection, user_id, "beta", "granted", START)
+    return user_id
+
+
+def _account(connection: Connection, email: str) -> uuid.UUID:
     subject = f"test-{uuid.uuid4()}"
     user_id: uuid.UUID = connection.execute(
-        insert(users)
-        .values(auth_subject=subject, email=email or f"{subject}@example.com", display_name="Автор")
-        .returning(users.c.id)
+        insert(users).values(auth_subject=subject, email=email, display_name="Автор").returning(users.c.id)
     ).scalar_one()
-    start_subscription(connection, user_id, "beta", "granted", START)
-    return subject, user_id
+    return user_id
 
 
 def _run(
@@ -86,10 +93,10 @@ def _rows(connection: Connection, user_id: uuid.UUID) -> list[Any]:
 
 
 def test_record_once(connection: Connection) -> None:
-    subject, user_id = _author(connection)
+    user_id = _author(connection)
     run = _run("r-once")
-    assert record_run(connection, subject, run, NOW) == 1
-    assert record_run(connection, subject, run, NOW) == 0
+    assert record_run(connection, user_id, run, NOW) == 1
+    assert record_run(connection, user_id, run, NOW) == 0
     (row,) = _rows(connection, user_id)
     assert (row.run_id, row.model, row.run_status) == ("r-once", "deepseek-fast", "completed")
     assert (row.input_tokens, row.cache_read_tokens, row.output_tokens) == (10_000, 4_000, 2_000)
@@ -99,80 +106,81 @@ def test_record_once(connection: Connection) -> None:
 
 
 def test_run_without_tokens(connection: Connection) -> None:
-    subject, _ = _author(connection)
+    user_id = _author(connection)
     run = RunUsage("r1", "p:d:c", "coauthor", "completed", NOW, ())
     with pytest.raises(NoTokens):
-        record_run(connection, subject, run, NOW)
+        record_run(connection, user_id, run, NOW)
 
 
 def test_model_without_price(connection: Connection) -> None:
-    subject, user_id = _author(connection)
+    user_id = _author(connection)
     with pytest.raises(UnknownModel, match="'gpt-4o'"):
-        record_run(connection, subject, _run(model="gpt-4o"), NOW)
+        record_run(connection, user_id, _run(model="gpt-4o"), NOW)
     assert _rows(connection, user_id) == []
 
 
-def test_unknown_account(connection: Connection) -> None:
-    with pytest.raises(AccountNotFound):
-        record_run(connection, "nobody", _run(), NOW)
+def test_no_subscription_to_record_under(connection: Connection) -> None:
+    with pytest.raises(NoSubscription):
+        record_run(connection, uuid.uuid4(), _run(), NOW)
 
 
 def test_spend_of_the_period(connection: Connection) -> None:
-    subject, user_id = _author(connection)
-    record_run(connection, subject, _run(occurred_at=START - timedelta(minutes=1)), NOW)
-    record_run(connection, subject, _run(occurred_at=START), NOW)
-    record_run(connection, subject, _run(occurred_at=NOW), NOW)
-    allowance = check_limit(connection, subject, NOW)
+    user_id = _author(connection)
+    record_run(connection, user_id, _run(occurred_at=START - timedelta(minutes=1)), NOW)
+    record_run(connection, user_id, _run(occurred_at=START), NOW)
+    record_run(connection, user_id, _run(occurred_at=NOW), NOW)
+    allowance = check_limit(connection, user_id, NOW)
     assert allowance.spent == period_spend(connection, allowance.subscription) == Decimal("0.8448")
     assert allowance.plan.limit_rub == Decimal(500)
 
 
 def test_limit_reached(connection: Connection) -> None:
-    subject, _ = _author(connection)
+    user_id = _author(connection)
     # 500 RUB of output at 120 RUB per million.
-    record_run(connection, subject, _run(input_tokens=0, cache_read_tokens=0, output_tokens=4_166_667), NOW)
+    record_run(connection, user_id, _run(input_tokens=0, cache_read_tokens=0, output_tokens=4_166_667), NOW)
     with pytest.raises(LimitReached) as reached:
-        check_limit(connection, subject, NOW)
+        check_limit(connection, user_id, NOW)
     assert reached.value.renews_at == datetime(2027, 12, 7, 10, tzinfo=UTC)
     assert reached.value.spent >= reached.value.limit == Decimal(500)
 
 
 def test_new_period_starts_from_zero(connection: Connection) -> None:
-    subject, _ = _author(connection)
-    record_run(connection, subject, _run(input_tokens=0, cache_read_tokens=0, output_tokens=4_166_667), NOW)
+    user_id = _author(connection)
+    record_run(connection, user_id, _run(input_tokens=0, cache_read_tokens=0, output_tokens=4_166_667), NOW)
     later = datetime(2027, 12, 8, tzinfo=UTC)
-    allowance = check_limit(connection, subject, later)
+    allowance = check_limit(connection, user_id, later)
     assert allowance.spent == 0
     assert allowance.subscription.period_start == datetime(2027, 12, 7, 10, tzinfo=UTC)
 
 
 def test_new_plan_limit_applies_at_once(connection: Connection, plans_with_plus: None) -> None:
-    subject, user_id = _author(connection)
-    record_run(connection, subject, _run(input_tokens=0, cache_read_tokens=0, output_tokens=4_166_667), NOW)
+    user_id = _author(connection)
+    record_run(connection, user_id, _run(input_tokens=0, cache_read_tokens=0, output_tokens=4_166_667), NOW)
     with pytest.raises(LimitReached):
-        check_limit(connection, subject, NOW)
+        check_limit(connection, user_id, NOW)
     set_plan(connection, user_id, "beta-plus")
-    allowance = check_limit(connection, subject, NOW)
+    allowance = check_limit(connection, user_id, NOW)
     assert allowance.plan.code == "beta-plus"
     assert allowance.spent > Decimal(500)
     assert allowance.subscription.period_start == START
 
 
 def test_limit_without_subscription(connection: Connection) -> None:
-    subject, user_id = _author(connection)
+    user_id = _author(connection)
     connection.execute(
         update(subscriptions).where(subscriptions.c.user_id == user_id).values(status="ended", ended_at=NOW)
     )
     with pytest.raises(NoSubscription):
-        check_limit(connection, subject, NOW)
+        check_limit(connection, user_id, NOW)
 
 
 def test_report(connection: Connection) -> None:
-    subject, _ = _author(connection, email="report@example.com")
-    record_run(connection, subject, _run(), NOW)
-    record_run(connection, subject, _run(), NOW)
-    record_run(connection, subject, _run(occurred_at=START - timedelta(days=1)), NOW)
-    (row,) = [row for row in report(connection, NOW) if row.email == "report@example.com"]
+    user_id = _author(connection)
+    record_run(connection, user_id, _run(), NOW)
+    record_run(connection, user_id, _run(), NOW)
+    record_run(connection, user_id, _run(occurred_at=START - timedelta(days=1)), NOW)
+    (row,) = report(connection, [user_id], NOW)
+    assert row.user_id == user_id
     assert (row.plan, row.runs, row.period_start) == ("beta", 2, START)
     assert (row.input_tokens, row.cache_read_tokens, row.output_tokens) == (20_000, 8_000, 4_000)
     assert row.spent_rub == Decimal("0.8448")
@@ -180,14 +188,42 @@ def test_report(connection: Connection) -> None:
     assert row.provider_cost_usd == Decimal("0.009")
 
 
+def test_report_of_a_user_without_subscription(connection: Connection) -> None:
+    with pytest.raises(NoSubscription):
+        report(connection, [_author(connection), uuid.uuid4()], NOW)
+
+
+def test_run_session(connection: Connection) -> None:
+    user_id = _author(connection)
+    record_run(connection, user_id, _run("r-own"), NOW)
+    assert run_session(connection, user_id, "r-own", "coauthor") == "p:d:c"
+    with pytest.raises(RunNotFound):
+        run_session(connection, _author(connection), "r-own", "coauthor")
+    with pytest.raises(RunNotFound):
+        run_session(connection, user_id, "r-own", "other-agent")
+    with pytest.raises(RunNotFound):
+        run_session(connection, user_id, "r-none", "coauthor")
+
+
 def test_user_by_email(connection: Connection) -> None:
-    _, user_id = _author(connection, email="one@example.com")
+    user_id = _account(connection, "one@example.com")
     assert user_id_by_email(connection, "one@example.com") == user_id
     with pytest.raises(LookupError, match="found 0"):
         user_id_by_email(connection, "nobody@example.com")
-    _author(connection, email="one@example.com")
+    _account(connection, "one@example.com")
     with pytest.raises(LookupError, match="found 2"):
         user_id_by_email(connection, "one@example.com")
+
+
+def test_report_command_prints_the_email(connection: Connection, capsys: pytest.CaptureFixture[str]) -> None:
+    user_id = _author(connection)
+    record_run(connection, user_id, _run(), NOW)
+    (row,) = report(connection, [user_id], NOW)
+    print_report([("anna@example.com", row)])
+    header, line = capsys.readouterr().out.splitlines()
+    assert header.split()[:3] == ["почта", "тариф", "период"]
+    assert line.split()[:2] == ["anna@example.com", "beta"]
+    assert "0.42" in line.split()
 
 
 def test_set_plan_command_refuses_unknown_email(capsys: pytest.CaptureFixture[str]) -> None:
@@ -196,8 +232,8 @@ def test_set_plan_command_refuses_unknown_email(capsys: pytest.CaptureFixture[st
 
 
 def test_repeat_run_and_model_is_refused(connection: Connection) -> None:
-    subject, user_id = _author(connection)
-    record_run(connection, subject, _run("r-dup"), NOW)
+    user_id = _author(connection)
+    record_run(connection, user_id, _run("r-dup"), NOW)
     (row,) = _rows(connection, user_id)
     values = {column: getattr(row, column) for column in row._fields if column not in ("id", "created_at")}
     with pytest.raises(IntegrityError, match="uq_usage_records_run_id_model"):
@@ -205,8 +241,8 @@ def test_repeat_run_and_model_is_refused(connection: Connection) -> None:
 
 
 def test_cache_over_input_is_refused(connection: Connection) -> None:
-    subject, user_id = _author(connection)
-    record_run(connection, subject, _run("r-cache"), NOW)
+    user_id = _author(connection)
+    record_run(connection, user_id, _run("r-cache"), NOW)
     with pytest.raises(IntegrityError, match="ck_usage_records_tokens_valid"):
         connection.execute(
             update(usage_records).where(usage_records.c.run_id == "r-cache").values(cache_read_tokens=10_001)
@@ -214,7 +250,7 @@ def test_cache_over_input_is_refused(connection: Connection) -> None:
 
 
 def test_user_with_usage_cannot_drop_subscription(connection: Connection) -> None:
-    subject, user_id = _author(connection)
-    record_run(connection, subject, _run(), NOW)
+    user_id = _author(connection)
+    record_run(connection, user_id, _run(), NOW)
     with pytest.raises(IntegrityError, match="fk_usage_records_subscription_id_subscriptions"):
         connection.execute(subscriptions.delete().where(subscriptions.c.user_id == user_id))

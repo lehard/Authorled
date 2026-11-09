@@ -1,7 +1,8 @@
 """Hooks of the co-author: the limit check before a run and the usage journal after it
-(openspec/specs/core/subscriptions, «Проверка лимита до запуска», «Журнал расхода соавтора»).
+(openspec/specs/billing/subscriptions, «Проверка лимита до запуска», «Журнал расхода соавтора»).
 
-They read Agno's run objects and call the core with plain data, like the tools of the co-author.
+They read Agno's run objects, find the user of the core by the token subject and call the interface of billing with
+plain data (openspec/specs/billing/module).
 Agno 3.1.10 logs and swallows any exception of a hook except InputCheckError and OutputCheckError
 (agno/agent/_hooks.py), so every failure here becomes one of those two: a failed check stops the run instead of
 letting it go without a limit, and a failed record ends the run with an error instead of a line in the log.
@@ -9,6 +10,7 @@ Agno does not call post-hooks of failed or cancelled runs; the pre-hook writes s
 when the author writes into it again.
 """
 
+import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta, timezone
 from decimal import Decimal
@@ -20,10 +22,11 @@ from agno.run.base import RunStatus
 from agno.session import AgentSession
 from agno.utils.log import log_exception
 
+import billing
 from app.auth import run_principal
+from billing import LimitReached, ModelUsage, NoTokens, RunUsage, SubscriptionEnded
 from core.engine import get_engine
-from core.subscriptions import SubscriptionEnded
-from core.usage import LimitReached, ModelUsage, NoTokens, RunUsage, check_limit, record_run, recorded_run_ids
+from core.users import active_user_id
 
 LIMIT_REACHED = "usage_limit_reached"
 CHECK_FAILED = "usage_check_failed"
@@ -117,23 +120,27 @@ def _earlier_runs(session: AgentSession, subject: str, run_id: str | None) -> li
     return found
 
 
+def _user_id(subject: str) -> uuid.UUID:
+    """The user of the core for the token subject; a missing or deleted account is an error."""
+    with get_engine().begin() as connection:
+        return active_user_id(connection, subject)
+
+
 def check_usage_limit(run_context: RunContext, session: AgentSession) -> None:
     """Pre-hook: write the unrecorded finished runs of this conversation, then refuse the run over the limit."""
     reached: LimitReached | None = None
     try:
         subject = run_principal(run_context).user_id
         now = datetime.now(UTC)
-        with get_engine().begin() as connection:
-            earlier = _earlier_runs(session, subject, run_context.run_id)
-            known = recorded_run_ids(connection, [usage.run_id for usage in earlier])
-            for usage in earlier:
-                if usage.run_id not in known:
-                    record_run(connection, subject, usage, now)
-            try:
-                check_limit(connection, subject, now)
-            except LimitReached as error:
-                # Leave the transaction normally: the runs written above and a renewed period stay.
-                reached = error
+        user_id = _user_id(subject)
+        earlier = _earlier_runs(session, subject, run_context.run_id)
+        known = billing.recorded_run_ids([usage.run_id for usage in earlier])
+        billing.record_runs(user_id, [usage for usage in earlier if usage.run_id not in known], now)
+        try:
+            billing.check_limit(user_id, now)
+        except LimitReached as error:
+            # The runs written above and a renewed period stay: billing keeps them on this refusal.
+            reached = error
     except SubscriptionEnded as ended:
         # Not swallowed by Agno and not a run without a limit: a refusal that names the subscription, so the
         # renewal by payment (payments-tochka) can tell it from a failed check.
@@ -169,8 +176,7 @@ def record_usage(run_output: RunOutput, run_context: RunContext) -> None:
         usage = run_usage(run_output, "completed")
         if usage is None:
             raise NoTokens(f"Run {run_output.run_id} finished without token counts")
-        with get_engine().begin() as connection:
-            record_run(connection, run_principal(run_context).user_id, usage, datetime.now(UTC))
+        billing.record_runs(_user_id(run_principal(run_context).user_id), [usage], datetime.now(UTC))
     except Exception as error:
         log_exception(f"Usage record of run {run_output.run_id} failed: {type(error).__name__}: {error}")
         raise OutputCheckError(

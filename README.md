@@ -68,8 +68,8 @@ docker compose up -d --build
 ```
 
 The first build can take a few minutes: Authentik applies its migrations and blueprints, and the
-one-shot `agentos-migrate` applies the migrations of the product schema `authorled`, before the API
-starts. If a migration fails, `agentos-migrate` exits non-zero and the API does not start
+one-shot `agentos-migrate` applies the migrations of the product schema `authorled` and then those of the
+billing schema `billing`, before the API starts. If a migration fails, `agentos-migrate` exits non-zero and the API does not start
 (`docker compose logs agentos-migrate`). `./scripts/dev.sh migrate` reruns the migrations alone,
 `./scripts/dev.sh test` runs the core tests on a separate database `ai_test`. When it's ready, open [http://localhost:8000/docs](http://localhost:8000/docs)
 to see the API. Authorization is on in every environment, so API calls need a token from
@@ -264,7 +264,7 @@ docker compose -f compose.yaml -f compose.prod.yaml up -d --build
 ```
 
 The production override turns on token checks and runs the code built into the
-image. `agentos-migrate` applies the migrations of the product schema `authorled` before the API
+image. `agentos-migrate` applies the migrations of the product schema `authorled` and of `billing` before the API
 starts, on every deploy; migrations only go forward, so back up the database before deploying a
 version with new migrations. Keep one API container. The API and database ports bind to loopback; your
 reverse proxy or tunnel must reach the API from the host.
@@ -500,8 +500,10 @@ reader and 5000-character chunks, which exceed that limit.
 ### Spending and plans
 
 Every run of the co-author is checked against the limit of the user's subscription before the model is called and
-written to the usage journal of the core after it (`authorled.usage_records`, costs in rubles by
-[agno/core/model_prices.toml](agno/core/model_prices.toml)). Plans are data in [agno/core/plans.toml](agno/core/plans.toml):
+written to the usage journal after it. Both belong to the billing module [agno/billing/](agno/billing/), a module
+of its own with schema `billing` and its own migrations (`billing.usage_records`, costs in rubles by
+[agno/billing/model_prices.toml](agno/billing/model_prices.toml)). Plans are data in
+[agno/billing/plans.toml](agno/billing/plans.toml):
 new accounts get `beta` (free, a month from sign-up, 500 ₽ a period, renews by itself). A broken data file or a
 co-author model without a price stops the API at startup. The administrator reads the spending and changes plans
 in the running API container:

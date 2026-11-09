@@ -1,4 +1,4 @@
-"""Subscriptions of users to plans and their periods (openspec/specs/core/subscriptions).
+"""Subscriptions of users to plans and their periods (openspec/specs/billing/subscriptions).
 
 A user has exactly one active subscription. Periods are `[period_start, period_end)`; each ends a whole number of
 months after `started_at`, the day of the month pressed to the last day of a short month. A granted subscription
@@ -14,8 +14,8 @@ from datetime import UTC, datetime
 
 from sqlalchemy import Connection, Row, func, insert, select, update
 
-from core.plans import plans
-from core.tables import SUBSCRIPTION_SOURCES, subscriptions
+from billing.plans import plans
+from billing.tables import SUBSCRIPTION_SOURCES, subscriptions
 
 
 class NoSubscription(Exception):
@@ -124,6 +124,19 @@ def start_subscription(
         .returning(*subscriptions.c)
     ).one()
     return _subscription(row)
+
+
+def ensure_signup_subscription(connection: Connection, user_id: uuid.UUID, created_at: datetime) -> Subscription | None:
+    """Start a subscription to the plan of new accounts for a user who has none, active or ended; else change nothing.
+
+    The period runs from the creation of the account. A transaction lock on the user serializes concurrent first
+    sign-ins, so they create one subscription. Returns the new subscription, or None when the user had one.
+    """
+    connection.execute(select(func.pg_advisory_xact_lock(func.hashtextextended(str(user_id), 0))))
+    known = connection.execute(select(subscriptions.c.id).where(subscriptions.c.user_id == user_id).limit(1)).first()
+    if known is not None:
+        return None
+    return start_subscription(connection, user_id, plans().signup.code, "granted", created_at)
 
 
 def current_subscription(connection: Connection, user_id: uuid.UUID, now: datetime) -> Subscription:

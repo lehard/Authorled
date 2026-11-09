@@ -1,8 +1,8 @@
 """python -m admin report | set-plan <e-mail> <plan> | beta-requests: spending and plans of users, requests for the
-beta (openspec/specs/core/subscriptions, «Команды администратора»).
+beta (openspec/specs/billing/subscriptions and openspec/specs/api/beta-requests, «Команды администратора»).
 
-Run in the API container through ./scripts/usage.sh. Everything goes through the core operations; a failure exits
-non-zero with its reason.
+Run in the API container through ./scripts/usage.sh. Spending and plans go through the interface of billing, accounts,
+e-mails and requests through the core; this command joins them. A failure exits non-zero with its reason.
 """
 
 import argparse
@@ -10,11 +10,11 @@ import sys
 from datetime import UTC, datetime
 from decimal import Decimal
 
+import billing
+from billing import NoSubscription, ReportRow, UnknownPlan
 from core.beta_requests import BetaRequest, list_requests
 from core.engine import get_engine
-from core.plans import UnknownPlan
-from core.subscriptions import NoSubscription, set_plan
-from core.usage import ReportRow, report, user_id_by_email
+from core.users import active_accounts, user_id_by_email
 
 _COLUMNS = (
     "почта",
@@ -35,9 +35,9 @@ def _money(amount: Decimal, places: str) -> str:
     return str(amount.quantize(Decimal(places)))
 
 
-def _cells(row: ReportRow) -> tuple[str, ...]:
+def _cells(email: str, row: ReportRow) -> tuple[str, ...]:
     return (
-        row.email,
+        email,
         row.plan,
         f"{row.period_start:%Y-%m-%d %H:%M} — {row.period_end:%Y-%m-%d %H:%M}",
         str(row.runs),
@@ -58,8 +58,9 @@ def _print_table(columns: tuple[str, ...], lines: list[tuple[str, ...]]) -> None
         print("  ".join(cell.ljust(width) for cell, width in zip(line, widths, strict=True)).rstrip())
 
 
-def print_report(rows: list[ReportRow]) -> None:
-    _print_table(_COLUMNS, [_cells(row) for row in rows])
+def print_report(rows: list[tuple[str, ReportRow]]) -> None:
+    """Rows of the report by the e-mail of their user."""
+    _print_table(_COLUMNS, [_cells(email, row) for email, row in rows])
 
 
 _REQUEST_COLUMNS = ("время (UTC)", "почта", "имя", "кто", "уже пользователь")
@@ -98,8 +99,9 @@ def main(argv: list[str]) -> int:
     now = datetime.now(UTC)
     if args.command == "report":
         with get_engine().begin() as connection:
-            rows = report(connection, now)
-        print_report(rows)
+            accounts = active_accounts(connection)
+        rows = billing.report([account.id for account in accounts], now)
+        print_report([(account.email, row) for account, row in zip(accounts, rows, strict=True)])
         return 0
     if args.command == "beta-requests":
         with get_engine().begin() as connection:
@@ -108,7 +110,8 @@ def main(argv: list[str]) -> int:
         return 0
     try:
         with get_engine().begin() as connection:
-            subscription = set_plan(connection, user_id_by_email(connection, args.email), args.plan)
+            user_id = user_id_by_email(connection, args.email)
+        subscription = billing.set_plan(user_id, args.plan)
     except (LookupError, UnknownPlan, NoSubscription) as refusal:
         print(f"set-plan: {refusal}", file=sys.stderr)
         return 1

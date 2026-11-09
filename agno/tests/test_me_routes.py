@@ -15,7 +15,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, delete, func, select, update
 
 from app.api import attach_api
-from core.tables import subscriptions, usage_records, user_settings, users
+from billing.tables import subscriptions, usage_records
+from core.tables import user_settings, users
 
 PROBLEM = "application/problem+json"
 
@@ -99,6 +100,21 @@ def test_first_call_starts_one_beta_subscription(client: TestClient, subjects: l
         created = connection.execute(select(users.c.created_at).where(users.c.id == uuid.UUID(user_id))).scalar_one()
     assert [(row.plan, row.source, row.status) for row in rows] == [("beta", "granted", "active")]
     assert rows[0].period_start == created
+
+
+def test_call_after_a_failed_grant_gives_the_subscription(
+    client: TestClient, subjects: list[str], engine: Engine
+) -> None:
+    """The account stays when billing failed; the next call gives the subscription from the creation."""
+    headers = _claims(subjects)
+    user_id = uuid.UUID(client.get("/api/v1/me", headers=headers).json()["id"])
+    with engine.begin() as connection:
+        connection.execute(delete(subscriptions).where(subscriptions.c.user_id == user_id))
+    assert client.get("/api/v1/me", headers=headers).status_code == 200
+    with engine.connect() as connection:
+        rows = connection.execute(select(subscriptions).where(subscriptions.c.user_id == user_id)).all()
+        created = connection.execute(select(users.c.created_at).where(users.c.id == user_id)).scalar_one()
+    assert [(row.plan, row.status, row.period_start) for row in rows] == [("beta", "active", created)]
 
 
 def test_patch_name_is_trimmed(client: TestClient, subjects: list[str]) -> None:

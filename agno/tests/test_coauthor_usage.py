@@ -1,4 +1,4 @@
-"""Hooks of the co-author around a run (openspec/specs/api/agents, «Соавтор»; openspec/specs/core/subscriptions,
+"""Hooks of the co-author around a run (openspec/specs/api/agents, «Соавтор»; openspec/specs/billing/subscriptions,
 «Журнал расхода соавтора», «Проверка лимита до запуска»). Agno objects are built by hand: no model is called."""
 
 import uuid
@@ -16,7 +16,7 @@ from agno.run import RunContext
 from agno.run.agent import RunOutput
 from agno.run.base import RunStatus
 from agno.session import AgentSession
-from sqlalchemy import Engine, delete, insert, select, update
+from sqlalchemy import Connection, Engine, delete, insert, select, update
 
 from agents.coauthor_usage import (
     CHECK_FAILED,
@@ -27,9 +27,10 @@ from agents.coauthor_usage import (
     limit_message,
     record_usage,
 )
-from core.subscriptions import Subscription, SubscriptionEnded, start_subscription
-from core.tables import subscriptions, usage_records, user_settings, users
-from core.usage import ModelUsage, RunUsage, record_run
+from billing.subscriptions import Subscription, SubscriptionEnded, start_subscription
+from billing.tables import subscriptions, usage_records
+from billing.usage import ModelUsage, RunUsage, record_run
+from core.tables import user_settings, users
 
 SESSION = "p:d:c"
 
@@ -58,6 +59,11 @@ def author(engine: Engine) -> Iterator[Callable[[], str]]:
         connection.execute(delete(subscriptions).where(subscriptions.c.user_id.in_(ids)))
         connection.execute(delete(user_settings).where(user_settings.c.user_id.in_(ids)))
         connection.execute(delete(users).where(users.c.auth_subject.in_(made)))
+
+
+def _user(connection: Connection, subject: str) -> uuid.UUID:
+    user_id: uuid.UUID = connection.execute(select(users.c.id).where(users.c.auth_subject == subject)).scalar_one()
+    return user_id
 
 
 def _context(subject: str, run_id: str = "current") -> RunContext:
@@ -155,7 +161,7 @@ def test_pre_hook_refuses_over_the_limit(engine: Engine, author: Callable[[], st
         "r-big-" + subject, SESSION, "coauthor", "completed", now, (ModelUsage("deepseek-fast", 0, 0, 5_000_000, None),)
     )
     with engine.begin() as connection:
-        record_run(connection, subject, big, now)
+        record_run(connection, _user(connection, subject), big, now)
         period_end = connection.execute(
             select(subscriptions.c.period_end)
             .join(users, users.c.id == subscriptions.c.user_id)
@@ -205,7 +211,7 @@ def test_agno_refuses_the_run_before_the_model(engine: Engine, author: Callable[
         (ModelUsage("deepseek-fast", 0, 0, 5_000_000, None),),
     )
     with engine.begin() as connection:
-        record_run(connection, subject, big, now)
+        record_run(connection, _user(connection, subject), big, now)
     agent = Agent(
         id="coauthor",
         model=DeepSeek(id="deepseek-fast", base_url="http://127.0.0.1:9/v1", api_key="unused"),
@@ -237,7 +243,7 @@ def test_pre_hook_names_an_ended_subscription(engine: Engine, author: Callable[[
         raise ended
 
     with pytest.MonkeyPatch.context() as patch:
-        patch.setattr("agents.coauthor_usage.check_limit", refuse)
+        patch.setattr("billing.check_limit", refuse)
         with pytest.raises(InputCheckError) as refused:
             check_usage_limit(_context(subject), AgentSession(session_id=SESSION, user_id=subject, runs=[]))
     assert refused.value.additional_data == {

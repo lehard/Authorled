@@ -22,7 +22,7 @@ from agno.session.agent import AgentSession
 
 from agents.coauthor import COAUTHOR_ID, coauthor
 from app.auth.authorization import GROUP_SCOPES
-from core.plans import ModelPrice
+from billing import ModelPrice
 from evals.coauthor.records import Call, CaseRun, Usage
 from evals.coauthor.user import QUALITY, Place
 from evals.routing.cases import Case

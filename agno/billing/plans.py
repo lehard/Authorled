@@ -1,4 +1,4 @@
-"""Plans and model prices: data files of the core (openspec/specs/core/subscriptions).
+"""Plans and model prices: data files of the billing module (openspec/specs/billing/subscriptions).
 
 `plans.toml` and `model_prices.toml` lie next to this module. Every field is required and unknown fields are refused,
 so a typo stops the API at startup instead of silently changing a limit.

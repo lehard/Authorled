@@ -1,6 +1,7 @@
-"""The usage journal of agent runs, the limit check and the administrator's report (openspec/specs/core/subscriptions).
+"""Usage journal of agent runs, the limit check and the administrator's report (openspec/specs/billing/subscriptions).
 
-The core knows nothing of Agno: the hooks of the co-author (agents/coauthor_usage.py) turn a run into `RunUsage`.
+Billing knows nothing of Agno or of the core: the hooks of the co-author (agents/coauthor_usage.py) turn a run into
+`RunUsage` and find the user of the core; here a user is only its identifier.
 Spending of a period is the sum of `cost_rub` of the subscription's rows that started inside the period.
 """
 
@@ -12,14 +13,17 @@ from decimal import Decimal
 from sqlalchemy import Connection, distinct, func, select
 from sqlalchemy.dialects.postgresql import insert
 
-from core.plans import Plan, plans, prices
-from core.subscriptions import Subscription, current_subscription
-from core.tables import USAGE_RUN_STATUSES, usage_records, users
-from core.users import active_user_id
+from billing.plans import Plan, plans, prices
+from billing.subscriptions import Subscription, current_subscription
+from billing.tables import USAGE_RUN_STATUSES, usage_records
 
 
 class NoTokens(Exception):
     """A run to record carries no token counts of any model."""
+
+
+class RunNotFound(Exception):
+    """The journal has no run with this identifier of this user and agent."""
 
 
 class LimitReached(Exception):
@@ -58,7 +62,7 @@ class Allowance:
     spent: Decimal
 
 
-def record_run(connection: Connection, subject: str, run: RunUsage, now: datetime) -> int:
+def record_run(connection: Connection, user_id: uuid.UUID, run: RunUsage, now: datetime) -> int:
     """Write the run to the journal under the user's current subscription; a repeat adds nothing.
 
     Returns the number of rows written.
@@ -67,7 +71,6 @@ def record_run(connection: Connection, subject: str, run: RunUsage, now: datetim
         raise NoTokens(f"Run {run.run_id} has no token counts")
     if run.status not in USAGE_RUN_STATUSES:
         raise ValueError(f"Run {run.run_id} has status {run.status!r}, not one of {USAGE_RUN_STATUSES}")
-    user_id = active_user_id(connection, subject)
     subscription = current_subscription(connection, user_id, now)
     rows = [
         {
@@ -125,9 +128,9 @@ def period_spend(connection: Connection, subscription: Subscription) -> Decimal:
     return Decimal(spent)
 
 
-def check_limit(connection: Connection, subject: str, now: datetime) -> Allowance:
+def check_limit(connection: Connection, user_id: uuid.UUID, now: datetime) -> Allowance:
     """The user's current subscription and spending; LimitReached when the spending is at or over the limit."""
-    subscription = current_subscription(connection, active_user_id(connection, subject), now)
+    subscription = current_subscription(connection, user_id, now)
     plan = plans().get(subscription.plan)
     spent = period_spend(connection, subscription)
     if spent >= plan.limit_rub:
@@ -135,9 +138,29 @@ def check_limit(connection: Connection, subject: str, now: datetime) -> Allowanc
     return Allowance(subscription=subscription, plan=plan, spent=spent)
 
 
+def run_session(connection: Connection, user_id: uuid.UUID, run_id: str, agent_id: str) -> str:
+    """The conversation of a run of this agent that the journal records for this user."""
+    found = list(
+        connection.execute(
+            select(usage_records.c.session_id)
+            .where(
+                usage_records.c.run_id == run_id,
+                usage_records.c.user_id == user_id,
+                usage_records.c.agent_id == agent_id,
+            )
+            .distinct()
+        ).scalars()
+    )
+    if not found:
+        raise RunNotFound(f"Run {run_id} of agent {agent_id!r} is not in the journal of user {user_id}")
+    if len(found) > 1:
+        raise RuntimeError(f"Run {run_id} has {len(found)} conversations in the usage journal")
+    return found[0]
+
+
 @dataclass(frozen=True)
 class ReportRow:
-    email: str
+    user_id: uuid.UUID
     plan: str
     period_start: datetime
     period_end: datetime
@@ -152,17 +175,14 @@ class ReportRow:
     provider_cost_usd: Decimal | None
 
 
-def report(connection: Connection, now: datetime) -> list[ReportRow]:
-    """Spending of every account outside the trash in its current period, by e-mail.
+def report(connection: Connection, user_ids: list[uuid.UUID], now: datetime) -> list[ReportRow]:
+    """Spending of these users in their current periods, in the given order; a user without a subscription fails.
 
     Reading the current subscription moves an ended granted period forward, as a run of the co-author would.
     """
-    accounts = connection.execute(
-        select(users.c.id, users.c.email).where(users.c.deleted_at.is_(None)).order_by(users.c.email, users.c.id)
-    ).all()
     rows = []
-    for account in accounts:
-        subscription = current_subscription(connection, account.id, now)
+    for user_id in user_ids:
+        subscription = current_subscription(connection, user_id, now)
         plan = plans().get(subscription.plan)
         totals = connection.execute(
             select(
@@ -177,7 +197,7 @@ def report(connection: Connection, now: datetime) -> list[ReportRow]:
         spent = Decimal(totals[4])
         rows.append(
             ReportRow(
-                email=account.email,
+                user_id=user_id,
                 plan=plan.code,
                 period_start=subscription.period_start,
                 period_end=subscription.period_end,
@@ -192,15 +212,3 @@ def report(connection: Connection, now: datetime) -> list[ReportRow]:
             )
         )
     return rows
-
-
-def user_id_by_email(connection: Connection, email: str) -> uuid.UUID:
-    """The one account outside the trash with this e-mail; none or several is an error."""
-    found = (
-        connection.execute(select(users.c.id).where(users.c.email == email, users.c.deleted_at.is_(None)))
-        .scalars()
-        .all()
-    )
-    if len(found) != 1:
-        raise LookupError(f"Expected one account with e-mail {email!r}, found {len(found)}")
-    return found[0]

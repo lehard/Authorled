@@ -1,4 +1,4 @@
-# Тарифы (openspec/specs/core/subscriptions, «Тарифы как данные»). Код ядра их только читает (core/plans.py);
+# Тарифы (openspec/specs/billing/subscriptions, «Тарифы как данные»). Код биллинга их только читает (billing/plans.py);
 # ошибка в файле останавливает старт API. Все поля тарифа обязательны.
 #
 #   name           название для людей

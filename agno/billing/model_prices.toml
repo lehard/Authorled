@@ -1,4 +1,4 @@
-# Цены моделей в рублях за миллион токенов (openspec/specs/core/subscriptions, «Цены моделей как данные»).
+# Цены моделей в рублях за миллион токенов (openspec/specs/billing/subscriptions, «Цены моделей как данные»).
 # Ключ — псевдоним LiteLLM (agno/litellm/config.yaml). Без цены модели соавтора API не стартует.
 #
 #   input_rub       вход без кэша
