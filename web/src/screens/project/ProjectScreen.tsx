@@ -232,7 +232,8 @@ export function ProjectScreen() {
               <b className="min-w-0 flex-1 truncate">{title}</b>
               <UserMenu compact />
             </header>
-            <main className="min-h-0 flex-1 overflow-auto">
+            {/* The account menu is in the header: the document head keeps no room for it. */}
+            <main className="min-h-0 flex-1 overflow-auto [--account-space:0px]">
               <DocView />
             </main>
             <button
@@ -289,7 +290,10 @@ export function ProjectScreen() {
             <aside className="min-h-0 overflow-hidden rounded-panel bg-panel shadow-panel">
               {navigator}
             </aside>
-            <main className="relative min-h-0 overflow-auto">
+            {/* --account-space: the width of the account menu (h-9 button: pl-1 + size-7 + pr-3 =
+                44px) and a gap of 8px. The document head keeps it free on its right
+                (openspec/specs/web/workspace, «Шапка документа»); change it with the button. */}
+            <main className="relative min-h-0 overflow-auto [--account-space:--spacing(13)]">
               <div className="absolute top-0 right-0 z-10">
                 <UserMenu compact />
               </div>

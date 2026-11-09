@@ -19,7 +19,10 @@ export function DocView() {
     <div
       data-chat-source
       key={`${draft.id}:${docSegment}:${generation}`}
-      className="min-h-full px-3 pt-16 pb-20 min-[901px]:px-5 min-[1241px]:px-8"
+      // --doc-pad-x: the side padding; --account-reserve: the part of the room of the account menu
+      // (--account-space of ProjectScreen) that falls inside it, kept free by DocHead and LockBanner.
+      // No top band: on a wide window the head starts level with the account menu.
+      className="min-h-full px-(--doc-pad-x) pt-3 pb-20 [--account-reserve:max(0px,calc(var(--account-space)_-_var(--doc-pad-x)))] [--doc-pad-x:--spacing(3)] min-[901px]:pt-0 min-[901px]:[--doc-pad-x:--spacing(5)] min-[1241px]:[--doc-pad-x:--spacing(8)]"
     >
       {/* Notes belong to the story: the lock of the draft does not close them. */}
       {doc.kind !== "notes" && doc.kind !== "note" && <LockBanner />}

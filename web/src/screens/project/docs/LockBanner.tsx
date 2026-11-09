@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 import { useDraftActions } from "../draftActions";
+import { headPlace } from "./headPlace";
 import { useProjectData } from "../ProjectContext";
 
 /** Tells that a locked draft opens read-only and lets the author open it again. */
@@ -13,7 +14,9 @@ export function LockBanner() {
   const [error, setError] = useState<string | null>(null);
   if (!data.draft.locked) return null;
   return (
-    <div className="mx-auto mb-3 flex w-full max-w-[1000px] flex-wrap items-center gap-2.5 rounded-2xl bg-panel px-3.5 py-2.5 shadow-panel">
+    <div
+      className={`mb-3 flex flex-wrap items-center gap-2.5 rounded-2xl bg-panel px-3.5 py-2.5 shadow-panel ${headPlace(true)}`}
+    >
       <span className="min-w-[min(100%,14rem)] flex-1">
         <Lock
           aria-hidden
