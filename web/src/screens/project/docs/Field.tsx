@@ -2,7 +2,7 @@ import { useId } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { GrowingTextarea } from "@/design-system";
 
 type Props = {
   label: string;
@@ -31,9 +31,11 @@ export function Field({
         {label}
       </Label>
       {area ? (
-        <Textarea
+        <GrowingTextarea
+          variant="field"
+          minRows={rows}
+          limit="none"
           id={id}
-          rows={rows}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="bg-paper"

@@ -83,11 +83,13 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   with its tools (`coauthor_tools.py`: read the story of the conversation, propose an edit of the screenplay, and by
   the author's request change notes, documents and comments; in-process functions that call the core; every changing
   call pauses the run until the chat answers it, the author in the co-author mode `ask`, the chat itself in `auto`;
-  the list is static, AgentOS 3.1.10 refuses tools built per run) and its hooks (`coauthor_usage.py`: the limit check before a run, the usage journal
+  the list is static, AgentOS 3.1.10 refuses tools built per run; the document tools type profile fields as strings
+  and list the fields of each kind from `FIELD_HINTS` in `core/fields.py`) and its hooks (`coauthor_usage.py`: the limit check before a run, the usage journal
   after it). The co-author never deletes, trashes or decides; the screenplay text changes only by suggestions.
   `agno/skills/<agent_id>/SKILL.md`: an agent's prompt as an Anthropic Agent Skill (`name` equals the id,
   the body is the prompt), loaded by `agents/prompts.py`; restart the API after editing it.
-  `agno/teams/`: user-defined teams; no Engineering team ships by default.
+  `agno/teams/`: the place for the application's teams; the folder does not exist yet and appears with the first
+  registered team (the routing exam builds its teams in `agno/evals/routing/` and does not register them).
 - `agno/db/`: cached OS database and distinct knowledge content adapters.
 - `agno/core/`: the product core, independent of Agno: `connection.py` (database URL from `DB_*`),
   `tables.py` (tables of schema `authorled`: users and settings, stories, drafts, documents, texts, notes, snapshots and points, review, files,
@@ -276,7 +278,12 @@ and for `web/` also builds the app and checks design tokens and their contrast; 
 `./scripts/dev.sh test` runs pytest for the core on real PostgreSQL (not in CI yet).
 Also run `git diff --check`. Keep evals in `agno/evals/__main__.py` and `agno/evals/cases.py`, using
 Agno's `criteria` and `expected_tool_calls`. Do not add a bundled regression suite or
-custom isolation, scorers or cleanup machinery by default.
+custom isolation, scorers or cleanup machinery by default. The exceptions are the routing exam
+in `agno/evals/routing/` (its own case set and scoring, owner 2026-11-08,
+`business-intents/coauthor-orchestrator-domains.md`) and the co-author measurement in `agno/evals/coauthor/`
+(its own sample, demo case set, summary and code checks of the expected action and facts, Agno's judge; owner
+2026-11-08, `business-intents/coauthor-quality-eval.md`; its measurement of actions with code checks and no judge,
+owner 2026-11-08, `business-intents/coauthor-tool-contracts.md`).
 
 - `python -m evals --tag smoke`: runs the three application cases and spends model calls.
   Uses the application's `.env`, database and workspace; sessions and results persist
@@ -288,6 +295,20 @@ custom isolation, scorers or cleanup machinery by default.
   `./scripts/dev.sh auth-users` with `AUTH_DEV_WRITER_TOKEN`. It spends the limit of `writer`.
 - Inspect answers, tool results and judge reasons. Additional tool calls are allowed;
   these cases do not enforce read-only execution. Use owned fixtures for mutating cases.
+- `python -m evals.routing --domains base|wide --split work|holdout --variant team|team-route|skills --model <alias>`
+  (from `agno/`; `.env` gives it `LITELLM_URL=http://127.0.0.1:4000`): the routing exam of the orchestrator on
+  domain stubs; spends model calls, needs the LiteLLM proxy but no database, writes its report to `tmp/routing/` (`agno/evals/routing/README.md`).
+- `python -m evals.coauthor setup` (once) and `python -m evals.coauthor run --set wide | --set demo --part work|holdout`
+  `--all | --sample N [--repeat K]` (from `agno/`, with the `DB_*` of `./scripts/dev.sh api`): the real co-author answers
+  the sample of the routing exam's wide set or the own demo cases on demo stories of its own user, changes only
+  proposed and rejected, judged by `claude-sonnet`; spends model calls, writes its report to `tmp/coauthor-eval/`.
+  `python -m evals.coauthor compare <before.json> <after.json>` compares two reports without model calls
+  (`agno/evals/coauthor/README.md`).
+- `python -m evals.coauthor actions-setup` (once) and `python -m evals.coauthor actions-run --all | --sample N` (from
+  `agno/`, with the same `DB_*`): the measurement of actions — the real co-author runs the requests of
+  `agno/evals/coauthor/actions.toml` on a fresh copy of a demo draft of its own user, every action confirmed and
+  applied by the core, checked by code (refusals, attempts, fields, changes nobody asked for); spends model calls,
+  writes its report to `tmp/coauthor-actions/`.
 - `./scripts/mcp_check.sh`: initializes MCP and checks required tools without model calls.
   `--prompt` spends model calls. Set `MCP_CHECK_HOST=1` for the host API.
 - Verify direct engineer execution, HTTP execution, team delegation and Company Task

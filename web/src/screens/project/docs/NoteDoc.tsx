@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Note } from "@/data/model";
+import { GrowingTextarea } from "@/design-system";
 import { useAutosave } from "@/screens/shared/useAutosave";
 import { useServerChanges } from "@/screens/shared/useServerChanges";
 
@@ -77,7 +78,7 @@ export function NoteDoc({ id }: { id: string }) {
         </FieldCard>
       </div>
       <div className="sheet sheet-prose">
-        <textarea
+        <GrowingTextarea
           aria-label="Текст заметки"
           placeholder="Начните заметку"
           value={body}
@@ -85,7 +86,11 @@ export function NoteDoc({ id }: { id: string }) {
             setBody(e.target.value);
             save({ body: e.target.value });
           }}
-          className="block field-sizing-content min-h-80 w-full resize-none bg-transparent outline-none placeholder:text-muted-foreground/60"
+          variant="bare"
+          // About the 320 px of the empty sheet: 11 lines of body-prose (18 px × 1.65).
+          minRows={11}
+          limit="none"
+          placeholderClassName="placeholder:text-muted-foreground/60"
         />
       </div>
     </>

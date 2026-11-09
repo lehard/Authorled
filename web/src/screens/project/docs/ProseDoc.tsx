@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { SCRIPT_PARTS, type Script } from "@/data/model";
+import { GrowingTextarea } from "@/design-system";
 import { useAutosave } from "@/screens/shared/useAutosave";
 
 import { useProjectData } from "../ProjectContext";
@@ -23,7 +24,7 @@ export function ProseDoc({ part }: { part: "logline" | "synopsis" }) {
         <SaveHistory target={{ draftId: draft.id, part: "fields" }} />
       </DocHead>
       <div className="sheet sheet-prose">
-        <textarea
+        <GrowingTextarea
           aria-label={SCRIPT_PARTS[part]}
           placeholder={PLACEHOLDER[part]}
           readOnly={draft.locked}
@@ -32,7 +33,11 @@ export function ProseDoc({ part }: { part: "logline" | "synopsis" }) {
             setText(e.target.value);
             save({ [part]: e.target.value });
           }}
-          className="block field-sizing-content min-h-80 w-full resize-none bg-transparent outline-none placeholder:text-muted-foreground/60"
+          variant="bare"
+          // About the 320 px of the empty sheet: 11 lines of body-prose (18 px × 1.65).
+          minRows={11}
+          limit="none"
+          placeholderClassName="placeholder:text-muted-foreground/60"
         />
       </div>
     </>

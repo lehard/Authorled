@@ -102,6 +102,25 @@ def test_field_of_another_kind(authors: Any) -> None:
     assert "age" in response.json()["detail"]
 
 
+def test_every_wrong_field_in_one_refusal(authors: Any) -> None:
+    author = authors()
+    draft_id = author.story()["draft_id"]
+    response = author.post(
+        f"/api/v1/drafts/{draft_id}/documents",
+        json={
+            "kind": "character",
+            "name": "Василий",
+            "role": "secondary",
+            "fields": {"speech": {"value": "Бормочет"}, "age": 55, "appearance": "Худой"},
+        },
+    )
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert all(name in detail for name in ("speech", "age", "appearance"))
+    names = [d["name"] for d in author.get(f"/api/v1/drafts/{draft_id}/documents").json()]
+    assert "Василий" not in names
+
+
 def test_batch_all_or_nothing(authors: Any) -> None:
     author = authors()
     story = author.story()

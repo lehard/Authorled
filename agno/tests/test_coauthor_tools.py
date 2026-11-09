@@ -30,6 +30,7 @@ from agents.coauthor_tools import (
     update_story_note,
 )
 from app.auth import run_principal
+from core.fields import FIELD_HINTS
 
 SCENE = {"type": "sceneHeading", "attrs": {"uid": "s3"}, "content": [{"type": "text", "text": "НАТ. ОЗЕРО — ДЕНЬ"}]}
 ACTION = {"type": "action", "content": [{"type": "text", "text": "Вера молчит."}]}
@@ -320,3 +321,24 @@ def test_every_change_waits_for_an_answer() -> None:
     assert {name for name, waiting in waits.items() if waiting} == {tool.__name__ for tool in CHANGING_TOOLS}
     assert waits["suggest_edit"] is False and waits["read_screenplay"] is False
     assert len(waits) == len(READING_TOOLS) + len(CHANGING_TOOLS)
+
+
+def test_document_tools_describe_fields_as_the_core_checks_them() -> None:
+    """The schema the model gets: strings for profile fields, the roles as an enum, every field of the kinds named."""
+    for tool, nullable, kinds in (
+        (create_story_document, False, ("character", "location", "world")),
+        (update_story_document, True, ("character", "location", "world", "script")),
+    ):
+        described = Function.from_callable(tool).to_dict()
+        properties = described["parameters"]["properties"]
+        values = properties["fields"]["additionalProperties"]
+        assert values == ({"anyOf": [{"type": "string"}, {"type": "null"}]} if nullable else {"type": "string"})
+        assert properties["role"]["enum"] == ["main", "secondary", "episodic"]
+        # The core requires the role of a new character or location and refuses one for a world (core/documents.py).
+        assert "у мира роли нет" in properties["role"]["description"]
+        if not nullable:
+            assert "обязательна" in properties["role"]["description"]
+        for kind in kinds:
+            for name in FIELD_HINTS[kind]:
+                assert f"{name} — {FIELD_HINTS[kind][name]}" in described["description"]
+        assert "title_page" not in described["description"]

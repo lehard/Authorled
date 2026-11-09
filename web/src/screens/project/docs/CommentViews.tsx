@@ -26,7 +26,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   Tooltip,
@@ -34,6 +33,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { CommentMessage, CommentThread } from "@/data/model";
+import { GrowingTextarea } from "@/design-system";
 
 import { commentTime } from "./commentTime";
 import { useCardHeight } from "./cardPlace";
@@ -163,7 +163,10 @@ function Compose({
   };
   return (
     <div className={`grid gap-2 ${className ?? ""}`}>
-      <Textarea
+      <GrowingTextarea
+        variant="field"
+        minRows={2}
+        limit={{ screen: 1 / 3 }}
         ref={field}
         aria-label={label}
         placeholder={label}
@@ -176,7 +179,7 @@ function Compose({
             send();
           }
         }}
-        className="min-h-10 bg-paper"
+        className="bg-paper"
       />
       <div className="flex justify-end gap-1.5">
         {onCancel !== undefined && (
