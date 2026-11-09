@@ -15,7 +15,8 @@
 #      ./scripts/dev.sh psql            Open psql inside agentos-db
 #      ./scripts/dev.sh auth-users      Create the development users writer@authorled.test and
 #                                       editor@authorled.test in the local Authentik, with the app
-#                                       password AUTH_DEV_WRITER_TOKEN of writer
+#                                       password AUTH_DEV_WRITER_TOKEN of writer, and open its
+#                                       sign-up to every address
 #      ./scripts/dev.sh seed            Load the demo stories for these two users into the database ai
 #
 #    Needs Docker with Compose and a filled .env (compose.yaml requires the
@@ -36,7 +37,7 @@ usage() {
     echo '  reset-db      delete the agentos-db container and its volume, with the Authentik data (requires --yes)'
     echo '  psql          open psql inside agentos-db'
     echo '  auth-users    create or update the development users of the local Authentik (password AUTH_DEV_USER_PASSWORD,'
-    echo '                app password of writer AUTH_DEV_WRITER_TOKEN)'
+    echo '                app password of writer AUTH_DEV_WRITER_TOKEN) and open its sign-up to everyone'
     echo '  seed          load the demo stories for the development users into the database ai; refuses if they are there'
 }
 
@@ -164,6 +165,7 @@ case "${command}" in
         [[ -n "${writer_token}" && "${writer_token}" != "***" ]] \
             || fail "AUTH_DEV_WRITER_TOKEN is not set in .env (app password of writer for the co-author eval)."
         require_running mailpit auth-users
+        # The users and allowed_emails ["*"] of the group screenwriters (sign-up open to everyone).
         docker compose exec -T -e AUTH_DEV_USER_PASSWORD="${dev_password}" -e AUTH_DEV_WRITER_TOKEN="${writer_token}" \
             authentik-worker ak apply_blueprint /blueprints-dev/dev-users.yaml
         # A confirmed e-mail device per user: without it the first sign-in sets one up, and an
