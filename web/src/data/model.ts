@@ -46,6 +46,19 @@ export type Project = {
   goalDeadline: string | null;
 };
 
+/** A new story: its title and, without a manuscript, the structure template it starts from. */
+export type NewProject = Pick<Project, "title" | "desc"> & {
+  template?: string;
+};
+
+/** A structure template of a new story (openspec/specs/api/stories, «Список каркасов»). */
+export type StoryTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  acts: { name: string; points: { name: string; hint: string }[] }[];
+};
+
 export const SCRIPT_PARTS = {
   title: "Титульная страница",
   logline: "Логлайн",

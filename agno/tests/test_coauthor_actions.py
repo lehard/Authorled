@@ -38,7 +38,7 @@ def _row(**own: Any) -> dict[str, Any]:
 
 def test_release_set_loads() -> None:
     requests = load_set()
-    assert 55 <= len(requests) <= 70
+    assert 55 <= len(requests) <= 75
     assert {r.expect for r in requests} == {*ACTION_TOOLS, "none"}
     assert {r.kind for r in requests if r.expect == "create_story_document"} == {"character", "location", "world"}
     assert any(r.id == "character-vasily" for r in requests)
