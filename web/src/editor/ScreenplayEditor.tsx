@@ -25,8 +25,10 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -328,6 +330,8 @@ export function ScreenplayEditor({
   }, []);
 
   const element = snap?.element ?? null;
+  const showBeats = snap?.view.showBeats ?? false;
+  const isolate = snap?.view.isolate ?? false;
 
   function closeFind() {
     setFindOpen(false);
@@ -339,16 +343,20 @@ export function ScreenplayEditor({
     <TooltipProvider delayDuration={500}>
       <div className="grid gap-3">
         {/* Stuck at the very top of the scrolling column: with a gap above, the text scrolled
-            past showed through it. */}
+            past showed through it. A container: the tools follow the width of the toolbar, which
+            the chat narrows too, not the width of the window.
+            The narrow toolbar starts below 512px, the one width in every `@max-[512px]` and
+            `@min-[512px]` here: the wide row needs 510px with the longest type «Описание
+            действия» and counters at 999 (measured 2026-11-09, tmp/VERIFY.md). Below it the type
+            is an icon and the views move to «⋯», so the tools always stay in one row. */}
         <div
           ref={toolbar}
-          className="sticky top-0 z-10 mx-auto grid w-full max-w-[816px] gap-1 rounded-2xl bg-panel px-1.5 py-1 shadow-panel"
+          className="@container sticky top-0 z-10 mx-auto grid w-full max-w-[816px] gap-1 rounded-2xl bg-panel px-1.5 py-1 shadow-panel"
         >
           <div
             role="toolbar"
             aria-label="Инструменты текста"
-            // A narrow column wraps the tools instead of cutting off the paragraph type or «⋯».
-            className="flex min-w-0 flex-wrap items-center gap-0.5"
+            className="flex min-w-0 items-center gap-0.5"
           >
             <Tool
               icon={Undo2}
@@ -374,10 +382,10 @@ export function ScreenplayEditor({
                       size="sm"
                       disabled={readOnly || element === null}
                       aria-label={`Тип абзаца: ${element === null ? "нет" : ELEMENTS[element].label}`}
-                      className="max-w-full min-w-0 shrink-0 justify-start gap-1.5 px-2"
+                      className="shrink-0 justify-start gap-1.5 px-2"
                     >
                       <Pilcrow className="text-muted-foreground" />
-                      <span className="truncate">
+                      <span className="@max-[512px]:hidden">
                         {element === null
                           ? "Тип абзаца"
                           : ELEMENTS[element].label}
@@ -386,7 +394,12 @@ export function ScreenplayEditor({
                     </Button>
                   </DropdownMenuTrigger>
                 </TooltipTrigger>
-                <TooltipContent>Тип абзаца</TooltipContent>
+                {/* Names the type at every width: the narrow toolbar shows only the icon. */}
+                <TooltipContent>
+                  {element === null
+                    ? "Тип абзаца"
+                    : `Тип абзаца: ${ELEMENTS[element].label}`}
+                </TooltipContent>
               </Tooltip>
               <DropdownMenuContent
                 align="start"
@@ -416,11 +429,10 @@ export function ScreenplayEditor({
               <Tool
                 icon={Layers}
                 label="Показать биты"
-                pressed={snap?.view.showBeats ?? false}
+                pressed={showBeats}
+                className="@max-[512px]:hidden"
                 onClick={() =>
-                  editor.current?.setView({
-                    showBeats: !(snap?.view.showBeats ?? false),
-                  })
+                  editor.current?.setView({ showBeats: !showBeats })
                 }
               />
             )}
@@ -440,37 +452,62 @@ export function ScreenplayEditor({
             <Tool
               icon={Focus}
               label="Только текущая сцена"
-              pressed={snap?.view.isolate ?? false}
-              onClick={() =>
-                editor.current?.setView({
-                  isolate: !(snap?.view.isolate ?? false),
-                })
-              }
+              pressed={isolate}
+              className="@max-[512px]:hidden"
+              onClick={() => editor.current?.setView({ isolate: !isolate })}
             />
-            {/* The review tools and «⋯» stay together at the right and wrap as one group. */}
+            {/* The review tools and «⋯» stay together at the right. Two «⋯» buttons, one shown
+                at a time: the menus open in a portal, out of reach of the container query, so
+                the narrow one carries the views itself. */}
             <div className="ml-auto flex shrink-0 items-center gap-0.5">
               {tools}
               {menu !== undefined && (
-                <DropdownMenu>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label="Ещё действия"
-                        >
-                          <Ellipsis />
-                        </Button>
-                      </DropdownMenuTrigger>
-                    </TooltipTrigger>
-                    <TooltipContent>Импорт, экспорт, печать</TooltipContent>
-                  </Tooltip>
-                  <DropdownMenuContent align="end" className="w-56">
-                    {menu}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <MoreMenu
+                  hint="Импорт, экспорт, печать"
+                  className="@max-[512px]:hidden"
+                >
+                  {menu}
+                </MoreMenu>
               )}
+              <MoreMenu
+                hint={
+                  mode === "text"
+                    ? "Виды, импорт, экспорт, печать"
+                    : "Только текущая сцена"
+                }
+                className="@min-[512px]:hidden"
+                onCloseAutoFocus={(e) => {
+                  e.preventDefault();
+                  editor.current?.focus();
+                }}
+              >
+                {mode === "text" && (
+                  <DropdownMenuCheckboxItem
+                    checked={showBeats}
+                    onCheckedChange={(on) =>
+                      editor.current?.setView({ showBeats: on })
+                    }
+                  >
+                    <Layers />
+                    Показать биты
+                  </DropdownMenuCheckboxItem>
+                )}
+                <DropdownMenuCheckboxItem
+                  checked={isolate}
+                  onCheckedChange={(on) =>
+                    editor.current?.setView({ isolate: on })
+                  }
+                >
+                  <Focus />
+                  Только текущая сцена
+                </DropdownMenuCheckboxItem>
+                {menu !== undefined && (
+                  <>
+                    <DropdownMenuSeparator />
+                    {menu}
+                  </>
+                )}
+              </MoreMenu>
             </div>
           </div>
           {findOpen && snap !== null && (
@@ -501,12 +538,53 @@ function Divider() {
   return <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-border" />;
 }
 
+/** «⋯» at the end of the toolbar with its menu. */
+function MoreMenu({
+  hint,
+  className,
+  onCloseAutoFocus,
+  children,
+}: {
+  hint: string;
+  className: string;
+  onCloseAutoFocus?: (e: Event) => void;
+  children: ReactNode;
+}) {
+  return (
+    <DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Ещё действия"
+              className={className}
+            >
+              <Ellipsis />
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent>{hint}</TooltipContent>
+      </Tooltip>
+      <DropdownMenuContent
+        align="end"
+        className="w-56"
+        onCloseAutoFocus={onCloseAutoFocus}
+      >
+        {children}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 function Tool({
   icon: Icon,
   label,
   keys,
   pressed,
   disabled,
+  className,
   onClick,
 }: {
   icon: LucideIcon;
@@ -514,6 +592,7 @@ function Tool({
   keys?: string;
   pressed?: boolean;
   disabled?: boolean;
+  className?: string;
   onClick: () => void;
 }) {
   return (
@@ -525,7 +604,7 @@ function Tool({
           aria-label={label}
           aria-pressed={pressed}
           disabled={disabled}
-          className="shrink-0 aria-pressed:bg-accent aria-pressed:text-primary"
+          className={`shrink-0 aria-pressed:bg-accent aria-pressed:text-primary ${className ?? ""}`}
           // Keeps the caret in the text: the button does not take focus on click.
           onMouseDown={(e) => e.preventDefault()}
           onClick={onClick}
