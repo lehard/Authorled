@@ -264,7 +264,8 @@ custom isolation, scorers or cleanup machinery by default. The exceptions are th
 in `agno/evals/routing/` (its own case set and scoring, owner 2026-11-08,
 `business-intents/coauthor-orchestrator-domains.md`) and the co-author measurement in `agno/evals/coauthor/`
 (its own sample, demo case set, summary and code checks of the expected action and facts, Agno's judge; owner
-2026-11-08, `business-intents/coauthor-quality-eval.md`).
+2026-11-08, `business-intents/coauthor-quality-eval.md`; its measurement of actions with code checks and no judge,
+owner 2026-11-08, `business-intents/coauthor-tool-contracts.md`).
 
 - `python -m evals --tag smoke`: runs the three application cases and spends model calls.
   Uses the application's `.env`, database and workspace; sessions and results persist
@@ -282,6 +283,11 @@ in `agno/evals/routing/` (its own case set and scoring, owner 2026-11-08,
   proposed and rejected, judged by `claude-sonnet`; spends model calls, writes its report to `tmp/coauthor-eval/`.
   `python -m evals.coauthor compare <before.json> <after.json>` compares two reports without model calls
   (`agno/evals/coauthor/README.md`).
+- `python -m evals.coauthor actions-setup` (once) and `python -m evals.coauthor actions-run --all | --sample N` (from
+  `agno/`, with the same `DB_*`): the measurement of actions — the real co-author runs the requests of
+  `agno/evals/coauthor/actions.toml` on a fresh copy of a demo draft of its own user, every action confirmed and
+  applied by the core, checked by code (refusals, attempts, fields, changes nobody asked for); spends model calls,
+  writes its report to `tmp/coauthor-actions/`.
 - `./scripts/mcp_check.sh`: initializes MCP and checks required tools without model calls.
   `--prompt` spends model calls. Set `MCP_CHECK_HOST=1` for the host API.
 - Verify direct engineer execution, HTTP execution, team delegation and Company Task

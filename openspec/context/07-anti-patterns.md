@@ -32,7 +32,7 @@ updated: 2026-11-08
 ## Тесты
 21. Проверка ответов LLM в pytest — для этого evals.
 22. Моки базы в тестах ядра — только реальный PostgreSQL.
-23. Bundled regression suite, кастомные scorers/изоляция/cleanup в evals. Исключения — экзамен маршрутизации `agno/evals/routing/`: свой набор и подсчёт без LLM-судьи (владелец, 2026-11-08, `business-intents/coauthor-orchestrator-domains.md`), и замер соавтора `agno/evals/coauthor/`: своя выборка, свой набор по демо-историям, сводка по доменам, проверка ожидаемого действия и обязательного факта кодом, повтор и сравнение отчётов; судья — `AgentAsJudgeEval` Agno (владелец, 2026-11-08, `business-intents/coauthor-quality-eval.md`).
+23. Bundled regression suite, кастомные scorers/изоляция/cleanup в evals. Исключения — экзамен маршрутизации `agno/evals/routing/`: свой набор и подсчёт без LLM-судьи (владелец, 2026-11-08, `business-intents/coauthor-orchestrator-domains.md`), и замер соавтора `agno/evals/coauthor/`: своя выборка, свой набор по демо-историям, сводка по доменам, проверка ожидаемого действия и обязательного факта кодом, повтор и сравнение отчётов; судья — `AgentAsJudgeEval` Agno (владелец, 2026-11-08, `business-intents/coauthor-quality-eval.md`); там же замер действий: свой набор просьб, запуск на копии драфта с подтверждением действий и проверка отказов, полей и лишних изменений кодом, без судьи (владелец, 2026-11-08, `business-intents/coauthor-tool-contracts.md`).
 
 ## Платформа Agno (из шаблона)
 24. Пересоздание OS Manager / Company Manager / очередей / lifecycle sandbox в приложении — зона Agno.

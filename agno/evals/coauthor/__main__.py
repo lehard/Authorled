@@ -6,12 +6,18 @@ before the first model call, then runs every case K times through the real co-au
 judge rate it. The report goes to tmp/coauthor-eval/<UTC time>.json and .md, the cases for the owner to
 <UTC time>-review.md; the log holds only case ids. `compare <before.json> <after.json>` compares two reports of one
 set and part without model calls.
+
+The measurement of actions (actions.py): `actions-setup` creates its own user with the demo stories; `actions-run
+(--all | --sample N)` checks the set, the user and the price, then runs every request on a fresh copy of the open
+draft, confirming every action, and checks the result by code. The report goes to tmp/coauthor-actions/.
 """
 
 import argparse
 import asyncio
 import json
+import subprocess
 import sys
+import time
 from dataclasses import asdict
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -25,6 +31,7 @@ from evals.coauthor.compare import compare, markdown, read_report
 from evals.routing.score import percentile
 
 if TYPE_CHECKING:
+    from evals.coauthor.actions import ActionRun
     from evals.coauthor.records import Usage
     from evals.coauthor.sample import Sampled
     from evals.coauthor.score import Result, Share, Summary
@@ -32,6 +39,7 @@ if TYPE_CHECKING:
 SETS = ("wide", "demo")
 CONCURRENCY = 2
 REPORT_DIR = REPO_ROOT / "tmp" / "coauthor-eval"
+ACTIONS_DIR = REPO_ROOT / "tmp" / "coauthor-actions"
 COAUTHOR_MODEL = "deepseek-fast"
 
 
@@ -51,7 +59,16 @@ def _arguments(argv: list[str]) -> argparse.Namespace:
     pair = commands.add_parser("compare", help="compare two reports of one set and part (no model calls)")
     pair.add_argument("before", type=Path)
     pair.add_argument("after", type=Path)
+    commands.add_parser("actions-setup", help="create the user of the measurement of actions and its demo stories")
+    actions = commands.add_parser(
+        "actions-run", help="run the requests of actions.toml, confirming every action (spends model calls)"
+    )
+    size = actions.add_mutually_exclusive_group(required=True)
+    size.add_argument("--all", action="store_true", help="every request of the set")
+    size.add_argument("--sample", type=int, help="only the first N requests of the set")
     arguments = parser.parse_args(argv)
+    if arguments.command == "actions-run" and arguments.sample is not None and arguments.sample < 1:
+        parser.error("--sample must be at least 1")
     if arguments.command == "run":
         if arguments.sample is not None and arguments.sample < 1:
             parser.error("--sample must be at least 1")
@@ -181,13 +198,13 @@ async def _run(arguments: argparse.Namespace) -> int:
     from evals.coauthor.run import CONTEXT_DESCRIPTION, chat_context, run_case
     from evals.coauthor.sample import load_sample
     from evals.coauthor.score import Result, review_pick, spent, summarize
-    from evals.coauthor.user import places
+    from evals.coauthor.user import QUALITY, places
 
     # Everything is checked before the first model call (spec «Прогон замера»).
     sampled = load_sample() if arguments.set_name == "wide" else load_demo_part(arguments.part)
     if arguments.sample is not None:
         sampled = sampled[: arguments.sample]
-    where = places()
+    where = places(QUALITY)
     coauthor_price, judge_price = prices().get(COAUTHOR_MODEL), prices().get(JUDGE_MODEL)
     # The co-author's tools ask the core who may open a story, as in the API (app/main.py).
     set_project_access_source(ProjectAccess())
@@ -281,17 +298,122 @@ def _compare(arguments: argparse.Namespace) -> int:
     return 0
 
 
+def _commit() -> str:
+    """The code a report was made on: the commit and whether the working tree had changes."""
+    head = subprocess.run(
+        ["git", "rev-parse", "--short", "HEAD"], cwd=REPO_ROOT, capture_output=True, text=True, check=True
+    ).stdout.strip()
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain", "--", "agno"], cwd=REPO_ROOT, capture_output=True, text=True, check=True
+    ).stdout.strip()
+    return f"{head} + незакоммиченные правки в agno/" if dirty else head
+
+
+async def _actions_run(arguments: argparse.Namespace) -> int:
+    # Imported after .env is loaded: the co-author builds its model and checks its prices on import.
+    from app.auth import set_project_access_source
+    from core.engine import get_engine
+    from core.plans import prices
+    from core.projects import ProjectAccess, user_id_of
+    from evals.coauthor.actions import check, load_set, markdown, summarize
+    from evals.coauthor.actions_run import run_request
+    from evals.coauthor.score import spent
+    from evals.coauthor.user import ACTIONS, places
+
+    # Everything is checked before the first model call (spec «Набор просьб замера действий»).
+    requests = load_set()
+    if arguments.sample is not None:
+        requests = requests[: arguments.sample]
+    where = places(ACTIONS)
+    with get_engine().connect() as connection:
+        owner = user_id_of(connection, ACTIONS.subject)
+    price = prices().get(COAUTHOR_MODEL)
+    set_project_access_source(ProjectAccess())
+    commit = _commit()
+
+    started = datetime.now(UTC)
+    clock = time.monotonic()
+
+    # One lane per story, one request at a time in it: the notes of a story are shared by its drafts, so two
+    # requests of one story at once would see each other's notes.
+    async def lane(place: str) -> list[ActionRun]:
+        done = []
+        for request in (r for r in requests if r.place == place):
+            run = await run_request(request, where[place], owner, ACTIONS, COAUTHOR_MODEL, price)
+            print(f"{request.id}: {run.outcome}", flush=True)
+            done.append(run)
+        return done
+
+    lanes = await asyncio.gather(*(lane(place) for place in where))
+    runs = {run.request_id: run for done in lanes for run in done}
+    verdicts = [check(request, runs[request.id]) for request in requests]
+    summary = summarize(verdicts)
+    usage = spent([v.run.usage for v in verdicts if v.run.usage is not None])
+    seconds = [v.run.seconds for v in verdicts if v.run.outcome == "done"]
+    meta = {
+        "requests": len(requests),
+        "sample": arguments.sample,
+        "started": started.isoformat(timespec="seconds"),
+        "commit": commit,
+        "model": COAUTHOR_MODEL,
+        "seconds": time.monotonic() - clock,
+        "median_seconds": percentile(seconds, 0.5) if seconds else None,
+        "cost_per_request": f"{usage.cost_rub / len(requests):.2f}",
+    }
+    ACTIONS_DIR.mkdir(parents=True, exist_ok=True)
+    stem = f"{started:%Y%m%dT%H%M%SZ}"
+    report = {
+        "meta": meta,
+        "summary": asdict(summary),
+        "usage": asdict(usage),
+        "requests": [
+            {
+                "request": asdict(v.request),
+                "run": asdict(v.run),
+                "refusals": v.refusals,
+                "attempts": v.attempts,
+                "action_ok": v.action_ok,
+                "missing": v.missing,
+                "summary_dump": v.summary_dump,
+                "extra": v.extra,
+                "passed": v.passed,
+            }
+            for v in verdicts
+        ],
+    }
+    (ACTIONS_DIR / f"{stem}.json").write_text(
+        json.dumps(report, ensure_ascii=False, indent=2, default=_json_default), encoding="utf-8"
+    )
+    text = markdown(meta, summary, verdicts, usage)
+    (ACTIONS_DIR / f"{stem}.md").write_text(text, encoding="utf-8")
+    print(text)
+    print(f"Report: tmp/coauthor-actions/{stem}.json and {stem}.md")
+    return 0
+
+
 def main(argv: list[str]) -> int:
     load_dotenv(REPO_ROOT / ".env")
     arguments = _arguments(argv)
     if arguments.command == "setup":
-        from evals.coauthor.user import setup
+        from evals.coauthor.user import QUALITY, setup
 
-        stories = setup()
+        stories = setup(QUALITY)
         print(f"Пользователь замера готов: {stories} демо-истории.")
         return 0
     if arguments.command == "compare":
         return _compare(arguments)
+    if arguments.command == "actions-setup":
+        from demo.load import DemoExists
+        from evals.coauthor.user import ACTIONS, setup
+
+        try:
+            stories = setup(ACTIONS)
+        except DemoExists as error:
+            raise SystemExit(f"Пользователь замера действий уже есть. {error}") from error
+        print(f"Пользователь замера действий готов: {stories} демо-истории.")
+        return 0
+    if arguments.command == "actions-run":
+        return asyncio.run(_actions_run(arguments))
     return asyncio.run(_run(arguments))
 
 

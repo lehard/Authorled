@@ -24,7 +24,7 @@ from agents.coauthor import COAUTHOR_ID, coauthor
 from app.auth.authorization import GROUP_SCOPES
 from core.plans import ModelPrice
 from evals.coauthor.records import Call, CaseRun, Usage
-from evals.coauthor.user import SUBJECT, Place
+from evals.coauthor.user import QUALITY, Place
 from evals.routing.cases import Case
 
 # The group of screenwriters (openspec/specs/auth, GROUP_SCOPES): the scopes a writer's token gives.
@@ -57,18 +57,21 @@ def chat_context(place: Place) -> dict[str, str]:
     return {CONTEXT_DESCRIPTION: value}
 
 
-def _caller() -> RunAuthorization:
+def caller(subject: str) -> RunAuthorization:
     scopes = list(GROUP_SCOPES[AUTHOR_GROUP])
     context = AuthorizationContext(
-        principal_id=SUBJECT, scopes=scopes, claims={"sub": SUBJECT, "groups": [AUTHOR_GROUP], "scopes": scopes}
+        principal_id=subject, scopes=scopes, claims={"sub": subject, "groups": [AUTHOR_GROUP], "scopes": scopes}
     )
     # A request binds its caller the same way: identity for the tools, no extra tool checks (agno os/authz).
     return RunAuthorization(ScopeAuthorizationProvider(), context, enforce_tools=False)
 
 
-def _session(session_id: str, case: Case) -> InMemoryDb:
+def session_db(session_id: str, subject: str, case: Case | None) -> InMemoryDb:
+    """Sessions of one run in memory, so nothing reaches the AgentOS sessions; `case` gives the earlier turns."""
     db = InMemoryDb()
-    db.upsert_session(AgentSession(session_id=session_id, agent_id=COAUTHOR_ID, user_id=SUBJECT))
+    db.upsert_session(AgentSession(session_id=session_id, agent_id=COAUTHOR_ID, user_id=subject))
+    if case is None:
+        return db
     turns = case.history
     for author, answer in zip(turns[::2], turns[1::2], strict=True):
         db.upsert_run(
@@ -76,7 +79,7 @@ def _session(session_id: str, case: Case) -> InMemoryDb:
                 run_id=str(uuid.uuid4()),
                 agent_id=COAUTHOR_ID,
                 session_id=session_id,
-                user_id=SUBJECT,
+                user_id=subject,
                 status=RunStatus.completed,
                 messages=[Message(role="user", content=author.text), Message(role="assistant", content=answer.text)],
             ),
@@ -85,7 +88,7 @@ def _session(session_id: str, case: Case) -> InMemoryDb:
     return db
 
 
-def _calls(output: RunOutput, proposed: set[str]) -> tuple[Call, ...]:
+def calls_of(output: RunOutput, proposed: set[str]) -> tuple[Call, ...]:
     calls: list[Call] = []
     for execution in output.tools or []:
         if execution.tool_name is None:
@@ -96,7 +99,7 @@ def _calls(output: RunOutput, proposed: set[str]) -> tuple[Call, ...]:
     return tuple(calls)
 
 
-def _usage(output: RunOutput, model: str, price: ModelPrice) -> Usage:
+def usage_of(output: RunOutput, model: str, price: ModelPrice) -> Usage:
     calls = sum(1 for m in output.messages or [] if m.role == "assistant" and m.metrics.output_tokens)
     input_tokens = cache_read = output_tokens = 0
     for entries in ((output.metrics.details if output.metrics else None) or {}).values():
@@ -113,16 +116,16 @@ def _usage(output: RunOutput, model: str, price: ModelPrice) -> Usage:
 
 async def run_case(case: Case, place: Place, model: str, price: ModelPrice) -> CaseRun:
     session_id = f"{place.project_id}:{place.draft_id}:{uuid.uuid4()}"
-    agent = coauthor.deep_copy(update={"db": _session(session_id, case)})
+    agent = coauthor.deep_copy(update={"db": session_db(session_id, QUALITY.subject, case)})
     context = chat_context(place)
     proposed: set[str] = set()
     started = time.monotonic()
     try:
-        with authorization_scope(_caller):
+        with authorization_scope(lambda: caller(QUALITY.subject)):
             output = await agent.arun(
                 input=case.message,
                 session_id=session_id,
-                user_id=SUBJECT,
+                user_id=QUALITY.subject,
                 dependencies=context,
                 add_dependencies_to_context=True,
                 stream=False,
@@ -146,7 +149,7 @@ async def run_case(case: Case, place: Place, model: str, price: ModelPrice) -> C
                     run_response=output,
                     requirements=requirements,
                     session_id=session_id,
-                    user_id=SUBJECT,
+                    user_id=QUALITY.subject,
                     dependencies=context,
                     stream=False,
                 )
@@ -158,4 +161,4 @@ async def run_case(case: Case, place: Place, model: str, price: ModelPrice) -> C
         return CaseRun(case.id, "error", "", seconds, error=f"Run status {output.status}: {output.content}")
     answer = output.content if isinstance(output.content, str) else ""
     outcome = "paused" if proposed else "answered"
-    return CaseRun(case.id, outcome, answer, seconds, _calls(output, proposed), _usage(output, model, price))
+    return CaseRun(case.id, outcome, answer, seconds, calls_of(output, proposed), usage_of(output, model, price))

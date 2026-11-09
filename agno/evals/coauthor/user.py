@@ -15,22 +15,49 @@ from core.subscriptions import current_subscription
 from core.users import AccountNotFound, get_or_create_user
 from demo.load import ensure_migrated, load_demo
 
-SUBJECT = "coauthor-eval"
-EMAIL = "coauthor-eval@authorled.test"
-NAME = "Замер соавтора"
-PLAN = "beta"
 # The demo stories carry comments of a writer and an editor (web/src/data/demo.json); the demo loader gives every
 # account it gets a copy, so the editor's comments belong to a second account of the measurement, not to a
 # development user.
 DEMO_WRITER, DEMO_EDITOR = "writer@authorled.test", "editor@authorled.test"
-EDITOR_SUBJECT, EDITOR_EMAIL, EDITOR_NAME = (
+PLAN = "beta"
+
+
+@dataclass(frozen=True)
+class EvalUser:
+    """An account of a measurement with its editor and the command that creates both."""
+
+    subject: str
+    email: str
+    name: str
+    editor_subject: str
+    editor_email: str
+    editor_name: str
+    setup_command: str
+
+
+# The quality measurement (openspec/specs/coauthor-eval) and the measurement of actions
+# (openspec/changes/coauthor-tool-contracts, design, decision 5): separate accounts, so the actions applied by one
+# never reach the stories of the other.
+QUALITY = EvalUser(
+    "coauthor-eval",
+    "coauthor-eval@authorled.test",
+    "Замер соавтора",
     "coauthor-eval-editor",
     "coauthor-eval-editor@authorled.test",
     "Редактор замера",
+    "python -m evals.coauthor setup",
+)
+ACTIONS = EvalUser(
+    "coauthor-actions-eval",
+    "coauthor-actions-eval@authorled.test",
+    "Замер действий соавтора",
+    "coauthor-actions-eval-editor",
+    "coauthor-actions-eval-editor@authorled.test",
+    "Редактор замера действий",
+    "python -m evals.coauthor actions-setup",
 )
 # Places of the sample (sample.toml, field `place`) and the demo stories they open.
 PLACES = {"tihaya-voda": "Тихая вода", "posledniy-parom": "Последний паром"}
-SETUP_COMMAND = "python -m evals.coauthor setup"
 
 
 class EvalUserMissing(RuntimeError):
@@ -46,31 +73,31 @@ class Place:
     draft_name: str
 
 
-def setup() -> int:
+def setup(user: EvalUser) -> int:
     """Create the user and its copy of the demo stories; a second call is refused by the demo loader."""
     with get_engine().begin() as connection:
         ensure_migrated(connection)
-        account = get_or_create_user(connection, SUBJECT, EMAIL, NAME)
-        editor = get_or_create_user(connection, EDITOR_SUBJECT, EDITOR_EMAIL, EDITOR_NAME)
+        account = get_or_create_user(connection, user.subject, user.email, user.name)
+        editor = get_or_create_user(connection, user.editor_subject, user.editor_email, user.editor_name)
         plan = current_subscription(connection, account.id, datetime.now(UTC)).plan
         if plan != PLAN:
-            raise RuntimeError(f"The user of the measurement has plan {plan!r}, expected {PLAN!r}")
+            raise RuntimeError(f"The user {user.subject} has plan {plan!r}, expected {PLAN!r}")
         return load_demo(connection, {DEMO_WRITER: account.id, DEMO_EDITOR: editor.id})
 
 
-def places() -> dict[str, Place]:
+def places(user: EvalUser) -> dict[str, Place]:
     """Story and open draft of every place; a missing user or story stops the run with the setup command."""
     with get_engine().connect() as connection:
         try:
-            owner = user_id_of(connection, SUBJECT)
+            owner = user_id_of(connection, user.subject)
         except AccountNotFound as error:
-            raise EvalUserMissing(f"No user of the measurement: run `{SETUP_COMMAND}` first") from error
+            raise EvalUserMissing(f"No user of the measurement: run `{user.setup_command}` first") from error
         stories = {project.title: project for project in list_projects(connection, owner, trash=False)}
         found: dict[str, Place] = {}
         for place, title in PLACES.items():
             if title not in stories:
                 raise EvalUserMissing(
-                    f"The user of the measurement has no story «{title}»: run `{SETUP_COMMAND}` first"
+                    f"The user of the measurement has no story «{title}»: run `{user.setup_command}` first"
                 )
             story = stories[title]
             draft = draft_row(connection, story.open_draft_id)
