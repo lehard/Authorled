@@ -25,6 +25,7 @@ from core.tables import (
     document_versions,
     documents,
     draft_points,
+    files,
     metadata,
     notes,
     projects,
@@ -54,6 +55,20 @@ def _undo_coauthor_actions(connection: Connection) -> None:
     )
 
 
+def _undo_note_files(connection: Connection) -> None:
+    """Undo 0013 before a test rewinds the schema to an older revision."""
+    connection.execute(text("ALTER TABLE authorled.notes DROP COLUMN file_id"))
+    connection.execute(text("DELETE FROM authorled.files WHERE purpose = 'note'"))
+    # The name 0005 gave it: Alembic prefixed the full name once more by the naming convention.
+    connection.execute(text("ALTER TABLE authorled.files DROP CONSTRAINT ck_files_ck_files_purpose_known"))
+    connection.execute(
+        text(
+            "ALTER TABLE authorled.files ADD CONSTRAINT ck_files_ck_files_purpose_known "
+            "CHECK (purpose IN ('chat', 'import'))"
+        )
+    )
+
+
 def _undo_coauthor_feedback(connection: Connection) -> None:
     """Undo 0012 before a test rewinds the schema to an older revision."""
     connection.execute(text("DROP TABLE authorled.coauthor_feedback"))
@@ -65,11 +80,12 @@ def _undo_beta_requests(connection: Connection) -> None:
 
 
 def _drop_subscriptions(connection: Connection) -> None:
-    """Undo 0012, 0011, 0010 and 0009 before a test rewinds the core to an older revision.
+    """Undo 0013, 0012, 0011, 0010 and 0009 before a test rewinds the core to an older revision.
 
     The tables of 0009 live in schema billing after b0001_from_core, so the billing chain is rewound to its base too;
     `_upgrade` brings both chains back to head.
     """
+    _undo_note_files(connection)
     _undo_coauthor_feedback(connection)
     _undo_beta_requests(connection)
     _undo_coauthor_actions(connection)
@@ -351,6 +367,7 @@ def test_coauthor_actions_migration_keeps_settings_and_comments(
     """Applied from 0009: settings so far get `ask`, messages so far are written by users."""
     subject = f"test-{uuid.uuid4()}"
     with engine.begin() as connection:
+        _undo_note_files(connection)
         _undo_coauthor_feedback(connection)
         _undo_beta_requests(connection)
         _undo_coauthor_actions(connection)
@@ -474,3 +491,47 @@ def test_billing_move_needs_the_core_first(engine: Engine, billing_alembic_confi
     finally:
         with engine.begin() as connection:
             connection.execute(text("INSERT INTO billing.alembic_version (version_num) VALUES ('b0001_from_core')"))
+
+
+def test_note_files_migration_keeps_notes_and_files(
+    engine: Engine, alembic_config: Config, billing_alembic_config: Config
+) -> None:
+    """Applied from 0012 on a database with a note and a chat file: notes get no original, files stay."""
+    subject = f"test-{uuid.uuid4()}"
+    with engine.begin() as connection:
+        _undo_note_files(connection)
+        connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0012_coauthor_feedback'"))
+        owner = connection.execute(
+            insert(users)
+            .values(auth_subject=subject, email="note-files@authorled.test", display_name="Автор")
+            .returning(users.c.id)
+        ).scalar_one()
+        story, _, _ = create_project(connection, owner, "Маяк")
+        note = connection.execute(
+            insert(notes).values(project_id=story.id, title="Финал", updated_by=owner).returning(notes.c.id)
+        ).scalar_one()
+        chat_file = connection.execute(
+            insert(files)
+            .values(
+                project_id=story.id,
+                uploaded_by=owner,
+                purpose="chat",
+                session_id=f"{story.id}:x",
+                name="эпоха.txt",
+                media_type="text/plain; charset=utf-8",
+                size_bytes=5,
+                sha256="0" * 64,
+                text_content="Эпоха",
+            )
+            .returning(files.c.id)
+        ).scalar_one()
+
+    _upgrade(alembic_config, billing_alembic_config)
+
+    with engine.begin() as connection:
+        assert connection.execute(select(notes.c.file_id).where(notes.c.id == note)).scalar_one() is None
+        kept = connection.execute(select(files).where(files.c.id == chat_file)).one()
+        assert (kept.purpose, kept.name, kept.text_content) == ("chat", "эпоха.txt", "Эпоха")
+        connection.execute(delete(projects).where(projects.c.id == story.id))
+        connection.execute(delete(subscriptions).where(subscriptions.c.user_id == owner))
+        connection.execute(delete(users).where(users.c.id == owner))

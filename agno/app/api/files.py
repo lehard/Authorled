@@ -11,9 +11,10 @@ from starlette.concurrency import run_in_threadpool
 
 from app.api.body import caller_id, parse_id, read_upload, require_project
 from app.api.problems import Problem
-from app.api.schemas import FileOut
+from app.api.notes import storage_place
+from app.api.schemas import FileOut, NoteOut
 from app.auth import Principal, current_principal
-from core import files
+from core import files, notes
 from core.engine import get_engine
 
 router = APIRouter(prefix="/api/v1", tags=["Files"])
@@ -91,6 +92,21 @@ def get_content(file_id: str, principal: Principal = Depends(current_principal))
         data = files.file_bytes(connection, found)
     disposition = f"attachment; filename*=UTF-8''{quote(stored.name)}"
     return Response(data, media_type=stored.media_type, headers={"Content-Disposition": disposition})
+
+
+@router.post(
+    "/files/{file_id}/note",
+    status_code=201,
+    response_model=NoteOut,
+    summary="A note from a file of a conversation, with a copy of the file as its original",
+)
+def note_from_chat_file(file_id: str, principal: Principal = Depends(current_principal)) -> NoteOut:
+    found = _file(principal, file_id)
+    with get_engine().connect() as connection:
+        user = caller_id(connection, principal)
+    place = storage_place(user)
+    with get_engine().begin() as connection:
+        return NoteOut.model_validate(notes.create_note_from_chat_file(connection, found, user, place))
 
 
 @router.delete("/files/{file_id}", status_code=204, summary="Delete a file for good")

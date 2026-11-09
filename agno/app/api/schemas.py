@@ -60,6 +60,15 @@ class DocumentOut(_Out):
     deleted_at: datetime | None
 
 
+class NoteFileOut(_Out):
+    """The original of a note made from a file."""
+
+    id: uuid.UUID
+    name: str
+    media_type: str
+    size_bytes: int
+
+
 class NoteOut(_Out):
     id: uuid.UUID
     project_id: uuid.UUID
@@ -69,6 +78,7 @@ class NoteOut(_Out):
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None
+    file: NoteFileOut | None
 
 
 class TextOut(_Out):

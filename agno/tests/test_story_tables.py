@@ -17,6 +17,7 @@ from core.tables import (
     drafts,
     file_contents,
     files,
+    notes,
     projects,
     screenplay_texts,
     suggestions,
@@ -169,6 +170,68 @@ def test_chat_file_needs_a_session(connection: Connection) -> None:
         )
 
 
+def _note_file(connection: Connection, project: uuid.UUID, owner: uuid.UUID) -> uuid.UUID:
+    file_id = connection.execute(
+        insert(files)
+        .values(
+            project_id=project,
+            uploaded_by=owner,
+            purpose="note",
+            name="Эпоха.txt",
+            media_type="text/plain",
+            size_bytes=1,
+            sha256="0" * 64,
+            text_content="a",
+        )
+        .returning(files.c.id)
+    ).scalar_one()
+    connection.execute(insert(file_contents).values(file_id=file_id, bytes=b"a"))
+    return file_id
+
+
+def _note(connection: Connection, project: uuid.UUID, owner: uuid.UUID, file_id: uuid.UUID | None) -> uuid.UUID:
+    return connection.execute(
+        insert(notes).values(project_id=project, title="Эпоха", updated_by=owner, file_id=file_id).returning(notes.c.id)
+    ).scalar_one()
+
+
+def test_original_of_a_note_has_no_session(connection: Connection) -> None:
+    owner = _user(connection)
+    project = _project(connection, owner)
+    with pytest.raises(IntegrityError, match="ck_files_session_for_chat"):
+        connection.execute(
+            insert(files).values(
+                project_id=project,
+                uploaded_by=owner,
+                purpose="note",
+                session_id=f"{project}:1",
+                name="a.txt",
+                media_type="text/plain",
+                size_bytes=1,
+                sha256="0" * 64,
+                text_content="a",
+            )
+        )
+
+
+def test_one_original_per_note(connection: Connection) -> None:
+    owner = _user(connection)
+    project = _project(connection, owner)
+    file_id = _note_file(connection, project, owner)
+    _note(connection, project, owner, file_id)
+    with pytest.raises(IntegrityError, match="uq_notes_file_id"):
+        _note(connection, project, owner, file_id)
+
+
+def test_original_goes_only_with_its_note(connection: Connection) -> None:
+    owner = _user(connection)
+    project = _project(connection, owner)
+    file_id = _note_file(connection, project, owner)
+    _note(connection, project, owner, file_id)
+    with pytest.raises(IntegrityError, match="fk_notes_file_id_files"):
+        connection.execute(delete(files).where(files.c.id == file_id))
+
+
 def test_messages_go_with_their_thread(connection: Connection) -> None:
     owner = _user(connection)
     script = _document(connection, _project(connection, owner), "script")
@@ -260,6 +323,7 @@ def test_story_deletion_cascades(connection: Connection) -> None:
         .returning(files.c.id)
     ).scalar_one()
     connection.execute(insert(file_contents).values(file_id=file_id, bytes=b"a"))
+    _note(connection, project, owner, _note_file(connection, project, owner))
     draft = _draft(connection, project)
     connection.execute(
         insert(draft_points).values(draft_id=draft, name="Т", kind="manual", content={}, created_by=owner)
@@ -279,6 +343,7 @@ def test_story_deletion_cascades(connection: Connection) -> None:
         comment_threads,
         comment_messages,
         suggestions,
+        notes,
         files,
         file_contents,
     ):

@@ -170,6 +170,9 @@ notes = Table(
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     Column("deleted_at", DateTime(timezone=True)),
+    # The original of a note made from a file (purpose `note`); it goes only together with the note. No ON DELETE:
+    # the check at the end of the statement lets the cascade from the story remove both.
+    Column("file_id", Uuid, ForeignKey(f"{SCHEMA}.files.id"), unique=True),
     CheckConstraint("title <> ''", name="title_not_empty"),
     CheckConstraint("revision >= 1", name="revision_positive"),
     Index("ix_notes_project_id", "project_id"),
@@ -301,7 +304,7 @@ suggestions = Table(
     Index("ix_suggestions_document_id", "document_id"),
 )
 
-FILE_PURPOSES = ("chat", "import")
+FILE_PURPOSES = ("chat", "import", "note")
 MAX_FILE_BYTES = 20 * 1024 * 1024
 
 # An uploaded file that passed the antivirus; its bytes live in file_contents.
@@ -320,7 +323,7 @@ files = Table(
     # Text extracted on upload, for the co-author.
     Column("text_content", Text, nullable=False),
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
-    CheckConstraint("purpose IN ('chat', 'import')", name="purpose_known"),
+    CheckConstraint("purpose IN ('chat', 'import', 'note')", name="purpose_known"),
     CheckConstraint("(session_id IS NOT NULL) = (purpose = 'chat')", name="session_for_chat"),
     CheckConstraint("name <> ''", name="name_not_empty"),
     CheckConstraint(f"size_bytes BETWEEN 1 AND {MAX_FILE_BYTES}", name="size_allowed"),
