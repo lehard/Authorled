@@ -4,25 +4,31 @@
       "id": "water",
       "title": "Тихая вода",
       "desc": "Двадцать лет никто не подходил к воде.",
-      "cover": true,
+      "coverColor": "blue",
       "updatedAt": "2026-10-30T09:00:00.000Z",
-      "deletedAt": null
+      "deletedAt": null,
+      "wordGoal": null,
+      "goalDeadline": null
     },
     {
       "id": "ferry",
       "title": "Последний паром",
       "desc": "Мост открыли. Рейс остался один.",
-      "cover": false,
+      "coverColor": "teal",
       "updatedAt": "2026-10-30T09:00:00.000Z",
-      "deletedAt": null
+      "deletedAt": null,
+      "wordGoal": null,
+      "goalDeadline": null
     },
     {
       "id": "untitled",
       "title": "Без названия",
       "desc": "",
-      "cover": false,
+      "coverColor": "amber",
       "updatedAt": "2026-10-30T09:00:00.000Z",
-      "deletedAt": "2026-10-20T10:00:00.000Z"
+      "deletedAt": "2026-10-20T10:00:00.000Z",
+      "wordGoal": null,
+      "goalDeadline": null
     }
   ],
   "scripts": [

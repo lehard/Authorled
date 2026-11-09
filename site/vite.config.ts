@@ -67,6 +67,8 @@ export default defineConfig(({ command, mode, isPreview }) => {
           import.meta.dirname,
           path.join(WEB_DIR, "src", "design-system"),
           path.join(WEB_DIR, "node_modules"),
+          // The documents of the service (openspec/specs/web/site, «Документы сервиса»).
+          path.join(REPO_ROOT, "docs", "legal"),
         ],
       },
     },

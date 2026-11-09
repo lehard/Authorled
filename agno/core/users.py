@@ -31,6 +31,8 @@ class Account:
     display_name: str
     theme: Theme | None
     coauthor_mode: CoauthorMode
+    # Words a day the author aims at, for all their stories; None is no goal (openspec/specs/api/writing).
+    daily_word_goal: int | None
     # The moment the account was created: billing starts the first period of its subscription here.
     created_at: datetime
 
@@ -53,6 +55,7 @@ def _account(connection: Connection, subject: str) -> Account:
             users.c.created_at,
             user_settings.c.theme,
             user_settings.c.coauthor_mode,
+            user_settings.c.daily_word_goal,
         )
         .join(user_settings, user_settings.c.user_id == users.c.id)
         .where(users.c.auth_subject == subject)
@@ -67,6 +70,7 @@ def _account(connection: Connection, subject: str) -> Account:
         display_name=row.display_name,
         theme=row.theme,
         coauthor_mode=row.coauthor_mode,
+        daily_word_goal=row.daily_word_goal,
         created_at=row.created_at,
     )
 
@@ -124,8 +128,12 @@ def update_account(
     display_name: str | _Unset = UNSET,
     theme: Theme | None | _Unset = UNSET,
     coauthor_mode: CoauthorMode | _Unset = UNSET,
+    daily_word_goal: int | None | _Unset = UNSET,
 ) -> Account:
-    """Change the name, the theme and/or the co-author mode; fields left UNSET stay as they are."""
+    """Change the name, the theme, the co-author mode and/or the daily goal; fields left UNSET stay as they are.
+
+    The route checks the daily goal (1 to MAX_WORD_GOAL or None); the database refuses anything else as well.
+    """
     account = _account(connection, subject)
     if display_name is not UNSET:
         connection.execute(
@@ -142,6 +150,12 @@ def update_account(
             update(user_settings)
             .where(user_settings.c.user_id == account.id)
             .values(coauthor_mode=coauthor_mode, updated_at=func.now())
+        )
+    if daily_word_goal is not UNSET:
+        connection.execute(
+            update(user_settings)
+            .where(user_settings.c.user_id == account.id)
+            .values(daily_word_goal=daily_word_goal, updated_at=func.now())
         )
     return _account(connection, subject)
 

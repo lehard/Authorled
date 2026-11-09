@@ -11,6 +11,8 @@ type Props = {
   area?: boolean;
   rows?: number;
   hint?: string;
+  /** Key of the field for a jump from the search of the story (`data-field`, useFindInDoc). */
+  name?: string;
 };
 
 export function Field({
@@ -20,6 +22,7 @@ export function Field({
   area = false,
   rows = 4,
   hint,
+  name,
 }: Props) {
   const id = useId();
   return (
@@ -36,6 +39,7 @@ export function Field({
           minRows={rows}
           limit="none"
           id={id}
+          data-field={name}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="bg-paper"
@@ -43,6 +47,7 @@ export function Field({
       ) : (
         <Input
           id={id}
+          data-field={name}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="bg-paper"

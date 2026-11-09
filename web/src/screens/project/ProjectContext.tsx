@@ -72,6 +72,16 @@ export type ProjectData = {
   openFresh: () => void;
   /** Grows with every fresh opening; the open document is remounted by it. */
   generation: number;
+  /**
+   * What the field «Поиск по истории» holds: it outlives the navigator, which a narrow screen
+   * closes after every jump (web/workspace, «Переход к совпадению из поиска по истории»).
+   */
+  searchText: string;
+  setSearchText: (text: string) => void;
+  /** ⌘K asked for the field: it takes the caret, even if the navigator opens only now. */
+  searchFocusAsked: boolean;
+  /** The field took the caret: the next opening of the navigator does not take it again. */
+  searchFocusTaken: () => void;
 };
 
 export const ProjectContext = createContext<ProjectData | null>(null);

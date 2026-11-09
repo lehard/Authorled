@@ -1,4 +1,4 @@
-import { MoreHorizontal, Plus, Trash2 } from "lucide-react";
+import { MoreHorizontal, Palette, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
@@ -8,11 +8,16 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MANUSCRIPT_TYPES } from "@/data/files";
 import { useProjects } from "@/data/hooks";
-import type { Project } from "@/data/model";
+import { COVER_COLORS, isCoverColor, type Project } from "@/data/model";
 import { NameDialog } from "@/screens/shared/NameDialog";
 import { DataErrorScreen } from "@/screens/system/DataErrorScreen";
 import { MessageScreen } from "@/screens/system/MessageScreen";
@@ -45,7 +50,8 @@ export function ShelfScreen() {
   const navigate = useNavigate();
   const { projects, query } = useProjects(false);
   const { projects: trash, query: trashQuery } = useProjects(true);
-  const { createStory, renameStory, trashStory } = useStoryActions();
+  const { createStory, renameStory, setCoverColor, trashStory } =
+    useStoryActions();
   const [creating, setCreating] = useState(false);
   const [renaming, setRenaming] = useState<Project | null>(null);
   // The stories are on screen: the story window loads in the background, so opening a story
@@ -87,7 +93,9 @@ export function ShelfScreen() {
                 to={`/p/${p.id}/text`}
                 className="grid content-start gap-3.5 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
               >
-                <span className={p.cover ? "book art" : "book"}>{p.title}</span>
+                <span className="book" data-cover={p.coverColor}>
+                  {p.title}
+                </span>
                 <span className="grid gap-0.5 px-0.5">
                   <b className="font-heading text-[19px] font-semibold">
                     {p.title}
@@ -115,10 +123,37 @@ export function ShelfScreen() {
                     <MoreHorizontal />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="w-auto">
                   <DropdownMenuItem onSelect={() => setRenaming(p)}>
                     Переименовать
                   </DropdownMenuItem>
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      <Palette />
+                      Цвет обложки
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuRadioGroup
+                        value={p.coverColor}
+                        onValueChange={(value) => {
+                          if (!isCoverColor(value))
+                            throw new Error(`Нет цвета обложки «${value}».`);
+                          void setCoverColor(p.id, value);
+                        }}
+                      >
+                        {Object.entries(COVER_COLORS).map(([color, label]) => (
+                          <DropdownMenuRadioItem key={color} value={color}>
+                            <span
+                              className="cover-swatch"
+                              data-cover={color}
+                              aria-hidden
+                            />
+                            {label}
+                          </DropdownMenuRadioItem>
+                        ))}
+                      </DropdownMenuRadioGroup>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
                   <DropdownMenuItem
                     variant="destructive"
                     onSelect={() => void trashStory(p.id, true)}

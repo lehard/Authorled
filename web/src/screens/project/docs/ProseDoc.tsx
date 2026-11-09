@@ -9,6 +9,7 @@ import { useProjectData } from "../ProjectContext";
 import { DocTasksButton } from "../chat/DocTasksMenu";
 import { DocHead } from "./DocHead";
 import { SaveHistory } from "./SaveHistory";
+import { useFindInDoc } from "./useFindInDoc";
 
 const PLACEHOLDER = {
   logline: "Начните логлайн",
@@ -23,6 +24,7 @@ export function ProseDoc({ part }: { part: "logline" | "synopsis" }) {
   // The co-author may write the logline or the synopsis while it is open: its text shows without a
   // reload, and what the author typed stays (web/workspace, «Экраны после действия соавтора»).
   useServerChanges(script[part], setText);
+  useFindInDoc(part);
   return (
     <>
       <DocHead title={SCRIPT_PARTS[part]} status={status}>
@@ -32,6 +34,7 @@ export function ProseDoc({ part }: { part: "logline" | "synopsis" }) {
       <div className="sheet sheet-prose">
         <GrowingTextarea
           aria-label={SCRIPT_PARTS[part]}
+          data-field={part}
           placeholder={PLACEHOLDER[part]}
           readOnly={draft.locked}
           value={text}

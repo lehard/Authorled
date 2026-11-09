@@ -96,6 +96,9 @@ export function ProjectScreen() {
     useState<CoauthorRequest | null>(null);
   const [chatBlocked, setChatBlocked] = useState(false);
   const [currentScene, setCurrentScene] = useState<number | null>(null);
+  // «Поиск по истории» (web/workspace, «Поиск по истории в навигаторе»).
+  const [searchText, setSearchText] = useState("");
+  const [searchFocusAsked, setSearchFocusAsked] = useState(false);
   // The working copy of the text belongs to one draft; another draft starts from its data.
   const [working, setWorking] = useState<{
     id: string;
@@ -117,6 +120,19 @@ export function ProjectScreen() {
     if (opened !== undefined) void rememberDraft(opened);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opened]);
+
+  // ⌘K or Ctrl+K anywhere in the window puts the caret into the search field; on a narrow screen
+  // the navigator opens first. The key is read by its place, so a Russian layout works too.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.altKey || e.code !== "KeyK") return;
+      e.preventDefault();
+      if (narrow) setNavOpen(true);
+      setSearchFocusAsked(true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [narrow]);
 
   // An unknown story or draft is «Не найдено»; any other failure is shown with «Повторить» for all.
   const lists = [
@@ -234,6 +250,10 @@ export function ProjectScreen() {
       });
     },
     generation,
+    searchText,
+    setSearchText,
+    searchFocusAsked,
+    searchFocusTaken: () => setSearchFocusAsked(false),
   };
   const title = docTitle(base, ref);
   const navigator = <Navigator onNavigate={() => setNavOpen(false)} />;

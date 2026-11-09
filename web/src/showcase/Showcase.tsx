@@ -12,6 +12,8 @@ import {
 } from "@/design-system";
 import { plainDoc, type ScreenplayDoc } from "@/editor/document.ts";
 import { ScreenplayEditor } from "@/editor/ScreenplayEditor";
+import { COVER_COLORS } from "@/data/model";
+import "@/screens/workspace.css";
 
 // Design-system showcase (openspec/specs/web/design-system, requirement «Витрина»).
 // It is the only screen allowed to show layer-1 primitives, because documenting them is its job.
@@ -214,6 +216,20 @@ export function Showcase() {
               --shadow-paper.
             </p>
           </Paper>
+        </div>
+      </Section>
+
+      <Section title="Обложки">
+        <p className="text-body text-muted-foreground">
+          Обложка истории, пока своей нет: --cover-&lt;цвет&gt;-from, -to,
+          -foreground.
+        </p>
+        <div className="desk grid grid-cols-2 gap-4 rounded-panel p-6 sm:grid-cols-3 lg:grid-cols-6">
+          {Object.entries(COVER_COLORS).map(([color, label]) => (
+            <span key={color} className="book" data-cover={color}>
+              {label}
+            </span>
+          ))}
         </div>
       </Section>
 

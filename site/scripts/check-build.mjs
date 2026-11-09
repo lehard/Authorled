@@ -22,6 +22,9 @@ const read = (file) => fs.readFileSync(path.join(dist, file), "utf8");
 for (const file of [
   "index.html",
   "privacy/index.html",
+  "legal/offer/index.html",
+  "legal/privacy/index.html",
+  "pricing/index.html",
   "404.html",
   "sitemap.xml",
   "robots.txt",
@@ -203,20 +206,81 @@ if (problems.length === 0) {
     fail("the titles of the home page and the policy must differ");
   if (!notFound.includes('<meta name="robots" content="noindex" />'))
     fail("404.html is not noindex");
-  for (const [file, html] of [
+  // The documents of the service (openspec/specs/web/site, «Документы сервиса», «Документы в подвале»).
+  const DOCUMENTS = [
+    ["/legal/offer/", "legal/offer/index.html", "offer.md"],
+    ["/legal/privacy/", "legal/privacy/index.html", "privacy.md"],
+    ["/pricing/", "pricing/index.html", "pricing.md"],
+  ];
+  const documents = DOCUMENTS.map(([url, file, source]) => [
+    url,
+    file,
+    source,
+    read(file),
+  ]);
+  const pages = [
     ["index.html", home],
     ["privacy/index.html", privacy],
     ["404.html", notFound],
-  ]) {
+    ...documents.map(([, file, , html]) => [file, html]),
+  ];
+  const footer = (html) => /<footer[\s\S]*?<\/footer>/.exec(html)?.[0] ?? "";
+  for (const [file, html] of pages) {
     if (!html.includes('<html lang="ru"')) fail(`${file}: lang is not ru`);
-    if (!html.includes('href="/privacy/"'))
-      fail(`${file}: no link to the policy`);
+    for (const [url] of DOCUMENTS) {
+      if (!footer(html).includes(`href="${url}"`))
+        fail(`${file}: the footer has no link to ${url}`);
+    }
+    if (footer(html).includes('href="/privacy/"'))
+      fail(`${file}: the footer links the policy of the beta request`);
   }
-  const policyLinks = home.split('href="/privacy/"').length - 1;
-  if (policyLinks < 2)
-    fail("index.html: the policy must be linked from the form and the footer");
+  if (!home.includes('href="/privacy/"'))
+    fail("index.html: the consent of the form has no link to /privacy/");
   const sitemap = read("sitemap.xml");
-  for (const loc of [`${origin}/`, `${origin}/privacy/`]) {
+  const pageUrls = new Set([
+    ...[...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) =>
+      match[1].slice(origin.length),
+    ),
+  ]);
+  for (const [url, file, source, html] of documents) {
+    if (!html.includes(`<link rel="canonical" href="${origin}${url}" />`))
+      fail(`${file}: canonical is wrong`);
+    if (!html.includes(`<meta property="og:url" content="${origin}${url}" />`))
+      fail(`${file}: og:url is wrong`);
+    if (!/<h1[^>]*>[^<]+<\/h1>/.test(html)) fail(`${file}: no heading`);
+    if (title(html) === title(home) || title(html) === title(privacy))
+      fail(`${file}: the title repeats another page`);
+    // Links of a document to the product domain must lead to pages of the site (design D6).
+    for (const match of html.matchAll(/href="(https:\/\/soavtor\.app[^"]*)"/g))
+      fail(`${file}: a link to ${match[1]} was not made local`);
+    for (const match of html.matchAll(/<a[^>]+href="(\/[^"#]*)/g)) {
+      if (!pageUrls.has(match[1]))
+        fail(`${file}: a link to ${match[1]}, which is not a page of the site`);
+    }
+    // Every numbered point (7.1., 7.2., …) is a paragraph of its own, not glued to the previous one.
+    for (const match of html.matchAll(/<p>([\s\S]*?)<\/p>/g)) {
+      // Glued lines keep their line break; a reference such as «раздел 7.5.» inside a sentence does not.
+      if ((match[1].match(/(?:^|\n)\d+\.\d+\.\s/g) ?? []).length > 1)
+        fail(
+          `${file}: numbered points share a paragraph; separate them with an empty line in docs/legal/${source}`,
+        );
+    }
+    if (source === "privacy.md" || source === "pricing.md") {
+      if (!html.includes("<table"))
+        fail(`${file}: the tables of docs/legal/${source} are not rendered`);
+    }
+  }
+  if (!documents[0][3].includes('id="materials"'))
+    fail("legal/offer/index.html has no anchor #materials");
+  if (title(privacy) === title(documents[1][3]))
+    fail("the titles of /privacy/ and /legal/privacy/ must differ");
+  if (!/заявк/.test(title(privacy) ?? ""))
+    fail("the title of /privacy/ must name the beta request");
+  for (const loc of [
+    `${origin}/`,
+    `${origin}/privacy/`,
+    ...DOCUMENTS.map(([url]) => `${origin}${url}`),
+  ]) {
     if (!sitemap.includes(`<loc>${loc}</loc>`))
       fail(`sitemap.xml has no ${loc}`);
   }
@@ -252,6 +316,24 @@ if (problems.length === 0) {
     if (secrets.some((secret) => text.includes(secret)))
       fail(`${relative} contains a value of the repository .env`);
   }
+}
+
+// The sources of the documents of the service (openspec/specs/web/site, «Документы без заглушек»; design D7):
+// no placeholder in square brackets except a Markdown link, no draft mark, a real date of the edition.
+const MONTHS =
+  "января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря";
+const EDITION = new RegExp(
+  `^Редакция от (\\d{2}\\.\\d{2}\\.\\d{4}|\\d{1,2} (${MONTHS}) \\d{4} года)\\.`,
+  "m",
+);
+for (const name of ["offer.md", "privacy.md", "pricing.md"]) {
+  const source = `docs/legal/${name}`;
+  const text = fs.readFileSync(path.join(root, "..", source), "utf8");
+  for (const match of text.matchAll(/\[[^\]\n]*\](?!\()/g))
+    fail(`${source} has a placeholder ${match[0]}: fill it before the build`);
+  if (text.includes("ЧЕРНОВИК")) fail(`${source} is marked ЧЕРНОВИК`);
+  if (!EDITION.test(text))
+    fail(`${source} has no line «Редакция от <date>.» with a real date`);
 }
 
 if (problems.length > 0) {
