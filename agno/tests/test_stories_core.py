@@ -2,6 +2,7 @@
 
 import ast
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -26,6 +27,7 @@ from core.projects import (
     delete_project,
     list_projects,
     owns_project,
+    project_row,
     restore_project,
     trash_project,
     update_project,
@@ -174,6 +176,52 @@ def test_unknown_story_field_is_named(connection: Connection) -> None:
     with pytest.raises(Invalid) as error:
         update_project(connection, project.id, {"color": "red"})
     assert error.value.field == "color"
+
+
+def _colors(connection: Connection, owner: uuid.UUID, count: int) -> list[str]:
+    return [create_project(connection, owner, f"История {n}")[0].cover_color for n in range(count)]
+
+
+def test_new_stories_take_the_colours_in_turn(connection: Connection) -> None:
+    owner = _owner(connection)
+    assert _colors(connection, owner, 7) == ["blue", "teal", "amber", "crimson", "plum", "graphite", "blue"]
+
+
+def test_colour_follows_the_one_the_author_chose(connection: Connection) -> None:
+    owner = _owner(connection)
+    story, _, _ = create_project(connection, owner, "Маяк")
+    update_project(connection, story.id, {"cover_color": "plum"})
+    assert create_project(connection, owner, "Паром")[0].cover_color == "graphite"
+
+
+def test_story_in_trash_counts_for_the_colour(connection: Connection) -> None:
+    owner = _owner(connection)
+    story, _, _ = create_project(connection, owner, "Маяк")
+    trash_project(connection, story.id)
+    assert create_project(connection, owner, "Паром")[0].cover_color == "teal"
+
+
+def test_another_author_starts_from_blue(connection: Connection) -> None:
+    _colors(connection, _owner(connection, "s1"), 3)
+    assert _colors(connection, _owner(connection, "s2"), 1) == ["blue"]
+
+
+def test_colour_change_keeps_the_place_on_the_shelf(connection: Connection) -> None:
+    project, _, _ = create_project(connection, _owner(connection), "Маяк")
+    old = datetime(2026, 11, 1, tzinfo=UTC)
+    connection.execute(update(projects).where(projects.c.id == project.id).values(updated_at=old))
+    changed = update_project(connection, project.id, {"cover_color": "amber"})
+    assert (changed.cover_color, changed.updated_at) == ("amber", old)
+    renamed = update_project(connection, project.id, {"title": "Маяк 2", "cover_color": "teal"})
+    assert renamed.cover_color == "teal" and renamed.updated_at > old
+
+
+def test_colour_outside_the_palette_is_refused(connection: Connection) -> None:
+    project, _, _ = create_project(connection, _owner(connection), "Маяк")
+    with pytest.raises(Invalid) as error:
+        update_project(connection, project.id, {"cover_color": "pink"})
+    assert error.value.field == "cover_color"
+    assert project_row(connection, project.id).cover_color == "blue"
 
 
 # --- documents

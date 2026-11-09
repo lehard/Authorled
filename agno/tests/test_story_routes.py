@@ -2,6 +2,10 @@
 
 from typing import Any
 
+import pytest
+from sqlalchemy import Engine, select
+
+from core.tables import writing_progress
 from tests.routes import PROBLEM
 
 SCENE = {"type": "sceneHeading", "attrs": {"uid": "s1"}, "content": [{"type": "text", "text": "ИНТ. КУХНЯ — ДЕНЬ"}]}
@@ -51,6 +55,90 @@ def test_unknown_field_is_named(authors: Any) -> None:
     response = author.patch(f"/api/v1/projects/{story['project']['id']}", json={"color": "red"})
     assert response.status_code == 422
     assert "color" in response.json()["detail"]
+
+
+def test_cover_colour_on_the_shelf(authors: Any) -> None:
+    author = authors()
+    created = author.post("/api/v1/projects", json={"title": "Маяк"}).json()["project"]
+    assert created["cover_color"] == "blue"
+    changed = author.patch(f"/api/v1/projects/{created['id']}", json={"cover_color": "amber"})
+    assert changed.status_code == 200, changed.text
+    assert (changed.json()["cover_color"], changed.json()["updated_at"]) == ("amber", created["updated_at"])
+    assert [p["cover_color"] for p in author.get("/api/v1/projects").json()] == ["amber"]
+
+
+def test_cover_colour_outside_the_palette(authors: Any) -> None:
+    author = authors()
+    story = author.story()
+    response = author.patch(f"/api/v1/projects/{story['project']['id']}", json={"cover_color": "pink"})
+    assert response.status_code == 422
+    assert response.headers["content-type"] == PROBLEM
+    assert "cover_color" in response.json()["detail"]
+    assert author.get("/api/v1/projects").json()[0]["cover_color"] == "blue"
+
+
+def test_cover_colour_is_not_chosen_at_creation(authors: Any) -> None:
+    response = authors().post("/api/v1/projects", json={"title": "Маяк", "cover_color": "plum"})
+    assert response.status_code == 422
+    assert "cover_color" in response.json()["detail"]
+
+
+def test_story_without_a_goal(authors: Any) -> None:
+    author = authors()
+    author.story()
+    (listed,) = author.get("/api/v1/projects").json()
+    assert (listed["word_goal"], listed["goal_deadline"]) == (None, None)
+
+
+def test_story_goal_with_a_deadline(authors: Any) -> None:
+    author = authors()
+    story = author.story()
+    url = f"/api/v1/projects/{story['project']['id']}"
+    changed = author.patch(url, json={"word_goal": 20000, "goal_deadline": "2026-11-30"})
+    assert changed.status_code == 200, changed.text
+    body = changed.json()
+    assert (body["word_goal"], body["goal_deadline"], body["title"]) == (20000, "2026-11-30", "Маяк")
+    assert "drafts_count" not in body
+    (listed,) = author.get("/api/v1/projects").json()
+    assert (listed["word_goal"], listed["goal_deadline"]) == (20000, "2026-11-30")
+    past = author.patch(url, json={"goal_deadline": "2020-01-01"})
+    assert past.status_code == 200 and past.json()["goal_deadline"] == "2020-01-01"
+    taken = author.patch(url, json={"word_goal": None, "goal_deadline": None}).json()
+    assert (taken["word_goal"], taken["goal_deadline"]) == (None, None)
+
+
+def test_deadline_without_a_goal(authors: Any) -> None:
+    author = authors()
+    story = author.story()
+    url = f"/api/v1/projects/{story['project']['id']}"
+    refused = author.patch(url, json={"goal_deadline": "2026-11-30"})
+    assert refused.status_code == 422 and refused.headers["content-type"] == PROBLEM
+    assert "goal_deadline" in refused.json()["detail"]
+    author.patch(url, json={"word_goal": 20000, "goal_deadline": "2026-11-30"})
+    dropped = author.patch(url, json={"word_goal": None})
+    assert dropped.status_code == 422 and "goal_deadline" in dropped.json()["detail"]
+    (listed,) = author.get("/api/v1/projects").json()
+    assert (listed["word_goal"], listed["goal_deadline"]) == (20000, "2026-11-30")
+
+
+@pytest.mark.parametrize(
+    ("body", "field"),
+    [
+        ({"word_goal": 0}, "word_goal"),
+        ({"word_goal": "500"}, "word_goal"),
+        ({"word_goal": True}, "word_goal"),
+        ({"word_goal": 2.5}, "word_goal"),
+        ({"word_goal": 100, "goal_deadline": "30.11.2026"}, "goal_deadline"),
+        ({"word_goal": 100, "goal_deadline": "2026-02-30"}, "goal_deadline"),
+        ({"word_goal": 100, "goal_deadline": 20261130}, "goal_deadline"),
+    ],
+)
+def test_bad_story_goal_is_named(authors: Any, body: dict[str, Any], field: str) -> None:
+    author = authors()
+    story = author.story()
+    response = author.patch(f"/api/v1/projects/{story['project']['id']}", json=body)
+    assert response.status_code == 422
+    assert field in response.json()["detail"]
 
 
 def test_body_must_be_json(authors: Any) -> None:
@@ -219,3 +307,19 @@ def test_drafts(authors: Any) -> None:
     assert locked.status_code == 409
     empty = author.post(f"/api/v1/projects/{project_id}/drafts", json={"name": " ", "base_id": draft_id})
     assert empty.status_code == 422
+
+
+def test_saved_text_records_the_words(authors: Any, engine: Engine) -> None:
+    """The author's save adds the difference in words (openspec/specs/api/stories, «Текст сценария»)."""
+    author = authors()
+    story = author.story()
+    url = f"/api/v1/documents/{story['script_id']}/text"
+    action = {"type": "action", "content": [{"type": "text", "text": "Вера идёт к воде"}]}
+    saved = author.put(url, json=_doc(SCENE, action), headers={"If-Match": "1"})
+    assert saved.status_code == 200 and set(saved.json()) == {"document_id", "content", "revision"}
+    assert author.put(url, json=_doc(SCENE), headers={"If-Match": "1"}).status_code == 409
+    with engine.connect() as connection:
+        words = connection.execute(
+            select(writing_progress.c.words).where(writing_progress.c.project_id == story["project"]["id"])
+        ).scalar_one()
+    assert words == 7  # «ИНТ. КУХНЯ — ДЕНЬ» and «Вера идёт к воде»; the new story starts with an empty heading

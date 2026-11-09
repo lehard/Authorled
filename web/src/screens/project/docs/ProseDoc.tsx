@@ -7,6 +7,7 @@ import { useAutosave } from "@/screens/shared/useAutosave";
 import { useProjectData } from "../ProjectContext";
 import { DocHead } from "./DocHead";
 import { SaveHistory } from "./SaveHistory";
+import { useFindInDoc } from "./useFindInDoc";
 
 const PLACEHOLDER = {
   logline: "Начните логлайн",
@@ -18,6 +19,7 @@ export function ProseDoc({ part }: { part: "logline" | "synopsis" }) {
   const { draft, script } = useProjectData();
   const { save, status } = useAutosave<Script>("scripts", script.id);
   const [text, setText] = useState(script[part]);
+  useFindInDoc(part);
   return (
     <>
       <DocHead title={SCRIPT_PARTS[part]} status={status}>
@@ -26,6 +28,7 @@ export function ProseDoc({ part }: { part: "logline" | "synopsis" }) {
       <div className="sheet sheet-prose">
         <GrowingTextarea
           aria-label={SCRIPT_PARTS[part]}
+          data-field={part}
           placeholder={PLACEHOLDER[part]}
           readOnly={draft.locked}
           value={text}
