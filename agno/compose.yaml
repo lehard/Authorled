@@ -1,5 +1,5 @@
 # Backend module (agno/): the role the API connects with, migrations of the core schema, the LiteLLM
-# proxy and the API.
+# proxy, the antivirus, the journal of agent runs (Phoenix) and the API.
 # compose.yaml at the repository root includes this file; relative paths resolve from agno/,
 # variables come from the root .env. The services use agentos-db, the agentos network and
 # the services of the auth module declared in the other files.
@@ -137,6 +137,73 @@ services:
     networks:
       - agentos
 
+  # The role and schema of Phoenix, the journal of agent runs (phoenix/init.sql): no access to the
+  # data of the product. Runs on every `up` (idempotent) under the bootstrap user, after
+  # agentos-db-init so the two never update the catalog at the same time.
+  phoenix-db-init:
+    image: agnohq/pgvector:18
+    container_name: phoenix-db-init
+    restart: "no"
+    entrypoint: ["psql", "-v", "ON_ERROR_STOP=1", "-v", "phoenix_password=${PHOENIX_DB_PASSWORD:?PHOENIX_DB_PASSWORD must be set in .env}", "-f", "/init/init.sql"]
+    volumes:
+      - type: bind
+        source: ./phoenix/init.sql
+        target: /init/init.sql
+        read_only: true
+        bind:
+          create_host_path: false
+    environment:
+      PGHOST: agentos-db
+      PGPORT: "5432"
+      PGUSER: ai
+      PGPASSWORD: ai
+      PGDATABASE: ai
+    depends_on:
+      agentos-db:
+        condition: service_healthy
+      agentos-db-init:
+        condition: service_completed_successfully
+    networks:
+      - agentos
+
+  # Phoenix: the journal of agent runs (openspec/specs/agent-tracing). The API sends it spans over
+  # OTLP/HTTP on 6006, the same port serves its UI. Published on loopback only: the owner opens it
+  # through an SSH tunnel, it has no login of its own and no route in Caddy. No requests to the
+  # internet of its own (telemetry, fonts), traces older than 30 days are deleted by Phoenix.
+  phoenix:
+    image: arizephoenix/phoenix:version-20.26.1-nonroot
+    container_name: agentos-phoenix
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6006:6006"
+    environment:
+      PHOENIX_POSTGRES_HOST: agentos-db
+      PHOENIX_POSTGRES_PORT: "5432"
+      PHOENIX_POSTGRES_USER: phoenix
+      PHOENIX_POSTGRES_PASSWORD: ${PHOENIX_DB_PASSWORD:?PHOENIX_DB_PASSWORD must be set in .env}
+      PHOENIX_POSTGRES_DB: ai
+      PHOENIX_SQL_DATABASE_SCHEMA: phoenix
+      PHOENIX_DEFAULT_RETENTION_POLICY_DAYS: "30"
+      PHOENIX_TELEMETRY_ENABLED: "false"
+      PHOENIX_ALLOW_EXTERNAL_RESOURCES: "false"
+    mem_limit: 1g
+    healthcheck:
+      # The image has no shell or curl, only Python.
+      test:
+        - CMD
+        - /usr/bin/python3.13
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:6006/healthz', timeout=5)"
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+    depends_on:
+      phoenix-db-init:
+        condition: service_completed_successfully
+    networks:
+      - agentos
+
   agentos-api:
     build:
       context: ..
@@ -176,6 +243,7 @@ services:
       AUTH_FRONTEND_CLIENT_ID: ${AUTH_FRONTEND_CLIENT_ID:?AUTH_FRONTEND_CLIENT_ID must be set in .env}
       CLAMAV_HOST: clamav
       CLAMAV_PORT: "3310"
+      PHOENIX_URL: http://phoenix:6006
     depends_on:
       agentos-migrate:
         condition: service_completed_successfully
@@ -184,6 +252,8 @@ services:
       authentik-jwks-export:
         condition: service_completed_successfully
       clamav:
+        condition: service_healthy
+      phoenix:
         condition: service_healthy
     networks:
       - agentos

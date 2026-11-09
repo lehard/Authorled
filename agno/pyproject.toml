@@ -13,6 +13,8 @@ dependencies = [
   "anthropic",
   "cel-python",
   "openai",
+  # OTLP export of agent spans to Phoenix (openspec/specs/agent-tracing); same line as opentelemetry-sdk.
+  "opentelemetry-exporter-otlp-proto-http==1.45.1",
   "parallel-web",
   "python-dotenv",
 ]

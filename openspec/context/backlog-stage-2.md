@@ -163,7 +163,8 @@ updated: 2026-11-09
 **Зачем:** 4671 из 5055 трасс в `ai.agno_traces` — HTTP-спаны; с 2026-11-02 запуск соавтора называется по HTTP-спану и без `agent_id`, и разбирать работу соавтора по трассам неудобно.
 **Решение:** lehard 2026-11-08, план change `editor-fit-and-speed` (раздел «Workflow follow-up»): записать на будущее.
 **Источник:** замеры в `tmp/VERIFY.md`, «editor-fit-and-speed: локальная проверка», группа 1; `openspec/changes/archive/2026-11-08-editor-fit-and-speed/design.md`.
-**Связано:** `setup_tracing(db, batch_processing=True)` в `agno/app/main.py`.
+**Связано:** `setup_tracing(db, batch_processing=True)` в `agno/app/main.py` (до change `agent-tracing`).
+**Сделано:** change `agent-tracing` (2026-11-09): трассы идут в Phoenix со своим провайдером, HTTP-спанов нет, корень трассы — запуск агента (спека `agent-tracing`).
 
 ### Jev как вариант оркестратора на экзамене маршрутизации
 **Что:** добавить в экзамен маршрутизации (`agno/evals/routing/`) четвёртый вариант — выбор доменов моделью решений Jev (TypeSafe, через OpenRouter, Decisions API): на каждый домен вопрос «касается ли сообщение этого домена» (Noul), все вопросы в одном запросе, история беседы — в контексте `state`. Прогнать оба состава (4 и 12 доменов) и сравнить с тремя вариантами на DeepSeek.
