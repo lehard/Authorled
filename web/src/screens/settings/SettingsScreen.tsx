@@ -7,16 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Account } from "@/account/meApi";
 import { useAccount, useSaveAccount } from "@/account/useAccount";
+import { NO_TRAINING, offerUrl, privacyUrl } from "@/app/legal";
 import { applyAccountTheme, type Theme } from "@/design-system/theme";
 import { TopBar } from "@/screens/shelf/TopBar";
 import { MessageScreen } from "@/screens/system/MessageScreen";
 
-// Settings, the personal cabinet (openspec/specs/web/workspace, «Настройки», «Тема в настройках»),
+// Settings, the personal cabinet (openspec/specs/web/workspace, «Настройки», «Тема в настройках»,
+// «Раздел «Ваши тексты» в настройках»),
 // after the screen #settings of mockup v1.
 
 const SECTIONS = [
   { id: "profile", title: "Профиль" },
   { id: "appearance", title: "Внешний вид" },
+  { id: "texts", title: "Ваши тексты" },
 ] as const;
 
 const THEME_TILES: { value: Theme | null; label: string }[] = [
@@ -95,10 +98,47 @@ function Settings({ me }: { me: Account }) {
               <Section id="appearance" title="Внешний вид">
                 <ThemeRow me={me} />
               </Section>
+              <hr className="border-border" />
+              <Section id="texts" title="Ваши тексты">
+                <TextsRow />
+              </Section>
             </div>
           </div>
         </article>
       </main>
+    </div>
+  );
+}
+
+// The promise about the author's texts and the documents behind it, on the product site
+// (openspec/specs/web/workspace, «Раздел «Ваши тексты» в настройках»). No request to the API.
+function TextsRow() {
+  const link = "text-primary underline-offset-2 hover:underline";
+  return (
+    <div className="grid gap-3">
+      <p>{NO_TRAINING}</p>
+      <ul className="flex flex-wrap gap-x-6 gap-y-2">
+        <li>
+          <a
+            href={offerUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={link}
+          >
+            Публичная оферта
+          </a>
+        </li>
+        <li>
+          <a
+            href={privacyUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={link}
+          >
+            Политика обработки персональных данных
+          </a>
+        </li>
+      </ul>
     </div>
   );
 }
