@@ -1,7 +1,8 @@
 // Deterministic check of the screenplay editor without a browser (openspec/specs/web/screenplay-editor,
 // design of fork-screenplay-editor, decision 12): Tab/Enter against the TYPES table of mockup v2,
 // the type keys, scene-heading autoreplace, export samples of the core import tests, paragraphs(),
-// colour and comment marks. Printing needs a window; it is checked by hand.
+// colour and comment marks; the Markdown of the prose editor against markdown.cases.json
+// (openspec/specs/web/prose-editor). Printing needs a window; it is checked by hand.
 //
 // Usage: npm run check:editor --prefix web
 import { readFileSync } from "node:fs";
@@ -10,6 +11,15 @@ import { fileURLToPath } from "node:url";
 import { history, undo, undoDepth } from "prosemirror-history";
 import type { Node as ProseNode } from "prosemirror-model";
 import { EditorState, TextSelection, type Command } from "prosemirror-state";
+
+import {
+  countChars,
+  countWords,
+  parseProse,
+  ProseMarkupError,
+  proseText,
+  serializeProse,
+} from "../src/editor/prose/markdown.ts";
 
 import {
   ensureSceneUids,
@@ -1038,13 +1048,57 @@ try {
     fail(`номера после удаления сцены: ${numbers(s.doc)}, нужно «1, 2, 3»`);
 }
 
+// Markdown of the prose editor: the examples agno/tests/test_prose.py checks for the core too.
+type ProseCase = {
+  name: string;
+  markdown: string;
+  stored?: string;
+  plain?: string;
+  words?: number;
+  chars?: number;
+  error?: string;
+};
+const proseCases = JSON.parse(
+  readFileSync(
+    fileURLToPath(
+      new URL("../src/editor/prose/markdown.cases.json", import.meta.url),
+    ),
+    "utf8",
+  ),
+) as ProseCase[];
+for (const c of proseCases) {
+  if (c.error !== undefined) {
+    try {
+      parseProse(c.markdown);
+      fail(`проза «${c.name}»: разбор прошёл, нужен отказ «${c.error}»`);
+    } catch (e) {
+      if (!(e instanceof ProseMarkupError) || !e.message.includes(c.error))
+        fail(`проза «${c.name}»: отказ «${String(e)}», нужен «${c.error}»`);
+    }
+    continue;
+  }
+  const doc = parseProse(c.markdown);
+  const stored = serializeProse(doc);
+  if (stored !== (c.stored ?? c.markdown))
+    fail(`проза «${c.name}»: записано ${JSON.stringify(stored)}`);
+  if (serializeProse(parseProse(stored)) !== stored)
+    fail(`проза «${c.name}»: повторная запись меняет текст`);
+  const plain = proseText(doc);
+  if (plain !== c.plain)
+    fail(`проза «${c.name}»: простой текст ${JSON.stringify(plain)}`);
+  if (countWords(plain) !== c.words)
+    fail(`проза «${c.name}»: слов ${countWords(plain)}, нужно ${c.words}`);
+  if (countChars(doc) !== c.chars)
+    fail(`проза «${c.name}»: знаков ${countChars(doc)}, нужно ${c.chars}`);
+}
+
 if (failures.length > 0) {
   console.error(
-    "check-editor: редактор сценария расходится с openspec/specs/web/screenplay-editor:",
+    "check-editor: редакторы расходятся с openspec/specs/web/screenplay-editor и web/prose-editor:",
   );
   for (const f of failures) console.error(`  ${f}`);
   process.exit(1);
 }
 console.log(
-  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, образцы экспорта, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник, правки сцен, комментарии, предложения соавтора, копия драфтов, uid сцен, якоря предложений, зазор карточки, номера сцен — без расхождений`,
+  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, образцы экспорта, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник, правки сцен, комментарии, предложения соавтора, копия драфтов, uid сцен, якоря предложений, зазор карточки, номера сцен, ${proseCases.length} случаев Markdown прозы — без расхождений`,
 );

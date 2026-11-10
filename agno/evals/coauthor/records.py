@@ -55,6 +55,9 @@ class Expectation:
     open: int | None = None  # the scene selected in the open screenplay; None: the story card is open
     doc: str | None = None  # the open «Логлайн» or «Синопсис» (evals/coauthor/doc_tasks.py), instead of a scene
     task: str | None = None  # the task of «Соавтор» at that document the case sends
+    # The text the case asks to write, checked by code with its action: "page" (a synopsis without headings), "acts"
+    # (a synopsis with headings of the first or second level) or "note" (a note without Markdown).
+    markup: str | None = None
 
 
 @dataclass(frozen=True)

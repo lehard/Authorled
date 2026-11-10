@@ -111,6 +111,23 @@ def test_logline_and_synopsis_apart(
     ]
 
 
+def test_synopsis_is_searched_without_markup(
+    connection: Connection, owner: uuid.UUID, story: tuple[uuid.UUID, uuid.UUID]
+) -> None:
+    (script,) = [d for d in list_documents(connection, story[1]) if d.kind == "script"]
+    update_document(
+        connection,
+        script.id,
+        script.revision,
+        {"fields": {"synopsis": "# Акт 1\n\nТримиру снится **вещий** сон"}},
+        owner,
+    )
+    (hit,) = [d for d in search_draft(connection, story[1], "вещий сон").documents if d.field == "synopsis"]
+    assert hit.snippet.match == "вещий сон"
+    assert hit.snippet.before.endswith("снится ")
+    assert not [d for d in search_draft(connection, story[1], "# а").documents if d.field == "synopsis"]
+
+
 def test_snippet_around_the_match(connection: Connection, story: tuple[uuid.UUID, uuid.UUID]) -> None:
     (scene,) = search_draft(connection, story[1], "КЛЮЧ").scenes
     assert (scene.number, scene.heading, scene.count) == (3, "ИНТ. ГАРАЖ — ДЕНЬ", 1)

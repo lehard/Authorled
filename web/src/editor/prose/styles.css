@@ -1,0 +1,67 @@
+/* The prose editor on the sheet (openspec/specs/web/prose-editor): the font and margins of the prose
+   sheet stay; paragraphs stand apart by an empty line, as the plain text did. */
+@layer components {
+  .prose-text {
+    outline: none;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    min-height: calc(11 * 1lh);
+  }
+  .prose-text > * {
+    margin: 0 0 1lh;
+  }
+  .prose-text > :last-child {
+    margin-bottom: 0;
+  }
+  .prose-text > h1,
+  .prose-text > h2 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+  }
+  .prose-text > h1 {
+    font-size: var(--text-heading-1);
+    line-height: var(--text-heading-1--line-height);
+    letter-spacing: var(--text-heading-1--letter-spacing);
+  }
+  .prose-text > h2 {
+    font-size: var(--text-heading-2);
+    line-height: var(--text-heading-2--line-height);
+    letter-spacing: var(--text-heading-2--letter-spacing);
+  }
+  .prose-text .prose-empty::before {
+    content: attr(data-placeholder);
+    color: color-mix(in oklch, var(--muted-foreground) 60%, transparent);
+    pointer-events: none;
+    position: absolute;
+  }
+
+  /* Where a printed page starts: a short dashed line and «стр. N» on the right margin. The text is
+     generated content, so it is never selected or copied. */
+  .prose-page-mark {
+    position: absolute;
+    right: 8px;
+    width: 52px;
+    border-top: 1px dashed var(--border-strong);
+    pointer-events: none;
+    user-select: none;
+  }
+  .prose-page-mark::after {
+    content: attr(data-page);
+    display: block;
+    padding-top: 2px;
+    text-align: right;
+    font-family: var(--font-ui);
+    font-size: 11px;
+    line-height: 1.2;
+    color: var(--muted-foreground);
+  }
+  @media (max-width: 900px) {
+    .prose-page-mark {
+      right: 2px;
+      width: 16px;
+    }
+    .prose-page-mark::after {
+      content: attr(data-page-short);
+    }
+  }
+}

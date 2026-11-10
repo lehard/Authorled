@@ -1,8 +1,10 @@
 # Tasks of «Соавтор» at the logline and the synopsis (openspec/changes/logline-synopsis-generation, design, decision 5):
 # the request of web/src/screens/project/chat/docTasks.ts word for word (evals/coauthor/doc_tasks.py), sent over the
 # open document of the task in the first draft of the story. «Под заявку» goes into the field and the author finishes
-# it; the chat trims what it sends. No task changes the story by itself: every case expects no action. The part is not
-# covered by domains and sections (spec «Наборы замера»).
+# it; the chat trims what it sends. No task changes the story by itself: a case expects no action, except the three
+# «Под заявку» cases whose author asks to write at once; their `markup` checks the Markdown of what is written by code
+# (openspec/specs/api/agents, «Разметка синопсиса у соавтора»). The part is not covered by domains and sections (spec
+# «Наборы замера»).
 
 [[case]]
 id = "dd-logline-variants"
@@ -71,6 +73,39 @@ message = "Напиши синопсис под заявку. Требовани
 expect = ["wide-structure"]
 place = "tihaya-voda"
 action = "none"
+open = { doc = "synopsis" }
+task = "synopsis-application"
+
+[[case]]
+id = "dd-synopsis-write-page"
+section = "single"
+message = "Напиши синопсис под заявку. Требования: на одну страницу, финал раскрыт. Сразу запиши его в синопсис драфта."
+expect = ["wide-structure"]
+place = "tihaya-voda"
+action = ["update_story_document"]
+markup = "page"
+open = { doc = "synopsis" }
+task = "synopsis-application"
+
+[[case]]
+id = "dd-synopsis-write-acts"
+section = "single"
+message = "Напиши синопсис под заявку. Требования: расширенный, на три страницы, по актам, у каждого акта свой заголовок. Сразу запиши его в синопсис драфта."
+expect = ["wide-structure"]
+place = "tihaya-voda"
+action = ["update_story_document"]
+markup = "acts"
+open = { doc = "synopsis" }
+task = "synopsis-application"
+
+[[case]]
+id = "dd-synopsis-write-viewer-note"
+section = "single"
+message = "Напиши синопсис под заявку. Требования: аннотация для зрителя, 50–100 слов, без финала. Сразу сохрани её заметкой «Синопсис: для зрителя»."
+expect = ["wide-structure"]
+place = "tihaya-voda"
+action = ["create_story_note"]
+markup = "note"
 open = { doc = "synopsis" }
 task = "synopsis-application"
 
