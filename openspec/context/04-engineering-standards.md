@@ -39,7 +39,7 @@ updated: 2026-11-05
 - тесты: `./scripts/dev.sh test` — создаёт чистую тестовую базу в `agentos-db` (`ai_test`, в worktree `ai_test_<worktree>`), готовит её `init.sql`, применяет миграции и запускает `pytest` из `agno/tests/` под ролью `agentos`; моков базы нет
 - миграции в разработке: `./scripts/dev.sh migrate` (на хосте, в базу рабочей копии: `ai`, в worktree `ai_dev_<worktree>`); новая миграция — `alembic revision` из `agno/` с осмысленным именем, проверка на чистой базе через `./scripts/dev.sh test`
 - MCP без модели: `./scripts/mcp_check.sh`; поведение агента — `python -m evals`
-- сборка: `docker compose up -d --build`; sandbox: `docker build --target sandbox --load -t agno-sandbox:local -f agno/Dockerfile .`
+- сборка: `docker compose -p authorled up -d --build` (проект Compose стенда называется явно: в `compose.yaml` нет `name:`); sandbox: `docker build --target sandbox --load -t agno-sandbox:local -f agno/Dockerfile .`
 > TODO: CI-проверки методологии появятся с кодом ядра.
 
 ## Готово, когда
