@@ -19,4 +19,10 @@
 ## Limits
 
 - Safari не проверялся: сессия safaridriver не открылась (ошибка 500).
-- Hosted: не проверялось (релиза не было).
+
+## Hosted (v0.3.17, 2026-11-11)
+
+- Релиз `v0.3.17` (PR #74 и #75), запуск `deploy.yml` 42905598546: `validate` и `deploy` зелёные, проверки сайта и админки прошли; `https://app.soavtor.app/os/health` — 200.
+- `ssh authorled-deploy`: код в `/srv/authorled/app` — тег `v0.3.17`, `current` фронтенда указывает на `/srv/authorled/web/v0.3.17`.
+- В сборке стили подсказок перехода (`left:auto;right:0`) и бита (`left:12px`) в `ScreenplayEditor-*.css`; список типов плагина заглавных — в `ScreenplayEditor-*.js`.
+- В браузере на сервере не проверялось: нужен вход автора.
