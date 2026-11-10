@@ -20,6 +20,7 @@ export function useStoryActions() {
     title: string,
     file: File | null,
     template: string | null,
+    coverColor: CoverColor,
   ): Promise<string> {
     if (me === undefined)
       throw new Error("Профиль пользователя ещё не загружен.");
@@ -28,7 +29,9 @@ export function useStoryActions() {
       throw new Error("История из рукописи создаётся без каркаса.");
     if (file === null) {
       const project: NewProject =
-        template === null ? { title, desc: "" } : { title, desc: "", template };
+        template === null
+          ? { title, desc: "", coverColor }
+          : { title, desc: "", coverColor, template };
       const { data } = await create({
         resource: "projects",
         values: project,
@@ -36,7 +39,7 @@ export function useStoryActions() {
       });
       story = data as unknown as NewStory;
     } else {
-      story = await files.createFromFile(title, file);
+      story = await files.createFromFile(title, file, coverColor);
     }
     const script: Pick<Script, "show" | "titlePage"> = {
       show: {

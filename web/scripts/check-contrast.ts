@@ -36,7 +36,7 @@ const DECORATIONS = [
 // The author's marks in the screenplay (text colour and fill).
 const MARKS = ["1", "2", "3", "4"];
 
-// Story covers: the title on both points of the gradient.
+// Story covers: the arcs of the pattern (-foreground) on both points of the gradient.
 const COVERS = ["blue", "teal", "amber", "crimson", "plum", "graphite"];
 
 // [foreground, background, minimum ratio]

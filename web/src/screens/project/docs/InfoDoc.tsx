@@ -4,10 +4,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
   SCRIPT_PARTS,
+  type CoverColor,
   type Project,
   type Script,
   type ScriptPart,
 } from "@/data/model";
+import { CoverColorPicker } from "@/screens/shared/CoverColorPicker";
 import { combineStatus, useAutosave } from "@/screens/shared/useAutosave";
 
 import { useProjectData } from "../ProjectContext";
@@ -27,6 +29,13 @@ export function InfoDoc() {
   const [title, setTitle] = useState(project.title);
   const [desc, setDesc] = useState(project.desc);
   const [show, setShow] = useState(script.show);
+  const [chosen, setChosen] = useState<CoverColor | null>(null);
+  // A refused save leaves the colour of the core marked (openspec/specs/web/workspace, «Цвет
+  // обложки на странице «История»»); otherwise the author's last choice, until the core has it.
+  const color =
+    typeof story.status === "object" || chosen === null
+      ? project.coverColor
+      : chosen;
   const id = useId();
   const facts = scriptFacts(text);
   return (
@@ -55,6 +64,23 @@ export function InfoDoc() {
               story.save({ desc: v });
             }}
           />
+          <div className="grid gap-1.5">
+            <span
+              id={`${id}-cover`}
+              className="text-caption text-muted-foreground"
+            >
+              Цвет обложки
+            </span>
+            <CoverColorPicker
+              value={color}
+              storyId={project.id}
+              aria-labelledby={`${id}-cover`}
+              onChange={(next) => {
+                setChosen(next);
+                story.save({ coverColor: next });
+              }}
+            />
+          </div>
           <fieldset disabled={draft.locked} className="grid gap-2">
             <legend className="mb-1.5 text-caption text-muted-foreground">
               Части сценария в навигаторе
