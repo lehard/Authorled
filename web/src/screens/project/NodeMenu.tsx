@@ -54,7 +54,7 @@ export function NodeMenu({
                 <MoreVertical />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
+            <DropdownMenuContent align="start" className="w-auto">
               {items.map((it, i) =>
                 it === "sep" ? (
                   <DropdownMenuSeparator key={i} />

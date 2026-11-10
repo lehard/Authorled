@@ -77,10 +77,34 @@ def test_cover_colour_outside_the_palette(authors: Any) -> None:
     assert author.get("/api/v1/projects").json()[0]["cover_color"] == "blue"
 
 
-def test_cover_colour_is_not_chosen_at_creation(authors: Any) -> None:
-    response = authors().post("/api/v1/projects", json={"title": "Маяк", "cover_color": "plum"})
-    assert response.status_code == 422
-    assert "cover_color" in response.json()["detail"]
+def test_cover_colour_chosen_at_creation(authors: Any) -> None:
+    author = authors()
+    author.post("/api/v1/projects", json={"title": "Паром", "cover_color": "teal"})
+    response = author.post("/api/v1/projects", json={"title": "Маяк", "cover_color": "plum"})
+    assert response.status_code == 201, response.text
+    assert response.json()["project"]["cover_color"] == "plum"
+
+
+def test_cover_colour_outside_the_palette_at_creation(authors: Any) -> None:
+    author = authors()
+    for colour in ("pink", None):
+        response = author.post("/api/v1/projects", json={"title": "Маяк", "cover_color": colour})
+        assert response.status_code == 422
+        assert response.headers["content-type"] == PROBLEM
+        assert "cover_color" in response.json()["detail"]
+    assert author.get("/api/v1/projects").json() == []
+
+
+def test_next_cover_colour(authors: Any) -> None:
+    author = authors()
+    assert author.get("/api/v1/projects/next-cover-color").json() == {"cover_color": "blue"}
+    story = author.post("/api/v1/projects", json={"title": "Паром", "cover_color": "teal"}).json()["project"]
+    author.post(f"/api/v1/projects/{story['id']}/trash")
+    response = author.get("/api/v1/projects/next-cover-color")
+    assert response.status_code == 200, response.text
+    assert response.json() == {"cover_color": "amber"}
+    created = author.post("/api/v1/projects", json={"title": "Маяк"}).json()["project"]
+    assert created["cover_color"] == "amber"
 
 
 def test_story_without_a_goal(authors: Any) -> None:

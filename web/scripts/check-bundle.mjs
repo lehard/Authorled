@@ -59,6 +59,46 @@ if (total > MAX_FIRST_SCREEN_GZIP) {
   );
 }
 
+// Order of the cascade layers (openspec/specs/web/design-system, «Порядок слоёв CSS»): index.html
+// declares it before its first stylesheet, in the order the layers first appear in the entry CSS.
+const html = readFileSync(path.join(DIST, "index.html"), "utf8");
+const declaration = /@layer\s+([\w-]+(?:\s*,\s*[\w-]+)+)\s*;/.exec(html);
+const firstStylesheet = /<link[^>]*rel="stylesheet"/.exec(html);
+const entryCss = entry.css ?? [];
+if (entryCss.length === 0) {
+  throw new Error(
+    "check-bundle: the entry index.html has no CSS in the manifest",
+  );
+}
+const layers = [];
+for (const file of entryCss) {
+  const css = readFileSync(path.join(DIST, file), "utf8");
+  for (const [, names] of css.matchAll(
+    /@layer\s+([\w-]+(?:\s*,\s*[\w-]+)*)\s*[;{]/g,
+  )) {
+    for (const name of names.split(",").map((n) => n.trim())) {
+      if (!layers.includes(name)) layers.push(name);
+    }
+  }
+}
+if (declaration === null) {
+  problems.push(
+    `index.html declares no order of the CSS layers; put "@layer ${layers.join(", ")};" before the first stylesheet`,
+  );
+} else {
+  const declared = declaration[1].split(",").map((n) => n.trim());
+  if (firstStylesheet !== null && firstStylesheet.index < declaration.index) {
+    problems.push(
+      "the order of the CSS layers in index.html comes after a stylesheet",
+    );
+  }
+  if (declared.join(",") !== layers.join(",")) {
+    problems.push(
+      `index.html declares the CSS layers ${declared.join(", ")}, the entry CSS has ${layers.join(", ")}`,
+    );
+  }
+}
+
 if (problems.length > 0) {
   console.error(`check-bundle failed:\n- ${problems.join("\n- ")}`);
   process.exit(1);

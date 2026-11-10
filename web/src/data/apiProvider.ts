@@ -44,7 +44,7 @@ import type {
   VersionTarget,
   World,
 } from "./model";
-import { isCoverColor } from "./model";
+import { isCoverColor, type CoverOperation } from "./model";
 import type { SaveOperation } from "./saves";
 import type {
   EntityHit,
@@ -900,6 +900,7 @@ async function create(
         json: {
           title: values.title,
           description: values.desc,
+          cover_color: values.coverColor,
           ...(values.template === undefined
             ? {}
             : { template: values.template }),
@@ -1223,9 +1224,26 @@ function readSearch(body: unknown): SearchResult {
 }
 
 async function operation(
-  op: FileOperation | SaveOperation | SearchOperation | WritingOperation,
+  op:
+    | CoverOperation
+    | FileOperation
+    | SaveOperation
+    | SearchOperation
+    | WritingOperation,
 ): Promise<unknown> {
   switch (op.operation) {
+    case "nextCoverColor":
+      return {
+        coverColor: field(
+          "цвет новой истории",
+          shape(
+            "цвет новой истории",
+            await request("/projects/next-cover-color"),
+          ),
+          "cover_color",
+          isCoverColor,
+        ),
+      };
     case "search":
       return readSearch(
         await request(`/drafts/${op.payload.draftId}/search`, {
@@ -1313,9 +1331,10 @@ async function operation(
     case "fileContent":
       return apiBlob(`/files/${op.payload.fileId}/content`);
     case "createFromFile": {
-      const { title, file } = op.payload;
+      const { title, file, coverColor } = op.payload;
       const form = new FormData();
       form.append("title", title);
+      form.append("cover_color", coverColor);
       form.append("file", file, file.name);
       const o = shape(
         "новую историю",
@@ -1363,6 +1382,7 @@ export const apiProvider: DataProvider = {
       operation: meta?.operation,
       payload,
     } as
+      | CoverOperation
       | FileOperation
       | SaveOperation
       | SearchOperation

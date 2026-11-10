@@ -136,7 +136,7 @@ def _cover_color(value: Any) -> str:
     return str(value)
 
 
-def _next_cover_color(connection: Connection, owner_id: uuid.UUID) -> str:
+def next_cover_color(connection: Connection, owner_id: uuid.UUID) -> str:
     """The colour after that of the author's last created story, the trash included; blue for the first one."""
     last = connection.execute(
         select(projects.c.cover_color)
@@ -183,14 +183,23 @@ def list_projects(connection: Connection, owner_id: uuid.UUID, trash: bool) -> l
     ]
 
 
+# A story created without a colour takes the next one of the palette (`next_cover_color`); null is not a colour.
+NEXT_COLOR: Any = object()
+
+
 def create_project(
-    connection: Connection, owner_id: uuid.UUID, title: Any, description: Any = "", text: dict[str, Any] | None = None
+    connection: Connection,
+    owner_id: uuid.UUID,
+    title: Any,
+    description: Any = "",
+    text: dict[str, Any] | None = None,
+    cover_color: Any = NEXT_COLOR,
 ) -> tuple[Project, uuid.UUID, uuid.UUID]:
     """A new feature film with «Драфт 1» and its screenplay; the text is one empty scene heading unless given.
 
-    The cover takes the next colour of the palette. The time of creation is that of the insert, not of the
-    transaction, so stories created in one transaction keep their order. Returns the story, the draft and the
-    screenplay.
+    The cover takes the colour the author chose, or without one the next colour of the palette. The time of
+    creation is that of the insert, not of the transaction, so stories created in one transaction keep their
+    order. Returns the story, the draft and the screenplay.
     """
     row = connection.execute(
         insert(projects)
@@ -199,7 +208,9 @@ def create_project(
             title=_title(title),
             description=_description(description),
             format="feature",
-            cover_color=_next_cover_color(connection, owner_id),
+            cover_color=next_cover_color(connection, owner_id)
+            if cover_color is NEXT_COLOR
+            else _cover_color(cover_color),
             created_at=func.clock_timestamp(),
         )
         .returning(projects)

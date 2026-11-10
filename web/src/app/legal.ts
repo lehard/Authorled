@@ -2,10 +2,12 @@ import { appConfig } from "@/app/config";
 
 // The promise about the author's texts and the documents of the service on the product site
 // (openspec/specs/web/workspace, «Обещание о текстах в чате», «Раздел «Ваши тексты» в настройках»).
-// One text for the sign-in screen, the co-author chat and the settings; it must not promise more
-// than the offer (design of no-training-in-app, D2).
+// The full text for the sign-in screen and the settings, the short one for the empty conversation of
+// the co-author chat, where the full one does not fit in a line; neither may promise more than the
+// offer (design of no-training-in-app, D2).
 
 export const NO_TRAINING = "Ваши тексты не используются для обучения моделей.";
+export const NO_TRAINING_SHORT = "Не обучаем ИИ на ваших текстах.";
 
 /** The offer on the product site; `section` is an anchor of the page, such as `materials`. */
 export function offerUrl(section?: "materials"): string {
