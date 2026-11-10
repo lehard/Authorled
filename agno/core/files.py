@@ -90,10 +90,40 @@ def file_format(name: str, purpose: str, data: bytes) -> Format:
     return FORMATS[extension]
 
 
+def _starts_lower(line: str) -> bool:
+    return line[:1].islower()
+
+
+def paragraphs_of_page(text: str) -> str:
+    """Lines of a PDF page joined into paragraphs (openspec/specs/api/files, «Абзацы текста PDF»).
+
+    A line goes on with the next one when the next starts with a lowercase letter or the line ends with a comma; a
+    hyphen at the end before a lowercase letter is a broken word and goes away. Other line breaks stay, so lines of
+    details, headings and tables keep their own lines.
+    """
+    out = ""
+    for line in text.split("\n"):
+        line = line.strip()
+        if not out:
+            out = line
+            continue
+        previous = out.rsplit("\n", 1)[-1]
+        if previous and line and _starts_lower(line):
+            if previous.endswith("-") and previous[-2:-1].isalpha():
+                out = out[:-1] + line
+            else:
+                out = f"{out} {line}"
+        elif previous.endswith(",") and line:
+            out = f"{out} {line}"
+        else:
+            out = f"{out}\n{line}"
+    return out
+
+
 def _text_of_pdf(data: bytes) -> str:
     try:
         reader = PdfReader(io.BytesIO(data))
-        pages = [page.extract_text() or "" for page in reader.pages]
+        pages = [paragraphs_of_page(page.extract_text() or "") for page in reader.pages]
     except (PdfReadError, ValueError, KeyError) as error:
         raise Invalid(f"Файл PDF не читается: {error}.") from error
     text = "\n\n".join(page.strip() for page in pages if page.strip())
@@ -230,5 +260,7 @@ def checked_of_stored(connection: Connection, file_id: uuid.UUID) -> CheckedFile
 
 def delete_file(connection: Connection, file_id: uuid.UUID) -> None:
     if get_file(connection, file_id).purpose == "note":
-        raise Conflict("Оригинал заметки удаляется только вместе с заметкой.")
+        raise Conflict(
+            "Оригинал заметки удаляется вместе с заметкой или действием заметки «Удалить оригинал, оставить текст»."
+        )
     connection.execute(delete(files).where(files.c.id == file_id))

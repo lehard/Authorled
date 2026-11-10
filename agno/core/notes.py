@@ -14,7 +14,7 @@ from sqlalchemy import Connection, delete, func, insert, select, update
 
 from core.documents import ensure_project_open
 from core.errors import Conflict, Invalid, NotFound, TooLarge
-from core.files import CheckedFile, checked_of_stored, get_file, store_file
+from core.files import CheckedFile, checked_of_stored, extract_text, file_bytes, file_format, get_file, store_file
 from core.tables import files, notes, users
 
 # The longest text of a note made from a file: longer ones slow the screen and fill the co-author's context.
@@ -221,6 +221,50 @@ def update_note(
         .values(**values, revision=notes.c.revision + 1, updated_by=user_id, updated_at=func.now())
     )
     return note_row(connection, note_id)
+
+
+def _changeable_original(connection: Connection, note_id: uuid.UUID, expected_revision: int) -> NoteFile:
+    """The original of a note the author may act on now: the note and its story are open, the revision holds."""
+    note = note_row(connection, note_id, for_update=True)
+    ensure_project_open(connection, note.project_id)
+    if note.deleted_at is not None:
+        raise Conflict("Заметка в корзине: сначала восстановите её.")
+    if note.revision != expected_revision:
+        raise Conflict(f"Заметка изменилась: ревизия {note.revision}, а не {expected_revision}.")
+    if note.file is None:
+        raise Conflict("У заметки нет оригинала.")
+    return note.file
+
+
+def remove_note_file(connection: Connection, note_id: uuid.UUID, expected_revision: int, user_id: uuid.UUID) -> Note:
+    """Delete the original of a note for good and keep its title and text («Удаление оригинала заметки»).
+
+    The place of the user's plan frees with the row of the file: the place is the sum of the originals.
+    """
+    original = _changeable_original(connection, note_id, expected_revision)
+    connection.execute(
+        update(notes)
+        .where(notes.c.id == note_id)
+        .values(file_id=None, revision=notes.c.revision + 1, updated_by=user_id, updated_at=func.now())
+    )
+    connection.execute(delete(files).where(files.c.id == original.id))
+    return note_row(connection, note_id)
+
+
+def note_text_from_file(connection: Connection, note_id: uuid.UUID, expected_revision: int, user_id: uuid.UUID) -> Note:
+    """Replace the text of a note with the text read again from its original («Текст заметки из оригинала»).
+
+    The text comes from the bytes by the current rules of extraction, not from the text stored on upload, so an old
+    note gets the current rules; the stored text of the file stays as the file was uploaded.
+    """
+    original = _changeable_original(connection, note_id, expected_revision)
+    data = file_bytes(connection, original.id)
+    text = extract_text(file_format(original.name, "note", data), data)
+    if len(text) > MAX_FILE_TEXT_CHARS:
+        raise Invalid(
+            f"Текст оригинала длиннее {_count(MAX_FILE_TEXT_CHARS)} знаков: в нём {_count(len(text))}.", "file"
+        )
+    return update_note(connection, note_id, expected_revision, {"body": text}, user_id)
 
 
 def update_note_by_coauthor(

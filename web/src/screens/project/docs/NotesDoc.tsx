@@ -10,6 +10,7 @@ import { firstLine, useNoteActions } from "../noteActions";
 import { NoteUploadDialog } from "../NoteUploadDialog";
 import { useProjectData } from "../ProjectContext";
 import { DocHead } from "./DocHead";
+import { NoteIcon } from "./NoteIcon";
 
 /** «Заметки»: the notes of the story, the same in every draft. */
 export function NotesDoc() {
@@ -46,18 +47,24 @@ export function NotesDoc() {
             загружайте материалы из файлов. Заметки общие для всех драфтов.
           </p>
         ) : (
-          notes.map((n) => (
-            <Link
-              key={n.id}
-              to={docPath(draft, { kind: "note", id: n.id })}
-              className="grid gap-0.5 rounded-2xl bg-paper px-4 py-3 text-paper-foreground shadow-panel transition-shadow hover:shadow-paper"
-            >
-              <b className="truncate font-semibold">{n.title}</b>
-              <small className="truncate text-caption text-muted-foreground">
-                {firstLine(n.body)}
-              </small>
-            </Link>
-          ))
+          notes.map((n) => {
+            return (
+              <Link
+                key={n.id}
+                to={docPath(draft, { kind: "note", id: n.id })}
+                className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-0.5 rounded-2xl bg-paper px-4 py-3 text-paper-foreground shadow-panel transition-shadow hover:shadow-paper"
+              >
+                <NoteIcon
+                  file={n.file}
+                  className="row-span-2 size-5 text-muted-foreground"
+                />
+                <b className="truncate font-semibold">{n.title}</b>
+                <small className="truncate text-caption text-muted-foreground">
+                  {n.file !== null ? n.file.name : firstLine(n.body)}
+                </small>
+              </Link>
+            );
+          })
         )}
       </div>
       <NoteUploadDialog

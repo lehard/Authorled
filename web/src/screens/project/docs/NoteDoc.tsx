@@ -1,10 +1,4 @@
-import {
-  Download,
-  FileText,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
-} from "lucide-react";
+import { FileX, MoreHorizontal, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 
@@ -13,19 +7,23 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useStoryFiles } from "@/data/files";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Note, NoteFile } from "@/data/model";
 import { GrowingTextarea } from "@/design-system";
+import { ConfirmDialog } from "@/screens/shared/ConfirmDialog";
 import { useAutosave } from "@/screens/shared/useAutosave";
 import { useServerChanges } from "@/screens/shared/useServerChanges";
 
 import { DOC_WORDS, docPath } from "../docRef";
 import { useNoteActions } from "../noteActions";
 import { useProjectData } from "../ProjectContext";
-import { DocHead, FieldCard } from "./DocHead";
-import { Field } from "./Field";
+import { DocHead } from "./DocHead";
+import { fileSize, hasOriginalView } from "./noteFile";
+import { NoteIcon } from "./NoteIcon";
+import { DownloadButton, NoteOriginal } from "./NoteOriginal";
 import { useFindInDoc } from "./useFindInDoc";
 
 /**
@@ -35,56 +33,24 @@ import { useFindInDoc } from "./useFindInDoc";
  */
 const READ_ONLY_CHARS = 50_000;
 
-function size(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} КБ`;
-  return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} МБ`;
-}
-
-/** The original of a note made from a file, with «Скачать оригинал» (web/workspace, «Оригинал заметки»). */
-function Original({ file }: { file: NoteFile }) {
-  const files = useStoryFiles();
-  const [error, setError] = useState<string | null>(null);
-
-  async function download() {
-    setError(null);
-    try {
-      const url = URL.createObjectURL(await files.content(file.id));
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = file.name;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  }
-
+/** The line of the original under the heading: the kind, the name, the size and «Скачать». */
+function OriginalLine({ file }: { file: NoteFile }) {
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <FileText className="size-4 shrink-0 text-muted-foreground" />
-      <span className="min-w-0 flex-1 truncate">
-        <b className="font-semibold">{file.name}</b>
-        <span className="text-muted-foreground"> · {size(file.sizeBytes)}</span>
+    <div className="mx-auto -mt-2 mb-4 flex max-w-[900px] flex-wrap items-center gap-2 text-caption text-muted-foreground">
+      <NoteIcon file={file} className="size-4 shrink-0" />
+      <span className="min-w-0 truncate">
+        <span className="text-foreground">{file.name}</span> ·{" "}
+        {fileSize(file.sizeBytes)}
       </span>
-      <Button
-        variant="outline"
-        size="sm"
-        className="rounded-full"
-        onClick={() => void download()}
-      >
-        <Download />
-        Скачать оригинал
-      </Button>
-      {error !== null && (
-        <p role="alert" className="w-full text-caption text-destructive">
-          {error}
-        </p>
-      )}
+      <DownloadButton file={file} />
     </div>
   );
 }
 
-/** A note: title and plain text on a sheet of paper; no draft and no lock of a draft close it. */
+const FOR_COAUTHOR =
+  "Этот текст видит соавтор: он отвечает по нему, а не по оригиналу.";
+
+/** A note: title in the heading, plain text on a sheet; a note from a file shows its original too. */
 export function NoteDoc({ id }: { id: string }) {
   const { project, draft, notes } = useProjectData();
   const note = notes.find((n) => n.id === id);
@@ -99,75 +65,53 @@ export function NoteDoc({ id }: { id: string }) {
   useServerChanges(note.body, setBody);
   useFindInDoc();
   const words = DOC_WORDS.note;
+  const file = note.file;
+  const tabs = file !== null && hasOriginalView(file);
   // A jump from the search of the story selects the match in the field (useFindInDoc), so it opens the
-  // field during this render, before the effect looks for it, also in a note that is open already.
+  // text and its field during this render, before the effect looks for it, also in a note open already.
   const [params] = useSearchParams();
+  const fromSearch = params.get("find") !== null;
   const [editing, setEditing] = useState(false);
-  if (params.get("find") !== null && !editing) setEditing(true);
-  const reading =
-    note.file !== null && body.length > READ_ONLY_CHARS && !editing;
+  const [tab, setTab] = useState<"original" | "text">("original");
+  if (fromSearch && params.get("field") !== "title") {
+    if (!editing) setEditing(true);
+    if (tab !== "text") setTab("text");
+  }
+  const reading = file !== null && body.length > READ_ONLY_CHARS && !editing;
+  const [confirm, setConfirm] = useState<"file" | "text" | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
 
-  return (
-    <>
-      <DocHead title={title.trim() === "" ? words.one : title} status={status}>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-              aria-label="Действия с заметкой"
-            >
-              <MoreHorizontal />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              variant="destructive"
-              onSelect={() =>
-                void actions
-                  .trash(id, true)
-                  .then(() => navigate(docPath(draft, { kind: "notes" })))
-              }
-            >
-              <Trash2 />
-              Удалить в корзину
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </DocHead>
-      <div className="mx-auto mb-4 max-w-[900px]">
-        <FieldCard>
-          <Field
-            name="title"
-            label={words.nameLabel}
-            value={title}
-            onChange={(v) => {
-              setTitle(v);
-              // An empty title is not saved: the navigator always needs a name.
-              if (v.trim() !== "") save({ title: v.trim() });
-            }}
-          />
-          {note.file !== null && <Original file={note.file} />}
+  async function act(run: () => Promise<void>) {
+    setFailure(null);
+    try {
+      await run();
+    } catch (err) {
+      setFailure(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  const text = (
+    <div className="grid gap-3">
+      {file !== null && (
+        <div className="mx-auto flex w-full max-w-[760px] flex-wrap items-center gap-3">
+          <span className="min-w-0 flex-1 text-caption text-muted-foreground">
+            {FOR_COAUTHOR}
+            {reading &&
+              " Длинный материал открыт для чтения: правка такого текста идёт медленно."}
+          </span>
           {reading && (
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="min-w-0 flex-1 text-caption text-muted-foreground">
-                Длинный материал открыт для чтения: правка такого текста идёт
-                медленно.
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-full"
-                onClick={() => setEditing(true)}
-              >
-                <Pencil />
-                Править текст
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              onClick={() => setEditing(true)}
+            >
+              <Pencil />
+              Править текст
+            </Button>
           )}
-        </FieldCard>
-      </div>
+        </div>
+      )}
       <div className="sheet sheet-prose">
         {reading ? (
           <div
@@ -194,6 +138,117 @@ export function NoteDoc({ id }: { id: string }) {
           />
         )}
       </div>
+    </div>
+  );
+
+  return (
+    <>
+      <DocHead
+        title={words.one}
+        status={status}
+        edit={{
+          value: title,
+          label: words.nameLabel,
+          name: "title",
+          onChange: (v) => {
+            setTitle(v);
+            // An empty title is not saved: the navigator always needs a name.
+            if (v.trim() !== "") save({ title: v.trim() });
+          },
+          onBlur: () => {
+            if (title.trim() === "") setTitle(note.title);
+          },
+        }}
+      >
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              aria-label="Действия с заметкой"
+            >
+              <MoreHorizontal />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {file !== null && (
+              <>
+                <DropdownMenuItem onSelect={() => setConfirm("text")}>
+                  <RotateCcw />
+                  Вернуть текст из оригинала
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="destructive"
+                  onSelect={() => setConfirm("file")}
+                >
+                  <FileX />
+                  Удалить оригинал, оставить текст
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={() =>
+                void actions
+                  .trash(id, true)
+                  .then(() => navigate(docPath(draft, { kind: "notes" })))
+              }
+            >
+              <Trash2 />
+              Удалить в корзину
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </DocHead>
+      {file !== null && <OriginalLine file={file} />}
+      {failure !== null && (
+        <p
+          role="alert"
+          className="mx-auto mb-4 max-w-[900px] text-caption text-destructive"
+        >
+          {failure}
+        </p>
+      )}
+      {tabs ? (
+        <Tabs
+          value={tab}
+          onValueChange={(v) => setTab(v === "text" ? "text" : "original")}
+          className="gap-4"
+        >
+          <TabsList className="mx-auto">
+            <TabsTrigger value="original">Оригинал</TabsTrigger>
+            <TabsTrigger value="text">Текст для соавтора</TabsTrigger>
+          </TabsList>
+          <TabsContent value="original">
+            <NoteOriginal key={file.id} file={file} />
+          </TabsContent>
+          <TabsContent value="text">{text}</TabsContent>
+        </Tabs>
+      ) : (
+        text
+      )}
+      {file !== null && (
+        <>
+          <ConfirmDialog
+            open={confirm === "file"}
+            onOpenChange={(open) => setConfirm(open ? "file" : null)}
+            title="Удалить оригинал?"
+            text={`Файл «${file.name}» (${fileSize(file.sizeBytes)}) удалится навсегда, вернуть его нельзя. Название и текст заметки останутся.`}
+            actionLabel="Удалить оригинал"
+            onConfirm={() => void act(() => actions.removeFile(id))}
+          />
+          <ConfirmDialog
+            open={confirm === "text"}
+            onOpenChange={(open) => setConfirm(open ? "text" : null)}
+            title="Вернуть текст из оригинала?"
+            text={`Текст заметки заменится текстом из «${file.name}». Правки текста пропадут.`}
+            actionLabel="Вернуть текст"
+            onConfirm={() => void act(() => actions.textFromFile(id))}
+          />
+        </>
+      )}
     </>
   );
 }

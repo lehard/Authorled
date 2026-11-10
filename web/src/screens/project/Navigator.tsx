@@ -14,7 +14,6 @@ import {
   Plus,
   Quote,
   SortAsc,
-  StickyNote,
   Trash2,
   User,
   Users,
@@ -55,6 +54,7 @@ import { emptyTrashText, trashItems, useTrashActions } from "./draftActions";
 import { DraftSwitcher } from "./DraftSwitcher";
 import { useEntityActions } from "./entityActions";
 import { NodeMenu, type MenuEntry } from "./NodeMenu";
+import { noteIcon } from "./docs/noteFile";
 import { useNoteActions } from "./noteActions";
 import { NoteUploadDialog } from "./NoteUploadDialog";
 import { useProjectData } from "./ProjectContext";
@@ -248,7 +248,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
       kids: data.notes.map((n) => ({
         key: `note:${n.id}`,
         to: path({ kind: "note", id: n.id }),
-        icon: StickyNote,
+        icon: noteIcon(n.file),
         label: n.title,
         menu: [
           {
