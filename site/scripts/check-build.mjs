@@ -250,8 +250,11 @@ if (problems.length === 0) {
     if (!/<h1[^>]*>[^<]+<\/h1>/.test(html)) fail(`${file}: no heading`);
     if (title(html) === title(home) || title(html) === title(privacy))
       fail(`${file}: the title repeats another page`);
-    // Links of a document to the product domain must lead to pages of the site (design D6).
-    for (const match of html.matchAll(/href="(https:\/\/soavtor\.app[^"]*)"/g))
+    // Links of a document to the product domain must lead to pages of the site (design D6). Only links of
+    // the text (<a>): canonical and og:url of the page start with the origin of the build and have their own checks.
+    for (const match of html.matchAll(
+      /<a[^>]+href="(https:\/\/soavtor\.app[^"]*)"/g,
+    ))
       fail(`${file}: a link to ${match[1]} was not made local`);
     for (const match of html.matchAll(/<a[^>]+href="(\/[^"#]*)/g)) {
       if (!pageUrls.has(match[1]))
