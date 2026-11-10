@@ -209,13 +209,21 @@ editing the Python file alone won't change an existing Routine.
 <a id="company-routines"></a>
 **Company Routines.** A Routine declared in `agno/app/company.py` runs only with the authority saved
 in it; without it every run is refused with `403`. Save the authority of the service account
-`sa-routines` (group `routines`): create a temporary app password for `sa-routines` in the Authentik
-admin interface, pass it on stdin, then delete it.
+`sa-routines` (group `routines`) with a temporary app password, passed on stdin:
+
+1. In the Authentik admin interface (sign in as `akadmin`, see «Admin interface» under [Module auth](#module-auth)) open
+   Directory → Tokens and App passwords → Create. Identifier: any, for example `sa-routines-<date>`; User:
+   type `sa-r` and click `sa-routines` in the list (typed text alone leaves the field empty); Intent: App password;
+   Expiring on, an hour ahead. Create, then copy the token with the copy icon of its row.
+2. Save it to a file without showing it (`pbpaste > ~/sa-routines.pw` on macOS) and run the script:
 
 ```sh
-./scripts/routines_authorize.sh < app-password-file
-ssh authorled 'cd /srv/authorled/app && ./scripts/routines_authorize.sh' < app-password-file
+./scripts/routines_authorize.sh < ~/sa-routines.pw
+ssh authorled 'cd /srv/authorled/app && ./scripts/routines_authorize.sh' < ~/sa-routines.pw
 ```
+
+3. Delete the file and the app password (Directory → Tokens and App passwords → Delete). The saved authority
+   does not depend on it.
 
 The first line is the local stand, the second the server, after a release that brings a new Routine
 or when a Routine was created again. The script prints the Routines it saved the authority in and stops
@@ -628,8 +636,8 @@ on are the token contract in `openspec/specs/auth`. The API accepts only tokens 
   group may call is in `agno/app/auth/authorization.py`.
 - **Service account `sa-routines`.** A Routine declared in `agno/app/company.py` runs with the authority saved in
   it, and only `scripts/routines_authorize.sh` saves it (see [Company Routines](#company-routines)). `sa-routines` has no app
-  password in the blueprints or in any env file: create one in the admin interface (Directory → Users →
-  `sa-routines` → App passwords) only for the run of the script, and delete it right after.
+  password in the blueprints or in any env file: create one in the admin interface (Directory → Tokens and App
+  passwords) only for the run of the script, and delete it right after.
 - **Admin interface.** Authentik settings that change without a release are edited at
   `/if/admin/` of the admin host `AUTH_ADMIN_DOMAIN`: in production
   `https://admin.soavtor.app/if/admin/`, locally `http://localhost:9000/if/admin/`.
