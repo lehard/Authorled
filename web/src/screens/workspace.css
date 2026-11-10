@@ -204,9 +204,25 @@
     display: flex;
     flex-direction: column;
   }
+  /* Tasks of the co-author on an empty prose sheet: a row under the placeholder, over the empty
+     field; clicks beside the buttons reach the field. */
+  .sheet-tasks {
+    position: absolute;
+    top: calc(64px + 1lh + 12px);
+    inset-inline: 72px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+  }
   @media (max-width: 900px) {
     .sheet-prose {
       padding: 32px 20px 48px;
+    }
+    .sheet-tasks {
+      top: calc(32px + 1lh + 12px);
+      inset-inline: 20px;
     }
     .sheet-title {
       padding: 32px 24px;
