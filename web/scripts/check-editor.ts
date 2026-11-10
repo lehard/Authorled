@@ -70,6 +70,11 @@ import {
 import { suggestions } from "../src/editor/plugins/suggest.ts";
 import { sceneHeadings } from "../src/editor/plugins/sceneHeadings.ts";
 import {
+  emptyParagraphs,
+  emptyParagraphsKey,
+  emptyParagraphsPlugin,
+} from "../src/editor/plugins/emptyParagraphs.ts";
+import {
   cardGapKey,
   cardGapStatePlugin,
   type CardGapMeta,
@@ -1289,6 +1294,44 @@ try {
     fail(`Ctrl+4 по «дарьян» даёт «${text(cue, 0)}»`);
 }
 
+// 14. The placeholder mark of empty paragraphs (editor-empty-placeholder): read from the document,
+// so a text ending with a line break is not empty; the styles show placeholders only by the mark.
+{
+  const doc = toNode(
+    plainDoc([
+      ["sceneHeading", ""],
+      ["action", "Река в тумане.\n"],
+      ["character", "ДАРЬЯН"],
+      ["dialogue", "жарим жарим\n"],
+      ["action", ""],
+    ]),
+  );
+  const marked = (s: EditorState) =>
+    (emptyParagraphsKey.getState(s)?.find() ?? []).map((d) =>
+      s.doc.resolve(d.from).index(0),
+    );
+  let s = EditorState.create({ doc, plugins: [emptyParagraphsPlugin] });
+  const want = emptyParagraphs(doc).map((pos) => doc.resolve(pos).index(0));
+  if (want.join(",") !== "0,4")
+    fail(
+      `пустые абзацы: ${want.join(",")}, нужно 0,4 (текст с переносом не пустой)`,
+    );
+  if (marked(s).join(",") !== "0,4")
+    fail(`метка pw-empty: ${marked(s).join(",")}, нужно 0,4`);
+  const last = s.doc.content.size - 1;
+  s = s.apply(s.tr.insertText("Вера.", last));
+  if (marked(s).join(",") !== "0")
+    fail(`метка pw-empty после набора: ${marked(s).join(",")}, нужно 0`);
+  const css = readFileSync(
+    fileURLToPath(new URL("../src/editor/styles.css", import.meta.url)),
+    "utf8",
+  );
+  if (/only-child|pw-empty-heading/u.test(css))
+    fail(
+      "подсказки в styles.css угадывают пустоту по разметке, нужна метка pw-empty",
+    );
+}
+
 // Markdown of the prose editor: the examples agno/tests/test_prose.py checks for the core too.
 type ProseCase = {
   name: string;
@@ -1341,5 +1384,5 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log(
-  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, образцы экспорта, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник, правки сцен, комментарии, предложения соавтора, копия драфтов, uid сцен, якоря предложений, зазор карточки, номера сцен, переносы строк и скобки ремарки, заглавные, заглавные, ${proseCases.length} случаев Markdown прозы — без расхождений`,
+  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, образцы экспорта, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник, правки сцен, комментарии, предложения соавтора, копия драфтов, uid сцен, якоря предложений, зазор карточки, номера сцен, переносы строк и скобки ремарки, заглавные, метка пустых абзацев, ${proseCases.length} случаев Markdown прозы — без расхождений`,
 );
