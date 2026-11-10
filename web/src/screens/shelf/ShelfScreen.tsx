@@ -177,9 +177,10 @@ export function ShelfScreen() {
           <button
             type="button"
             onClick={() => setCreating(true)}
-            className="group/new grid content-start gap-3.5 text-left"
+            className="group/new grid cursor-pointer content-start gap-3.5 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
-            <span className="grid aspect-[3/4] place-items-center rounded-[10px] border-[1.5px] border-dashed border-border-strong text-muted-foreground transition-colors group-hover/new:border-primary group-hover/new:text-primary">
+            {/* Lifts like a cover of a story on hover (`.book` in workspace.css). */}
+            <span className="grid aspect-[3/4] place-items-center rounded-[10px] border-[1.5px] border-dashed border-border-strong text-muted-foreground transition-[color,border-color,transform] duration-150 group-hover/new:-translate-y-[3px] group-hover/new:border-primary group-hover/new:text-primary">
               <Plus className="size-8" strokeWidth={1.4} />
             </span>
             <span className="grid gap-0.5 px-0.5">

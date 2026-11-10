@@ -1,50 +1,56 @@
-import { useState } from "react";
+import { type CSSProperties, useState } from "react";
 
 import type { Script, TitlePage } from "@/data/model";
+import { GrowingTextarea } from "@/design-system";
 import { useAutosave } from "@/screens/shared/useAutosave";
 
 import { useProjectData } from "../ProjectContext";
 import { DocHead } from "./DocHead";
 import { SaveHistory } from "./SaveHistory";
 
-const FIELDS: {
-  key: keyof TitlePage;
-  label: string;
-  place: "mid" | "bottom";
-  className?: string;
-}[] = [
-  {
-    key: "title",
-    label: "Название",
-    place: "mid",
-    className: "text-[22px] font-bold uppercase",
-  },
-  { key: "genre", label: "Жанр или формат", place: "mid" },
-  { key: "author", label: "Автор", place: "mid" },
-  { key: "contacts", label: "Контакты", place: "bottom" },
-  { key: "place", label: "Город, год", place: "bottom" },
-];
+const LABELS: Record<keyof TitlePage, string> = {
+  title: "Название",
+  genre: "Жанр или формат",
+  author: "Автор",
+  contacts: "Контакты",
+  place: "Город, год",
+};
 
-/** «Титульная страница» as a sheet of paper. */
+/**
+ * «Титульная страница» as a sheet of paper, composed like the first page of the print
+ * (`titleHTML` in editor/exporters/print.ts; web/workspace, «Лист титульной страницы»,
+ * «Композиция титульной страницы»): the title, the genre and the author start at 42 % of the
+ * height of the text area, the contacts stand bottom left and the place bottom right.
+ * Every field wraps and grows; Enter starts a new line.
+ */
 export function TitleDoc() {
   const { draft, script } = useProjectData();
   const { save, status } = useAutosave<Script>("scripts", script.id);
   const [page, setPage] = useState(script.titlePage);
+  const placeWidth = Math.max(
+    ...(page.place === "" ? LABELS.place : page.place)
+      .split("\n")
+      .map((line) => line.length),
+  );
 
-  function input(f: (typeof FIELDS)[number]) {
+  /** `textClassName` goes to the field and to its invisible copy that sets the height. */
+  function field(key: keyof TitlePage, textClassName: string) {
     return (
-      <input
-        key={f.key}
-        aria-label={f.label}
-        placeholder={f.label}
+      <GrowingTextarea
+        aria-label={LABELS[key]}
+        placeholder={LABELS[key]}
         readOnly={draft.locked}
-        value={page[f.key]}
+        value={page[key]}
         onChange={(e) => {
-          const next = { ...page, [f.key]: e.target.value };
+          const next = { ...page, [key]: e.target.value };
           setPage(next);
           save({ titlePage: next });
         }}
-        className={`w-full rounded bg-transparent px-1 py-0.5 outline-none placeholder:text-muted-foreground/60 hover:bg-accent focus:bg-accent ${f.place === "mid" ? "text-center" : ""} ${f.className ?? ""}`}
+        variant="bare"
+        minRows={1}
+        limit="none"
+        className={`rounded px-1 focus-within:bg-accent hover:bg-accent ${textClassName}`}
+        placeholderClassName={`placeholder:text-muted-foreground/60 ${textClassName}`}
       />
     );
   }
@@ -55,11 +61,31 @@ export function TitleDoc() {
         <SaveHistory target={{ draftId: draft.id, part: "fields" }} />
       </DocHead>
       <div className="sheet sheet-title">
-        <div className="my-auto grid gap-3.5">
-          {FIELDS.filter((f) => f.place === "mid").map(input)}
+        {/* Rows of `.sheet-title`: upper gap, block, lower gap, bottom. */}
+        <div />
+        <div className="grid">
+          <div className="mb-[1lh]">
+            {field("title", "text-center font-bold uppercase")}
+          </div>
+          <div className="mb-[2lh]">{field("genre", "text-center")}</div>
+          {page.author.trim() !== "" && <p className="text-center">Автор</p>}
+          {field("author", "text-center")}
         </div>
-        <div className="flex items-end justify-between gap-4 max-[600px]:flex-col max-[600px]:items-stretch">
-          {FIELDS.filter((f) => f.place === "bottom").map(input)}
+        <div />
+        <div className="flex items-end justify-between gap-6 max-[600px]:flex-col max-[600px]:items-stretch max-[600px]:gap-[1lh]">
+          <div className="min-w-0 flex-1">{field("contacts", "text-left")}</div>
+          {/* The place column is as wide as its longest line (or the hint): the sheet font is
+              monospaced, so that is an exact width in `ch`; the contacts take the rest. */}
+          <div
+            className="w-(--place-width) max-w-1/2 shrink-0 max-[600px]:w-auto max-[600px]:max-w-none"
+            style={
+              {
+                "--place-width": `calc(${placeWidth}ch + 0.5rem)`,
+              } as CSSProperties
+            }
+          >
+            {field("place", "w-0 min-w-full text-right max-[600px]:text-left")}
+          </div>
         </div>
       </div>
     </>

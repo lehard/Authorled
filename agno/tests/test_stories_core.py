@@ -288,6 +288,21 @@ def test_screenplay_is_not_created_by_hand(connection: Connection) -> None:
         create_documents(connection, draft, [{"kind": "script", "name": "Второй"}], _owner(connection))
 
 
+def test_title_page_keeps_line_breaks(connection: Connection) -> None:
+    owner = _owner(connection)
+    _, draft, script = create_project(connection, owner, "Маяк")
+    page = {
+        "title": "Выбор.\nПод знаком чёрной луны",
+        "genre": "",
+        "author": "",
+        "contacts": "lev@example.test\n+7 900 000-00-00\nt.me/lev",
+        "place": "",
+    }
+    update_document(connection, script, 1, {"fields": {"title_page": page}}, owner)
+    (saved,) = list_documents(connection, draft)
+    assert saved.fields["title_page"] == page
+
+
 def test_world_has_no_role(connection: Connection) -> None:
     project, draft, _ = create_project(connection, _owner(connection), "Маяк")
     with pytest.raises(Invalid) as error:
