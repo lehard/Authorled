@@ -11,7 +11,7 @@ export const ABOUT_STORY = "О чём эта история?";
 export const CHECKS: readonly Check[] = [
   {
     id: "water",
-    label: "Где вода?",
+    label: "Где «вода»?",
     request:
       "Где здесь вода? Назови одно–три места, которые можно сократить без потери смысла, и спроси меня о них.",
   },

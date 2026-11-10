@@ -47,7 +47,7 @@ import { ActionLines } from "./ActionLines";
 import { changedResources, firstChangingCalls, toolText } from "./actions";
 import { useConfirmations } from "./confirmations";
 import { useAccount } from "@/account/useAccount";
-import { NO_TRAINING, offerUrl } from "@/app/legal";
+import { NO_TRAINING_SHORT, offerUrl } from "@/app/legal";
 import { newLineKey, sendKey } from "@/screens/shared/keys";
 import { useMediaQuery } from "@/screens/shared/useMediaQuery";
 import {
@@ -779,6 +779,19 @@ export function CoauthorChat({
                   ))}
                 </div>
               </TooltipProvider>
+              {/* The promise about the author's texts ends the empty conversation and goes with it, so
+                  the field never moves (openspec/specs/web/workspace, «Обещание о текстах в чате»). */}
+              <p className="mt-4 text-xs">
+                {NO_TRAINING_SHORT}{" "}
+                <a
+                  href={offerUrl("materials")}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline-offset-2 hover:underline"
+                >
+                  Подробнее
+                </a>
+              </p>
             </div>
           ) : (
             messages.map((m) =>
@@ -935,21 +948,6 @@ export function CoauthorChat({
             onPick={(text) => void send(text, "check")}
           />
         </div>
-        {/* The promise about the author's texts, only in an empty conversation and below the field, so the
-            field does not move when it goes (openspec/specs/web/workspace, «Обещание о текстах в чате»). */}
-        {messages.length === 0 && (
-          <p className="text-caption text-muted-foreground">
-            {NO_TRAINING}{" "}
-            <a
-              href={offerUrl("materials")}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary underline-offset-2 hover:underline"
-            >
-              Подробнее
-            </a>
-          </p>
-        )}
         {fileErrors.length > 0 && (
           <ul
             role="alert"
