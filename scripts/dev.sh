@@ -151,7 +151,7 @@ require_free_api_port() {
     ids="$(compose ps -q --status running agentos-api)" \
         || fail "docker compose failed (its error is above), so agentos-api was not checked: fix .env (the compose files require every variable they name)."
     [[ -z "${ids}" ]] \
-        || fail "port 8000 is held by the container agentos-api of Compose project ${STAND_PROJECT}. Stopping it is the owner's decision: in the main checkout (${main_checkout}) run docker compose stop agentos-api."
+        || fail "port 8000 is held by the container agentos-api of Compose project ${STAND_PROJECT}. Stopping it is the owner's decision: in the main checkout (${main_checkout}) run docker compose -p ${STAND_PROJECT} stop agentos-api."
     if listeners="$(lsof -nP -t -iTCP:8000 -sTCP:LISTEN 2>&1)"; then
         line=""
         for pid in ${listeners}; do

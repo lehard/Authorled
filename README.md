@@ -65,13 +65,13 @@ agent runs, see [Journal of agent runs](#journal-of-agent-runs)), and the block 
 GigaChat (the Russian Trusted CA) ships in `agno/litellm/certs/ca-bundle.pem` (see [Models](#models)). Then start the platform:
 
 ```sh
-docker compose up -d --build
+docker compose -p authorled up -d --build
 ```
 
 The first build can take a few minutes: Authentik applies its migrations and blueprints, and the
 one-shot `agentos-migrate` applies the migrations of the product schema `authorled` and then those of the
 billing schema `billing`, before the API starts. If a migration fails, `agentos-migrate` exits non-zero and the API does not start
-(`docker compose logs agentos-migrate`). `./scripts/dev.sh migrate` reruns the migrations alone,
+(`docker compose -p authorled logs agentos-migrate`). `./scripts/dev.sh migrate` reruns the migrations alone,
 `./scripts/dev.sh test` runs the core tests on a separate test database (`ai_test`, in a worktree
 `ai_test_<worktree>`). When it's ready, open [http://localhost:8000/docs](http://localhost:8000/docs)
 to see the API. Authorization is on in every environment, so API calls need a token from
@@ -123,7 +123,7 @@ The check should report `9 tools; required tools available`.
 For code changes without rebuilding the image, run PostgreSQL, LiteLLM, ClamAV, Phoenix, Authentik and Mailpit in Docker
 and the API on your computer with `--reload` (needs [uv](https://docs.astral.sh/uv/), `lsof` and a filled
 `.env`). `up` starts the stand in the main checkout without the `agentos-api` container; `api` needs port 8000 free
-(stop a running `agentos-api` container yourself: `docker compose stop agentos-api`), migrates the database of the
+(stop a running `agentos-api` container yourself: `docker compose -p authorled stop agentos-api`), migrates the database of the
 checkout on the host and exports the Authentik keys to `auth/jwks/jwks.json` before the API starts:
 
 ```sh
@@ -239,7 +239,7 @@ Chat with it in AgentOS, or ask OS Manager to use it:
 > Ask Claude Engineer to review this project and suggest improvements. Don't change any files yet.
 
 It uses the proxy settings you added during setup and needs no Anthropic key. After
-changing `.env`, run `docker compose up -d` again.
+changing `.env`, run `docker compose -p authorled up -d` again.
 
 By default, engineers work in this project's folder. When running locally with
 Docker Compose, their file changes appear in your local checkout. Review those
@@ -313,7 +313,7 @@ database, so the database backup covers it.
 ### 3. Start the production services
 
 ```sh
-docker compose -f compose.yaml -f compose.prod.yaml up -d --build
+docker compose -p authorled -f compose.yaml -f compose.prod.yaml up -d --build
 ```
 
 The production override turns on token checks and runs the code built into the
@@ -351,8 +351,8 @@ Run the same `up -d --build` command after changing code or settings. View logs 
 stop the services with:
 
 ```sh
-docker compose -f compose.yaml -f compose.prod.yaml logs -f agentos-api
-docker compose -f compose.yaml -f compose.prod.yaml down
+docker compose -p authorled -f compose.yaml -f compose.prod.yaml logs -f agentos-api
+docker compose -p authorled -f compose.yaml -f compose.prod.yaml down
 ```
 
 `down` keeps the database volume. Adding `-v` deletes it and all stored data.
@@ -409,7 +409,7 @@ usermod -aG docker deploy
 install -d -o deploy -g deploy -m 755 /srv/authorled /srv/authorled/web /srv/authorled/web/incoming
 install -d -o deploy -g deploy -m 755 /srv/authorled/site /srv/authorled/site/incoming
 install -d -o deploy -g deploy -m 700 /srv/authorled/backups
-sudo -u deploy git clone https://github.com/lehard/Authorled.git /srv/authorled/app
+sudo -u deploy git clone https://github.com/lehard/coauthor.git /srv/authorled/app
 chown root:deploy /etc/authorled /etc/authorled/authorled.env
 # 751: Caddy (its own user) passes in to read the CA of the admin interface; it cannot list the directory.
 # Secrets stay 640; any other new file here gets 640 or less.
@@ -475,7 +475,7 @@ PostgreSQL must be running, even when you only want to list the tests. The evals
 application, so on the host they also need the auth settings in `.env` (`AUTH_ISSUER`,
 `AUTH_FRONTEND_CLIENT_ID`) and `JWT_JWKS_FILE` pointing at the exported keys
 (`auth/jwks/jwks.json` of the checkout, written by `./scripts/dev.sh api` or
-`docker compose run --rm authentik-jwks-export`) and a running Phoenix with `PHOENIX_URL=http://127.0.0.1:6006`
+`docker compose -p authorled run --rm authentik-jwks-export`) and a running Phoenix with `PHOENIX_URL=http://127.0.0.1:6006`
 (see [Journal of agent runs](#journal-of-agent-runs)); without them they stop with an error naming the
 missing variable or address.
 
@@ -600,7 +600,7 @@ access to it). Its configuration is code in `auth/` (services in
 `agno/app/auth/` is the only code that reads tokens. The token claims and group names the API relies
 on are the token contract in `openspec/specs/auth`. The API accepts only tokens issued by Authentik, in every environment.
 
-- **Start.** `docker compose up -d --build` (or `./scripts/dev.sh up` and `./scripts/dev.sh api`) creates the schema and
+- **Start.** `docker compose -p authorled up -d --build` (or `./scripts/dev.sh up` and `./scripts/dev.sh api`) creates the schema and
   role, starts Authentik, applies the blueprints, exports the public keys to
   `auth/jwks/jwks.json` and only then starts the API. Authentik is on
   [http://localhost:9000](http://localhost:9000); the first administrator is `akadmin` with
@@ -706,7 +706,7 @@ on are the token contract in `openspec/specs/auth`. The API accepts only tokens 
 - **Check.** `./scripts/auth_check.sh` gets that token and checks `401` (no token, forged
   signature), `200` and `403`.
 - **Rotate the signing key.** After changing the signing key in Authentik, run
-  `docker compose run --rm authentik-jwks-export` and restart `agentos-api`: tokens signed with
+  `docker compose -p authorled run --rm authentik-jwks-export` and restart `agentos-api`: tokens signed with
   the removed key are rejected after the restart.
 - **Boundary.** `./scripts/validate.sh` fails when code outside `agno/app/auth/` touches JWT, claims
   or Authentik.

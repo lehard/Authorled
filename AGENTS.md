@@ -205,7 +205,7 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 Run commands from the repository root. Copy `example.env` to `.env` only if absent,
 fill its Required block (LiteLLM, DeepSeek, GigaChat and Cloud.ru keys, `EMBEDDINGS_MODEL`, `AGENTOS_DB_PASSWORD`, `PHOENIX_DB_PASSWORD`, and the Authentik and `AUTH_*`
 settings), check that the committed
-`agno/litellm/certs/ca-bundle.pem` exists (rebuild: `./agno/scripts/build_ca_bundle.sh`), then use `docker compose up -d --build`. Compose exposes ports
+`agno/litellm/certs/ca-bundle.pem` exists (rebuild: `./agno/scripts/build_ca_bundle.sh`), then use `docker compose -p authorled up -d --build` (name the project: `compose.yaml` has no `name:`, so without `-p` Compose takes the folder name). Compose exposes ports
 on loopback; token checks are on in `dev` too, so API calls need a token from Authentik
 (README, "Module auth"; `./scripts/auth_check.sh` checks the chain).
 
