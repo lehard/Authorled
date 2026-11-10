@@ -19,7 +19,7 @@ from core.importers.fountain import parse_fountain
 from core.importers.plain import parse_docx, parse_txt, text_of_txt
 from core.importers.screenplay import Paragraph, build_doc, cast_from_text, places_from_text
 from core.importers.starc import Named, parse_starc
-from core.projects import Project, create_project
+from core.projects import NEXT_COLOR, Project, create_project
 from core.tables import documents
 from core.texts import Doc, Text, put_text, screenplay_id
 
@@ -96,12 +96,14 @@ def import_into(
 
 
 def create_project_from_file(
-    connection: Connection, owner_id: uuid.UUID, title: Any, name: str, data: bytes
+    connection: Connection, owner_id: uuid.UUID, title: Any, name: str, data: bytes, cover_color: Any = NEXT_COLOR
 ) -> tuple[Project, uuid.UUID, uuid.UUID]:
     """A new story whose screenplay is the manuscript; the file is checked and parsed before anything is written."""
     checked = check_upload(name, "import", data)
     manuscript = parse_manuscript(checked.format.extension, checked.data)
-    project, draft_id, script_id = create_project(connection, owner_id, title, text=manuscript.doc)
+    project, draft_id, script_id = create_project(
+        connection, owner_id, title, text=manuscript.doc, cover_color=cover_color
+    )
     store_file(connection, project.id, owner_id, "import", None, checked)
     _add_cast_and_places(connection, draft_id, manuscript, owner_id)
     return project, draft_id, script_id

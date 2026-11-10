@@ -29,6 +29,24 @@ export function nextCoverColor(last: CoverColor | undefined): CoverColor {
     : order[(order.indexOf(last) + 1) % order.length];
 }
 
+/** Variants of the pattern of light arcs on a cover without an own picture. */
+export const COVER_PATTERNS = ["0", "1", "2", "3"] as const;
+export type CoverPattern = (typeof COVER_PATTERNS)[number];
+
+/**
+ * The pattern of a story's cover, from its id alone (openspec/specs/web/workspace, «Цветная
+ * обложка истории»): FNV-1a of the id, so the shelf and the navigator draw the same arcs.
+ */
+export function coverPattern(id: string): CoverPattern {
+  if (id === "") throw new Error("Узор обложки: у истории нет id.");
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < id.length; i++) {
+    hash ^= id.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return COVER_PATTERNS[hash % COVER_PATTERNS.length];
+}
+
 export type Project = {
   id: string;
   title: string;
@@ -47,8 +65,14 @@ export type Project = {
 };
 
 /** A new story: its title and, without a manuscript, the structure template it starts from. */
-export type NewProject = Pick<Project, "title" | "desc"> & {
+export type NewProject = Pick<Project, "title" | "desc" | "coverColor"> & {
   template?: string;
+};
+
+/** The colour the core gives the next story created without one (openspec/specs/api/stories, «Цвет новой истории»). */
+export type CoverOperation = {
+  operation: "nextCoverColor";
+  payload: Record<string, never>;
 };
 
 /** A structure template of a new story (openspec/specs/api/stories, «Список каркасов»). */

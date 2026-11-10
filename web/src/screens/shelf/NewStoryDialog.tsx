@@ -20,7 +20,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MANUSCRIPT_TYPES } from "@/data/files";
-import { useStoryTemplates } from "@/data/hooks";
+import { useNextCoverColor, useStoryTemplates } from "@/data/hooks";
+import type { CoverColor } from "@/data/model";
+import { CoverColorPicker } from "@/screens/shared/CoverColorPicker";
 
 /** The choice «Без каркаса»: no template is sent and the core writes one empty scene heading. */
 const NO_TEMPLATE = "none";
@@ -33,10 +35,14 @@ type Props = {
     title: string,
     file: File | null,
     template: string | null,
+    coverColor: CoverColor,
   ) => Promise<void>;
 };
 
-/** A new story: a title, a manuscript or a structure template (openspec/specs/web/workspace, «Выбор каркаса»). */
+/**
+ * A new story: a title, the colour of its cover, a manuscript or a structure template
+ * (openspec/specs/web/workspace, «Выбор каркаса», «Цвет обложки в диалоге новой истории»).
+ */
 export function NewStoryDialog(props: Props) {
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
@@ -54,6 +60,16 @@ function NewStoryForm({ onOpenChange, onSubmit }: Props) {
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [template, setTemplate] = useState(NO_TEMPLATE);
+  const next = useNextCoverColor();
+  const [picked, setPicked] = useState<CoverColor | null>(null);
+  const [colorError, setColorError] = useState<string | null>(null);
+  // The core's colour is marked once it comes; nothing is marked before it or without it.
+  const coverColor = picked ?? next.color;
+  const nextError = next.query.isError
+    ? next.query.error instanceof Error
+      ? next.query.error.message
+      : String(next.query.error)
+    : null;
   const fileInput = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -82,9 +98,18 @@ function NewStoryForm({ onOpenChange, onSubmit }: Props) {
       setError("Введите название истории.");
       return;
     }
+    if (coverColor === undefined) {
+      setColorError("Выберите цвет обложки.");
+      return;
+    }
     setBusy(true);
     try {
-      await onSubmit(name, file, template === NO_TEMPLATE ? null : template);
+      await onSubmit(
+        name,
+        file,
+        template === NO_TEMPLATE ? null : template,
+        coverColor,
+      );
       onOpenChange(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -123,6 +148,38 @@ function NewStoryForm({ onOpenChange, onSubmit }: Props) {
             className="text-caption text-destructive"
           >
             {error}
+          </p>
+        )}
+      </div>
+      <div className="grid gap-2">
+        <span id={`${id}-color`} className="text-sm leading-none font-medium">
+          Цвет обложки
+        </span>
+        <CoverColorPicker
+          value={coverColor}
+          aria-labelledby={`${id}-color`}
+          aria-describedby={
+            colorError !== null || nextError !== null
+              ? `${id}-color-note`
+              : undefined
+          }
+          onChange={(color) => {
+            setPicked(color);
+            setColorError(null);
+          }}
+        />
+        {(colorError !== null || nextError !== null) && (
+          <p
+            id={`${id}-color-note`}
+            role="alert"
+            className="text-caption text-destructive"
+          >
+            {[
+              nextError,
+              colorError ?? (picked === null ? "Выберите цвет обложки." : null),
+            ]
+              .filter((m) => m !== null)
+              .join(" ")}
           </p>
         )}
       </div>

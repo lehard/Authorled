@@ -16,7 +16,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useProjects } from "@/data/hooks";
-import { COVER_COLORS, isCoverColor, type Project } from "@/data/model";
+import {
+  COVER_COLORS,
+  coverPattern,
+  isCoverColor,
+  type Project,
+} from "@/data/model";
 import { NameDialog } from "@/screens/shared/NameDialog";
 import { DataErrorScreen } from "@/screens/system/DataErrorScreen";
 import { MessageScreen } from "@/screens/system/MessageScreen";
@@ -93,9 +98,13 @@ export function ShelfScreen() {
                 to={`/p/${p.id}/text`}
                 className="grid content-start gap-3.5 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
               >
-                <span className="book" data-cover={p.coverColor}>
-                  {p.title}
-                </span>
+                {/* No text on the cover: the title is once, under it. */}
+                <span
+                  className="book"
+                  data-cover={p.coverColor}
+                  data-pattern={coverPattern(p.id)}
+                  aria-hidden
+                />
                 <span className="grid gap-0.5 px-0.5">
                   <b className="font-heading text-[19px] font-semibold">
                     {p.title}
@@ -117,7 +126,7 @@ export function ShelfScreen() {
                   <Button
                     variant="secondary"
                     size="icon-sm"
-                    className="absolute top-2.5 right-2.5 rounded-full bg-paper/85 opacity-0 group-hover/card:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100 max-md:opacity-100"
+                    className="absolute top-2.5 right-2.5 rounded-full bg-paper/85 opacity-60 group-hover/card:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100 max-md:opacity-100"
                     aria-label={`Действия с историей «${p.title}»`}
                   >
                     <MoreHorizontal />
@@ -177,9 +186,6 @@ export function ShelfScreen() {
               <b className="font-heading text-[19px] font-semibold">
                 Новая история
               </b>
-              <small className="text-caption text-muted-foreground">
-                Полнометражный сценарий
-              </small>
             </span>
           </button>
         </div>
@@ -198,8 +204,8 @@ export function ShelfScreen() {
       <NewStoryDialog
         open={creating}
         onOpenChange={setCreating}
-        onSubmit={async (title, file, template) => {
-          const id = await createStory(title, file, template);
+        onSubmit={async (title, file, template, coverColor) => {
+          const id = await createStory(title, file, template, coverColor);
           navigate(`/p/${id}/text`);
         }}
       />

@@ -35,6 +35,10 @@ class CreatedProject(BaseModel):
     script_id: uuid.UUID
 
 
+class NextCoverColorOut(BaseModel):
+    cover_color: str
+
+
 class TemplatePointOut(_Out):
     name: str
     hint: str
