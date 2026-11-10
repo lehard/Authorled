@@ -7,7 +7,9 @@ provider once one is configured, and those HTTP spans would become the root of e
 the global provider left unconfigured, the root of a trace is the run of an agent or a team.
 
 The spans carry no text: messages, prompts, answers, inputs and outputs of agents and tools are
-hidden by the openinference TraceConfig. Names, models, tokens, durations, statuses and errors stay.
+hidden by the openinference TraceConfig. The arguments and descriptions of tools, which no flag of
+TraceConfig covers, are dropped by its subclass JournalTraceConfig. Names, models, tokens,
+durations, statuses and errors stay.
 
 Phoenix is required at startup: no PHOENIX_URL or no answer from Phoenix stops the API. Once
 running, a failed export is logged as an error and the run of the author goes on; the spans of
@@ -17,11 +19,12 @@ that batch are lost (owner's decision 2026-11-09, the only exception to "no fall
 import logging
 import urllib.error
 import urllib.request
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from os import environ
 
 from openinference.instrumentation import TraceConfig
 from openinference.instrumentation.agno import AgnoInstrumentor
+from openinference.semconv.trace import SpanAttributes
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.trace import ReadableSpan, SpanLimits, TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, SpanExporter, SpanExportResult
@@ -33,8 +36,37 @@ EXPORT_TIMEOUT_SECONDS = 10
 # The same limit Agno's setup_tracing sets: a run of an agent with many tools has many attributes.
 MAX_SPAN_ATTRIBUTES = 1024
 
+# The attribute value of TraceConfig.mask: openinference keeps it in a private module (_types), as the
+# value of opentelemetry-api before 1.45, so the subclass spells the same union out.
+AttributeValue = str | bool | int | float | Sequence[str] | Sequence[bool] | Sequence[int] | Sequence[float]
+
+TOOL_PARAMETERS_PREFIX = f"{SpanAttributes.TOOL_PARAMETERS}."
+
+
+class JournalTraceConfig(TraceConfig):
+    """TraceConfig that also drops the arguments and the description of every tool call.
+
+    openinference-instrumentation-agno always writes tool.parameters (the JSON of the arguments:
+    the text of a suggested edit, a note or a comment) and tool.description (part of the prompt);
+    no flag of TraceConfig hides them. A subclass overriding mask is supported by openinference.
+    """
+
+    def mask(
+        self,
+        key: str,
+        value: AttributeValue | Callable[[], AttributeValue],
+        *,
+        externalize: bool = True,
+    ) -> AttributeValue | None:
+        if key in (SpanAttributes.TOOL_PARAMETERS, SpanAttributes.TOOL_DESCRIPTION):
+            return None
+        if key.startswith(TOOL_PARAMETERS_PREFIX):
+            return None
+        return super().mask(key, value, externalize=externalize)
+
+
 # Everything that could carry the text of an author, a prompt or an answer is hidden.
-TRACE_CONFIG = TraceConfig(
+TRACE_CONFIG = JournalTraceConfig(
     hide_inputs=True,
     hide_outputs=True,
     hide_input_messages=True,

@@ -1,7 +1,7 @@
-"""Journal of agent runs in Phoenix (openspec/specs/agent-tracing): startup checks and lost batches.
+"""Journal of agent runs in Phoenix (openspec/specs/agent-tracing): startup checks, lost batches, hidden texts.
 
 No Phoenix and no model is needed: the health check runs against a local HTTP server of the test,
-the exporter against stand-in exporters.
+the exporter against stand-in exporters, the hiding of tool texts against an in-memory exporter.
 """
 
 import ast
@@ -12,10 +12,13 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
 import pytest
-from opentelemetry.sdk.trace import ReadableSpan
-from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
+from openinference.instrumentation import OITracer
+from openinference.semconv.trace import SpanAttributes
+from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor, SpanExporter, SpanExportResult
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
-from app.tracing import LoggedExporter, check_phoenix, phoenix_url
+from app.tracing import TRACE_CONFIG, LoggedExporter, check_phoenix, phoenix_url
 
 URL = "http://phoenix.test:6006/v1/traces"
 
@@ -121,3 +124,43 @@ def test_main_sends_spans_to_phoenix_not_to_agno_tables() -> None:
     called = {node.func.id for node in ast.walk(main) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)}
     assert "setup_agent_tracing" in called
     assert "setup_tracing" not in called
+
+
+NOTE_TEXT = "Unique phrase of the author about the lighthouse"
+
+
+@pytest.mark.parametrize(
+    "key",
+    [SpanAttributes.TOOL_PARAMETERS, f"{SpanAttributes.TOOL_PARAMETERS}.content", SpanAttributes.TOOL_DESCRIPTION],
+)
+def test_tool_arguments_and_description_are_dropped(key: str) -> None:
+    assert TRACE_CONFIG.mask(key, NOTE_TEXT) is None
+
+
+def test_other_attributes_keep_their_rules() -> None:
+    assert TRACE_CONFIG.mask(SpanAttributes.TOOL_NAME, "create_story_note") == "create_story_note"
+    assert TRACE_CONFIG.mask(SpanAttributes.INPUT_VALUE, NOTE_TEXT) == "__REDACTED__"
+
+
+def test_tool_span_has_its_name_and_no_text() -> None:
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    tracer = OITracer(provider.get_tracer(__name__), TRACE_CONFIG)
+    with tracer.start_as_current_span(
+        "create_story_note",
+        attributes={
+            SpanAttributes.TOOL_NAME: "create_story_note",
+            SpanAttributes.TOOL_DESCRIPTION: "Create a note of the story.",
+            SpanAttributes.TOOL_PARAMETERS: f'{{"title": "Lighthouse", "content": "{NOTE_TEXT}"}}',
+            SpanAttributes.INPUT_VALUE: f'{{"content": "{NOTE_TEXT}"}}',
+        },
+    ) as span:
+        span.set_attribute(SpanAttributes.TOOL_PARAMETERS, NOTE_TEXT)
+        span.set_attributes({f"{SpanAttributes.TOOL_PARAMETERS}.content": NOTE_TEXT})
+    [finished] = exporter.get_finished_spans()
+    attributes = dict(finished.attributes or {})
+    assert attributes[SpanAttributes.TOOL_NAME] == "create_story_note"
+    assert not [key for key in attributes if key.startswith(SpanAttributes.TOOL_PARAMETERS)]
+    assert SpanAttributes.TOOL_DESCRIPTION not in attributes
+    assert not [key for key, value in attributes.items() if NOTE_TEXT in str(value)]
