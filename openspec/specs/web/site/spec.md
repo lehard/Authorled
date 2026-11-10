@@ -155,12 +155,18 @@
 - THEN проверка MUST завершиться ошибкой с путём файла
 
 ### Requirement: Проверки сайта
-`./scripts/validate.sh` MUST проверять формат, линт, типы и сборку сайта. Если зависимости сайта не установлены (`site/node_modules`), проверка MUST завершаться ошибкой с командой установки, а не пропускаться. CI MUST ставить зависимости сайта и задавать настройки сборки нейтральными адресами.
+`./scripts/validate.sh` MUST проверять формат, линт, типы и сборку сайта. Если зависимости сайта не установлены (`site/node_modules`), проверка MUST завершаться ошибкой с командой установки, а не пропускаться. CI MUST ставить зависимости сайта и задавать настройки сборки адресами продукта, теми же, что при выкладке: `SITE_ORIGIN=https://soavtor.app` и `SITE_APP_URL=https://app.soavtor.app`.
 
 #### Scenario: Нет зависимостей сайта
 - GIVEN `site/node_modules` отсутствует
 - WHEN выполняется `./scripts/validate.sh`
 - THEN проверка MUST завершиться ошибкой и назвать `npm ci --prefix site`
+
+#### Scenario: Сборка в CI с адресами продукта
+- GIVEN открыт пулл-реквест в `main`
+- WHEN CI выполняет `./scripts/validate.sh`
+- THEN сайт MUST собираться с `SITE_ORIGIN=https://soavtor.app` и `SITE_APP_URL=https://app.soavtor.app`
+- AND проверка сборки сайта MUST видеть те же страницы, что сборка при выкладке
 
 ### Requirement: Локальный запуск и выкладка
 Локально сайт MUST запускаться командами `npm run dev --prefix site` (сервер разработки) и `npm run preview --prefix site` (собранные файлы); оба слушают только loopback на своём порту, отличном от порта `web/`. На сервер сайт MUST выкладываться только деплоем по релизу (спека `runtime`, «Деплой по релизу») на домен продукта `soavtor.app` со сборкой `SITE_ORIGIN=https://soavtor.app` и `SITE_APP_URL=https://app.soavtor.app`; ручной выкладки и временных адресов MUST NOT быть.
@@ -353,6 +359,17 @@
 - GIVEN собранная страница `/legal/offer/`
 - WHEN перечисляются ссылки на тарифы и политику в тексте оферты
 - THEN они MUST вести на `/pricing/` и `/legal/privacy/` домена сайта, и эти страницы MUST быть в сборке
+
+#### Scenario: Сборка документов с адресом продукта
+- GIVEN сайт собирается с `SITE_ORIGIN=https://soavtor.app` и `SITE_APP_URL=https://app.soavtor.app`
+- WHEN проверка сборки читает страницы документов
+- THEN `canonical` и `og:url` вида `https://soavtor.app/legal/offer/` MUST NOT считаться ссылкой документа, не сделанной локальной
+- AND проверка сборки MUST пройти
+
+#### Scenario: Ссылка текста документа осталась абсолютной
+- GIVEN в собранной странице документа `legal/offer/index.html` есть ссылка `<a href="https://soavtor.app/pricing/">`
+- WHEN выполняется проверка сборки сайта
+- THEN проверка MUST завершиться ошибкой, называющей `legal/offer/index.html` и адрес `https://soavtor.app/pricing/`
 
 ### Requirement: Якорь раздела об ИИ в оферте
 Раздел оферты «Материалы Пользователя и ИИ» MUST иметь постоянный якорь `materials`: адрес `/legal/offer/#materials` MUST открывать страницу на этом разделе.

@@ -63,6 +63,7 @@ jobs:
       - name: Validate (format + lint + type + frontend build)
         run: bash scripts/validate.sh
         env:
-          # The site build needs its two addresses (openspec/specs/web/site); neutral ones are enough to check it.
-          SITE_ORIGIN: https://site.invalid
-          SITE_APP_URL: https://app.invalid
+          # The site build needs its two addresses (openspec/specs/web/site): the addresses of the deploy, so the
+          # check of the site build sees here what it sees in a release.
+          SITE_ORIGIN: https://soavtor.app
+          SITE_APP_URL: https://app.soavtor.app
