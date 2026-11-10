@@ -38,7 +38,9 @@ COVERED_PARTS = ("work", "holdout")
 # Only the cases of this part name a task of «Соавтор» at a document, and every one of them does.
 TASK_PART = "docs"
 NO_ACTION = "none"
-_OWN = {"place", "action", "mention", "refs", "absent", "open", "task"}
+_OWN = {"place", "action", "mention", "refs", "absent", "open", "task", "markup"}
+# What a case asks to write and the tool that writes it (openspec/specs/api/agents, «Разметка синопсиса у соавтора»).
+MARKUP_TOOLS = {"page": "update_story_document", "acts": "update_story_document", "note": "create_story_note"}
 _CARD_GROUPS = {"character": "characters", "location": "locations", "world": "worlds"}
 
 
@@ -176,14 +178,22 @@ def parse_demo_case(source: str, index: int, data: Any, stories: dict[str, Story
     if not tasked and "task" in data:
         raise SampleError(f"{where}: only a case of the part {TASK_PART} names a task")
     task = _task(where, data["task"], doc, case.message) if tasked else None
+    action = _action(where, data["action"])
+    markup = data.get("markup")
+    if markup is not None:
+        if markup not in MARKUP_TOOLS:
+            raise SampleError(f"{where}: markup {markup!r} is not one of {', '.join(MARKUP_TOOLS)}")
+        if action != (MARKUP_TOOLS[markup],):
+            raise SampleError(f"{where}: markup {markup!r} needs action = [{MARKUP_TOOLS[markup]!r}]")
     expected = Expectation(
-        action=_action(where, data["action"]),
+        action=action,
         mention=_mention(where, data.get("mention", [])),
         refs=refs,
         absent=absent,
         open=opened,
         doc=doc,
         task=task,
+        markup=markup,
     )
     return Sampled(case, place, expected)
 

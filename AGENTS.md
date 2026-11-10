@@ -147,8 +147,10 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   a note made from a file keeps it as its original, purpose `note`, counted against the place of the user's plan), `clamav.py` (antivirus
   client), `errors.py` (refusals the routes answer with), `writing.py` (words of the screenplay by one rule shared with
   `web/src/editor/wordCount.cases.json`, the words the author's saves add by period of 15 minutes, days in the reader's
-  time zone, the daily goal and the goal of a story) and `feedback.py` (the author's marks of the co-author's
-  answers by run, the report of the marks; the route gives it the conversation of the run from billing). The core
+  time zone, the daily goal and the goal of a story), `feedback.py` (the author's marks of the co-author's
+  answers by run, the report of the marks; the route gives it the conversation of the run from billing) and `prose.py`
+  (the Markdown of the synopsis on `markdown-it-py`: a heading deeper than the second level is refused, the search reads
+  the text without markup; examples shared with `web/src/editor/prose/markdown.cases.json`). The core
   never calls billing. `agno/migrations/` and
   `agno/alembic.ini`: Alembic for schema `authorled` only, forward-only, one head; never migrate Agno or Authentik
   schemas there.
@@ -181,7 +183,10 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   `web/src/data/`: the data of the screens through Refine — `apiProvider.ts` over `apiClient.ts` (source `api`,
   the routes `/api/v1` of the core with revisions for `If-Match`) or `fixturesProvider.ts` (sample data), chosen by
   `VITE_DATA_SOURCE`. `web/src/editor/`: the screenplay editor; it exports only, the core imports manuscripts;
-  `anchors.ts` places co-author suggestions by scene `uid` and quote.
+  `anchors.ts` places co-author suggestions by scene `uid` and quote. `web/src/editor/prose/`: the prose editor of the
+  synopsis (openspec/specs/web/prose-editor): ProseMirror with paragraphs, two levels of headings, bold and italic, kept
+  as Markdown in the field `synopsis`; the toolbar, the count of A4 pages, the marks of page starts and the print all
+  take one layout (`layout.ts`) in the font Tinos of the build.
 - `site/`: the product site (openspec/specs/web/site): static pages prerendered to HTML (`scripts/prerender.mjs`,
   checked by `scripts/check-build.mjs`), no server and no data of its own. The documents of the service (offer,
   policy, pricing on `/legal/offer/`, `/legal/privacy/`, `/pricing/`) are rendered from `docs/legal/*.md`. It imports the tokens and fonts of

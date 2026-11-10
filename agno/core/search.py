@@ -1,10 +1,10 @@
 """Search of a draft and its story (openspec/specs/api/stories, «Поиск по драфту истории»; design of project-search).
 
-A plain pass over the canon, no index: the screenplay of the draft by scenes, its logline and synopsis, the
-characters, locations and worlds outside the trash, the notes of the story outside the trash. A match is a
-substring ignoring case and the difference of «ё» and «е»; folding keeps every character in place, so a position
-in the folded text is the position in the written one. The route and the co-author's tool both call
-`search_draft`, so they refuse and answer alike.
+A plain pass over the canon, no index: the screenplay of the draft by scenes, its logline and synopsis (its text
+without the Markdown, core/prose.py), the characters, locations and worlds outside the trash, the notes of the
+story outside the trash. A match is a substring ignoring case and the difference of «ё» and «е»; folding keeps
+every character in place, so a position in the folded text is the position in the written one. The route and the
+co-author's tool both call `search_draft`, so they refuse and answer alike.
 """
 
 import uuid
@@ -17,6 +17,7 @@ from core import documents as docs
 from core import notes, texts
 from core.errors import Invalid
 from core.fields import FIELD_HINTS
+from core.prose import plain_text
 
 MIN_QUERY = 2
 MAX_QUERY = 200
@@ -187,6 +188,9 @@ def _documents(listed: list[docs.Document], query: str) -> list[DocumentHit]:
     script = next(document for document in alive if document.kind == "script")
     for key in SCRIPT_FIELDS:
         value = script.fields.get(key)
+        if isinstance(value, str) and key == "synopsis":
+            # The synopsis is Markdown: it is searched and cut by its text without markup.
+            value = plain_text(value)
         if isinstance(value, str) and (hit := _find([(key, value)], query)) is not None:
             hits.append(DocumentHit(script.id, "script", script.name, key, hit.count, hit.snippet))
     return hits
