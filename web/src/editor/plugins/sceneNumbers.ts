@@ -31,21 +31,17 @@ export const sceneNumbersPlugin = new Plugin<DecorationSet>({
  * The left number is a widget before the text. The right one is drawn by the `::after` of the
  * heading from `data-scene-number`: as a widget after the caret of an empty heading it made
  * WebKit lose what was typed there (web/screenplay-editor, «Ввод в пустой заголовок сцены»).
- * An empty heading is marked `pw-empty-heading`: the left widget is its child, so the
- * `br:only-child` of the placeholder rule never matches it.
+ * An empty heading shows its placeholder by the `pw-empty` mark of `emptyParagraphs.ts`.
  */
 function buildDecorations(doc: Node): DecorationSet {
   const decorations: Decoration[] = [];
-  for (const { pos, number, empty } of sceneHeadings(doc)) {
+  for (const { pos, number } of sceneHeadings(doc)) {
     const num = String(number);
     const node = doc.nodeAt(pos);
     if (node === null)
       throw new Error(`Номера сцен: нет заголовка в позиции ${pos}`);
     decorations.push(
-      Decoration.node(pos, pos + node.nodeSize, {
-        "data-scene-number": num,
-        ...(empty ? { class: "pw-empty-heading" } : {}),
-      }),
+      Decoration.node(pos, pos + node.nodeSize, { "data-scene-number": num }),
       Decoration.widget(
         pos + 1,
         () => {

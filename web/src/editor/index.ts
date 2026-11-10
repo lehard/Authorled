@@ -64,6 +64,7 @@ import {
   type FindScope,
 } from "./plugins/find.ts";
 import { screenplayInputRules } from "./plugins/inputRules.ts";
+import { emptyParagraphsPlugin } from "./plugins/emptyParagraphs.ts";
 import { capitalsPlugin } from "./plugins/capitals.ts";
 import { parenthesisPlugin } from "./plugins/parenthesis.ts";
 import { paginationPlugin } from "./plugins/pagination.ts";
@@ -212,6 +213,7 @@ export class ScreenplayEditorView {
       findPlugin,
       paginationPlugin,
       sceneNumbersPlugin,
+      emptyParagraphsPlugin,
       createFadeInAlignPlugin(),
       commentsPlugin((id) => options.onCommentOpen?.(id)),
       suggestionsPlugin((id) => options.onSuggestionOpen?.(id)),

@@ -343,11 +343,14 @@
 }
 
 /* --- Placeholders of empty paragraphs ------------------------------------
- * An empty scene heading shows it with `::before`: its `::after` is the right scene number.
+ * `pw-empty` marks a paragraph without text (plugins/emptyParagraphs.ts). An empty scene heading
+ * shows it with `::before`: its `::after` is the right scene number.
  */
 
-.pw-editor .ProseMirror p[data-placeholder]:has(> br:only-child)::after,
-.pw-editor .ProseMirror p.pw-empty-heading[data-placeholder]::before {
+.pw-editor
+  .ProseMirror
+  p.pw-empty[data-placeholder]:not(.pm-scene-heading)::after,
+.pw-editor .ProseMirror p.pm-scene-heading.pw-empty[data-placeholder]::before {
   content: attr(data-placeholder);
   color: var(--pw-muted);
   opacity: 0.6;
@@ -359,24 +362,20 @@
   font-weight: normal;
   text-transform: none;
 }
-.pw-editor
-  .ProseMirror
-  .pm-parenthetical[data-placeholder]:has(> br:only-child)::after {
+.pw-editor .ProseMirror .pm-parenthetical[data-placeholder].pw-empty::after {
   left: 1ch;
 }
 /* A transition stands at the right edge and an act in the middle: their placeholders too. */
-.pw-editor
-  .ProseMirror
-  .pm-transition[data-placeholder]:has(> br:only-child)::after {
+.pw-editor .ProseMirror .pm-transition[data-placeholder].pw-empty::after {
   left: auto;
   right: 0;
 }
-.pw-editor .ProseMirror .pm-act[data-placeholder]:has(> br:only-child)::after {
+.pw-editor .ProseMirror .pm-act[data-placeholder].pw-empty::after {
   right: 0;
   text-align: center;
 }
 /* A beat's text starts after its left padding: the placeholder starts there too. */
-.pw-editor .ProseMirror .pm-beat[data-placeholder]:has(> br:only-child)::after {
+.pw-editor .ProseMirror .pm-beat[data-placeholder].pw-empty::after {
   left: 12px;
 }
 
