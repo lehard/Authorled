@@ -30,6 +30,8 @@ export type FileOperation =
     }
   | { operation: "noteFromUpload"; payload: { projectId: string; file: File } }
   | { operation: "noteFromChatFile"; payload: { fileId: string } }
+  | { operation: "removeNoteFile"; payload: { noteId: string } }
+  | { operation: "noteTextFromFile"; payload: { noteId: string } }
   | { operation: "fileContent"; payload: { fileId: string } };
 
 /** Files that become notes (openspec/specs/api/stories, «Заметка из файла»): the same as chat files. */
@@ -73,6 +75,12 @@ export function useStoryFiles() {
     /** A note from a file of a conversation, with a copy of the file. */
     noteFromChatFile: (fileId: string) =>
       run<Note>({ operation: "noteFromChatFile", payload: { fileId } }),
+    /** Deletes the original of a note for good; the note keeps its title and text. */
+    removeNoteFile: (noteId: string) =>
+      run<Note>({ operation: "removeNoteFile", payload: { noteId } }),
+    /** Replaces the text of a note with the text read again from its original. */
+    noteTextFromFile: (noteId: string) =>
+      run<Note>({ operation: "noteTextFromFile", payload: { noteId } }),
     /** The bytes of a stored file. */
     content: (fileId: string) =>
       run<Blob>({ operation: "fileContent", payload: { fileId } }),

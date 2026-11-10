@@ -1310,6 +1310,24 @@ async function operation(
       return readNote(
         await request(`/files/${op.payload.fileId}/note`, { method: "POST" }),
       );
+    case "removeNoteFile": {
+      const id = op.payload.noteId;
+      return inTurn(noteKey(id), async () =>
+        readNote(
+          await revised(noteKey(id), `/notes/${id}/file`, { method: "DELETE" }),
+        ),
+      );
+    }
+    case "noteTextFromFile": {
+      const id = op.payload.noteId;
+      return inTurn(noteKey(id), async () =>
+        readNote(
+          await revised(noteKey(id), `/notes/${id}/text-from-file`, {
+            method: "POST",
+          }),
+        ),
+      );
+    }
     case "fileContent":
       return apiBlob(`/files/${op.payload.fileId}/content`);
     case "createFromFile": {

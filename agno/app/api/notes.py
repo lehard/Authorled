@@ -1,4 +1,4 @@
-"""Notes of a story: /api/v1 (openspec/specs/api/stories, «Заметки истории» … «Место для оригиналов заметок»).
+"""Notes of a story: /api/v1 (openspec/specs/api/stories, «Заметки истории» … «Текст заметки из оригинала»).
 
 Like the other story routes, every route first finds the story and checks the caller's access to it; a missing and
 someone else's note both answer 404. A note from a file takes its place from the plan of the caller (billing).
@@ -150,3 +150,37 @@ def delete_note(note_id: str, principal: Principal = Depends(current_principal))
     with get_engine().begin() as connection:
         notes.delete_note(connection, found)
     return Response(status_code=204)
+
+
+@router.delete(
+    "/notes/{note_id}/file",
+    response_model=NoteOut,
+    summary="Delete the original of a note for good and keep its text (If-Match)",
+)
+def remove_note_file(
+    note_id: str, request: Request, response: Response, principal: Principal = Depends(current_principal)
+) -> NoteOut:
+    found = _note_id(principal, note_id)
+    revision = if_match(request)
+    with get_engine().begin() as connection:
+        user = caller_id(connection, principal)
+        note = NoteOut.model_validate(notes.remove_note_file(connection, found, revision, user))
+    response.headers["ETag"] = f'"{note.revision}"'
+    return note
+
+
+@router.post(
+    "/notes/{note_id}/text-from-file",
+    response_model=NoteOut,
+    summary="Replace the text of a note with the text read again from its original (If-Match)",
+)
+def note_text_from_file(
+    note_id: str, request: Request, response: Response, principal: Principal = Depends(current_principal)
+) -> NoteOut:
+    found = _note_id(principal, note_id)
+    revision = if_match(request)
+    with get_engine().begin() as connection:
+        user = caller_id(connection, principal)
+        note = NoteOut.model_validate(notes.note_text_from_file(connection, found, revision, user))
+    response.headers["ETag"] = f'"{note.revision}"'
+    return note

@@ -42,6 +42,16 @@ export function useNoteActions(projectId: string) {
       await reload();
       return note.id;
     },
+    /** Deletes the original for good; the note keeps its title and text. */
+    async removeFile(id: string) {
+      await files.removeNoteFile(id);
+      await reload();
+    },
+    /** Replaces the text with the text read again from the original. */
+    async textFromFile(id: string) {
+      await files.noteTextFromFile(id);
+      await reload();
+    },
     async trash(id: string, inTrash: boolean) {
       const values = { deletedAt: inTrash ? new Date().toISOString() : null };
       await update({ resource: "notes", id, values, ...quiet });

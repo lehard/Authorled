@@ -7,13 +7,16 @@ from sqlalchemy import Connection, func, select
 
 from core.drafts import empty_trash
 from core.errors import Conflict, Invalid, NotFound, TooLarge
-from core.files import FORMATS, CheckedFile, delete_file, file_bytes, get_file, store_file
+from core.files import FORMATS, CheckedFile, delete_file, file_bytes, file_text, get_file, store_file
 from core.notes import (
     MAX_FILE_TEXT_CHARS,
+    create_note,
     create_note_from_chat_file,
     create_note_from_file,
     delete_note,
     list_notes,
+    note_text_from_file,
+    remove_note_file,
     restore_note,
     trash_note,
     update_note,
@@ -205,3 +208,110 @@ def test_only_a_chat_file_goes_to_notes(
 
     with pytest.raises(Invalid, match="только файл беседы"):
         create_note_from_chat_file(connection, source, owner, LIMIT)
+
+
+def pdf_of_lines(lines: list[str]) -> bytes:
+    """A one-page PDF with each line of Latin text on its own line of the page."""
+    shown = " ".join(f"({line}) Tj 0 -14 Td" for line in lines)
+    stream = f"BT /F1 12 Tf 72 720 Td {shown} ET".encode()
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R"
+        b" /Resources << /Font << /F1 5 0 R >> >> >>",
+        b"<< /Length " + str(len(stream)).encode() + b" >>\nstream\n" + stream + b"\nendstream",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    ]
+    out = b"%PDF-1.4\n"
+    offsets = []
+    for number, body in enumerate(objects, start=1):
+        offsets.append(len(out))
+        out += f"{number} 0 obj\n".encode() + body + b"\nendobj\n"
+    start = len(out)
+    out += f"xref\n0 {len(objects) + 1}\n0000000000 65535 f \n".encode()
+    out += b"".join(f"{offset:010d} 00000 n \n".encode() for offset in offsets)
+    out += f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{start}\n%%EOF\n".encode()
+    return out
+
+
+def test_removing_the_original_keeps_the_text_and_frees_the_place(
+    connection: Connection, owner: uuid.UUID, story: tuple[uuid.UUID, uuid.UUID]
+) -> None:
+    small = 2 * MIB
+    note = create_note_from_file(connection, story[0], owner, _checked(data=b"x" * MIB), small)
+    assert note.file is not None
+    with pytest.raises(TooLarge):
+        create_note_from_file(connection, story[0], owner, _checked(data=b"y" * (MIB + 1)), small)
+
+    changed = remove_note_file(connection, note.id, 1, owner)
+
+    assert (changed.title, changed.body, changed.revision, changed.file) == ("Эпоха", "Москва, 1913", 2, None)
+    with pytest.raises(NotFound):
+        get_file(connection, note.file.id)
+    assert create_note_from_file(connection, story[0], owner, _checked(data=b"y" * (MIB + 1)), small).file
+
+
+def test_removing_the_original_is_refused_without_a_change(
+    connection: Connection, owner: uuid.UUID, story: tuple[uuid.UUID, uuid.UUID]
+) -> None:
+    plain = create_note(connection, story[0], "Финал", "", owner)
+    with pytest.raises(Conflict, match="нет оригинала"):
+        remove_note_file(connection, plain.id, 1, owner)
+
+    note = create_note_from_file(connection, story[0], owner, _checked(), LIMIT)
+    assert note.file is not None
+    with pytest.raises(Conflict, match="ревизия"):
+        remove_note_file(connection, note.id, 2, owner)
+    trash_note(connection, note.id)
+    with pytest.raises(Conflict, match="в корзине"):
+        remove_note_file(connection, note.id, 1, owner)
+    restore_note(connection, note.id)
+    trash_project(connection, story[0])
+    with pytest.raises(Conflict):
+        remove_note_file(connection, note.id, 1, owner)
+
+    assert get_file(connection, note.file.id).purpose == "note"
+
+
+def test_text_comes_back_from_the_original(
+    connection: Connection, owner: uuid.UUID, story: tuple[uuid.UUID, uuid.UUID]
+) -> None:
+    note = create_note_from_file(connection, story[0], owner, _checked(), LIMIT)
+    assert note.file is not None
+    update_note(connection, note.id, 1, {"body": "черновик"}, owner)
+
+    back = note_text_from_file(connection, note.id, 2, owner)
+
+    assert (back.body, back.revision) == ("Москва, 1913", 3)
+    assert file_bytes(connection, note.file.id) == "Москва, 1913".encode()
+
+
+def test_old_pdf_note_gets_paragraphs(
+    connection: Connection, owner: uuid.UUID, story: tuple[uuid.UUID, uuid.UUID]
+) -> None:
+    data = pdf_of_lines(["The author writes", "about the sea.", "Bank 044525823"])
+    old_text = "The author writes\nabout the sea.\nBank 044525823"
+    note = create_note_from_file(
+        connection, story[0], owner, CheckedFile("Sea.pdf", FORMATS[".pdf"], data, old_text), LIMIT
+    )
+    assert note.file is not None
+
+    back = note_text_from_file(connection, note.id, 1, owner)
+
+    assert back.body == "The author writes about the sea.\nBank 044525823"
+    assert file_text(connection, note.file.id) == old_text
+
+
+def test_text_from_the_original_is_refused_without_a_change(
+    connection: Connection, owner: uuid.UUID, story: tuple[uuid.UUID, uuid.UUID]
+) -> None:
+    plain = create_note(connection, story[0], "Финал", "свой", owner)
+    with pytest.raises(Conflict, match="нет оригинала"):
+        note_text_from_file(connection, plain.id, 1, owner)
+
+    note = create_note_from_file(connection, story[0], owner, _checked(), LIMIT)
+    update_note(connection, note.id, 1, {"body": "черновик"}, owner)
+    trash_note(connection, note.id)
+    with pytest.raises(Conflict, match="в корзине"):
+        note_text_from_file(connection, note.id, 2, owner)
+    assert [n.body for n in list_notes(connection, story[0]) if n.id == note.id] == ["черновик"]

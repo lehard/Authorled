@@ -148,3 +148,92 @@ def test_foreign_story_and_file(authors: Any) -> None:
     assert _to_notes(stranger, project_id, "a.txt", b"text").status_code == 404
     assert stranger.post(f"/api/v1/files/{chat['id']}/note").status_code == 404
     assert owner.get(f"/api/v1/projects/{project_id}/notes").json() == []
+
+
+def test_removing_the_original_keeps_the_text(authors: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    author = authors()
+    project_id = author.story()["project"]["id"]
+    monkeypatch.setattr("app.api.notes.billing.storage_limit", lambda user_id, at: 300 * 1024)
+    note = _to_notes(author, project_id, "Эпоха.txt", b"a" * 200 * 1024).json()
+    assert _to_notes(author, project_id, "b.txt", b"b" * 200 * 1024).status_code == 413
+
+    response = author.delete(f"/api/v1/notes/{note['id']}/file", headers={"If-Match": "1"})
+
+    assert response.status_code == 200, response.text
+    changed = response.json()
+    assert (changed["title"], changed["body"], changed["revision"], changed["file"]) == (
+        "Эпоха",
+        note["body"],
+        2,
+        None,
+    )
+    assert response.headers["ETag"] == '"2"'
+    assert author.get(f"/api/v1/files/{note['file']['id']}").status_code == 404
+    assert _to_notes(author, project_id, "b.txt", b"b" * 200 * 1024).status_code == 201
+
+
+def test_removing_the_original_is_refused(authors: Any) -> None:
+    author = authors()
+    project_id = author.story()["project"]["id"]
+    plain = author.post(f"/api/v1/projects/{project_id}/notes", json={"title": "Финал"}).json()
+    note = _to_notes(author, project_id, "a.txt", b"text").json()
+    path = f"/api/v1/notes/{note['id']}/file"
+
+    assert author.delete(f"/api/v1/notes/{plain['id']}/file", headers={"If-Match": "1"}).status_code == 409
+    assert author.delete(path).status_code == 428
+    assert author.delete(path, headers={"If-Match": "2"}).status_code == 409
+    assert author.post(f"/api/v1/notes/{note['id']}/trash").status_code == 200
+    refused = author.delete(path, headers={"If-Match": "1"})
+    assert refused.status_code == 409
+    assert refused.headers["content-type"] == PROBLEM
+    assert author.get(f"/api/v1/files/{note['file']['id']}").status_code == 200
+
+
+def test_text_comes_back_from_the_original(authors: Any) -> None:
+    author = authors()
+    project_id = author.story()["project"]["id"]
+    note = _to_notes(author, project_id, "Эпоха.txt", "Москва, 1913".encode()).json()
+    author.patch(f"/api/v1/notes/{note['id']}", json={"body": "черновик"}, headers={"If-Match": "1"})
+    path = f"/api/v1/notes/{note['id']}/text-from-file"
+
+    assert author.post(path).status_code == 428
+    assert author.post(path, headers={"If-Match": "1"}).status_code == 409
+    response = author.post(path, headers={"If-Match": "2"})
+
+    assert response.status_code == 200, response.text
+    assert (response.json()["body"], response.json()["revision"]) == ("Москва, 1913", 3)
+    assert response.headers["ETag"] == '"3"'
+    assert author.get(f"/api/v1/files/{note['file']['id']}/content").content == "Москва, 1913".encode()
+
+
+def test_text_from_the_original_is_refused(authors: Any) -> None:
+    author = authors()
+    project_id = author.story()["project"]["id"]
+    plain = author.post(f"/api/v1/projects/{project_id}/notes", json={"title": "Финал"}).json()
+
+    response = author.post(f"/api/v1/notes/{plain['id']}/text-from-file", headers={"If-Match": "1"})
+
+    assert response.status_code == 409
+    assert "нет оригинала" in response.json()["detail"]
+
+
+def test_too_long_text_from_the_original(authors: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    author = authors()
+    project_id = author.story()["project"]["id"]
+    note = _to_notes(author, project_id, "a.txt", b"text").json()
+    monkeypatch.setattr("core.notes.MAX_FILE_TEXT_CHARS", 3)
+
+    response = author.post(f"/api/v1/notes/{note['id']}/text-from-file", headers={"If-Match": "1"})
+
+    assert response.status_code == 422
+    assert author.get(f"/api/v1/projects/{project_id}/notes").json()[0]["body"] == "text"
+
+
+def test_foreign_note_original(authors: Any) -> None:
+    owner, stranger = authors(), authors()
+    project_id = owner.story()["project"]["id"]
+    note = _to_notes(owner, project_id, "a.txt", b"text").json()
+
+    assert stranger.delete(f"/api/v1/notes/{note['id']}/file", headers={"If-Match": "1"}).status_code == 404
+    assert stranger.post(f"/api/v1/notes/{note['id']}/text-from-file", headers={"If-Match": "1"}).status_code == 404
+    assert owner.get(f"/api/v1/files/{note['file']['id']}").status_code == 200

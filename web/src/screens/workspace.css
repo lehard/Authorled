@@ -293,4 +293,114 @@
     border: 0;
     border-top: 1px solid var(--border);
   }
+
+  /* The original of a note shown as a document (DOCX, Markdown): web/workspace, «Показ оригинала по формату». */
+  .sheet-doc {
+    display: grid;
+    gap: 0.8em;
+    overflow-wrap: break-word;
+  }
+  .sheet-doc > * {
+    margin: 0;
+  }
+  .sheet-doc h1,
+  .sheet-doc h2,
+  .sheet-doc h3,
+  .sheet-doc h4,
+  .sheet-doc h5,
+  .sheet-doc h6 {
+    margin-top: 0.6em;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    line-height: 1.25;
+  }
+  .sheet-doc h1 {
+    font-size: var(--text-heading-1);
+  }
+  .sheet-doc h2 {
+    font-size: var(--text-heading-2);
+  }
+  .sheet-doc h3,
+  .sheet-doc h4,
+  .sheet-doc h5,
+  .sheet-doc h6 {
+    font-size: var(--text-heading-3);
+  }
+  .sheet-doc ul,
+  .sheet-doc ol {
+    display: grid;
+    gap: 0.3em;
+    padding-left: 1.4em;
+  }
+  .sheet-doc ul {
+    list-style: disc;
+  }
+  .sheet-doc ol {
+    list-style: decimal;
+  }
+  .sheet-doc li::marker {
+    color: var(--muted-foreground);
+  }
+  .sheet-doc strong,
+  .sheet-doc b {
+    font-weight: 600;
+  }
+  .sheet-doc em,
+  .sheet-doc i {
+    font-style: italic;
+  }
+  .sheet-doc a {
+    color: var(--primary);
+    text-decoration: underline;
+  }
+  .sheet-doc blockquote {
+    padding-left: 12px;
+    border-left: 2px solid var(--border-strong);
+    color: var(--muted-foreground);
+  }
+  .sheet-doc code {
+    padding: 0.1em 0.35em;
+    border-radius: 6px;
+    background: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-code);
+  }
+  .sheet-doc pre {
+    overflow-x: auto;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--muted);
+  }
+  .sheet-doc pre code {
+    padding: 0;
+    background: none;
+  }
+  .sheet-doc hr {
+    border: 0;
+    border-top: 1px solid var(--border);
+  }
+  .sheet-doc img {
+    max-width: 100%;
+    height: auto;
+  }
+  .sheet-doc table {
+    display: block;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font-size: 0.9em;
+  }
+  .sheet-doc th,
+  .sheet-doc td {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+  }
+  .sheet-doc th {
+    font-weight: 600;
+  }
+  .sheet-doc td > p,
+  .sheet-doc th > p {
+    margin: 0;
+  }
 }
