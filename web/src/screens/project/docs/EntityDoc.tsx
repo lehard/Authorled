@@ -97,7 +97,7 @@ function EntityForm({ kind, record }: { kind: EntityKind; record: Entity }) {
               <MoreHorizontal />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="w-auto">
             <DropdownMenuItem
               variant="destructive"
               disabled={draft.locked}

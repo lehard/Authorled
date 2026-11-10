@@ -34,9 +34,24 @@ check_inputs() {
     [[ -r "${APP}/.env" ]] || fail "${APP}/.env is missing or unreadable"
     [[ -d "${BACKUPS}" ]] || fail "${BACKUPS} is missing"
     [[ -f "${ADMIN_CLIENT_CA}" ]] || fail "${ADMIN_CLIENT_CA} is missing: put the ca.pem of scripts/admin_cert.sh there"
+    check_admin_ca_readable
     check_trusted_proxy
     [[ -f "${WEB}/incoming/$1/index.html" ]] || fail "frontend of $1 is missing in ${WEB}/incoming"
     [[ -f "${SITE}/incoming/$1/index.html" ]] || fail "site of $1 is missing in ${SITE}/incoming"
+}
+
+# Caddy reads the CA as its own user, outside the groups root and deploy, so the directory must let
+# others pass and the file must let others read (openspec/specs/runtime, «Права на сертификат
+# удостоверяющего центра админки»). This script runs as deploy, who reads it anyway: check the modes.
+check_admin_ca_readable() {
+    local dir mode
+    dir="$(dirname "${ADMIN_CLIENT_CA}")"
+    mode="$(stat -c '%a' "${dir}")"
+    ((8#${mode} & 1)) ||
+        fail "${dir} has mode ${mode}: Caddy cannot reach ${ADMIN_CLIENT_CA}; run chmod 751 ${dir}"
+    mode="$(stat -c '%a' "${ADMIN_CLIENT_CA}")"
+    ((8#${mode} & 4)) ||
+        fail "${ADMIN_CLIENT_CA} has mode ${mode}: Caddy cannot read it; run chmod 644 ${ADMIN_CLIENT_CA}"
 }
 
 # Authentik trusts X-Forwarded-Host only from the gateway of the Docker network: Caddy comes through
