@@ -352,7 +352,9 @@
   color: var(--pw-muted);
   opacity: 0.6;
   pointer-events: none;
+  /* On the line of the caret: after the empty paragraph's <br> the static place is the next line. */
   position: absolute;
+  top: 0;
   left: 0;
   font-weight: normal;
   text-transform: none;
@@ -361,6 +363,21 @@
   .ProseMirror
   .pm-parenthetical[data-placeholder]:has(> br:only-child)::after {
   left: 1ch;
+}
+/* A transition stands at the right edge and an act in the middle: their placeholders too. */
+.pw-editor
+  .ProseMirror
+  .pm-transition[data-placeholder]:has(> br:only-child)::after {
+  left: auto;
+  right: 0;
+}
+.pw-editor .ProseMirror .pm-act[data-placeholder]:has(> br:only-child)::after {
+  right: 0;
+  text-align: center;
+}
+/* A beat's text starts after its left padding: the placeholder starts there too. */
+.pw-editor .ProseMirror .pm-beat[data-placeholder]:has(> br:only-child)::after {
+  left: 12px;
 }
 
 /* --- Selection menu ------------------------------------------------------ */

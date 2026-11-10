@@ -64,6 +64,7 @@ import {
   type FindScope,
 } from "./plugins/find.ts";
 import { screenplayInputRules } from "./plugins/inputRules.ts";
+import { capitalsPlugin } from "./plugins/capitals.ts";
 import { parenthesisPlugin } from "./plugins/parenthesis.ts";
 import { paginationPlugin } from "./plugins/pagination.ts";
 import { sceneNumbersPlugin } from "./plugins/sceneNumbers.ts";
@@ -201,6 +202,7 @@ export class ScreenplayEditorView {
         ),
       ),
       history(),
+      capitalsPlugin,
       sceneUidsPlugin,
       // Visibility before find: find skips the paragraphs it hides.
       visibilityPlugin(options.mode === "outline"),

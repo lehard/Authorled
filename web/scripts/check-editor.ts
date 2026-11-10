@@ -42,6 +42,7 @@ import {
   ELEMENT_KEYS,
   enter,
   lineBreak,
+  setElement,
   outlineEnter,
   outlineTab,
   shiftTab,
@@ -95,6 +96,7 @@ import {
 } from "../src/editor/plugins/visibility.ts";
 import { SCENE_HEADING_START } from "../src/editor/plugins/inputRules.ts";
 import { parenthesisPlugin } from "../src/editor/plugins/parenthesis.ts";
+import { capitalsPlugin } from "../src/editor/plugins/capitals.ts";
 import { sceneUidsPlugin } from "../src/editor/plugins/sceneUids.ts";
 import { findAnchor, placeAnchors } from "../src/editor/anchors.ts";
 import { schema } from "../src/editor/schema/index.ts";
@@ -1212,6 +1214,81 @@ try {
     fail(`экспорт Fountain с переносами строк: ${JSON.stringify(fountain)}`);
 }
 
+// 13. Capitals of scene headings, characters and transitions (editor-caps-placeholders-selection).
+{
+  const start = (rows: [ElementName, string][], index: number) => {
+    const doc = toNode(plainDoc(rows));
+    let pos = 0;
+    for (let i = 0; i <= index; i += 1) pos += doc.child(i).nodeSize;
+    return EditorState.create({
+      doc,
+      selection: TextSelection.create(doc, pos - 1),
+      plugins: [history(), capitalsPlugin],
+    });
+  };
+  const text = (s: EditorState, i: number) => s.doc.child(i).textContent;
+  /** Typing as the view does it: one transaction per character, plugins append theirs. */
+  const typing = (s: EditorState, typed: string) => {
+    let next = s;
+    for (const ch of typed)
+      next = next.applyTransaction(next.tr.insertText(ch)).state;
+    return next;
+  };
+  for (const [type, typed, want] of [
+    [
+      "sceneHeading",
+      "инт. комната тримира — вечер",
+      "ИНТ. КОМНАТА ТРИМИРА — ВЕЧЕР",
+    ],
+    ["character", "дарьян (з.к.)", "ДАРЬЯН (З.К.)"],
+    ["transition", "склейка:", "СКЛЕЙКА:"],
+  ] as const) {
+    const before = start([[type, ""]], 0);
+    const after = typing(before, typed);
+    if (text(after, 0) !== want)
+      fail(`заглавные в «${ELEMENTS[type].label}»: «${text(after, 0)}»`);
+    if (after.selection.from !== 1 + want.length)
+      fail(`заглавные в «${ELEMENTS[type].label}» сдвинули курсор`);
+    let back = after;
+    while (undoDepth(back) > 0) undo(back, (tr) => (back = back.apply(tr)));
+    if (text(back, 0) !== "")
+      fail(`отмена заглавных в «${ELEMENTS[type].label}»: «${text(back, 0)}»`);
+  }
+  const speech = typing(
+    start(
+      [
+        ["character", "ДАРЬЯН"],
+        ["dialogue", ""],
+      ],
+      1,
+    ),
+    "Кто тут?",
+  );
+  if (text(speech, 1) !== "Кто тут?")
+    fail(`реплика переведена в заглавные: «${text(speech, 1)}»`);
+  const pasted = start([["character", ""]], 0);
+  const afterPaste = pasted.applyTransaction(
+    pasted.tr.insertText("павел"),
+  ).state;
+  if (text(afterPaste, 0) !== "ПАВЕЛ")
+    fail(`вставка в персонаж: «${text(afterPaste, 0)}»`);
+  const untouched = start([["character", "дарьян"]], 0);
+  const loaded = untouched.applyTransaction(
+    untouched.tr.insertText(" ").setMeta("addToHistory", false),
+  ).state;
+  if (text(loaded, 0) !== "дарьян ")
+    fail(`текст без истории переведён в заглавные: «${text(loaded, 0)}»`);
+  // Ctrl+4 on a typed action: the paragraph becomes a character in capitals.
+  const action = start([["action", "дарьян"]], 0);
+  let cue = action;
+  setElement("character")(
+    action,
+    (tr) => (cue = action.applyTransaction(tr).state),
+  );
+  if (cue.doc.child(0).type.name !== "character" || text(cue, 0) !== "ДАРЬЯН")
+    fail(`Ctrl+4 по «дарьян» даёт «${text(cue, 0)}»`);
+}
+
 // Markdown of the prose editor: the examples agno/tests/test_prose.py checks for the core too.
 type ProseCase = {
   name: string;
@@ -1264,5 +1341,5 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log(
-  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, образцы экспорта, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник, правки сцен, комментарии, предложения соавтора, копия драфтов, uid сцен, якоря предложений, зазор карточки, номера сцен, переносы строк и скобки ремарки, ${proseCases.length} случаев Markdown прозы — без расхождений`,
+  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, образцы экспорта, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник, правки сцен, комментарии, предложения соавтора, копия драфтов, uid сцен, якоря предложений, зазор карточки, номера сцен, переносы строк и скобки ремарки, заглавные, заглавные, ${proseCases.length} случаев Markdown прозы — без расхождений`,
 );
