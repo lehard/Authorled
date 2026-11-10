@@ -337,6 +337,18 @@ def test_new_character_and_its_fields(authors: Any) -> None:
     assert refused.startswith("Отказ") and "wings" in refused
 
 
+def test_synopsis_with_a_third_level_heading_is_refused(authors: Any) -> None:
+    """The tool refuses as the route does (api/stories, «Разметка синопсиса»), and the synopsis stays."""
+    author = authors()
+    project_id, draft_id, script_id = _story_with_vera(author)
+    run = _run(author.subject, f"{project_id}:{draft_id}:{uuid.uuid4()}")
+    _done(update_story_document(run, script_id, fields={"synopsis": "# Акт 1\n\n## Завязка\n\n**Вера** молчит."}))
+    refused = update_story_document(run, script_id, fields={"synopsis": "### Сцена 1\n\nВера молчит."})
+    assert refused.startswith("Отказ") and "третьего уровня" in refused
+    synopsis = author.get(f"/api/v1/documents/{script_id}").json()["fields"]["synopsis"]
+    assert synopsis == "# Акт 1\n\n## Завязка\n\n**Вера** молчит."
+
+
 def test_document_of_another_draft_is_not_changed(authors: Any) -> None:
     author = authors()
     project_id, draft_id, _ = _story_with_vera(author)

@@ -12,6 +12,8 @@ dependencies = [
   "alembic",
   "anthropic",
   "cel-python",
+  # Markdown of the synopsis (core/prose.py): the same grammar as markdown-it 14 in web/src/editor/prose.
+  "markdown-it-py==4.2.0",
   "openai",
   # OTLP export of agent spans to Phoenix (openspec/specs/agent-tracing); same line as opentelemetry-sdk.
   "opentelemetry-exporter-otlp-proto-http==1.45.1",

@@ -495,6 +495,48 @@ def test_doc_case_loads() -> None:
         assert parse_demo_case("demo-docs.toml", 0, row, STORIES, tasked=True).expected is not None
 
 
+def _synopsis(text: str) -> Call:
+    return Call("update_story_document", {"document_id": "s", "fields": {"synopsis": text}}, True)
+
+
+def test_markup_of_the_written_synopsis() -> None:
+    """api/agents, «Разметка синопсиса у соавтора»: the text the case asks to write is checked by code."""
+    page = Expectation(("update_story_document",), markup="page")
+    assert action_problem(page, _run("a", _synopsis("Вера **молчит**.\n\nАня уходит."))) is None
+    assert action_problem(page, _run("a", _synopsis("# Акт 1\n\nВера молчит."))) == "в синопсисе на страницу заголовок"
+    assert action_problem(page, _run("a", _synopsis("- Вера\n- Аня"))) == "в синопсисе список или таблица"
+    assert action_problem(page, _run("a", Call("update_story_document", {"fields": {}}, True))) == (
+        "нет записанного синопсиса"
+    )
+    acts = Expectation(("update_story_document",), markup="acts")
+    assert action_problem(acts, _run("a", _synopsis("# Акт 1\n\nВера.\n\n## Финал\n\nАня."))) is None
+    assert action_problem(acts, _run("a", _synopsis("Вера.\n\nАня."))) == "в расширенном синопсисе нет заголовков актов"
+    assert action_problem(acts, _run("a", _synopsis("# Акт 1\n\n### Сцена"))) == (
+        "в синопсисе заголовок глубже второго уровня"
+    )
+    note = Expectation(("create_story_note",), markup="note")
+    assert (
+        action_problem(note, _run("a", Call("create_story_note", {"title": "t", "body": "Вера молчит."}, True))) is None
+    )
+    assert action_problem(note, _run("a", Call("create_story_note", {"title": "t", "body": "**Вера**"}, True))) == (
+        "в заметке разметка Markdown"
+    )
+
+
+def test_markup_needs_its_action() -> None:
+    row = _doc_row("x", "synopsis-application", "synopsis", "Напиши синопсис под заявку. Требования: сразу запиши")
+    with pytest.raises(SampleError, match="markup 'page' needs action"):
+        parse_demo_case("demo-docs.toml", 0, row | {"markup": "page"}, STORIES, tasked=True)
+    with pytest.raises(SampleError, match="markup 'poem' is not one of"):
+        parse_demo_case(
+            "demo-docs.toml", 0, row | {"markup": "poem", "action": ["update_story_document"]}, STORIES, tasked=True
+        )
+    item = parse_demo_case(
+        "demo-docs.toml", 0, row | {"markup": "acts", "action": ["update_story_document"]}, STORIES, tasked=True
+    )
+    assert item.expected is not None and item.expected.markup == "acts"
+
+
 def test_task_reaches_the_judge() -> None:
     item = parse_demo_case(
         "demo-docs.toml",
@@ -559,7 +601,12 @@ def test_release_docs_part_loads() -> None:
     # The tasks of the measurement are the tasks of the button, word for word.
     assert [(i, t.label, t.request) for i, t in DOC_TASKS.items()] == pairs and len(pairs) == 7
     assert {s.expected.task for s in docs if s.expected is not None} == set(DOC_TASKS)
-    assert all(s.expected is not None and s.expected.action == () for s in docs)
+    # A task changes nothing by itself; only the cases whose author asks to write at once expect the action, and
+    # their written text is checked by code (api/agents, «Разметка синопсиса у соавтора»).
+    expected = [s.expected for s in docs if s.expected is not None]
+    assert len(expected) == len(docs)
+    assert all(e.action == () for e in expected if e.markup is None)
+    assert {e.markup for e in expected if e.markup is not None} == {"page", "acts", "note"}
 
 
 def _report_of(result: Result) -> dict[str, Any]:

@@ -9,9 +9,10 @@ import { foldText } from "@/editor/fold.ts";
  * gets the caret, its closed section of the profile opens, and the first match of the query in it is
  * selected; a text changed since the search leaves the caret at the start of the field. The address
  * loses both parameters once read. `field` is the field when the address names none (a document of one
- * field).
+ * field). `select` selects the match in a field that is no input (the prose editor of the synopsis); without
+ * it the field is an input or a textarea.
  */
-export function useFindInDoc(field?: string) {
+export function useFindInDoc(field?: string, select?: (find: string) => void) {
   const [params, setParams] = useSearchParams();
   const find = params.get("find");
   const target = params.get("field") ?? field ?? null;
@@ -27,6 +28,10 @@ export function useFindInDoc(field?: string) {
     );
     if (target === null)
       throw new Error("Переход из поиска: адрес не называет поле документа.");
+    if (select !== undefined) {
+      select(find);
+      return;
+    }
     const element = document.querySelector<
       HTMLInputElement | HTMLTextAreaElement
     >(`[data-field="${CSS.escape(target)}"]`);
@@ -39,5 +44,5 @@ export function useFindInDoc(field?: string) {
     if (at >= 0) element.setSelectionRange(at, at + find.length);
     else element.setSelectionRange(0, 0);
     element.scrollIntoView({ block: "center" });
-  }, [find, target, setParams]);
+  }, [find, target, setParams, select]);
 }

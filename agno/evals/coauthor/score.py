@@ -7,6 +7,7 @@ decision 11); a good case there passes the action, the facts and the judge. Repe
 are the noise of a run (decision 12).
 """
 
+import re
 from collections import Counter
 from dataclasses import dataclass, field
 from decimal import Decimal
@@ -77,12 +78,54 @@ def foreign_changes(case: Case, run: CaseRun) -> tuple[str, ...]:
 
 
 def action_problem(expected: Expectation, run: CaseRun) -> str | None:
-    """«лишнее действие X» when no change is expected, «нет ожидаемого действия» when none of the expected ran."""
+    """«лишнее действие X» when no change is expected, «нет ожидаемого действия» when none of the expected ran, and
+    what is wrong with the Markdown of the written text when the case checks it."""
     made = [call.name for call in run.changes]
     if not expected.action:
         return f"лишнее действие {', '.join(dict.fromkeys(made))}" if made else None
     if not set(made) & set(expected.action):
         return f"нет ожидаемого действия ({' или '.join(expected.action)})"
+    if expected.markup is not None:
+        return markup_problem(expected.markup, run)
+    return None
+
+
+_HEADING = re.compile(r"^#{1,2}[ \t]", re.MULTILINE)
+_DEEP_HEADING = re.compile(r"^#{3,}[ \t]", re.MULTILINE)
+_ANY_HEADING = re.compile(r"^#", re.MULTILINE)
+_LIST = re.compile(r"^[ \t]*(?:[-*+]|\d+[.)])[ \t]", re.MULTILINE)
+_TABLE = re.compile(r"^[ \t]*\|.*\|[ \t]*$", re.MULTILINE)
+_NOTE_MARKUP = re.compile(r"[*_#]")
+
+
+def _written(markup: str, run: CaseRun) -> str | None:
+    """The synopsis of the case's update_story_document, or the body of its create_story_note."""
+    for call in run.changes:
+        if markup == "note" and call.name == "create_story_note":
+            body = call.args.get("body")
+            return body if isinstance(body, str) else None
+        if markup != "note" and call.name == "update_story_document":
+            fields = call.args.get("fields")
+            if isinstance(fields, dict) and isinstance(fields.get("synopsis"), str):
+                return str(fields["synopsis"])
+    return None
+
+
+def markup_problem(markup: str, run: CaseRun) -> str | None:
+    """The Markdown of the written text against openspec/specs/api/agents, «Разметка синопсиса у соавтора»."""
+    text = _written(markup, run)
+    if text is None:
+        return "нет записанного текста" if markup == "note" else "нет записанного синопсиса"
+    if markup == "note":
+        return "в заметке разметка Markdown" if _NOTE_MARKUP.search(text) else None
+    if _DEEP_HEADING.search(text):
+        return "в синопсисе заголовок глубже второго уровня"
+    if _LIST.search(text) or _TABLE.search(text):
+        return "в синопсисе список или таблица"
+    if markup == "page" and _ANY_HEADING.search(text):
+        return "в синопсисе на страницу заголовок"
+    if markup == "acts" and not _HEADING.search(text):
+        return "в расширенном синопсисе нет заголовков актов"
     return None
 
 

@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 from pydantic_core import ErrorDetails
 
 from core.errors import Invalid
+from core.prose import check_synopsis
 
 DocumentKind = Literal["script", "character", "location", "world"]
 Role = Literal["main", "secondary", "episodic"]
@@ -218,6 +219,9 @@ def validate_fields(kind: str, fields: Any) -> dict[str, Any]:
             sentences.append(f"Поля {KIND_GENITIVE[kind]}: {', '.join(FIELDS[kind].model_fields)}.")
         first = ".".join(str(part) for part in found[0]["loc"])
         raise Invalid(" ".join(sentences), f"fields.{first}") from error
+    if isinstance(model, ScriptFields) and model.synopsis is not None:
+        # The synopsis is Markdown of the prose editor: a heading deeper than the second level is refused.
+        check_synopsis(model.synopsis)
     return model.model_dump(exclude_none=True)
 
 
