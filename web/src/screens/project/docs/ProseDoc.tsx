@@ -6,7 +6,7 @@ import { useAutosave } from "@/screens/shared/useAutosave";
 import { useServerChanges } from "@/screens/shared/useServerChanges";
 
 import { useProjectData } from "../ProjectContext";
-import { DocTasksButton } from "../chat/DocTasksMenu";
+import { DocSheetTasks, DocTasksButton } from "../chat/DocTasksMenu";
 import { DocHead } from "./DocHead";
 import { SaveHistory } from "./SaveHistory";
 import { useFindInDoc } from "./useFindInDoc";
@@ -48,6 +48,7 @@ export function ProseDoc({ part }: { part: "logline" | "synopsis" }) {
           limit="none"
           placeholderClassName="placeholder:text-muted-foreground/60"
         />
+        {text === "" && <DocSheetTasks part={part} />}
       </div>
     </>
   );
