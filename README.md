@@ -344,7 +344,8 @@ site, Caddy reload. Then it checks the public `/os/health`, that `/os/agents` re
 token, and the site with `deploy/check_site.sh` (the home page, the policies, the offer, the pricing, a 404 and an empty beta request
 that the API refuses), and the admin interface with `deploy/check_admin.sh` (`admin.soavtor.app` refuses a
 connection without the owner's client certificate, `/if/admin/` on `auth.soavtor.app` and default flows of
-Authentik answer 404). The release stops before any change if `/etc/authorled/admin-client-ca.pem` is missing or
+Authentik answer 404). The release stops before any change if `/etc/authorled/admin-client-ca.pem` is missing,
+Caddy cannot read it (the directory needs `751`, the file `644`), or
 `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS` is not the gateway of `authorled_agentos` with `/32`.
 The site is served on `soavtor.app` as static files; of the API only
 `/os/api/v1/beta-requests` is reachable there.
@@ -387,7 +388,9 @@ install -d -o deploy -g deploy -m 755 /srv/authorled/site /srv/authorled/site/in
 install -d -o deploy -g deploy -m 700 /srv/authorled/backups
 sudo -u deploy git clone https://github.com/lehard/Authorled.git /srv/authorled/app
 chown root:deploy /etc/authorled /etc/authorled/authorled.env
-chmod 750 /etc/authorled
+# 751: Caddy (its own user) passes in to read the CA of the admin interface; it cannot list the directory.
+# Secrets stay 640; any other new file here gets 640 or less.
+chmod 751 /etc/authorled
 chmod 640 /etc/authorled/authorled.env
 sudo -u deploy ln -s /etc/authorled/authorled.env /srv/authorled/app/.env
 echo 'deploy ALL=(root) NOPASSWD: /usr/bin/systemctl reload caddy' > /etc/sudoers.d/deploy-caddy
@@ -625,13 +628,14 @@ on are the token contract in `openspec/specs/auth`. The API accepts only tokens 
     a client certificate (2 years) in `~/.config/authorled/admin-ca/` and asks for the password of
     `client.p12`. Import `client.p12` into the login keychain (open the file); Safari and Chrome take
     it from the keychain and ask which certificate to use, choose «Authorled admin» (Firefox has its
-    own store). Put `ca.pem` on the server as `/etc/authorled/admin-client-ca.pem` (root, 0644): the
-    release refuses to start without it, and Caddy does not load its configuration. The keys never
-    leave the Mac.
+    own store). Put `ca.pem` on the server as `/etc/authorled/admin-client-ca.pem` (root, 0644; the
+    directory `/etc/authorled` is 0751, because Caddy reads the file as its own user): the release
+    refuses to start without it or when Caddy cannot read it, and Caddy does not load its
+    configuration. The keys never leave the Mac.
   - *Renewal and loss.* Before the client certificate expires (the script prints the date), run
     `scripts/admin_cert.sh client`: a new certificate of the same CA, nothing changes on the server.
     If the Mac or the keys are lost, run `scripts/admin_cert.sh init --replace-ca` on another
-    computer, replace `/etc/authorled/admin-client-ca.pem` and run `sudo systemctl reload caddy`;
+    computer, replace `/etc/authorled/admin-client-ca.pem` (root, 0644) and run `sudo systemctl reload caddy`;
     the old certificate stops working at once. Without the e-mail of the codes too, use `ak` in the
     `authentik-server` container on the server.
   - *Owned by the admin interface* (the blueprints set them only when the object is created, a

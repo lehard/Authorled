@@ -63,7 +63,8 @@ The Authentik admin interface is only on `admin.soavtor.app`, with the owner's c
 the owner's confirmation:
 
 1. The owner runs `scripts/admin_cert.sh init` on the Mac and imports `client.p12` into the login keychain.
-2. On the server: `ca.pem` → `/etc/authorled/admin-client-ca.pem` (root, 0644);
+2. On the server: `ca.pem` → `/etc/authorled/admin-client-ca.pem` (root, 0644; `/etc/authorled` 0751, Caddy reads
+   the file as its own user, and `deploy.sh` refuses otherwise);
    `AUTH_ADMIN_DOMAIN=admin.soavtor.app` and `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS=<gateway>/32` in
    `/etc/authorled/authorled.env`, the gateway read just before with
    `docker network inspect authorled_agentos --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}'` (172.18.0.1 now).
@@ -75,7 +76,7 @@ the owner's confirmation:
    `akadmin` on `app.soavtor.app` is refused. End the sessions of `akadmin` opened before the release.
 
 Lost Mac or keys: `scripts/admin_cert.sh init --replace-ca` on another computer, replace the CA file on the
-server, `sudo systemctl reload caddy`. Without the e-mail of the codes too: `ak` in `authentik-server`.
+server (root, 0644), `sudo systemctl reload caddy`. Without the e-mail of the codes too: `ak` in `authentik-server`.
 
 Use the provider's status/list commands, saved project identifiers, and local
 configuration to find an existing deployment. A failed health check does not mean

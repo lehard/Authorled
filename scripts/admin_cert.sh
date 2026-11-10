@@ -123,7 +123,8 @@ admin_cert: done in ${dir}
   client certificate: client.p12 (valid until ${client_end}); renew before that with: admin_cert.sh client
 Next:
   1. Import client.p12 into the login keychain: open "${dir}/client.p12"
-  2. Put ca.pem on the server as /etc/authorled/admin-client-ca.pem (root, 0644) and reload Caddy
+  2. Put ca.pem on the server as /etc/authorled/admin-client-ca.pem (root, 0644; the directory
+     /etc/authorled 0751: Caddy reads it as its own user) and reload Caddy
      (only when the CA is new): README, Module auth, «Admin interface».
   3. Open https://admin.soavtor.app/if/admin/ and choose the certificate «Authorled admin».
 EOF
