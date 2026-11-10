@@ -15,4 +15,10 @@
 ## Limits
 
 - Safari not checked.
-- Hosted: not deployed by this change.
+
+## Hosted v0.3.18
+
+- Release v0.3.18 from main, deploy run 42911708438 succeeded.
+- Server: `app` at tag `v0.3.18`, `web/current` → `/srv/authorled/web/v0.3.18`, `https://app.soavtor.app/os/health` 200.
+- Bundle: `ScreenplayEditor-DHcm85k3.css` and `ScreenplayEditor-BIlufPXn.js` contain `pw-empty`; the CSS has no `only-child`.
+- Not checked in a browser on the server: it needs the author's sign-in.
