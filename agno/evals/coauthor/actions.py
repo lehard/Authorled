@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal, get_args, get_origin
 
-from core.fields import FIELDS, KINDS_WITH_ROLE, Role
+from core.fields import FIELDS, KINDS_WITH_ROLE, SCRIPT_NAME, Role
 from evals.coauthor.demo_set import demo_stories
 from evals.coauthor.records import CHANGING, Call, Usage
 from evals.coauthor.user import PLACES
@@ -31,7 +31,9 @@ MAX_ATTEMPTS = 2
 # The profile fell into the description: expected fields are empty and the summary is longer than this (design,
 # decision 5; the threshold is tuned by the first run).
 SUMMARY_DUMP = 300
-_KEYS = {"id", "place", "message", "expect", "kind", "target", "fields", "role", "name"}
+_KEYS = {"id", "place", "message", "expect", "kind", "target", "fields", "role", "name", "max_words"}
+# The requests whose written text may have a limit of words: the expected fields of the document, the text of the note.
+LIMITED_TOOLS = ("update_story_document", "create_story_note")
 
 
 class ActionSetError(ValueError):
@@ -49,6 +51,7 @@ class Request:
     fields: tuple[tuple[str, ...], ...] = ()  # groups of fields; each group needs one filled
     role: str | None = None
     name: str | None = None
+    max_words: int | None = None  # the written text is not longer than this (spec «Проверки замера действий»)
 
     @property
     def section(self) -> str:
@@ -108,6 +111,8 @@ def parse_request(row: Any, cards: dict[str, dict[str, str]], notes: dict[str, f
         allowed.add("fields")
     if expect == "update_story_document":
         allowed |= {"role", "name"}
+    if expect in LIMITED_TOOLS:
+        allowed.add("max_words")
     extra = set(row) - allowed
     if extra:
         raise ActionSetError(f"{request_id}: {', '.join(sorted(extra))} do not belong to a request for {expect}")
@@ -131,7 +136,13 @@ def parse_request(row: Any, cards: dict[str, dict[str, str]], notes: dict[str, f
     new_name = None if row.get("name") is None else _string(f"{request_id}: name", row.get("name"))
     if expect == "update_story_document" and not (groups or role or new_name):
         raise ActionSetError(f"{request_id}: a request to change a card names fields, a role or a name")
-    return Request(request_id, place, message, expect, kind, target, tuple(groups), role, new_name)
+    max_words = row.get("max_words")
+    if max_words is not None:
+        if not isinstance(max_words, int) or isinstance(max_words, bool) or max_words < 1:
+            raise ActionSetError(f"{request_id}: max_words must be a positive whole number")
+        if expect == "update_story_document" and not groups:
+            raise ActionSetError(f"{request_id}: max_words limits the expected fields, and the request names none")
+    return Request(request_id, place, message, expect, kind, target, tuple(groups), role, new_name, max_words)
 
 
 def parse_set(rows: Any) -> list[Request]:
@@ -139,8 +150,11 @@ def parse_set(rows: Any) -> list[Request]:
     if not isinstance(rows, list) or not rows:
         raise ActionSetError("The set must have at least one [[request]]")
     stories = demo_stories()
+    # The screenplay of the draft is a card too: its logline and synopsis are text fields (spec «Набор просьб замера
+    # действий»).
     cards = {
-        place: {name: kind for kind in CREATED_KINDS for name in story.names[kind]} for place, story in stories.items()
+        place: {name: kind for kind in CREATED_KINDS for name in story.names[kind]} | {SCRIPT_NAME: "script"}
+        for place, story in stories.items()
     }
     notes = {place: story.names["note"] for place, story in stories.items()}
     requests = [parse_request(row, cards, notes) for row in rows]
@@ -179,6 +193,7 @@ class Changes:
     created: tuple[Card, ...] = ()
     updated: tuple[tuple[str, Card], ...] = ()  # the name before the run and the card after it
     notes_created: tuple[str, ...] = ()
+    notes_created_text: tuple[str, ...] = ()  # the text of each created note, in the order of notes_created
     notes_updated: tuple[str, ...] = ()  # titles before the run
     comments: int = 0
     suggestions: int = 0
@@ -208,6 +223,7 @@ class Verdict:
     missing: tuple[str, ...]  # expected fields not filled, a role or a name the card does not have
     summary_dump: bool
     extra: tuple[str, ...]  # changes nobody asked for
+    too_long: tuple[str, ...]  # written texts over the request's max_words: "what: N слов, предел M"
 
     @property
     def fields_expected(self) -> bool:
@@ -221,6 +237,7 @@ class Verdict:
             and self.attempts <= MAX_ATTEMPTS
             and not self.missing
             and not self.extra
+            and not self.too_long
         )
 
 
@@ -263,6 +280,24 @@ def _card(request: Request, changes: Changes) -> Card | None:
     return None
 
 
+def _words(text: str) -> int:
+    return len(text.split())
+
+
+def _too_long(request: Request, card: Card | None, changes: Changes) -> list[str]:
+    """The written texts over the request's limit of words (spec «Проверки замера действий»)."""
+    limit = request.max_words
+    if limit is None:
+        return []
+    written: list[tuple[str, str]] = []
+    if request.expect == "update_story_document" and card is not None:
+        for group in request.fields:
+            written += [(name, card.fields[name]) for name in group if isinstance(card.fields.get(name), str)]
+    if request.expect == "create_story_note" and changes.notes_created:
+        written.append((f"заметка «{changes.notes_created[0]}»", changes.notes_created_text[0]))
+    return [f"{what}: {_words(text)} слов, предел {limit}" for what, text in written if _words(text) > limit]
+
+
 def check(request: Request, run: ActionRun) -> Verdict:
     """The checks of one request by code (spec «Проверки замера действий», «Сведения профиля не в описании»)."""
     changing = [call for call in run.calls if call.name in CHANGING]
@@ -284,9 +319,10 @@ def check(request: Request, run: ActionRun) -> Verdict:
             missing.append(f"name={request.name}")
     dump = bool(missing) and card is not None and len(card.summary) > SUMMARY_DUMP
     extra = _extra(request, run.changes)
+    too_long = _too_long(request, card, run.changes)
     if run.outcome == "error":
         action_ok = False
-    return Verdict(request, run, refusals, attempts, action_ok, tuple(missing), dump, tuple(extra))
+    return Verdict(request, run, refusals, attempts, action_ok, tuple(missing), dump, tuple(extra), tuple(too_long))
 
 
 @dataclass(frozen=True)
@@ -379,6 +415,8 @@ def _failure(verdict: Verdict) -> list[str]:
         lines.append(f"Сведения в описании (summary длиннее {SUMMARY_DUMP} знаков).")
     if verdict.extra:
         lines.append(f"Сверх просьбы: {'; '.join(verdict.extra)}.")
+    if verdict.too_long:
+        lines.append(f"Длиннее предела: {'; '.join(verdict.too_long)}.")
     lines += ["", f"**Соавтор:** {run.answer}", ""]
     return lines
 

@@ -46,6 +46,8 @@ def test_every_owner_gets_a_copy(connection: Connection, accounts: dict[str, uui
     assert sorted(p.title for p in list_projects(connection, owner, False)) == ["Последний паром", "Тихая вода"]
     assert [p.title for p in list_projects(connection, owner, True)] == ["Без названия"]
     assert _story(connection, owner, "Тихая вода").drafts_count == 2
+    colors = {p.title: p.cover_color for t in (False, True) for p in list_projects(connection, owner, t)}
+    assert colors == {"Тихая вода": "blue", "Последний паром": "teal", "Без названия": "amber"}
 
     ferry = _story(connection, owner, "Последний паром")
     draft = list_drafts(connection, ferry.id)[0]

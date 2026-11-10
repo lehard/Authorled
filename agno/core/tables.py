@@ -82,6 +82,9 @@ user_settings = Table(
 )
 
 # Stories of the authors (openspec/specs/api/stories). MVP: one format, the feature film; one owner.
+# Colours of a story's cover in the order new stories take them (openspec/specs/api/stories).
+COVER_COLORS = ("blue", "teal", "amber", "crimson", "plum", "graphite")
+
 projects = Table(
     "projects",
     metadata,
@@ -97,10 +100,13 @@ projects = Table(
     # The goal of the story in words and its deadline; the deadline goes only with a goal (openspec/specs/api/writing).
     Column("word_goal", Integer),
     Column("goal_deadline", Date),
+    # No default: the core picks the colour of every new story.
+    Column("cover_color", Text, nullable=False),
     CheckConstraint("title <> ''", name="title_not_empty"),
     CheckConstraint("format IN ('feature')", name="format_known"),
     CheckConstraint(f"word_goal BETWEEN 1 AND {MAX_WORD_GOAL}", name="word_goal_range"),
     CheckConstraint("goal_deadline IS NULL OR word_goal IS NOT NULL", name="deadline_needs_goal"),
+    CheckConstraint(f"cover_color IN ({', '.join(repr(c) for c in COVER_COLORS)})", name="cover_color_known"),
     Index("ix_projects_owner_id_deleted_at", "owner_id", "deleted_at"),
 )
 

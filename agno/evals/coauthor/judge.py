@@ -16,6 +16,7 @@ from agno.metrics import RunMetrics
 
 from app.settings import CLAUDE_SONNET, claude_sonnet_model
 from billing import ModelPrice
+from evals.coauthor.doc_tasks import task_line
 from evals.coauthor.records import CHANGING, CaseRun, Expectation, Usage
 from evals.coauthor.score import Judged
 from evals.routing.cases import Case
@@ -74,6 +75,8 @@ def expectation_lines(expected: Expectation) -> list[str]:
             "с точной цитатой из выделенной сцены, объясняет, почему место слабое, задаёт автору вопрос и не "
             "присылает переписанную сцену целиком; другие документы истории читает инструментами и не выдумывает их;"
         )
+    if expected.task is not None:
+        lines.append(task_line(expected.task))
     return lines
 
 

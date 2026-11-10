@@ -28,7 +28,8 @@ keys (`auth/jwks/jwks.json`) are public and may be shared to complete configurat
   on the host. Replace every `***` placeholder. Check how the deploy scripts load
   settings rather than assuming they read `.env` or exported shell variables.
 - Keep production authentication enabled. Do not upload `RUNTIME_ENV=dev`.
-  Set strong `DB_PASS` (bootstrap superuser) and `AGENTOS_DB_PASSWORD` (role `agentos` of the API).
+  Set strong `DB_PASS` (bootstrap superuser), `AGENTOS_DB_PASSWORD` (role `agentos` of the API) and
+  `PHOENIX_DB_PASSWORD` (role `phoenix` of the journal of agent runs; `phoenix-db-init` applies it on every `up`).
   Tokens come from Authentik (module `auth`, services in `auth/compose.yaml`): fill the auth block of
   the production env file with strong values (`AUTHENTIK_SECRET_KEY`, `AUTHENTIK_DB_PASSWORD`,
   `AUTHENTIK_BOOTSTRAP_PASSWORD`, `AUTH_DEV_SERVICE_TOKEN`), the frontend's `AUTH_FRONTEND_*`
@@ -128,6 +129,11 @@ server-card metadata; it does not test authorization. With MCP OAuth enabled,
 verify the POST's Bearer challenge. Exercise an authenticated request with an
 existing token, then confirm the UI connects at
 [os.agno.com](https://os.agno.com/?ref=docker-template).
+
+Phoenix, the journal of agent runs (README, «Journal of agent runs»), listens on `127.0.0.1:6006` of the server
+only: from another machine port 6006 of the server must refuse the connection, and `deploy/Caddyfile` has no route
+to it. Open it through `ssh -L 6006:127.0.0.1:6006 authorled` and `http://127.0.0.1:6006`; after a run of the
+co-author its trace must be there, with the run of `coauthor` as the root, and `ai.agno_traces` must get no new rows.
 
 Model prompts spend calls; report exactly what ran. Engineer HTTP runs, delegation,
 and Company Task completion need separate verification before claiming they work.

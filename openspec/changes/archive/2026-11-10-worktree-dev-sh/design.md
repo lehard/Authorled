@@ -38,9 +38,9 @@
 
 `require_running` превращается в `require_healthy <сервис>`: `ps -q --status running`, затем статус здоровья контейнера (`docker inspect`) должен быть `healthy`. Сбой самой команды compose — прежнее сообщение о сбое compose. Сервис не запущен или не `healthy` — отказ с именем сервиса, проектом `authorled` и `./scripts/dev.sh up` в основной папке.
 
-Какие сервисы требуются: `test` — `agentos-db`, `clamav`; `migrate` и `psql` — `agentos-db`; `api` — `agentos-db`, `litellm`, `clamav`, `authentik-server`, `authentik-worker`; `seed` — `agentos-db`, `authentik-worker`; `auth-users` — `mailpit`, `authentik-worker`.
+Какие сервисы требуются: `test` — `agentos-db`, `clamav`; `migrate` и `psql` — `agentos-db`; `api` — `agentos-db`, `litellm`, `clamav`, `authentik-server`, `authentik-worker`, `phoenix`; `seed` — `agentos-db`, `authentik-worker`; `auth-users` — `mailpit`, `authentik-worker`.
 
-Запуск стенда — новая команда `up` (только основная папка): `up -d --wait agentos-db litellm clamav authentik-server authentik-worker mailpit`; разовые зависимости (`authentik-db-init`) compose поднимает сам. `agentos-api` в список не входит, чтобы порт 8000 оставался для API на хосте.
+Запуск стенда — новая команда `up` (только основная папка): `up -d --wait agentos-db litellm clamav phoenix authentik-server authentik-worker mailpit`; разовые зависимости (`authentik-db-init`, `phoenix-db-init`) compose поднимает сам. `phoenix` (журнал запусков агентов, без него API не стартует) добавлен при слиянии с `main` после change `agent-tracing`; `api` экспортирует `PHOENIX_URL=http://127.0.0.1:6006`. `agentos-api` в список не входит, чтобы порт 8000 оставался для API на хосте.
 
 Отклонено: оставить `up` внутри `api` и `test` только для основной папки — два поведения у одной команды и тот же риск, если кто-то вызовет её с `COMPOSE_PROJECT_NAME`. Печатать в сообщении длинный `docker compose up …` вместо команды `up` — неудобно и легко ошибиться в списке.
 

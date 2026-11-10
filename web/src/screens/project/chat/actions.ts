@@ -74,7 +74,7 @@ function documentName(data: ProjectData, id: string): string {
     (d) => d.id === id,
   );
   if (found !== undefined) return found.name;
-  return id === data.script.id ? "Сценарий" : "документ";
+  return id === data.script.documentId ? "Сценарий" : "документ";
 }
 
 function noteName(data: ProjectData, id: string): string {

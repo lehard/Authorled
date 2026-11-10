@@ -85,21 +85,33 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
 
   const [params, setParams] = useSearchParams();
   const view = params.get("view") === "cards" ? "cards" : "text";
-  // «?scene=N» from the scene list or a card: the caret goes to that scene once.
+  // «?scene=N» from the scene list or a card: the caret goes to that scene once. «find=…» from the
+  // search of the story then opens the find bar with that query, its current match the first one in
+  // the scene, or in the whole text without a scene (web/workspace, «Переход к совпадению из поиска
+  // по истории»).
   const sceneParam = view === "text" ? params.get("scene") : null;
+  const findParam = view === "text" ? params.get("find") : null;
   useEffect(() => {
-    if (sceneParam === null) return;
+    if (sceneParam === null && findParam === null) return;
     const number = Number(sceneParam);
-    const found = Number.isInteger(number) && editor.current!.goToScene(number);
+    const found =
+      sceneParam === null ||
+      (Number.isInteger(number) && editor.current!.goToScene(number));
+    if (found && findParam !== null)
+      editor.current!.openFind(
+        findParam,
+        sceneParam === null ? "start" : "caret",
+      );
     setParams(
       (p) => {
         p.delete("scene");
+        p.delete("find");
         return p;
       },
       { replace: true },
     );
     if (!found) setError(`Сцены ${sceneParam} нет в тексте.`);
-  }, [sceneParam, setParams]);
+  }, [sceneParam, findParam, setParams]);
 
   // The core reads the file and replaces the text with its revision; the editor takes the new
   // text as an ordinary edit, so undo brings the previous one back. A refusal leaves the text.

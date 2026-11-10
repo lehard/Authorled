@@ -30,6 +30,14 @@
 - Параллельно `test` из этого worktree и временного `wdsh-par`: оба 754 passed (`ai_test_focused_pare_a6fd10`, `ai_test_wdsh_par`); временный worktree и его база удалены; снимок без изменений.
 - `up`, `db`, `stop`, `reset-db --yes` из worktree: код 1 с путём основной папки.
 
+## После слияния с `origin/main` (Phoenix, change `agent-tracing`)
+
+- Конфликты в `scripts/dev.sh`, `AGENTS.md`, `README.md` разрешены так: новая схема `dev.sh` плюс `phoenix` — в `up`, в проверке `healthy` у `api`, `PHOENIX_URL=http://127.0.0.1:6006` для API на хосте, в `stop`; текст спеки `runtime` и документы дополнены так же.
+- На копии: `up` и `stop` вызывают compose с `phoenix`; `api` без `phoenix` — код 1 «phoenix is not running in Compose project authorled … ./scripts/dev.sh up»; с ним — до `uvicorn`.
+- На стенде: в основном `.env` нет `PHOENIX_DB_PASSWORD`, который теперь требует compose. `compose ps` и `exec` при этом работают, падает `run --rm --no-deps agentos-db-init`; после этого `dev.sh` печатает «agentos-db-init failed … a variable it names as missing goes into /Users/Shared/Workspace/Authorled/.env (this worktree links to it)», код 1. Стенд не изменился.
+- Полный прогон тестов на слитом коде — с `PHOENIX_DB_PASSWORD` в окружении процесса (значение роли работающего Phoenix из `.env` worktree `agent-tracing`, файлы не менялись): 855 passed в `ai_test_focused_pare_a6fd10`; снимок стенда до и после без изменений.
+- `./scripts/validate.sh` и `git diff --check` на слитом дереве: прошли.
+
 ## Инцидент
 
 Первый прогон на копии шёл без `env -u BASH_ENV`: `~/.bashrc` пересобрал `PATH`, и `dev.sh stop` из временной «основной папки» вызвал настоящий `docker compose -p authorled stop` — общий стенд остановился примерно на минуту. С согласия владельца те же контейнеры подняты `docker start` (без пересоздания); данные не тронуты. Дальше все прогоны на копии — с `env -u BASH_ENV` и недоступным `DOCKER_HOST`.

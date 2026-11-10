@@ -25,7 +25,7 @@
 - AND `GET http://127.0.0.1:8000/health` MUST вернуть `200` с `status: "ok"` и `instantiated_at`
 
 ### Requirement: Возможности AgentOS
-Система MUST включать в `AgentOS`: MCP (`mcp=True`), планировщик (`scheduler=True`, `scheduler_base_url=AGENTOS_URL`), изоляцию пользователей (`user_isolation=True`), каталог пользователей (`user_directory=True`), долговечную очередь (`QueueConfig(durable=True, db=db)`), OS Manager, CompanyOS, знание `shared-knowledge`, реестр и манифест `app/config.yaml`. Трассировка Agno MUST быть включена и MUST записывать спаны в базу OS пакетами в фоне (`setup_tracing(db, batch_processing=True)` до создания `AgentOS`, у самого `AgentOS` — `tracing=False`), чтобы обработка HTTP-запроса не ждала записи трасс; сбой настройки трассировки MUST останавливать запуск. Авторизация MUST быть включена при любом `RUNTIME_ENV`, включая `dev`; без ключа проверки JWT система MUST NOT запускаться. По умолчанию `RUNTIME_ENV` равен `prd`.
+Система MUST включать в `AgentOS`: MCP (`mcp=True`), планировщик (`scheduler=True`, `scheduler_base_url=AGENTOS_URL`), изоляцию пользователей (`user_isolation=True`), каталог пользователей (`user_directory=True`), долговечную очередь (`QueueConfig(durable=True, db=db)`), OS Manager, CompanyOS, знание `shared-knowledge`, реестр и манифест `app/config.yaml`. Трассировка запусков агентов MUST быть включена до создания `AgentOS` и MUST отправлять спаны в Phoenix пакетами в фоне (спека `agent-tracing`), у самого `AgentOS` — `tracing=False`, чтобы обработка HTTP-запроса не ждала записи трасс; сбой настройки трассировки MUST останавливать запуск. Авторизация MUST быть включена при любом `RUNTIME_ENV`, включая `dev`; без ключа проверки JWT система MUST NOT запускаться. По умолчанию `RUNTIME_ENV` равен `prd`.
 
 #### Scenario: Значения по умолчанию окружения
 - GIVEN `RUNTIME_ENV` и `AGENTOS_URL` не заданы
@@ -48,9 +48,10 @@
 - THEN все 8 ответов MUST прийти быстрее 100 мс, считая внутри контейнера API
 
 #### Scenario: Трассы запуска агента сохраняются
-- GIVEN API запущен
+- GIVEN API и Phoenix запущены
 - WHEN автор отправляет сообщение соавтору и ждёт ответа
-- THEN не позже чем через 10 секунд после ответа `GET /traces` MUST возвращать трассу этого запуска
+- THEN не позже чем через 10 секунд после ответа в Phoenix MUST быть трасса этого запуска
+- AND `GET /traces` Agno MUST NOT возвращать новую трассу этого запуска
 
 ### Requirement: Состав компонентов
 Система MUST регистрировать агентов `claude-engineer` (из `agents/engineers.py`) и `coauthor` (из `agents/coauthor.py`, спека `api/agents`) и встроенного `company-manager-internal`, а также встроенную команду `os-manager-internal`. Система MUST NOT регистрировать `codex-engineer` и workflows.

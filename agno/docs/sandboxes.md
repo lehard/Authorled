@@ -35,7 +35,7 @@ docker build --target sandbox --load -t agno-sandbox:local -f agno/Dockerfile .
 ./scripts/dev.sh api
 ```
 
-`dev.sh up` starts `agentos-db`, `litellm`, `clamav`, Authentik and Mailpit. `dev.sh api` needs them healthy and
+`dev.sh up` starts `agentos-db`, `litellm`, `clamav`, `phoenix`, Authentik and Mailpit. `dev.sh api` needs them healthy and
 port 8000 free (it never stops the `agentos-api` container), migrates the database of the checkout, exports the
 Authentik keys and runs the API on the host with `--reload`, `DB_HOST=127.0.0.1`,
 `LITELLM_URL=http://127.0.0.1:4000` and `JWT_JWKS_FILE` pointing at the exported keys.

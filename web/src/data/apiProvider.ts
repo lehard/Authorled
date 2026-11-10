@@ -22,9 +22,11 @@ import type {
   CommentThread,
   Draft,
   Entity,
+  EntityKind,
   Location,
   NewDraft,
   NewNote,
+  NewProject,
   NewReply,
   NewThread,
   Note,
@@ -32,6 +34,7 @@ import type {
   Project,
   Role,
   Script,
+  StoryTemplate,
   Suggestion,
   TitlePage,
   Version,
@@ -39,7 +42,17 @@ import type {
   VersionTarget,
   World,
 } from "./model";
+import { isCoverColor } from "./model";
 import type { SaveOperation } from "./saves";
+import type {
+  EntityHit,
+  NoteHit,
+  PartHit,
+  SceneHit,
+  SearchOperation,
+  SearchResult,
+  SearchSnippet,
+} from "./search";
 import type { Writing, WritingOperation } from "./writing";
 
 // Data source `api` (openspec/specs/web/workspace, «Источник данных»; design of story-data-web,
@@ -147,8 +160,7 @@ function readProject(body: unknown): SavedProject {
     id: field("историю", o, "id", isString),
     title: field("историю", o, "title", isString),
     desc: field("историю", o, "description", isString),
-    // Covers come at stage 2 (openspec/context/backlog-stage-2.md); the core keeps none.
-    cover: false,
+    coverColor: field("историю", o, "cover_color", isCoverColor),
     updatedAt: field("историю", o, "updated_at", isString),
     deletedAt: field("историю", o, "deleted_at", isTime),
     wordGoal: field("историю", o, "word_goal", isCountOrNull),
@@ -513,6 +525,7 @@ function toScript(draftId: string, d: Doc, t: Text): Script {
   return {
     id: draftId,
     draftId,
+    documentId: d.id,
     logline: text(what, d.fields, "logline"),
     // Not set yet: every part is shown, as in a new story of the screens.
     show: show === undefined ? ALL_PARTS : (show as Script["show"]),
@@ -732,6 +745,29 @@ async function projects(trash: boolean): Promise<Project[]> {
   ).map(readListedProject);
 }
 
+function readTemplate(raw: unknown): StoryTemplate {
+  const what = "каркас истории";
+  const o = shape(what, raw);
+  return {
+    id: field(what, o, "id", isString),
+    name: field(what, o, "name", isString),
+    description: field(what, o, "description", isString),
+    acts: field(what, o, "acts", isArray).map((rawAct) => {
+      const act = shape("акт каркаса", rawAct);
+      return {
+        name: field("акт каркаса", act, "name", isString),
+        points: field("акт каркаса", act, "points", isArray).map((rawPoint) => {
+          const point = shape("точку каркаса", rawPoint);
+          return {
+            name: field("точку каркаса", point, "name", isString),
+            hint: field("точку каркаса", point, "hint", isString),
+          };
+        }),
+      };
+    }),
+  };
+}
+
 async function getList(
   resource: string,
   filters: CrudFilter[],
@@ -742,6 +778,10 @@ async function getList(
       throw new Error("Истории читаются списком полки или корзины.");
     return projects(q.deleted);
   }
+  if (resource === "story-templates")
+    return list("каркасы историй", await request("/story-templates")).map(
+      readTemplate,
+    );
   if (resource === "drafts") {
     if (q.projectId === null)
       throw new Error("Драфты читаются только по истории.");
@@ -838,12 +878,18 @@ async function create(
   meta: MetaQuery | undefined,
 ): Promise<BaseRecord> {
   if (resource === "projects") {
-    const values = variables as Pick<Project, "title" | "desc">;
+    const values = variables as NewProject;
     const o = shape(
       "новую историю",
       await request("/projects", {
         method: "POST",
-        json: { title: values.title, description: values.desc },
+        json: {
+          title: values.title,
+          description: values.desc,
+          ...(values.template === undefined
+            ? {}
+            : { template: values.template }),
+        },
       }),
     );
     const project = readProject(o.project);
@@ -966,6 +1012,7 @@ async function update(
       else if (key === "desc") changes.description = value;
       else if (key === "wordGoal") changes.word_goal = value;
       else if (key === "goalDeadline") changes.goal_deadline = value;
+      else if (key === "coverColor") changes.cover_color = value;
       else throw new Error(`Источник api не меняет поле «${key}» истории.`);
     }
     await request(`/projects/${id}`, { method: "PATCH", json: changes });
@@ -1088,10 +1135,89 @@ async function restoreVersion(id: string, target: VersionTarget) {
   });
 }
 
+// The core's names of a found field as the screens name them (entityChanges, the other way).
+const SCREEN_FIELD: Record<string, string> = {
+  summary: "one",
+  description: "long",
+};
+const SCREEN_KIND: Record<string, EntityKind> = {
+  character: "char",
+  location: "loc",
+  world: "world",
+};
+
+function readSnippet(what: string, body: unknown): SearchSnippet {
+  const o = shape(what, body);
+  return {
+    before: field(what, o, "before", isString),
+    match: field(what, o, "match", isString),
+    after: field(what, o, "after", isString),
+  };
+}
+
+function readSearch(body: unknown): SearchResult {
+  const what = "результаты поиска";
+  const o = shape(what, body);
+  const scenes = list(what, o.scenes).map((item): SceneHit => {
+    const s = shape(what, item);
+    return {
+      uid: field(what, s, "uid", isStringOrNull),
+      number: field(what, s, "number", isNumber),
+      heading: field(what, s, "heading", isString),
+      count: field(what, s, "count", isNumber),
+      snippet: readSnippet(what, s.snippet),
+    };
+  });
+  const documents = list(what, o.documents).map((item): EntityHit | PartHit => {
+    const d = shape(what, item);
+    const kind = field(what, d, "kind", isString);
+    const key = field(what, d, "field", isString);
+    const count = field(what, d, "count", isNumber);
+    const snippet = readSnippet(what, d.snippet);
+    if (kind === "script") {
+      if (key !== "logline" && key !== "synopsis")
+        throw new Error(`Сервер нашёл в сценарии неизвестное поле «${key}».`);
+      return { type: "part", part: key, count, snippet };
+    }
+    const entity = SCREEN_KIND[kind];
+    if (entity === undefined)
+      throw new Error(`Сервер нашёл документ неизвестного вида «${kind}».`);
+    return {
+      type: "entity",
+      entity,
+      id: field(what, d, "id", isString),
+      name: field(what, d, "name", isString),
+      field: SCREEN_FIELD[key] ?? key,
+      count,
+      snippet,
+    };
+  });
+  const notes = list(what, o.notes).map((item): NoteHit => {
+    const n = shape(what, item);
+    const key = field(what, n, "field", isString);
+    if (key !== "title" && key !== "body")
+      throw new Error(`Сервер нашёл в заметке неизвестное поле «${key}».`);
+    return {
+      id: field(what, n, "id", isString),
+      title: field(what, n, "title", isString),
+      field: key,
+      count: field(what, n, "count", isNumber),
+      snippet: readSnippet(what, n.snippet),
+    };
+  });
+  return { query: field(what, o, "query", isString), scenes, documents, notes };
+}
+
 async function operation(
-  op: FileOperation | SaveOperation | WritingOperation,
+  op: FileOperation | SaveOperation | SearchOperation | WritingOperation,
 ): Promise<unknown> {
   switch (op.operation) {
+    case "search":
+      return readSearch(
+        await request(`/drafts/${op.payload.draftId}/search`, {
+          query: { q: op.payload.q },
+        }),
+      );
     case "writing":
       return readWriting(
         await request(`/drafts/${op.payload.draftId}/writing`, {
@@ -1187,6 +1313,10 @@ export const apiProvider: DataProvider = {
     data: (await operation({
       operation: meta?.operation,
       payload,
-    } as FileOperation | SaveOperation | WritingOperation)) as never,
+    } as
+      | FileOperation
+      | SaveOperation
+      | SearchOperation
+      | WritingOperation)) as never,
   }),
 };

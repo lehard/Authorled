@@ -14,7 +14,7 @@
 #
 #    Usage:
 #      ./scripts/dev.sh up              Main checkout: start the stand for the API on the host (agentos-db,
-#                                       litellm, clamav, Authentik and mailpit, not agentos-api) and wait until healthy
+#                                       litellm, clamav, phoenix, Authentik and mailpit, not agentos-api) and wait until healthy
 #      ./scripts/dev.sh db              Main checkout: start agentos-db and wait until healthy
 #      ./scripts/dev.sh api             Prepare and migrate the database of this checkout, export the Authentik keys,
 #                                       run the API on the host on port 8000 with --reload
@@ -42,11 +42,11 @@ cd "$(dirname "$0")/.."
 # The Compose project of the stand: the name the main checkout gets from its folder.
 STAND_PROJECT=authorled
 # The services of the stand for the API on the host; agentos-api stays off so the host API can bind 8000.
-STAND_SERVICES=(agentos-db litellm clamav authentik-server authentik-worker mailpit)
+STAND_SERVICES=(agentos-db litellm clamav phoenix authentik-server authentik-worker mailpit)
 
 usage() {
     echo 'Usage: ./scripts/dev.sh up | db | api | migrate | test | stop | reset-db --yes | psql | auth-users | seed'
-    echo '  up            main checkout: start agentos-db, litellm, clamav, Authentik and mailpit (not agentos-api)'
+    echo '  up            main checkout: start agentos-db, litellm, clamav, phoenix, Authentik and mailpit (not agentos-api)'
     echo '                and wait until healthy'
     echo '  db            main checkout: start agentos-db and wait until healthy'
     echo '  api           prepare and migrate the database of this checkout, export the Authentik keys,'
@@ -54,7 +54,7 @@ usage() {
     echo '  migrate       prepare the database of this checkout (agentos-db-init) and apply the migrations'
     echo '                of schemas authorled and billing'
     echo '  test          recreate the test database of this checkout, prepare and migrate it, run pytest in agno/tests'
-    echo '  stop          main checkout: stop agentos-api, litellm, clamav, Authentik and agentos-db; data is kept'
+    echo '  stop          main checkout: stop agentos-api, litellm, clamav, phoenix, Authentik and agentos-db; data is kept'
     echo '  reset-db      main checkout: delete the agentos-db container and its volume, with the Authentik data'
     echo '                (requires --yes)'
     echo '  psql          open psql inside agentos-db on the database of this checkout'
@@ -86,6 +86,11 @@ require_healthy() {
         || fail "docker inspect of ${service} failed (its error is above)."
     [[ "${health}" == "healthy" ]] \
         || fail "${service} is running in Compose project ${STAND_PROJECT} but is not healthy (${health:-no health status}): ${for_command} needs the local stand; start it in the main checkout (${main_checkout}) with ./scripts/dev.sh up."
+}
+
+# The file that holds the variables: in a worktree .env is a link to the .env of the main checkout.
+env_file_hint() {
+    if [[ "${in_worktree}" == true ]]; then echo "${main_checkout}/.env (this worktree links to it)"; else echo ".env"; fi
 }
 
 require_uv() {
@@ -129,7 +134,8 @@ SQL
             ;;
         *) fail "prepare_db: unknown mode ${mode}" ;;
     esac
-    compose run --rm --no-deps -e PGDATABASE="${database}" agentos-db-init
+    compose run --rm --no-deps -e PGDATABASE="${database}" agentos-db-init \
+        || fail "agentos-db-init failed on database ${database} (its error is above); a variable it names as missing goes into $(env_file_hint)."
     export_db_env "${database}"
     (
         cd agno
@@ -222,20 +228,23 @@ case "${command}" in
         command -v lsof > /dev/null || fail "lsof not found; api needs it to name what holds port 8000."
         check_db_name "${dev_db}"
         read_agentos_password
-        for service in agentos-db litellm clamav authentik-server authentik-worker; do
+        # Phoenix, the journal of agent runs: the API refuses to start without it (openspec/specs/agent-tracing).
+        for service in agentos-db litellm clamav authentik-server authentik-worker phoenix; do
             require_healthy "${service}" api
         done
         require_free_api_port
         # The database of this checkout (openspec/specs/core/database); a failed migration stops here.
         prepare_db "${dev_db}" ensure
         # Module auth: write the Authentik public keys to auth/jwks/jwks.json of this checkout (fails loudly).
-        compose run --rm --no-deps authentik-jwks-export
+        compose run --rm --no-deps authentik-jwks-export \
+            || fail "authentik-jwks-export failed (its error is above); a variable it names as missing goes into $(env_file_hint)."
         # Host-side values of what compose.yaml sets for the agentos-api container
         # (DB_* from prepare_db, the service names become loopback ports).
         export RUNTIME_ENV=dev AGNO_DEBUG=True AGNO_TELEMETRY=false
         export AGENTOS_URL=http://127.0.0.1:8000 LITELLM_URL=http://127.0.0.1:4000
         export JWT_JWKS_FILE="$(pwd)/auth/jwks/jwks.json"
         export CLAMAV_HOST=127.0.0.1 CLAMAV_PORT=3310
+        export PHOENIX_URL=http://127.0.0.1:6006
         echo "API on http://127.0.0.1:8000, database ${dev_db}."
         # The backend module runs from agno/; .env stays at the repository root.
         env_file="$(pwd)/.env"
@@ -269,7 +278,7 @@ case "${command}" in
         exec uv run --no-project --with-requirements requirements.txt --with pytest pytest tests
         ;;
     stop)
-        compose stop agentos-api litellm clamav authentik-server authentik-worker agentos-db
+        compose stop agentos-api litellm clamav phoenix authentik-server authentik-worker agentos-db
         ;;
     reset-db)
         [[ "${2:-}" == "--yes" ]] || fail "reset-db deletes all data in the agentos-db volume. Re-run with --yes to confirm."

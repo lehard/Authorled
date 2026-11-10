@@ -183,7 +183,7 @@ def test_demo_stories_follow_the_open_draft() -> None:
 )
 def test_demo_case_refused(own: dict[str, Any], reason: str) -> None:
     with pytest.raises(SampleError, match=reason):
-        parse_demo_case("demo-work.toml", 0, _row("x", "wide-scenes", **own), STORIES)
+        parse_demo_case("demo-work.toml", 0, _row("x", "wide-scenes", **own), STORIES, tasked=False)
 
 
 def test_demo_case_loads() -> None:
@@ -199,6 +199,7 @@ def test_demo_case_loads() -> None:
             absent=[{"kind": "character", "name": "Нина"}],
         ),
         STORIES,
+        tasked=False,
     )
     assert item.expected == Expectation(
         ("create_story_note",),
@@ -209,14 +210,19 @@ def test_demo_case_loads() -> None:
 
 
 def test_demo_parts_refused() -> None:
-    work = parse_demo_part("demo-work.toml", {"case": _part("w")}, STORIES, covered=True)
+    work = parse_demo_part("demo-work.toml", {"case": _part("w")}, STORIES, covered=True, tasked=False)
     with pytest.raises(SampleError, match="in both work and holdout"):
         check_parts(
-            {"work": work, "holdout": parse_demo_part("demo-holdout.toml", {"case": _part("w")}, STORIES, covered=True)}
+            {
+                "work": work,
+                "holdout": parse_demo_part(
+                    "demo-holdout.toml", {"case": _part("w")}, STORIES, covered=True, tasked=False
+                ),
+            }
         )
     without = [r for r in _part("h") if r["expect"] != ["wide-research"]]
     with pytest.raises(SampleError, match="demo-holdout.toml has no case of domain\\(s\\) wide-research"):
-        parse_demo_part("demo-holdout.toml", {"case": without}, STORIES, covered=True)
+        parse_demo_part("demo-holdout.toml", {"case": without}, STORIES, covered=True, tasked=False)
 
 
 def test_expected_action_and_facts() -> None:
@@ -287,11 +293,11 @@ def test_release_demo_set_loads() -> None:
 )
 def test_open_refused(opened: dict[str, object], reason: str) -> None:
     with pytest.raises(SampleError, match=reason):
-        parse_demo_case("demo-checks.toml", 0, _row("x", "wide-review", open=opened), STORIES)
+        parse_demo_case("demo-checks.toml", 0, _row("x", "wide-review", open=opened), STORIES, tasked=False)
 
 
 def test_open_reaches_the_judge() -> None:
-    item = parse_demo_case("demo-checks.toml", 0, _row("x", "wide-review", open={"scene": 6}), STORIES)
+    item = parse_demo_case("demo-checks.toml", 0, _row("x", "wide-review", open={"scene": 6}), STORIES, tasked=False)
     assert item.expected == Expectation((), open=6)
     text = criteria(item.case, item.expected)
     assert "выделил сцену 6" in text and "с точной цитатой из выделенной сцены" in text
@@ -300,9 +306,9 @@ def test_open_reaches_the_judge() -> None:
 
 def test_checks_part_is_not_covered() -> None:
     rows = [_row(f"c-{i}", "wide-review", open={"scene": 6}) for i in range(2)]
-    assert len(parse_demo_part("demo-checks.toml", {"case": rows}, STORIES, covered=False)) == 2
+    assert len(parse_demo_part("demo-checks.toml", {"case": rows}, STORIES, covered=False, tasked=False)) == 2
     with pytest.raises(SampleError, match="has no case of domain"):
-        parse_demo_part("demo-checks.toml", {"case": rows}, STORIES, covered=True)
+        parse_demo_part("demo-checks.toml", {"case": rows}, STORIES, covered=True, tasked=False)
 
 
 def test_release_checks_part_loads() -> None:
@@ -441,3 +447,161 @@ def json_round_trip(data: dict[str, Any]) -> dict[str, Any]:
 
     loaded: dict[str, Any] = json.loads(json.dumps(data, default=str, ensure_ascii=False))
     return loaded
+
+
+# Tasks of «Соавтор» at the logline and the synopsis (openspec/changes/logline-synopsis-generation, design, decision 5).
+
+VARIANTS = (
+    "Предложи три варианта логлайна для этой истории: герой, его цель, главное препятствие и ставки, до 35 слов "
+    "каждый. Опирайся на сценарий и документы драфта. Ничего не записывай, пока я не выберу."
+)
+
+
+def _doc_row(case_id: str, task: str, doc: str, message: str) -> dict[str, object]:
+    return _row(case_id, "wide-structure", open={"doc": doc}, task=task, message=message)
+
+
+@pytest.mark.parametrize(
+    ("row", "reason"),
+    [
+        (_row("x", "wide-structure", open={"doc": "treatment"}, task="logline-variants"), "document 'treatment'"),
+        (_row("x", "wide-structure", open={"doc": "logline", "scene": 6}, task="logline-variants"), "must be a table"),
+        (_doc_row("x", "logline-variants", "logline", "Предложи варианты логлайна"), "not the request of task"),
+        (_doc_row("x", "logline-variants", "synopsis", VARIANTS), "stands on"),
+        (_doc_row("x", "logline-poem", "logline", VARIANTS), "task 'logline-poem' is not one of"),
+        (_row("x", "wide-structure", open={"doc": "logline"}, message=VARIANTS), "names its task"),
+    ],
+)
+def test_doc_case_refused(row: dict[str, object], reason: str) -> None:
+    with pytest.raises(SampleError, match=reason):
+        parse_demo_case("demo-docs.toml", 0, row, STORIES, tasked=True)
+
+
+def test_task_only_in_the_docs_part() -> None:
+    with pytest.raises(SampleError, match="only a case of the part docs"):
+        parse_demo_case(
+            "demo-work.toml", 0, _doc_row("x", "logline-variants", "logline", VARIANTS), STORIES, tasked=False
+        )
+
+
+def test_doc_case_loads() -> None:
+    item = parse_demo_case(
+        "demo-docs.toml", 0, _doc_row("x", "logline-variants", "logline", VARIANTS), STORIES, tasked=True
+    )
+    assert item.expected == Expectation((), doc="logline", task="logline-variants")
+    # The request of «Под заявку» goes into the field: the message only starts with it, trimmed as the chat sends it.
+    for message in ("Напиши синопсис под заявку. Требования:", "Напиши синопсис под заявку. Требования: до 800 знаков"):
+        row = _doc_row("y", "synopsis-application", "synopsis", message)
+        assert parse_demo_case("demo-docs.toml", 0, row, STORIES, tasked=True).expected is not None
+
+
+def test_task_reaches_the_judge() -> None:
+    item = parse_demo_case(
+        "demo-docs.toml",
+        0,
+        _doc_row(
+            "x",
+            "synopsis-viewer",
+            "synopsis",
+            "Напиши аннотацию этой истории для зрителя: 50–100 слов, без финала и главного поворота. Покажи её здесь и "
+            "предложи сохранить заметкой «Синопсис: для зрителя».",
+        ),
+        STORIES,
+        tasked=True,
+    )
+    assert item.expected is not None
+    text = criteria(item.case, item.expected)
+    assert "выбрал задачу «Для зрителя: без финала»" in text and "не раскрывает финал и главный поворот" in text
+    assert "ничего не записывает без согласия автора" in text and "историю менять не нужно" in text
+    assert "выбрал задачу" not in criteria(item.case, Expectation(()))
+
+
+def test_docs_part_is_not_covered() -> None:
+    rows = [_doc_row(f"d-{i}", "logline-variants", "logline", VARIANTS) for i in range(2)]
+    assert len(parse_demo_part("demo-docs.toml", {"case": rows}, STORIES, covered=False, tasked=True)) == 2
+
+
+def test_context_of_an_opened_doc() -> None:
+    import uuid
+
+    from demo.load import read_demo
+    from evals.coauthor.context import CONTEXT_DESCRIPTION, chat_context, opened_doc
+    from evals.coauthor.user import Place
+
+    demo = read_demo()
+    project = next(p for p in demo["projects"] if p["title"] == "Тихая вода")
+    draft = next(d for d in demo["drafts"] if d["projectId"] == project["id"])
+    logline = next(s for s in demo["scripts"] if s["draftId"] == draft["id"])["logline"]
+    place = Place("Тихая вода", "…", uuid.uuid4(), uuid.uuid4(), draft["name"])
+    value = chat_context(place, opened_doc("logline", {"logline": logline}))[CONTEXT_DESCRIPTION]
+    assert value == (
+        f"История: «Тихая вода» (полнометражный сценарий), драфт «{draft['name']}».\n"
+        f"Открыт документ: Логлайн.\nСодержимое документа:\n{logline}"
+    )
+    assert opened_doc("synopsis", {}).text == "(пусто)"
+    with pytest.raises(RuntimeError, match="not text"):
+        opened_doc("synopsis", {"synopsis": None})
+    with pytest.raises(RuntimeError, match="no document 'treatment'"):
+        opened_doc("treatment", {})
+
+
+def test_release_docs_part_loads() -> None:
+    import re
+    from pathlib import Path
+
+    from evals.coauthor.demo_set import load_demo_part
+    from evals.coauthor.doc_tasks import DOC_TASKS
+
+    docs = load_demo_part("docs")
+    web = Path(__file__).parents[2] / "web/src/screens/project/chat/docTasks.ts"
+    source = re.sub(r"\s+", " ", web.read_text(encoding="utf-8"))
+    pairs = re.findall(r'id: "([^"]+)", label: "([^"]+)", request: "([^"]+)"', source)
+    # The tasks of the measurement are the tasks of the button, word for word.
+    assert [(i, t.label, t.request) for i, t in DOC_TASKS.items()] == pairs and len(pairs) == 7
+    assert {s.expected.task for s in docs if s.expected is not None} == set(DOC_TASKS)
+    assert all(s.expected is not None and s.expected.action == () for s in docs)
+
+
+def _report_of(result: Result) -> dict[str, Any]:
+    from dataclasses import asdict
+
+    return {
+        "meta": {"set": "demo", "part": "docs", "repeat": 1},
+        "cases": [
+            {
+                "case": asdict(result.case),
+                "place": result.place,
+                "run": asdict(result.run),
+                "repeat": result.repeat,
+                "expected": None if result.expected is None else asdict(result.expected),
+                "judged": None if result.judged is None else asdict(result.judged),
+            }
+        ],
+    }
+
+
+def test_rejudge_keeps_the_task_of_a_document() -> None:
+    from evals.coauthor.rejudge import read_results
+
+    viewer = Expectation((), doc="synopsis", task="synopsis-viewer")
+    scene = Expectation((), open=6)
+    for expected in (viewer, scene):
+        result = Result(_case("d", ("wide-structure",)), "tihaya-voda", _run("d"), Judged(True, "ok"), expected, 1)
+        _, (back,) = read_results("r", json_round_trip(_report_of(result)))
+        assert back.expected == expected
+    _, (back,) = read_results(
+        "r",
+        json_round_trip(_report_of(Result(_case("d", ("wide-structure",)), "tihaya-voda", _run("d"), None, viewer, 1))),
+    )
+    assert back.expected is not None
+    assert "выбрал задачу «Для зрителя: без финала»" in criteria(back.case, back.expected)
+
+
+def test_rejudge_refuses_a_report_without_the_task() -> None:
+    from evals.coauthor.rejudge import RejudgeError, read_results
+
+    result = Result(_case("d", ("wide-structure",)), "tihaya-voda", _run("d"), None, Expectation(()), 1)
+    data = json_round_trip(_report_of(result))
+    del data["cases"][0]["expected"]["task"]
+    with pytest.raises(RejudgeError, match="no field 'task'"):
+        read_results("r", data)

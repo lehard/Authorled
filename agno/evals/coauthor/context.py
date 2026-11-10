@@ -5,8 +5,10 @@ Without the agent: tests build it without the co-author's model.
 
 from dataclasses import dataclass
 
+from core.documents import list_documents
 from core.engine import get_engine
 from core.texts import Doc, block_text, get_text, scenes, screenplay_id
+from evals.coauthor.doc_tasks import DOC_TITLES
 from evals.coauthor.user import Place
 
 # What the chat attaches to every message (web/src/screens/project/chat/CoauthorChat.tsx, docContext.ts).
@@ -42,6 +44,14 @@ class Opened:
     selection: str  # the paragraphs of the scene, as the browser's selection gives them
 
 
+@dataclass(frozen=True)
+class OpenedDoc:
+    """«Логлайн» or «Синопсис» open in the chat (spec «Случай с открытым документом»)."""
+
+    title: str
+    text: str  # as docContext.ts sends it: cut, or «(пусто)» for an empty document
+
+
 def _label(block: dict[str, object]) -> str:
     kind = block["type"]
     if kind not in ELEMENT_LABELS:
@@ -68,9 +78,30 @@ def open_scene(place: Place, number: int) -> Opened:
     return opened_scene(doc, number)
 
 
-def chat_context(place: Place, opened: Opened | None = None) -> dict[str, str]:
-    """The chat's context with the story card open (docContext.ts, kind «info») or, given `opened`, the text of the
-    screenplay open and a scene of it selected (docContext.ts, part «text»).
+def opened_doc(doc: str, fields: dict[str, object]) -> OpenedDoc:
+    """The document `doc` of the screenplay's fields as the chat shows it (docContext.ts, part «logline» or
+    «synopsis»)."""
+    if doc not in DOC_TITLES:
+        raise RuntimeError(f"The chat opens no document {doc!r} of the screenplay")
+    # An absent field is an empty document, as the web reads it (apiProvider.ts, `text`).
+    text = fields[doc] if doc in fields else ""
+    if not isinstance(text, str):
+        raise RuntimeError(f"The screenplay's {doc} is not text")
+    if len(text) > DOCUMENT_CHARS:
+        text = f"{text[:DOCUMENT_CHARS]}\n…(текст обрезан)"
+    return OpenedDoc(DOC_TITLES[doc], text or "(пусто)")
+
+
+def open_doc(place: Place, doc: str) -> OpenedDoc:
+    """The logline or the synopsis of the open draft of the place, as the core keeps it."""
+    with get_engine().connect() as connection:
+        script = next(d for d in list_documents(connection, place.draft_id) if d.kind == "script")
+    return opened_doc(doc, script.fields)
+
+
+def chat_context(place: Place, opened: Opened | OpenedDoc | None = None) -> dict[str, str]:
+    """The chat's context with the story card open (docContext.ts, kind «info»), given `opened`, the text of the
+    screenplay open and a scene of it selected (docContext.ts, part «text»), or the logline or the synopsis open.
 
     AG-UI passes the chat's context as run dependencies with add_dependencies_to_context, and Agno appends them to
     the author's message as an <additional context> block (agno os/interfaces/agui/router.py, agent/_messages.py);
@@ -84,6 +115,8 @@ def chat_context(place: Place, opened: Opened | None = None) -> dict[str, str]:
             "Содержимое документа:",
             f"Название: {place.title}\nТэглайн: {place.tagline}",
         ]
+    elif isinstance(opened, OpenedDoc):
+        lines = [story, f"Открыт документ: {opened.title}.", "Содержимое документа:", opened.text]
     else:
         lines = [
             story,

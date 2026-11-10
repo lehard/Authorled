@@ -43,6 +43,20 @@ def _refs(items: list[dict[str, Any]]) -> tuple[Ref, ...]:
     return tuple(Ref(item["kind"], item["name"]) for item in items)
 
 
+def _expectation(where: str, data: dict[str, Any]) -> Expectation:
+    """The expectation of a case as the run saved it, every field of it: the judge needs the open scene, the open
+    document and the task as much as the action (openspec/specs/coauthor-eval, «Повторная оценка судьёй»)."""
+    return Expectation(
+        action=tuple(_field(where, data, "action")),
+        mention=tuple(tuple(group) for group in _field(where, data, "mention")),
+        refs=_refs(_field(where, data, "refs")),
+        absent=_refs(_field(where, data, "absent")),
+        open=_field(where, data, "open"),
+        doc=_field(where, data, "doc"),
+        task=_field(where, data, "task"),
+    )
+
+
 def result_of(where: str, item: dict[str, Any]) -> Result:
     """One case of a report as the scoring sees it."""
     case_data = _field(where, item, "case")
@@ -64,16 +78,7 @@ def result_of(where: str, item: dict[str, Any]) -> Result:
         error=run_data["error"],
     )
     expected_data = _field(where, item, "expected")
-    expected = (
-        None
-        if expected_data is None
-        else Expectation(
-            action=tuple(expected_data["action"]),
-            mention=tuple(tuple(group) for group in expected_data["mention"]),
-            refs=_refs(expected_data["refs"]),
-            absent=_refs(expected_data["absent"]),
-        )
-    )
+    expected = None if expected_data is None else _expectation(f"{where}: expected", expected_data)
     judged_data = _field(where, item, "judged")
     judged = (
         None

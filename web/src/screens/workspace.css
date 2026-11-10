@@ -3,17 +3,56 @@
  * story covers as books, navigator items, screenplay paragraphs, the title page. Tokens only.
  */
 @layer components {
+  /* A story's cover in its colour (data-cover); the title and two light arcs on the gradient. */
+  .book,
+  .book-mini,
+  .cover-swatch {
+    background: linear-gradient(170deg, var(--cover-from), var(--cover-to));
+    color: var(--cover-fg);
+  }
+  :is(.book, .book-mini, .cover-swatch)[data-cover="blue"] {
+    --cover-from: var(--cover-blue-from);
+    --cover-to: var(--cover-blue-to);
+    --cover-fg: var(--cover-blue-foreground);
+  }
+  :is(.book, .book-mini, .cover-swatch)[data-cover="teal"] {
+    --cover-from: var(--cover-teal-from);
+    --cover-to: var(--cover-teal-to);
+    --cover-fg: var(--cover-teal-foreground);
+  }
+  :is(.book, .book-mini, .cover-swatch)[data-cover="amber"] {
+    --cover-from: var(--cover-amber-from);
+    --cover-to: var(--cover-amber-to);
+    --cover-fg: var(--cover-amber-foreground);
+  }
+  :is(.book, .book-mini, .cover-swatch)[data-cover="crimson"] {
+    --cover-from: var(--cover-crimson-from);
+    --cover-to: var(--cover-crimson-to);
+    --cover-fg: var(--cover-crimson-foreground);
+  }
+  :is(.book, .book-mini, .cover-swatch)[data-cover="plum"] {
+    --cover-from: var(--cover-plum-from);
+    --cover-to: var(--cover-plum-to);
+    --cover-fg: var(--cover-plum-foreground);
+  }
+  :is(.book, .book-mini, .cover-swatch)[data-cover="graphite"] {
+    --cover-from: var(--cover-graphite-from);
+    --cover-to: var(--cover-graphite-to);
+    --cover-fg: var(--cover-graphite-foreground);
+  }
   .book {
     position: relative;
     display: block;
+    overflow: hidden;
     aspect-ratio: 3 / 4;
     padding: 22px 24px;
     border-radius: 4px 10px 10px 4px;
-    background: var(--panel);
-    color: var(--foreground);
     font-family: var(--font-heading);
     font-size: 22px;
     line-height: 1.2;
+    /* a long word of the title wraps instead of being cut by the cover's edge */
+    overflow-wrap: break-word;
+    hyphens: auto;
     box-shadow:
       inset 4px 0 0 color-mix(in oklch, var(--foreground) 8%, transparent),
       var(--shadow-panel);
@@ -21,31 +60,23 @@
       transform 0.15s,
       box-shadow 0.15s;
   }
-  .book.art {
-    overflow: hidden;
-    background: linear-gradient(
-      170deg,
-      color-mix(in oklch, var(--primary) 62%, var(--paper)),
-      color-mix(in oklch, var(--primary) 82%, var(--foreground))
-    );
-    color: var(--primary-foreground);
-  }
-  .book.art::before,
-  .book.art::after {
+  .book::before,
+  .book::after {
     content: "";
     position: absolute;
     left: -10%;
     right: -10%;
     height: 40px;
     border-radius: 50%;
-    border-top: 1.5px solid color-mix(in oklch, var(--paper) 45%, transparent);
+    border-top: 1.5px solid
+      color-mix(in oklch, var(--cover-fg) 45%, transparent);
   }
-  .book.art::before {
+  .book::before {
     bottom: 54px;
   }
-  .book.art::after {
+  .book::after {
     bottom: 30px;
-    border-top-color: color-mix(in oklch, var(--paper) 28%, transparent);
+    border-top-color: color-mix(in oklch, var(--cover-fg) 28%, transparent);
   }
   .group\/card:hover .book {
     transform: translateY(-3px);
@@ -58,17 +89,16 @@
     height: 52px;
     flex: none;
     border-radius: 3px 7px 7px 3px;
-    background: var(--paper);
     box-shadow:
       inset 3px 0 0 color-mix(in oklch, var(--foreground) 10%, transparent),
       var(--shadow-panel);
   }
-  .book-mini.art {
-    background: linear-gradient(
-      170deg,
-      color-mix(in oklch, var(--primary) 62%, var(--paper)),
-      color-mix(in oklch, var(--primary) 82%, var(--foreground))
-    );
+  /* A sample of the colour in the menu «Цвет обложки». */
+  .cover-swatch {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    border-radius: 50%;
   }
 
   /* Navigator item; the open document is a sheet of paper on the panel. */

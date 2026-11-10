@@ -7,7 +7,7 @@
 
 ### Requirement: Контейнеры разработки
 Корневой `compose.yaml` MUST объявлять `agentos-db` (`agnohq/pgvector:18`, порт `127.0.0.1:5432`, том `pgdata`) и подключать через `include` фрагменты модулей:
-- `agno/compose.yaml` — `agentos-db-init`, `agentos-migrate`, `litellm`, `agentos-api`;
+- `agno/compose.yaml` — `agentos-db-init`, `agentos-migrate`, `litellm`, `phoenix-db-init`, `phoenix`, `agentos-api`;
 - `auth/compose.yaml` — `authentik-db-init`, `authentik-server`, `authentik-worker`, `authentik-jwks-export`.
 
 `agentos-api`:
@@ -24,6 +24,11 @@
 Порядок и поведение сервисов модуля бэкенда:
 - `agentos-db-init` MUST идемпотентно готовить роль `agentos` и схемы `ai` и `authorled` до `agentos-migrate`;
 - `agentos-migrate` MUST быть одноразовым сервисом на образе цели `agentos`: после успешного `agentos-db-init` он MUST применять миграции схемы `authorled` под ролью `agentos` и завершаться; `agentos-api` MUST стартовать только после его успешного завершения. В `compose.prod.yaml` порядок и поведение `agentos-migrate` MUST быть теми же.
+
+Порядок и поведение журнала агентов (спека `agent-tracing`):
+- `phoenix-db-init` MUST однократно и идемпотентно создавать роль Phoenix и схему `phoenix` в `agentos-db` до старта `phoenix`; пароль роли MUST браться из `.env` без значения по умолчанию;
+- `phoenix` MUST использовать образ Phoenix с закреплённой версией, хранить данные в схеме `phoenix`, иметь healthcheck, лимит памяти, выключенную телеметрию и срок хранения трасс 30 дней, и публиковать порт только на `127.0.0.1`;
+- `agentos-api` MUST стартовать только после статуса `healthy` у `phoenix` и MUST получать адрес Phoenix внутри сети контейнеров.
 
 Для `agentos-db` MUST быть задан healthcheck `pg_isready` для пользователя и базы `ai` по TCP (`127.0.0.1`). Он MUST считать контейнер здоровым только когда база принимает сетевые соединения (на первом запуске PostgreSQL сначала отвечает только через сокет).
 
@@ -75,8 +80,19 @@
 - THEN `agentos-migrate` MUST завершиться ненулевым кодом
 - AND `agentos-api` MUST NOT стартовать
 
+#### Scenario: Порядок запуска журнала
+- GIVEN `.env` заполнен, `agentos-db` здорова
+- WHEN выполняется `docker compose up -d --build`
+- THEN `phoenix-db-init` MUST завершиться успешно до старта `phoenix`
+- AND `agentos-api` MUST стартовать только после статуса `healthy` у `phoenix`
+
+#### Scenario: Нет пароля роли Phoenix
+- GIVEN в `.env` нет пароля роли Phoenix
+- WHEN выполняется `docker compose up`
+- THEN команда MUST завершиться ошибкой, называющей переменную
+
 ### Requirement: Production-override
-`compose.prod.yaml` MUST переключать `RUNTIME_ENV=prd`, `AGNO_DEBUG=False`, убирать bind-mount и reload, брать `AGENTOS_URL` и `MCP_CONNECT_SECRET` из `.env` и привязывать PostgreSQL к `127.0.0.1:5432`. Для сервисов Authentik `compose.prod.yaml` MUST требовать секреты из `.env` (без значений по умолчанию), включая `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS`, передавать эту настройку в контейнеры, привязывать порты к `127.0.0.1` и MUST NOT публиковать их на внешних интерфейсах. Том `/data` для AgentCore MUST оставаться закомментированным, пока AgentCore не включён.
+`compose.prod.yaml` MUST переключать `RUNTIME_ENV=prd`, `AGNO_DEBUG=False`, убирать bind-mount и reload, брать `AGENTOS_URL` и `MCP_CONNECT_SECRET` из `.env` и привязывать PostgreSQL к `127.0.0.1:5432`. Для сервисов Authentik `compose.prod.yaml` MUST требовать секреты из `.env` (без значений по умолчанию), включая `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS`, передавать эту настройку в контейнеры, привязывать порты к `127.0.0.1` и MUST NOT публиковать их на внешних интерфейсах. Для `phoenix` `compose.prod.yaml` MUST привязывать порт к `127.0.0.1` и MUST NOT публиковать его на внешних интерфейсах; обратный прокси MUST NOT проксировать Phoenix. Том `/data` для AgentCore MUST оставаться закомментированным, пока AgentCore не включён.
 
 #### Scenario: Запуск production
 - GIVEN `.env` содержит секреты Authentik, а `authentik-jwks-export` выгрузил ключ проверки JWT
@@ -92,6 +108,11 @@
 - GIVEN в `.env` нет `AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS`
 - WHEN выполняется `docker compose -f compose.yaml -f compose.prod.yaml config`
 - THEN команда MUST завершиться ошибкой с именем этой настройки
+
+#### Scenario: Порт Phoenix в production
+- GIVEN запущена конфигурация production
+- WHEN проверяются опубликованные порты `phoenix`
+- THEN они MUST быть привязаны к `127.0.0.1`
 
 ### Requirement: Адреса привязки
 `python -m app.main` MUST запускать `agent_os.serve(app="app.main:app", host="127.0.0.1", port=8000, reload=False)`: локальный loopback — намеренно. Контейнер `agentos` MUST слушать `0.0.0.0:8000` (CMD образа); доступность снаружи ограничивает compose-публикация порта только на `127.0.0.1:8000`. Различие `127.0.0.1` / `0.0.0.0` задумано и MUST NOT считаться дефектом.
@@ -241,7 +262,7 @@ CI (`.github/workflows/validate.yml`, Python 3.14, Node.js из `web/.nvmrc`) MU
 - THEN три кейса MUST выполниться как раньше, без пользователя
 
 ### Requirement: Скрипт локальной разработки
-`scripts/dev.sh` MUST быть единым входом в локальную разработку с API на хосте и MUST поддерживать команды `up`, `db`, `api`, `migrate`, `test`, `stop`, `reset-db`, `psql`, `auth-users` (спека `auth`, «Пользователи для разработки») и `seed` («Демо-контент»). Команда `up` MUST запускать сервисы стенда для API на хосте — `agentos-db`, `litellm`, `clamav`, `authentik-server`, `authentik-worker`, `mailpit` и разовые шаги, от которых они зависят, без `agentos-api` — и возвращать 0 после их статуса `healthy`. Команда `migrate` MUST готовить базу разработки этой рабочей копии («Базы worktree») шагом `agentos-db-init` и применять миграции схем `authorled` и `billing` на хосте под ролью `agentos`. Команда `test` MUST выполнять тесты хранения данных продукта на чистой тестовой базе (спека `core/database`, «Тесты хранения на чистой базе»). Скрипт MUST работать со стендом проекта Compose `authorled` и сервисами compose-файлов репозитория, а не с собственными определениями контейнеров. Команды `api`, `migrate`, `test`, `seed`, `psql` и `auth-users` MUST NOT запускать, останавливать и пересоздавать сервисы стенда: нужные им сервисы MUST уже быть `healthy`, а разовые шаги (`agentos-db-init`, `authentik-jwks-export`) MUST запускаться без подъёма зависимостей. Команда `api` MUST запускать API на хосте только после успешной выгрузки ключей Authentik в `JWT_JWKS_FILE` и MUST NOT останавливать контейнер `agentos-api`; если порт `127.0.0.1:8000` занят, она MUST завершаться кодом 1 с сообщением, называющим, кто его держит. Скрипт MUST завершаться ненулевым кодом с сообщением, называющим причину, если не найден `docker`, не найден `uv` (для `api`, `migrate`, `test` и `seed`), не найден `lsof` (для `api`), отсутствует `.env` или команда неизвестна; значений по умолчанию вместо недостающего ввода он MUST NOT подставлять. Если команда `docker compose`, которой скрипт проверяет сервисы стенда, сама завершается ошибкой (например, в `.env` нет переменной, которую требует compose-файл), скрипт MUST завершаться кодом 1 с сообщением о сбое `docker compose` и MUST NOT сообщать, что сервис не запущен. Сообщение о сервисе, который не запущен или не `healthy`, MUST называть сервис, проект Compose `authorled` и команду `./scripts/dev.sh up` в основной папке; выбирать другой проект Compose скрипт MUST NOT.
+`scripts/dev.sh` MUST быть единым входом в локальную разработку с API на хосте и MUST поддерживать команды `up`, `db`, `api`, `migrate`, `test`, `stop`, `reset-db`, `psql`, `auth-users` (спека `auth`, «Пользователи для разработки») и `seed` («Демо-контент»). Команда `up` MUST запускать сервисы стенда для API на хосте — `agentos-db`, `litellm`, `clamav`, `phoenix`, `authentik-server`, `authentik-worker`, `mailpit` и разовые шаги, от которых они зависят, без `agentos-api` — и возвращать 0 после их статуса `healthy`. Команда `migrate` MUST готовить базу разработки этой рабочей копии («Базы worktree») шагом `agentos-db-init` и применять миграции схем `authorled` и `billing` на хосте под ролью `agentos`. Команда `test` MUST выполнять тесты хранения данных продукта на чистой тестовой базе (спека `core/database`, «Тесты хранения на чистой базе»). Скрипт MUST работать со стендом проекта Compose `authorled` и сервисами compose-файлов репозитория, а не с собственными определениями контейнеров. Команды `api`, `migrate`, `test`, `seed`, `psql` и `auth-users` MUST NOT запускать, останавливать и пересоздавать сервисы стенда: нужные им сервисы MUST уже быть `healthy`, а разовые шаги (`agentos-db-init`, `authentik-jwks-export`) MUST запускаться без подъёма зависимостей. Команда `api` MUST запускать API на хосте только после успешной выгрузки ключей Authentik в `JWT_JWKS_FILE` и MUST NOT останавливать контейнер `agentos-api`; если порт `127.0.0.1:8000` занят, она MUST завершаться кодом 1 с сообщением, называющим, кто его держит. Скрипт MUST завершаться ненулевым кодом с сообщением, называющим причину, если не найден `docker`, не найден `uv` (для `api`, `migrate`, `test` и `seed`), не найден `lsof` (для `api`), отсутствует `.env` или команда неизвестна; значений по умолчанию вместо недостающего ввода он MUST NOT подставлять. Если команда `docker compose`, которой скрипт проверяет сервисы стенда, сама завершается ошибкой (например, в `.env` нет переменной, которую требует compose-файл), скрипт MUST завершаться кодом 1 с сообщением о сбое `docker compose` и MUST NOT сообщать, что сервис не запущен. Сообщение о сервисе, который не запущен или не `healthy`, MUST называть сервис, проект Compose `authorled` и команду `./scripts/dev.sh up` в основной папке; выбирать другой проект Compose скрипт MUST NOT.
 
 #### Scenario: Только база
 - GIVEN `.env` заполнен обязательным блоком, команда запущена из основной папки
@@ -252,14 +273,14 @@ CI (`.github/workflows/validate.yml`, Python 3.14, Node.js из `web/.nvmrc`) MU
 #### Scenario: Стенд для API на хосте
 - GIVEN `.env` заполнен, команда запущена из основной папки
 - WHEN выполняется `./scripts/dev.sh up`
-- THEN `agentos-db`, `litellm`, `clamav`, `authentik-server`, `authentik-worker` и `mailpit` MUST быть `healthy`, и скрипт MUST вернуть 0
+- THEN `agentos-db`, `litellm`, `clamav`, `phoenix`, `authentik-server`, `authentik-worker` и `mailpit` MUST быть `healthy`, и скрипт MUST вернуть 0
 - AND контейнер `agentos-api` MUST NOT запускаться этой командой
 
 #### Scenario: API на хосте
 - GIVEN `.env` заполнен, `uv` и `lsof` установлены, стенд запущен командой `up`, порт 8000 свободен
 - WHEN выполняется `./scripts/dev.sh api`
 - THEN `agentos-db-init`, миграции схем `authorled` и `billing` и `authentik-jwks-export` MUST завершиться успешно до запуска API
-- AND API MUST запускаться из `agno/` на `127.0.0.1:8000` с `--reload` по каталогам `agents`, `app`, `db`, `evals` модуля бэкенда, с `RUNTIME_ENV=dev`, `DB_HOST=127.0.0.1`, `DB_PORT=5432`, `DB_USER=agentos`, `DB_DATABASE` базы разработки этой рабочей копии, `LITELLM_URL=http://127.0.0.1:4000`, зависимостями из `agno/requirements.txt`, `.env` из корня рабочей копии и `JWT_JWKS_FILE`, указывающим на `auth/jwks/jwks.json` этой рабочей копии
+- AND API MUST запускаться из `agno/` на `127.0.0.1:8000` с `--reload` по каталогам `agents`, `app`, `db`, `evals` модуля бэкенда, с `RUNTIME_ENV=dev`, `DB_HOST=127.0.0.1`, `DB_PORT=5432`, `DB_USER=agentos`, `DB_DATABASE` базы разработки этой рабочей копии, `LITELLM_URL=http://127.0.0.1:4000`, `PHOENIX_URL=http://127.0.0.1:6006`, зависимостями из `agno/requirements.txt`, `.env` из корня рабочей копии и `JWT_JWKS_FILE`, указывающим на `auth/jwks/jwks.json` этой рабочей копии
 
 #### Scenario: Порт API занят
 - GIVEN работает контейнер `agentos-api` или другой процесс слушает `127.0.0.1:8000`

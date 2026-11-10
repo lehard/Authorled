@@ -36,6 +36,9 @@ const DECORATIONS = [
 // The author's marks in the screenplay (text colour and fill).
 const MARKS = ["1", "2", "3", "4"];
 
+// Story covers: the title on both points of the gradient.
+const COVERS = ["blue", "teal", "amber", "crimson", "plum", "graphite"];
+
 // [foreground, background, minimum ratio]
 const PAIRS: [string, string, number][] = [
   ["foreground", "background", TEXT],
@@ -75,6 +78,10 @@ const PAIRS: [string, string, number][] = [
   ...MARKS.flatMap((n): [string, string, number][] => [
     [`mark-${n}`, "paper", TEXT],
     ["paper-foreground", `mark-${n}-fill`, TEXT],
+  ]),
+  ...COVERS.flatMap((c): [string, string, number][] => [
+    [`cover-${c}-foreground`, `cover-${c}-from`, TEXT],
+    [`cover-${c}-foreground`, `cover-${c}-to`, TEXT],
   ]),
   ["print-ink", "print-paper", TEXT],
 ];

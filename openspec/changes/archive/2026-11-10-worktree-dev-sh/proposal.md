@@ -6,7 +6,7 @@
 
 ## What Changes
 
-- **Стенд принадлежит основной папке.** Новая команда `./scripts/dev.sh up` запускает сервисы стенда для API на хосте (`agentos-db`, `litellm`, `clamav`, `authentik-server`, `authentik-worker`, `mailpit`; без `agentos-api`). `up`, `db`, `stop` и `reset-db` работают только из основной папки; из worktree они завершаются кодом 1 с путём основной папки.
+- **Стенд принадлежит основной папке.** Новая команда `./scripts/dev.sh up` запускает сервисы стенда для API на хосте (`agentos-db`, `litellm`, `clamav`, `phoenix`, `authentik-server`, `authentik-worker`, `mailpit`; без `agentos-api`). `up`, `db`, `stop` и `reset-db` работают только из основной папки; из worktree они завершаются кодом 1 с путём основной папки.
 - **BREAKING (для владельца на стенде):** `test`, `migrate`, `api`, `seed`, `psql`, `auth-users` больше не поднимают и не останавливают сервисы стенда, откуда бы их ни запустили. Они обращаются к проекту Compose `authorled` явно, требуют, чтобы нужные сервисы были `healthy`, и иначе завершаются кодом 1 с подсказкой `./scripts/dev.sh up` в основной папке. Разовые шаги (`agentos-db-init`, `authentik-jwks-export`) идут без подъёма зависимостей.
 - **BREAKING:** `dev.sh api` больше не останавливает контейнер `agentos-api`: если порт 8000 занят, команда завершается кодом 1 и называет, кто его держит.
 - **Базы worktree.** В worktree `test` работает в `ai_test_<worktree>` (пересоздаётся перед прогоном), а `migrate`, `api`, `seed` и `psql` — в `ai_dev_<worktree>`. `migrate` и `api` создают её, если её нет, готовят `agentos-db-init` и накатывают миграции ветки. Основная папка — как сейчас: `ai_test` и `ai`.
