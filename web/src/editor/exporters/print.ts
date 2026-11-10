@@ -146,6 +146,7 @@ p { line-height: 16px; min-height: 16px; position: relative; orphans: 2; widows:
 .tp-genre { margin-bottom: 32px; }
 .tp-by { margin-bottom: 8px; }
 .tp-foot { text-align: left; }
+.title-page p { overflow-wrap: anywhere; }
 @media screen {
   html { background: var(--around); }
   body { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 40px 0 80px; }
