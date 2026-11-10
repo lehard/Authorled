@@ -54,11 +54,63 @@ function isSceneHeading(line: string): boolean {
 
 const SPECIAL_START = /^(\.|@|>|~|=|#|!|\[\[|===)/;
 
+/** A line of exactly two spaces keeps an empty line inside a paragraph (fountain.io, «Line Breaks»). */
+const EMPTY_LINE = "  ";
+
+/** Lines of a paragraph with line breaks: an empty line goes as two spaces. */
+function rows(text: string): string[] {
+  return text.split("\n").map((line) => {
+    if (line === EMPTY_LINE)
+      throw new Error(
+        "Строку из двух пробелов внутри абзаца нельзя записать в Fountain: она читается как пустая",
+      );
+    return line === "" ? EMPTY_LINE : line;
+  });
+}
+
 function tagged(type: ElementName, text: string): string {
   const tag = TAG_OF[type];
   if (tag === undefined)
     throw new Error(`Нет записи Fountain для типа «${type}»`);
-  return `[[@${tag}${text === "" ? "" : ` ${text}`}]]`;
+  const lines = rows(text);
+  // The note ends on the first line that ends with `]]` (agno/core/importers/fountain.py).
+  if (lines.slice(0, -1).some((line) => line.endsWith("]]")))
+    throw new Error(
+      `Абзац «${type}» со строкой, которая кончается на «]]», нельзя записать в Fountain`,
+    );
+  return `[[@${tag}${text === "" ? "" : ` ${lines.join("\n")}`}]]`;
+}
+
+/** Lines of a dialogue Fountain reads back as one dialogue, or null when it cannot. */
+function dialogueLines(text: string): string | null {
+  const lines = text.split("\n");
+  if (lines[0] === "") return null;
+  const speech = lines.every(
+    (line) =>
+      line === "" || (line === line.trim() && !/^(\(.*\)|~|\[\[)/.test(line)),
+  );
+  return speech ? rows(text).join("\n") : null;
+}
+
+/** Lines of an action Fountain reads back as one action, or null when it cannot. */
+function actionLines(text: string): string | null {
+  const [first, ...rest] = text.split("\n");
+  if (first === "" || first !== first.trimEnd()) return null;
+  const joined = rest.every(
+    (line) =>
+      line === "" ||
+      (line === line.trimEnd() &&
+        !line.trim().startsWith("[[") &&
+        line.trim() !== "==="),
+  );
+  if (!joined) return null;
+  // A first line read as another type (a cue, when lines follow it) gets the forced-action mark.
+  const forced =
+    SPECIAL_START.test(first) ||
+    isSceneHeading(first) ||
+    isTransition(first) ||
+    (rest.length > 0 && plainCue(first));
+  return (forced ? "!" : "") + rows(text).join("\n");
 }
 
 /** A cue Fountain reads as a character without the `@` mark. */
@@ -72,10 +124,13 @@ export function docToFountain(doc: Node): string {
   const lines: string[] = [];
   // Whether the last line is inside a character block (no blank line since the cue).
   let speech = false;
+  // Whether the last line of the character block is dialogue: dialogue under it would join it.
+  let afterDialogue = false;
   const block = (line: string) => {
     if (lines.length > 0) lines.push("");
     lines.push(line);
     speech = false;
+    afterDialogue = false;
   };
 
   doc.forEach((node, _offset, index) => {
@@ -85,7 +140,7 @@ export function docToFountain(doc: Node): string {
     }
     const type = node.type.name as ElementName;
     const text = node.textContent;
-    // Empty paragraphs and line breaks have no Fountain form: keep them as tagged notes.
+    // Empty paragraphs and line breaks of other types have no Fountain form: keep them as tagged notes.
     const plain = text !== "" && !text.includes("\n");
 
     switch (type) {
@@ -102,20 +157,30 @@ export function docToFountain(doc: Node): string {
         return;
       }
       case "parenthetical":
-      case "dialogue":
         if (speech) {
           const free = plain && !/^(\(.*\)|~|\[\[)/.test(text);
-          lines.push(
-            !free
-              ? tagged(type, text)
-              : type === "parenthetical"
-                ? `(${text})`
-                : text,
-          );
+          lines.push(free ? `(${text})` : tagged(type, text));
+          afterDialogue = false;
         } else {
           block(tagged(type, text));
         }
         return;
+      case "dialogue": {
+        if (!speech) {
+          block(tagged(type, text));
+          return;
+        }
+        // Lines of a dialogue in a row are one dialogue: a second dialogue goes as a note.
+        const free = afterDialogue || text === "" ? null : dialogueLines(text);
+        lines.push(free ?? tagged(type, text));
+        afterDialogue = true;
+        return;
+      }
+      case "action": {
+        const free = text === "" ? null : actionLines(text);
+        block(free ?? tagged(type, text));
+        return;
+      }
     }
     if (!plain) {
       block(tagged(type, text));
@@ -125,13 +190,6 @@ export function docToFountain(doc: Node): string {
       case "sceneHeading":
         block(
           isSceneHeading(text) && !SPECIAL_START.test(text) ? text : `.${text}`,
-        );
-        break;
-      case "action":
-        block(
-          SPECIAL_START.test(text) || isSceneHeading(text) || isTransition(text)
-            ? `!${text}`
-            : text,
         );
         break;
       case "lyrics":

@@ -38,6 +38,8 @@ function paragraph(name: ElementName): NodeSpec {
     group: "block",
     content: "text*",
     defining: true,
+    // Line breaks inside the paragraph are text: typing next to them must not turn them into spaces.
+    whitespace: "pre",
     toDOM: () => [
       "p",
       {
@@ -47,7 +49,8 @@ function paragraph(name: ElementName): NodeSpec {
       },
       0,
     ],
-    parseDOM: [{ tag: `p[data-type="${type}"]` }],
+    // Line breaks inside the paragraph are text: copying and pasting in the editor keeps them.
+    parseDOM: [{ tag: `p[data-type="${type}"]`, preserveWhitespace: "full" }],
   };
 }
 

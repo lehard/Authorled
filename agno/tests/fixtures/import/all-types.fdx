@@ -52,5 +52,22 @@
     <Paragraph Type="Dialogue">
       <Text>Мама, ты где?</Text>
     </Paragraph>
+    <Paragraph Type="Dialogue">
+      <Text>Фыва
+ывафы</Text>
+    </Paragraph>
+    <Paragraph Type="Parenthetical">
+      <Text>(тихо
+почти шёпотом)</Text>
+    </Paragraph>
+    <Paragraph Type="Dialogue">
+      <Text>А
+
+Б</Text>
+    </Paragraph>
+    <Paragraph Type="Action">
+      <Text>Пывапыв
+дальше</Text>
+    </Paragraph>
   </Content>
 </FinalDraft>
