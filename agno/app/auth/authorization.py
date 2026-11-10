@@ -24,12 +24,37 @@ _USER_SCOPES = (
 # Authors run only product agents, one scope per agent; never agents:run or agents:*:run, which
 # would open the platform agents (OS Manager, claude-engineer) that run commands on the server.
 _AUTHOR_SCOPES = (*_USER_SCOPES, "agents:coauthor:run")
+# The service account sa-routines: its authority is saved in the Routines declared in app/company.py
+# (scripts/routines_authorize.sh), because Agno 3.1.10 runs a Routine without saved authority with
+# none and answers 403. A Routine of Company Manager only proposes work: run that one agent and read
+# its runs (the scheduler polls the run it started), read and repoint Routines and schedules (the save
+# goes through PATCH /company/routines), read Company, create or change Projects and Tasks and log its
+# decisions. No admin scope, no other agent, no deletes, no Product, Source or wiki writes; Agno itself
+# keeps a Routine from accepting work or changing schedules while it runs.
+_ROUTINE_SCOPES = (
+    "agents:company-manager-internal:run",
+    "agents:company-manager-internal:read",
+    "routines:read",
+    "routines:write",
+    "schedules:read",
+    "schedules:write",
+    "products:read",
+    "sources:read",
+    "projects:read",
+    "projects:write",
+    "tasks:read",
+    "tasks:write",
+    "wiki:read",
+    "decisions:read",
+    "decisions:write",
+)
 
 GROUP_SCOPES: dict[str, tuple[str, ...]] = {
     "admins": ("agent_os:admin",),
     "editors": _AUTHOR_SCOPES,
     "screenwriters": _AUTHOR_SCOPES,
     "plugins": ("config:read", "sessions:read"),
+    "routines": _ROUTINE_SCOPES,
 }
 
 

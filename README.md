@@ -206,6 +206,21 @@ schedule and run history in Company to see when a review will run and what it di
 Once they're saved in the database, update the saved Routine to change them;
 editing the Python file alone won't change an existing Routine.
 
+<a id="company-routines"></a>
+**Company Routines.** A Routine declared in `agno/app/company.py` runs only with the authority saved
+in it; without it every run is refused with `403`. Save the authority of the service account
+`sa-routines` (group `routines`): create a temporary app password for `sa-routines` in the Authentik
+admin interface, pass it on stdin, then delete it.
+
+```sh
+./scripts/routines_authorize.sh < app-password-file
+ssh authorled 'cd /srv/authorled/app && ./scripts/routines_authorize.sh' < app-password-file
+```
+
+The first line is the local stand, the second the server, after a release that brings a new Routine
+or when a Routine was created again. The script prints the Routines it saved the authority in and stops
+on the first refusal. The authority stays across restarts; to stop a Routine, pause it.
+
 ## Engineers
 
 The platform includes **Claude Engineer**: Claude Code running on DeepSeek through
@@ -607,8 +622,14 @@ on are the token contract in `openspec/specs/auth`. The API accepts only tokens 
   migrated stand. It refuses, and changes nothing, if a user already has a story with a demo
   title, in the trash too. The `fixtures` data source shows the same file.
 - **Groups.** `screenwriters` and `editors` (authors; they may run only the product agent `coauthor`, scope `agents:coauthor:run`), `admins` (superusers, the only ones in the
-  Authentik admin interface and with full API access), `plugins` (service accounts). What each
+  Authentik admin interface and with full API access), `plugins` (service accounts), `routines` (only the
+  service account `sa-routines` of the Company Routines: it runs `company-manager-internal`, reads Company and
+  proposes Projects and Tasks; no admin scopes, no other agent, no deletes). What each
   group may call is in `agno/app/auth/authorization.py`.
+- **Service account `sa-routines`.** A Routine declared in `agno/app/company.py` runs with the authority saved in
+  it, and only `scripts/routines_authorize.sh` saves it (see [Company Routines](#company-routines)). `sa-routines` has no app
+  password in the blueprints or in any env file: create one in the admin interface (Directory → Users →
+  `sa-routines` → App passwords) only for the run of the script, and delete it right after.
 - **Admin interface.** Authentik settings that change without a release are edited at
   `/if/admin/` of the admin host `AUTH_ADMIN_DOMAIN`: in production
   `https://admin.soavtor.app/if/admin/`, locally `http://localhost:9000/if/admin/`.

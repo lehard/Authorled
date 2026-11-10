@@ -69,7 +69,7 @@
 - THEN система MUST вернуть `401`
 
 ### Requirement: Права по группам
-Группы Authentik (`screenwriters`, `editors`, `admins`, `plugins`) MUST сопоставляться с правами (scopes) AgentOS; набор прав каждой группы MUST задаваться модулем `auth` в коде и MUST заменять сохранённый при каждом запуске. Группы авторов (`screenwriters`, `editors`) MUST получать право запуска только продуктовых агентов, по одному scope на агента (`agents:<id>:run`, сейчас — `agents:coauthor:run`); общие права запуска агентов, команд и workflows (`agents:run`, `agents:*:run` и т. п.) группам авторов и плагинов MUST NOT выдаваться: платформенные агенты (OS Manager, `claude-engineer`) исполняют команды и правят файлы на сервере. Маршрут или агент, требующий scope, которого нет в токене, MUST отвечать `403` до запуска LLM. Группа `admins` MUST получать административные scopes; группы `screenwriters` и `editors` MUST получать только перечисленные в сопоставлении.
+Группы Authentik (`screenwriters`, `editors`, `admins`, `plugins`, `routines`) MUST сопоставляться с правами (scopes) AgentOS; набор прав каждой группы MUST задаваться модулем `auth` в коде и MUST заменять сохранённый при каждом запуске. Группы авторов (`screenwriters`, `editors`) MUST получать право запуска только продуктовых агентов, по одному scope на агента (`agents:<id>:run`, сейчас — `agents:coauthor:run`); общие права запуска агентов, команд и workflows (`agents:run`, `agents:*:run` и т. п.) группам авторов, плагинов и Routines MUST NOT выдаваться: платформенные агенты (OS Manager, `claude-engineer`) исполняют команды и правят файлы на сервере. Маршрут или агент, требующий scope, которого нет в токене, MUST отвечать `403` до запуска LLM. Группа `admins` MUST получать административные scopes; группы `screenwriters` и `editors` MUST получать только перечисленные в сопоставлении. Группа `routines` MUST получать только права Routine Company Manager: запуск `company-manager-internal` и чтение его запусков (`agents:company-manager-internal:run`, `agents:company-manager-internal:read`), чтение и правку Routines и расписаний, чтение Products, Sources, Projects, Tasks, wiki и решений Company, создание и правку Projects и Tasks и запись решений Company; административные scopes и удаление записей Company ей MUST NOT выдаваться.
 
 #### Scenario: Нет нужного scope
 - GIVEN токен пользователя группы `screenwriters`, в сопоставлении которой нет scope маршрута
@@ -91,6 +91,22 @@
 - GIVEN токен пользователя группы `editors`
 - WHEN клиент вызывает `POST /agents/coauthor/agui`
 - THEN система MUST выполнить запрос
+
+#### Scenario: Routines и другие агенты
+- GIVEN токен сервисной учётной записи группы `routines`
+- WHEN клиент вызывает `POST /agents/os-manager-internal/runs`, `POST /agents/claude-engineer/runs` или `POST /agents/coauthor/agui`
+- THEN система MUST вернуть `403`
+- AND LLM MUST NOT вызываться
+
+#### Scenario: Routines и маршруты администратора
+- GIVEN токен сервисной учётной записи группы `routines`
+- WHEN клиент вызывает `GET /users`
+- THEN система MUST вернуть `403`
+
+#### Scenario: Routines и Routine Company
+- GIVEN токен сервисной учётной записи группы `routines`
+- WHEN клиент вызывает `GET /company/routines`
+- THEN система MUST вернуть `200`
 
 ### Requirement: Изоляция данных Agno
 Система MUST хранить и читать сессии, память и обучение Agno под `user_id`, равным `sub` токена; пользователь MUST NOT получать данные Agno другого пользователя. Эта изоляция MUST NOT считаться защитой данных произведения.
@@ -251,7 +267,7 @@ Authentik MUST использовать общую PostgreSQL проекта и 
 ### Requirement: Контракт токена
 Связь бэкенда с Authentik MUST ограничиваться контрактом токена; при выносе Authentik из репозитория обе стороны MUST соблюдать этот контракт без изменений бэкенда. Access Token MUST быть JWT, подписанным алгоритмом `RS256` ключом Authentik, открытая часть которого выгружена в `JWT_JWKS_FILE`, и MUST содержать claims:
 - `sub` — постоянный идентификатор пользователя или сервисной учётной записи; бэкенд MUST использовать его как `user_id`;
-- `groups` — список строк из закрытого перечня `screenwriters`, `editors`, `admins`, `plugins`;
+- `groups` — список строк из закрытого перечня `screenwriters`, `editors`, `admins`, `plugins`, `routines`;
 - `iss` — равен `AUTH_ISSUER`;
 - `aud` — равен `AUTH_FRONTEND_CLIENT_ID`;
 - `exp` — срок действия.
@@ -596,3 +612,18 @@ Authentik MUST отправлять письма (коды входа) чере�
 - GIVEN автор без сессии
 - WHEN фронтенд начинает вход по OIDC на `auth.soavtor.app`
 - THEN Authentik MUST провести его через `authorled-authentication` и поток согласия и выдать код авторизации
+
+### Requirement: Сервисная учётная запись Routines
+Blueprints модуля MUST объявлять сервисную учётную запись `sa-routines`, единственную в группе `routines`. Постоянного пароля приложения у неё MUST NOT быть ни в blueprints, ни в env-файлах: пароль приложения владелец выдаёт в админке Authentik на время сохранения прав Routine и удаляет после. Её токен MUST получаться так же, как у других сервисных учётных записей (`client_credentials` с паролем приложения), и проходить ту же проверку, что токены пользователей.
+
+#### Scenario: Учётная запись после деплоя
+- GIVEN blueprints применены при запуске Authentik
+- WHEN владелец открывает учётную запись `sa-routines` в админке
+- THEN она MUST быть сервисной учётной записью в группе `routines`
+- AND у неё MUST NOT быть паролей приложения и токенов, созданных blueprints
+
+#### Scenario: Токен по временному паролю
+- GIVEN владелец выдал `sa-routines` пароль приложения
+- WHEN выполняется запрос токена `client_credentials` с `username=sa-routines` и этим паролем
+- THEN Authentik MUST выдать Access Token с `sub` учётной записи и группой `routines`
+- AND токен MUST проходить проверку «Проверка токена» и «Контракт токена»

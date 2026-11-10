@@ -29,11 +29,12 @@
 ## Decisions
 
 1. **Группа `routines` с явным перечнем scopes.** В `GROUP_SCOPES`:
-   - `agents:company-manager-internal:run`;
+   - `agents:company-manager-internal:run` и `agents:company-manager-internal:read` — запуск и чтение своего запуска: планировщик после `202` опрашивает `GET /agents/company-manager-internal/runs/{id}`, и без права чтения запуск записывается `failed 403`, хотя агент работает (найдено на стенде 2026-11-10);
    - `routines:read`, `routines:write`, `schedules:read`, `schedules:write` — маршруты `GET/PATCH /company/routines/*` (`os/scopes.py`);
    - `products:read`, `sources:read`, `projects:read`, `tasks:read`, `wiki:read`, `decisions:read` — чтение, которое проверяют инструменты Company (`tools/company.py`);
-   - `projects:write`, `tasks:write` — предложения работы.
-   Без `agent_os:admin`, `agents:run`, `agents:*:run`, `*:delete`, `products:write`, `sources:write`, `wiki:write`, `decisions:write`: Routine только предлагает. Если ручной запуск на стенде покажет, что инструменту не хватает права, перечень дополняется точечно, с записью причины в `tmp/VERIFY.md`; при необходимости более широкого права — остановиться и спросить владельца.
+   - `projects:write`, `tasks:write` — предложения работы;
+   - `decisions:write` — Company Manager записывает причины своих предложений в журнал решений Company (`log_company_decision`; найдено на стенде 2026-11-10).
+   Без `agent_os:admin`, `agents:run`, `agents:*:run`, `*:delete`, `products:write`, `sources:write`, `wiki:write`: Routine только предлагает. Если ручной запуск на стенде покажет, что инструменту не хватает права, перечень дополняется точечно, с записью причины в `tmp/VERIFY.md`; при необходимости более широкого права — остановиться и спросить владельца.
    *Альтернатива:* выдать группе `agent_os:admin` — отклонено: снимок с правами администратора в базе и запуск OS Manager.
 
 2. **Учётная запись `sa-routines` без пароля приложения в blueprints.** В `40-service-accounts.yaml` объявляется пользователь `type: service_account` в группе `routines`, без `authentik_core.token`. Пароль приложения владелец создаёт в админке Authentik (локально `http://localhost:9000/if/admin/`, на сервере `https://admin.soavtor.app/if/admin/`) только на время запуска команды и удаляет после. Локально для проверки исполнитель создаёт временный пароль приложения командой `ak shell` в `authentik-worker` и удаляет его после проверки (тестовое значение, на локальном стенде).
