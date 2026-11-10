@@ -1,6 +1,6 @@
 // Export samples of the editor (design of story-data-web, decision 9): one document with all 14
-// paragraph types, exported to Fountain and FDX. The core tests import these files
-// (agno/tests/test_import.py), so the round trip is checked against the current export.
+// paragraph types and line breaks inside paragraphs, exported to Fountain and FDX. The core tests
+// import these files (agno/tests/test_import.py), so the round trip is checked against the current export.
 // `npm run check:editor` compares them; `npm run samples:export` writes them again.
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -30,6 +30,11 @@ export const SAMPLE_ROWS: [ElementName, string][] = [
   ["sceneHeading", "ИНТ. ДОМ ВЕРЫ — ДЕНЬ"],
   ["character", "МИША (ЗК)"],
   ["dialogue", "Мама, ты где?"],
+  // Line breaks (editor-line-break-parenthetical): two dialogues in a row stay two.
+  ["dialogue", "Фыва\nывафы"],
+  ["parenthetical", "тихо\nпочти шёпотом"],
+  ["dialogue", "А\n\nБ"],
+  ["action", "Пывапыв\nдальше"],
 ];
 
 /** File path → what the current export writes for the sample document. */

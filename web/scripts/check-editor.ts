@@ -31,6 +31,7 @@ import { docToFountain } from "../src/editor/exporters/fountain.ts";
 import {
   ELEMENT_KEYS,
   enter,
+  lineBreak,
   outlineEnter,
   outlineTab,
   shiftTab,
@@ -83,6 +84,7 @@ import {
   visibilityPlugin,
 } from "../src/editor/plugins/visibility.ts";
 import { SCENE_HEADING_START } from "../src/editor/plugins/inputRules.ts";
+import { parenthesisPlugin } from "../src/editor/plugins/parenthesis.ts";
 import { sceneUidsPlugin } from "../src/editor/plugins/sceneUids.ts";
 import { findAnchor, placeAnchors } from "../src/editor/anchors.ts";
 import { schema } from "../src/editor/schema/index.ts";
@@ -190,8 +192,12 @@ for (const [code, rule] of Object.entries(TYPES)) {
   const middle = types(run(enter, state(name, "Текст", 2)));
   if (middle !== `${name}, ${name}`)
     fail(`${label}: Enter в середине даёт «${middle}»`);
+  // In a dialogue Tab in the middle puts a parenthetical in (section 12).
   const tabMiddle = types(run(tab, state(name, "Текст", 2)));
-  if (tabMiddle !== name) fail(`${label}: Tab в середине даёт «${tabMiddle}»`);
+  const wantTabMiddle =
+    name === "dialogue" ? "dialogue, parenthetical, dialogue" : name;
+  if (tabMiddle !== wantTabMiddle)
+    fail(`${label}: Tab в середине даёт «${tabMiddle}»`);
 }
 const back = types(run(shiftTab, state("action", "Текст")));
 if (back !== "sceneCharacters")
@@ -1038,6 +1044,164 @@ try {
     fail(`номера после удаления сцены: ${numbers(s.doc)}, нужно «1, 2, 3»`);
 }
 
+// 12. Line breaks and brackets (editor-line-break-parenthetical).
+{
+  const rows = (s: EditorState) =>
+    paragraphs(toJSON(s.doc))
+      .map((p) => `${p.type}:${p.text}`)
+      .join(" | ");
+  /** State of `paragraphs`, the caret in paragraph `index` at `at` (default: its end). */
+  const stateIn = (
+    rowsOf: [ElementName, string][],
+    index: number,
+    at?: number,
+  ): EditorState => {
+    const doc = toNode(plainDoc(rowsOf));
+    let pos = 0;
+    for (let i = 0; i < index; i += 1) pos += doc.child(i).nodeSize;
+    const offset = at ?? doc.child(index).content.size;
+    return EditorState.create({
+      doc,
+      selection: TextSelection.create(doc, pos + 1 + offset),
+      plugins: [history()],
+    });
+  };
+  /** Typing `text` character by character, as the view does: the bracket plugin first. */
+  const typed = (s: EditorState, text: string): EditorState => {
+    let next = s;
+    for (const ch of text) {
+      const { from, to } = next.selection;
+      let changed = next;
+      const view = {
+        state: next,
+        dispatch: (tr: Parameters<EditorState["apply"]>[0]) => {
+          changed = changed.apply(tr);
+        },
+      } as unknown as Parameters<
+        NonNullable<typeof parenthesisPlugin.props.handleTextInput>
+      >[0];
+      const handled = parenthesisPlugin.props.handleTextInput?.call(
+        parenthesisPlugin,
+        view,
+        from,
+        to,
+        ch,
+        () => next.tr.insertText(ch, from, to),
+      );
+      next =
+        handled === true
+          ? changed
+          : next.apply(next.tr.insertText(ch, from, to));
+    }
+    return next;
+  };
+
+  // Shift+Enter: a line break in the paragraph, none in one-line types.
+  const twoLines = typed(run(lineBreak, state("dialogue", "Фыва")), "ывафы");
+  if (rows(twoLines) !== "dialogue:Фыва\nывафы")
+    fail(`Shift+Enter в реплике даёт «${rows(twoLines)}»`);
+  if (types(run(enter, twoLines)) !== "dialogue, action")
+    fail(`Enter после переноса строки даёт «${types(run(enter, twoLines))}»`);
+  for (const name of ["sceneHeading", "transition", "character"] as const) {
+    const before = state(name, "НАТ. ПОМОСТ — ВЕЧЕР");
+    if (!run(lineBreak, before).doc.eq(before.doc))
+      fail(`Shift+Enter меняет абзац «${ELEMENTS[name].label}»`);
+  }
+  for (const name of [
+    "action",
+    "parenthetical",
+    "lyrics",
+    "unformatted",
+  ] as const) {
+    if (rows(run(lineBreak, state(name, "А"))) !== `${name}:А\n`)
+      fail(`Shift+Enter не переносит строку в «${ELEMENTS[name].label}»`);
+  }
+  // Typing next to a line break and pasting a paragraph keep it: the view rereads the DOM with
+  // whitespace kept only in "pre" nodes (the reread itself is checked in the browser).
+  for (const name of ELEMENT_NAMES) {
+    const spec = schema.nodes[name].spec;
+    if (spec.whitespace !== "pre")
+      fail(
+        `абзац «${ELEMENTS[name].label}» без whitespace: "pre" теряет переносы при наборе`,
+      );
+    if (
+      !(spec.parseDOM ?? []).some((rule) => rule.preserveWhitespace === "full")
+    )
+      fail(`абзац «${ELEMENTS[name].label}» при вставке теряет переносы строк`);
+  }
+
+  // A bracket in a dialogue makes a parenthetical; brackets never double.
+  const cue = typed(
+    stateIn(
+      [
+        ["character", "ДАРЬЯН"],
+        ["dialogue", ""],
+      ],
+      1,
+    ),
+    "(громче",
+  );
+  if (rows(cue) !== "character:ДАРЬЯН | parenthetical:громче")
+    fail(`«(громче» после персонажа даёт «${rows(cue)}»`);
+  const closed = typed(cue, ")");
+  if (rows(closed) !== rows(cue))
+    fail(`«)» в конце ремарки даёт «${rows(closed)}»`);
+  const atEnd = typed(state("dialogue", "Примите жертву."), "(тихо");
+  if (rows(atEnd) !== "dialogue:Примите жертву. | parenthetical:тихо")
+    fail(`«(» в конце реплики даёт «${rows(atEnd)}»`);
+  const opened = typed(state("parenthetical", "громче", 0), "(");
+  if (rows(opened) !== "parenthetical:громче")
+    fail(`«(» в начале ремарки даёт «${rows(opened)}»`);
+  const name = typed(state("character", "ДАРЬЯН "), "(ЗК)");
+  if (rows(name) !== "character:ДАРЬЯН (ЗК)")
+    fail(`«(ЗК)» в персонаже даёт «${rows(name)}»`);
+  const action = typed(state("action", "Вера "), "(");
+  if (rows(action) !== "action:Вера (")
+    fail(`«(» в действии даёт «${rows(action)}»`);
+
+  // Tab or a bracket in the middle of a dialogue: dialogue, empty parenthetical, dialogue; one undo.
+  const line = "Примите жертву и ответьте мне.";
+  const want =
+    "dialogue:Примите жертву | parenthetical: | dialogue:и ответьте мне.";
+  for (const [how, split] of [
+    ["Tab", (s: EditorState) => run(tab, s)],
+    ["«(»", (s: EditorState) => typed(s, "(")],
+  ] as const) {
+    const start = stateIn([["dialogue", line]], 0, "Примите жертву".length);
+    const parts = split(start);
+    if (rows(parts) !== want)
+      fail(`${how} в середине реплики даёт «${rows(parts)}»`);
+    if (parts.selection.$from.parent.type.name !== "parenthetical")
+      fail(`${how} в середине реплики: курсор не в ремарке`);
+    if (undoDepth(parts) !== 1)
+      fail(`${how} в середине реплики: не один шаг отмены`);
+    let back = parts;
+    undo(parts, (tr) => (back = parts.apply(tr)));
+    if (rows(back) !== `dialogue:${line}`)
+      fail(`отмена разбиения реплики даёт «${rows(back)}»`);
+  }
+  const tabAction = state("action", "Текст", 2);
+  if (!run(tab, tabAction).doc.eq(tabAction.doc))
+    fail("Tab в середине действия меняет документ");
+
+  // Fountain: line breaks of dialogue and action as lines, two dialogues stay two.
+  const fountain = docToFountain(
+    toNode(
+      plainDoc([
+        ["character", "ВЕРА"],
+        ["dialogue", "А\n\nБ"],
+        ["dialogue", "В"],
+        ["action", "ВЕРА\nстоит"],
+        ["parenthetical", "тихо\nпочти"],
+      ]),
+    ),
+  );
+  const wantFountain =
+    "ВЕРА\nА\n  \nБ\n[[@dialogue В]]\n\n!ВЕРА\nстоит\n\n[[@parenthetical тихо\nпочти]]\n";
+  if (fountain !== wantFountain)
+    fail(`экспорт Fountain с переносами строк: ${JSON.stringify(fountain)}`);
+}
+
 if (failures.length > 0) {
   console.error(
     "check-editor: редактор сценария расходится с openspec/specs/web/screenplay-editor:",
@@ -1046,5 +1210,5 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log(
-  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, образцы экспорта, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник, правки сцен, комментарии, предложения соавтора, копия драфтов, uid сцен, якоря предложений, зазор карточки, номера сцен — без расхождений`,
+  `check-editor: ${ELEMENT_NAMES.length} типов, переходы Tab/Enter, ${Object.keys(wantKeys).length} клавиш, автоподстановка, образцы экспорта, метки цвета, сцены, скрытие, поиск, подсказки, поэпизодник, правки сцен, комментарии, предложения соавтора, копия драфтов, uid сцен, якоря предложений, зазор карточки, номера сцен, переносы строк и скобки ремарки — без расхождений`,
 );

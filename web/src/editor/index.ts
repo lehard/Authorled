@@ -64,6 +64,7 @@ import {
   type FindScope,
 } from "./plugins/find.ts";
 import { screenplayInputRules } from "./plugins/inputRules.ts";
+import { parenthesisPlugin } from "./plugins/parenthesis.ts";
 import { paginationPlugin } from "./plugins/pagination.ts";
 import { sceneNumbersPlugin } from "./plugins/sceneNumbers.ts";
 import { sceneUidsPlugin } from "./plugins/sceneUids.ts";
@@ -179,6 +180,8 @@ export class ScreenplayEditorView {
     this.readOnly = options.readOnly ?? false;
     this.container = options.container;
     const plugins = [
+      // Before the input rules: a typed bracket in a dialogue makes a parenthetical.
+      parenthesisPlugin,
       screenplayInputRules,
       // Before the keys of the types: an open list takes arrows, Enter, Tab and Escape.
       suggestPlugin,

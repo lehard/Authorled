@@ -37,6 +37,16 @@ def test_fountain_matches_the_editor_importer() -> None:
         assert got == paragraphs, name
 
 
+def test_fdx_sample_matches_the_fountain_sample() -> None:
+    """Both samples come from one document: FDX gives the same paragraphs, line breaks included."""
+    expected = json.loads((SAMPLES / "fountain-expected.json").read_text())["files"]["all-types.fountain"]
+    got = [
+        {"type": p.kind, "text": "".join(r.text for r in p.runs)}
+        for p in parse_fdx((SAMPLES / "all-types.fdx").read_bytes())
+    ]
+    assert got == expected
+
+
 def test_round_trip_through_our_fountain() -> None:
     doc = parse_manuscript(".fountain", (SAMPLES / "all-types.fountain").read_bytes()).doc
     assert set(ELEMENT_NAMES) <= set(_types(doc))
@@ -56,6 +66,45 @@ def test_fdx_marks() -> None:
     ).encode()
     (paragraph,) = parse_fdx(xml)
     assert [(r.text, r.marks) for r in paragraph.runs] == [("Вера", ("bold", "italic")), (" молчит", ())]
+
+
+def _paragraphs(source: str) -> list[tuple[str, str]]:
+    return [(p.kind, "".join(r.text for r in p.runs)) for p in parse_fountain(source)]
+
+
+def test_fountain_dialogue_lines_are_one_dialogue() -> None:
+    assert _paragraphs("ДАРЬЯН\nФыва\nывафы\n") == [("character", "ДАРЬЯН"), ("dialogue", "Фыва\nывафы")]
+    # Two spaces keep an empty line inside the dialogue; a parenthetical ends it.
+    assert _paragraphs("ВЕРА\nА\n  \nБ\n(тихо)\nВ\n") == [
+        ("character", "ВЕРА"),
+        ("dialogue", "А\n\nБ"),
+        ("parenthetical", "тихо"),
+        ("dialogue", "В"),
+    ]
+
+
+def test_fountain_action_lines_are_one_action() -> None:
+    assert _paragraphs("Пывапыв\nдальше\n\nДругое\n") == [("action", "Пывапыв\nдальше"), ("action", "Другое")]
+
+
+def test_fountain_note_on_several_lines() -> None:
+    assert _paragraphs("ВЕРА\n[[@parenthetical тихо\nпочти шёпотом]]\nДа.\n") == [
+        ("character", "ВЕРА"),
+        ("parenthetical", "тихо\nпочти шёпотом"),
+        ("dialogue", "Да."),
+    ]
+    assert _paragraphs("[[@text а\n  \nб]]\n") == [("unformatted", "а\n\nб")]
+    # Without `]]` before a blank line the line is no note.
+    assert _paragraphs("[[незакрытая\n\nТекст\n") == [("action", "[[незакрытая"), ("action", "Текст")]
+
+
+def test_fdx_keeps_a_line_break() -> None:
+    xml = (
+        '<?xml version="1.0"?><FinalDraft><Content><Paragraph Type="Dialogue">'
+        "<Text>Фыва\nывафы</Text></Paragraph></Content></FinalDraft>"
+    ).encode()
+    (paragraph,) = parse_fdx(xml)
+    assert (paragraph.kind, "".join(r.text for r in paragraph.runs)) == ("dialogue", "Фыва\nывафы")
 
 
 @pytest.mark.parametrize(

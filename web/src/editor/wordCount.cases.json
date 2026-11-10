@@ -430,5 +430,42 @@
       ]
     },
     "words": 3
+  },
+  {
+    "name": "Перенос строки внутри абзаца разделяет слова, пустая строка внутри — не слово",
+    "doc": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "sceneHeading",
+          "attrs": {
+            "alt": "",
+            "day": "",
+            "color": null,
+            "tags": [],
+            "uid": "s1"
+          }
+        },
+        {
+          "type": "dialogue",
+          "content": [
+            {
+              "type": "text",
+              "text": "Фыва\nывафы"
+            }
+          ]
+        },
+        {
+          "type": "action",
+          "content": [
+            {
+              "type": "text",
+              "text": "А\n\nБ"
+            }
+          ]
+        }
+      ]
+    },
+    "words": 4
   }
 ]

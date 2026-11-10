@@ -1,0 +1,2 @@
+# A line of two spaces is an empty line inside a Fountain paragraph (editor-line-break-parenthetical).
+agno/tests/fixtures/import/all-types.fountain -whitespace

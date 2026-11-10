@@ -69,6 +69,22 @@
    {
     "type": "dialogue",
     "text": "Мама, ты где?"
+   },
+   {
+    "type": "dialogue",
+    "text": "Фыва\nывафы"
+   },
+   {
+    "type": "parenthetical",
+    "text": "тихо\nпочти шёпотом"
+   },
+   {
+    "type": "dialogue",
+    "text": "А\n\nБ"
+   },
+   {
+    "type": "action",
+    "text": "Пывапыв\nдальше"
    }
   ],
   "manuscript.txt": [
