@@ -125,3 +125,26 @@ def test_story_from_a_file_takes_the_next_colour(authors: Any) -> None:
     )
     assert response.status_code == 201, response.text
     assert (first["cover_color"], response.json()["project"]["cover_color"]) == ("blue", "teal")
+
+
+def test_story_from_a_file_takes_the_chosen_colour(authors: Any) -> None:
+    author = authors()
+    response = author.post(
+        "/api/v1/projects",
+        data={"title": "Паром", "cover_color": "crimson"},
+        files={"file": ("all-types.fountain", (SAMPLES / "all-types.fountain").read_bytes())},
+    )
+    assert response.status_code == 201, response.text
+    assert response.json()["project"]["cover_color"] == "crimson"
+
+
+def test_story_from_a_file_with_a_colour_outside_the_palette(authors: Any) -> None:
+    author = authors()
+    response = author.post(
+        "/api/v1/projects",
+        data={"title": "Паром", "cover_color": "pink"},
+        files={"file": ("all-types.fountain", (SAMPLES / "all-types.fountain").read_bytes())},
+    )
+    assert response.status_code == 422
+    assert "cover_color" in response.json()["detail"]
+    assert author.get("/api/v1/projects").json() == []

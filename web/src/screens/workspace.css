@@ -3,7 +3,7 @@
  * story covers as books, navigator items, screenplay paragraphs, the title page. Tokens only.
  */
 @layer components {
-  /* A story's cover in its colour (data-cover); the title and two light arcs on the gradient. */
+  /* A story's cover in its colour (data-cover): the gradient under the arcs of its pattern. */
   .book,
   .book-mini,
   .cover-swatch {
@@ -40,43 +40,19 @@
     --cover-to: var(--cover-graphite-to);
     --cover-fg: var(--cover-graphite-foreground);
   }
+  /* A cover holds no text: a frame of 3:4 for a picture, without one the colour and a pattern. */
   .book {
     position: relative;
     display: block;
     overflow: hidden;
     aspect-ratio: 3 / 4;
-    padding: 22px 24px;
     border-radius: 4px 10px 10px 4px;
-    font-family: var(--font-heading);
-    font-size: 22px;
-    line-height: 1.2;
-    /* a long word of the title wraps instead of being cut by the cover's edge */
-    overflow-wrap: break-word;
-    hyphens: auto;
     box-shadow:
       inset 4px 0 0 color-mix(in oklch, var(--foreground) 8%, transparent),
       var(--shadow-panel);
     transition:
       transform 0.15s,
       box-shadow 0.15s;
-  }
-  .book::before,
-  .book::after {
-    content: "";
-    position: absolute;
-    left: -10%;
-    right: -10%;
-    height: 40px;
-    border-radius: 50%;
-    border-top: 1.5px solid
-      color-mix(in oklch, var(--cover-fg) 45%, transparent);
-  }
-  .book::before {
-    bottom: 54px;
-  }
-  .book::after {
-    bottom: 30px;
-    border-top-color: color-mix(in oklch, var(--cover-fg) 28%, transparent);
   }
   .group\/card:hover .book {
     transform: translateY(-3px);
@@ -85,6 +61,8 @@
       var(--shadow-paper);
   }
   .book-mini {
+    position: relative;
+    overflow: hidden;
     width: 40px;
     height: 52px;
     flex: none;
@@ -92,6 +70,71 @@
     box-shadow:
       inset 3px 0 0 color-mix(in oklch, var(--foreground) 10%, transparent),
       var(--shadow-panel);
+  }
+
+  /* Two light arcs; data-pattern (coverPattern of the story id) places them. Sizes are shares of
+     the cover, so a pattern reads the same on the shelf and in the navigator. */
+  :is(.book, .book-mini)::before,
+  :is(.book, .book-mini)::after {
+    content: "";
+    position: absolute;
+    left: -10%;
+    right: -10%;
+    height: 14%;
+    border-radius: 50%;
+    border-top: 1.5px solid
+      color-mix(in oklch, var(--cover-fg) 45%, transparent);
+  }
+  .book-mini::before,
+  .book-mini::after {
+    border-top-width: 1px;
+  }
+  :is(.book, .book-mini)::after {
+    border-top-color: color-mix(in oklch, var(--cover-fg) 28%, transparent);
+  }
+  /* 0: two low arcs, one above the other. */
+  :is(.book, .book-mini)[data-pattern="0"]::before {
+    bottom: 17%;
+  }
+  :is(.book, .book-mini)[data-pattern="0"]::after {
+    bottom: 9%;
+  }
+  /* 1: two wide flat arcs in the middle. */
+  :is(.book, .book-mini)[data-pattern="1"]::before,
+  :is(.book, .book-mini)[data-pattern="1"]::after {
+    left: -40%;
+    right: -40%;
+    height: 24%;
+  }
+  :is(.book, .book-mini)[data-pattern="1"]::before {
+    bottom: 40%;
+  }
+  :is(.book, .book-mini)[data-pattern="1"]::after {
+    bottom: 30%;
+  }
+  /* 2: two low arcs rising to the right. */
+  :is(.book, .book-mini)[data-pattern="2"]::before,
+  :is(.book, .book-mini)[data-pattern="2"]::after {
+    transform: rotate(-9deg);
+  }
+  :is(.book, .book-mini)[data-pattern="2"]::before {
+    bottom: 22%;
+  }
+  :is(.book, .book-mini)[data-pattern="2"]::after {
+    bottom: 12%;
+  }
+  /* 3: an arc hanging from the top and one at the bottom. */
+  :is(.book, .book-mini)[data-pattern="3"]::before {
+    top: 10%;
+    border-top: none;
+    border-bottom: 1.5px solid
+      color-mix(in oklch, var(--cover-fg) 45%, transparent);
+  }
+  .book-mini[data-pattern="3"]::before {
+    border-bottom-width: 1px;
+  }
+  :is(.book, .book-mini)[data-pattern="3"]::after {
+    bottom: 10%;
   }
   /* A sample of the colour in the menu «Цвет обложки». */
   .cover-swatch {

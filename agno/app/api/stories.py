@@ -26,6 +26,7 @@ from app.api.schemas import (
     DocumentOut,
     DraftOut,
     ListedProjectOut,
+    NextCoverColorOut,
     ProjectOut,
     StoryTemplateOut,
     TextOut,
@@ -78,8 +79,18 @@ def list_projects(trash: bool = False, principal: Principal = Depends(current_pr
         return [ListedProjectOut.model_validate(p) for p in stories.list_projects(connection, owner, trash)]
 
 
+@router.get(
+    "/projects/next-cover-color",
+    response_model=NextCoverColorOut,
+    summary="The colour the core gives the caller's next story created without one",
+)
+def next_cover_color(principal: Principal = Depends(current_principal)) -> NextCoverColorOut:
+    with get_engine().connect() as connection:
+        return NextCoverColorOut(cover_color=stories.next_cover_color(connection, caller_id(connection, principal)))
+
+
 def _create_project(principal: Principal, body: dict[str, Any]) -> CreatedProject:
-    unknown = set(body) - {"title", "description", "template"}
+    unknown = set(body) - {"title", "description", "template", "cover_color"}
     if unknown:
         name = sorted(unknown)[0]
         raise Problem(422, "Unprocessable Content", f"Поле «{name}» нельзя задать при создании.")
@@ -88,15 +99,22 @@ def _create_project(principal: Principal, body: dict[str, Any]) -> CreatedProjec
     with get_engine().begin() as connection:
         owner = caller_id(connection, principal)
         project, draft_id, script_id = stories.create_project(
-            connection, owner, body.get("title"), body.get("description", ""), text
+            connection,
+            owner,
+            body.get("title"),
+            body.get("description", ""),
+            text,
+            body.get("cover_color", stories.NEXT_COLOR),
         )
     return CreatedProject(project=ProjectOut.model_validate(project), draft_id=draft_id, script_id=script_id)
 
 
-def _create_project_from_file(principal: Principal, title: str | None, name: str, data: bytes) -> CreatedProject:
+def _create_project_from_file(principal: Principal, values: dict[str, str], name: str, data: bytes) -> CreatedProject:
     with get_engine().begin() as connection:
         owner = caller_id(connection, principal)
-        project, draft_id, script_id = imports.create_project_from_file(connection, owner, title, name, data)
+        project, draft_id, script_id = imports.create_project_from_file(
+            connection, owner, values.get("title"), name, data, values.get("cover_color", stories.NEXT_COLOR)
+        )
     return CreatedProject(project=ProjectOut.model_validate(project), draft_id=draft_id, script_id=script_id)
 
 
@@ -120,6 +138,10 @@ def _create_project_from_file(principal: Principal, title: str | None, name: str
                                 "type": "string",
                                 "description": "id of a structure template from GET /api/v1/story-templates",
                             },
+                            "cover_color": {
+                                "type": "string",
+                                "description": "a palette colour; without it GET /api/v1/projects/next-cover-color",
+                            },
                         },
                     }
                 },
@@ -127,7 +149,11 @@ def _create_project_from_file(principal: Principal, title: str | None, name: str
                     "schema": {
                         "type": "object",
                         "required": ["title", "file"],
-                        "properties": {"title": {"type": "string"}, "file": {"type": "string", "format": "binary"}},
+                        "properties": {
+                            "title": {"type": "string"},
+                            "cover_color": {"type": "string"},
+                            "file": {"type": "string", "format": "binary"},
+                        },
                     }
                 },
             },
@@ -137,10 +163,10 @@ def _create_project_from_file(principal: Principal, title: str | None, name: str
 async def create_project(request: Request, principal: Principal = Depends(current_principal)) -> CreatedProject:
     if is_multipart(request):
         # `template` is read only to refuse it by name: a story from a manuscript starts from its text.
-        values, name, data = await read_upload(request, {"title", "template"})
+        values, name, data = await read_upload(request, {"title", "template", "cover_color"})
         if "template" in values:
             raise Problem(422, "Unprocessable Content", "Поле «template»: история из рукописи создаётся без каркаса.")
-        return await run_in_threadpool(_create_project_from_file, principal, values.get("title"), name, data)
+        return await run_in_threadpool(_create_project_from_file, principal, values, name, data)
     body = await read_object(request)
     return await run_in_threadpool(_create_project, principal, body)
 

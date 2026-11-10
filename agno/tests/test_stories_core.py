@@ -26,6 +26,7 @@ from core.projects import (
     create_project,
     delete_project,
     list_projects,
+    next_cover_color,
     owns_project,
     project_row,
     restore_project,
@@ -204,6 +205,36 @@ def test_story_in_trash_counts_for_the_colour(connection: Connection) -> None:
 def test_another_author_starts_from_blue(connection: Connection) -> None:
     _colors(connection, _owner(connection, "s1"), 3)
     assert _colors(connection, _owner(connection, "s2"), 1) == ["blue"]
+
+
+def test_chosen_colour_at_creation(connection: Connection) -> None:
+    owner = _owner(connection)
+    create_project(connection, owner, "Маяк")
+    assert create_project(connection, owner, "Паром", cover_color="plum")[0].cover_color == "plum"
+
+
+def test_colours_go_on_after_the_chosen_one(connection: Connection) -> None:
+    owner = _owner(connection)
+    create_project(connection, owner, "Маяк", cover_color="crimson")
+    assert create_project(connection, owner, "Паром")[0].cover_color == "plum"
+
+
+@pytest.mark.parametrize("colour", ["pink", None, ""])
+def test_colour_outside_the_palette_at_creation_is_refused(connection: Connection, colour: object) -> None:
+    owner = _owner(connection)
+    with pytest.raises(Invalid) as error:
+        create_project(connection, owner, "Маяк", cover_color=colour)
+    assert error.value.field == "cover_color"
+    assert list_projects(connection, owner, False) == []
+
+
+def test_next_colour_is_the_one_a_new_story_takes(connection: Connection) -> None:
+    owner = _owner(connection)
+    assert next_cover_color(connection, owner) == "blue"
+    story, _, _ = create_project(connection, owner, "Маяк", cover_color="teal")
+    trash_project(connection, story.id)
+    assert next_cover_color(connection, owner) == "amber"
+    assert create_project(connection, owner, "Паром")[0].cover_color == "amber"
 
 
 def test_colour_change_keeps_the_place_on_the_shelf(connection: Connection) -> None:

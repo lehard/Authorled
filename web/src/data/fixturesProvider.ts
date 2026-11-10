@@ -23,6 +23,7 @@ import type {
   NewDraft,
   NewNote,
   NewProject,
+  CoverOperation,
   NewReply,
   NewThread,
   Point,
@@ -498,9 +499,7 @@ export const fixturesProvider: DataProvider = {
         id: crypto.randomUUID(),
         title: project.title,
         desc: project.desc,
-        coverColor: nextCoverColor(
-          (table("projects").at(-1) as Project | undefined)?.coverColor,
-        ),
+        coverColor: project.coverColor,
         updatedAt: now(),
         deletedAt: null,
         wordGoal: null,
@@ -658,8 +657,17 @@ export const fixturesProvider: DataProvider = {
 
   custom: async ({ meta, payload }) => {
     const op = { operation: meta?.operation, payload } as
-      SaveOperation | SearchOperation | WritingOperation;
+      CoverOperation | SaveOperation | SearchOperation | WritingOperation;
     switch (op.operation) {
+      case "nextCoverColor":
+        // The core's rule over the stories of the sample: the colour after the last one created.
+        return {
+          data: {
+            coverColor: nextCoverColor(
+              (table("projects").at(-1) as Project | undefined)?.coverColor,
+            ),
+          } as never,
+        };
       case "writing":
         return { data: writing(op.payload.draftId, op.payload.tz) as never };
       case "setDailyGoal":

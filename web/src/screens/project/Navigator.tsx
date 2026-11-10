@@ -25,6 +25,7 @@ import { useState, type DragEvent, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router";
 
 import {
+  coverPattern,
   SCRIPT_PARTS,
   type Entity,
   type EntityKind,
@@ -393,6 +394,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
         <span
           className="book-mini"
           data-cover={project.coverColor}
+          data-pattern={coverPattern(project.id)}
           aria-hidden
         />
         <span className="min-w-0">

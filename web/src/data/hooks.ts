@@ -1,7 +1,9 @@
-import { useList, useOne, type CrudFilter } from "@refinedev/core";
+import { useCustom, useList, useOne, type CrudFilter } from "@refinedev/core";
 
 import {
   ENTITY_RESOURCE,
+  type CoverColor,
+  type CoverOperation,
   type CommentThread,
   type Draft,
   type Entity,
@@ -45,6 +47,26 @@ export function useStoryTemplates() {
     queryOptions: { retry: false },
   });
   return { templates: result.data, query };
+}
+
+/**
+ * The colour the core gives a new story without a chosen one (openspec/specs/web/workspace, «Цвет
+ * обложки в диалоге новой истории»): read again at each opening of the dialog, no retries.
+ */
+export function useNextCoverColor() {
+  const op: CoverOperation["operation"] = "nextCoverColor";
+  const { query, result } = useCustom<{ coverColor: CoverColor }>({
+    url: op,
+    method: "get",
+    meta: { operation: op },
+    queryOptions: { retry: false, refetchOnMount: "always", gcTime: 0 },
+    successNotification: false,
+    errorNotification: false,
+  });
+  return {
+    color: (result.data as { coverColor: CoverColor } | undefined)?.coverColor,
+    query,
+  };
 }
 
 export function useProject(id: string) {

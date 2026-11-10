@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Соавтор</title>
+    <!-- Order of the cascade layers before any stylesheet (openspec/specs/web/design-system,
+         «Порядок слоёв CSS»): the build may link a screen's styles before the main ones, and the
+         first declaration of a layer would otherwise put components under Tailwind's reset. -->
+    <style>
+      @layer properties, theme, base, components, utilities;
+    </style>
     <script>
       // Applies the saved or system theme before first paint (openspec/specs/web/design-system).
       // Keep THEMES and KEY in sync with src/design-system/theme.ts.

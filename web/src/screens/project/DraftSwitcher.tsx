@@ -149,7 +149,7 @@ export function DraftSwitcher({ onNavigate }: { onNavigate: () => void }) {
               <MoreVertical />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="w-auto">
             <DropdownMenuItem onSelect={() => setRenaming(true)}>
               <Pencil />
               Переименовать

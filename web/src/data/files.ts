@@ -1,6 +1,6 @@
 import { useCustomMutation } from "@refinedev/core";
 
-import type { Note } from "@/data/model";
+import type { CoverColor, Note } from "@/data/model";
 import type { ScreenplayDoc } from "@/editor/document.ts";
 
 // Files of a story through the `custom` operations of the data source (design of
@@ -24,7 +24,10 @@ export type Upload = {
 export type FileOperation =
   | { operation: "upload"; payload: Upload }
   | { operation: "import"; payload: { draftId: string; fileId: string } }
-  | { operation: "createFromFile"; payload: { title: string; file: File } }
+  | {
+      operation: "createFromFile";
+      payload: { title: string; file: File; coverColor: CoverColor };
+    }
   | { operation: "noteFromUpload"; payload: { projectId: string; file: File } }
   | { operation: "noteFromChatFile"; payload: { fileId: string } }
   | { operation: "fileContent"; payload: { fileId: string } };
@@ -59,10 +62,10 @@ export function useStoryFiles() {
         payload: { draftId, fileId },
       }),
     /** A new story from a manuscript. */
-    createFromFile: (title: string, file: File) =>
+    createFromFile: (title: string, file: File, coverColor: CoverColor) =>
       run<NewStory>({
         operation: "createFromFile",
-        payload: { title, file },
+        payload: { title, file, coverColor },
       }),
     /** A note of the story from a file, with the file as its original. */
     noteFromUpload: (projectId: string, file: File) =>

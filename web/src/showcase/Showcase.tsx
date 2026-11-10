@@ -12,7 +12,7 @@ import {
 } from "@/design-system";
 import { plainDoc, type ScreenplayDoc } from "@/editor/document.ts";
 import { ScreenplayEditor } from "@/editor/ScreenplayEditor";
-import { COVER_COLORS } from "@/data/model";
+import { COVER_COLORS, COVER_PATTERNS } from "@/data/model";
 import "@/screens/workspace.css";
 
 // Design-system showcase (openspec/specs/web/design-system, requirement «Витрина»).
@@ -221,14 +221,37 @@ export function Showcase() {
 
       <Section title="Обложки">
         <p className="text-body text-muted-foreground">
-          Обложка истории, пока своей нет: --cover-&lt;цвет&gt;-from, -to,
-          -foreground.
+          Обложка истории, пока своей нет: градиент --cover-&lt;цвет&gt;-from,
+          -to и дуги узора цвета -foreground. Текста на обложке нет, название
+          под ней.
         </p>
         <div className="desk grid grid-cols-2 gap-4 rounded-panel p-6 sm:grid-cols-3 lg:grid-cols-6">
-          {Object.entries(COVER_COLORS).map(([color, label]) => (
-            <span key={color} className="book" data-cover={color}>
-              {label}
-            </span>
+          {Object.entries(COVER_COLORS).map(([color, label], i) => (
+            <figure key={color} className="grid gap-2">
+              <span
+                className="book"
+                data-cover={color}
+                data-pattern={COVER_PATTERNS[i % COVER_PATTERNS.length]}
+                aria-hidden
+              />
+              <figcaption className="text-caption">{label}</figcaption>
+            </figure>
+          ))}
+        </div>
+        <p className="text-body text-muted-foreground">
+          Узоры по id истории (data-pattern), на одном цвете.
+        </p>
+        <div className="desk grid grid-cols-2 gap-4 rounded-panel p-6 sm:grid-cols-4">
+          {COVER_PATTERNS.map((pattern) => (
+            <figure key={pattern} className="grid gap-2">
+              <span
+                className="book"
+                data-cover="blue"
+                data-pattern={pattern}
+                aria-hidden
+              />
+              <figcaption className="text-caption">Узор {pattern}</figcaption>
+            </figure>
           ))}
         </div>
       </Section>

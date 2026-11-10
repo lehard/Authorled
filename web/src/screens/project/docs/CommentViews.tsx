@@ -99,7 +99,7 @@ function Message({
                 <Ellipsis />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-auto">
               <DropdownMenuItem onSelect={() => setEditing(m.text)}>
                 Изменить
               </DropdownMenuItem>
