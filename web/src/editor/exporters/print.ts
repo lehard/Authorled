@@ -111,9 +111,13 @@ function titleHTML(t: TitlePage): string {
     t.author.trim() === ""
       ? ""
       : `<p class="tp-by">Автор</p>${line("tp-author", t.author)}`;
+  // The same composition as the sheet on the screen (web/workspace, «Композиция титульной страницы»):
+  // the block starts at 42 % of the text area, the contacts bottom left, the place bottom right.
   return `<div class="page title-page">
+<div></div>
 <div class="tp-main">${line("tp-title", t.title)}${line("tp-genre", t.genre)}${author}</div>
-<div class="tp-foot">${line("tp-contacts", t.contacts)}${line("tp-place", t.place)}</div>
+<div></div>
+<div class="tp-foot"><div class="tp-contacts-col">${line("tp-contacts", t.contacts)}</div>${line("tp-place", t.place)}</div>
 </div>`;
 }
 
@@ -140,12 +144,12 @@ p { line-height: 16px; min-height: 16px; position: relative; orphans: 2; widows:
 .sn-l { right: calc(100% + 12px); }
 .sn-r { left: calc(100% + 12px); }
 .page-number { display: block; text-align: right; margin-bottom: 16px; }
-.title-page { display: flex; flex-direction: column; justify-content: space-between; text-align: center; }
-.tp-main { padding-top: 3in; }
-.tp-title { font-weight: bold; text-transform: uppercase; margin-bottom: 32px; }
+.title-page { display: grid; grid-template-rows: minmax(0, 42%) auto minmax(32px, 1fr) auto; text-align: center; }
+.tp-title { font-weight: bold; text-transform: uppercase; margin-bottom: 16px; }
 .tp-genre { margin-bottom: 32px; }
-.tp-by { margin-bottom: 8px; }
-.tp-foot { text-align: left; }
+.tp-foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; text-align: left; }
+.tp-contacts-col { flex: 1; min-width: 0; }
+.tp-place { max-width: 50%; text-align: right; }
 .title-page p { overflow-wrap: anywhere; }
 @media screen {
   html { background: var(--around); }

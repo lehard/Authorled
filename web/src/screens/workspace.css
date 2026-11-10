@@ -201,8 +201,12 @@
     padding: 64px 64px 56px;
     font-family: var(--font-script);
     font-size: 15px;
-    display: flex;
-    flex-direction: column;
+    /* The composition of the title page (web/workspace, «Композиция титульной страницы»; the
+       print has the same rows): a gap of up to 42 % of the text area, the block, a gap of at
+       least two lines, the bottom. When the fields do not fit, the upper gap gives way first
+       and the block moves up; then the sheet grows. */
+    display: grid;
+    grid-template-rows: minmax(0, 42%) auto minmax(2lh, 1fr) auto;
   }
   /* Tasks of the co-author on an empty prose sheet: a row under the placeholder, over the empty
      field; clicks beside the buttons reach the field. */
