@@ -121,7 +121,7 @@ export function NoteDoc({ id }: { id: string }) {
               <MoreHorizontal />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="w-auto">
             <DropdownMenuItem
               variant="destructive"
               onSelect={() =>
