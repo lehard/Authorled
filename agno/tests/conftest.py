@@ -1,5 +1,7 @@
-"""Core tests run on the fresh database ai_test that ./scripts/dev.sh test prepares and migrates."""
+"""Core tests run on the fresh test database that ./scripts/dev.sh test prepares and migrates:
+ai_test in the main checkout, ai_test_<worktree> in a worktree (openspec/specs/core/database)."""
 
+import re
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -13,7 +15,7 @@ from core.connection import build_db_url
 # Fixtures of the route tests: client, authors.
 pytest_plugins = ["tests.routes"]
 
-TEST_DATABASE = "ai_test"
+TEST_DATABASE = re.compile(r"ai_test(_[a-z0-9_]+)?")
 ALEMBIC_INI = Path(__file__).resolve().parents[1] / "alembic.ini"
 BILLING_ALEMBIC_INI = Path(__file__).resolve().parents[1] / "billing" / "alembic.ini"
 
@@ -22,9 +24,10 @@ BILLING_ALEMBIC_INI = Path(__file__).resolve().parents[1] / "billing" / "alembic
 def engine() -> Iterator[Engine]:
     url = build_db_url()
     database = make_url(url).database
-    if database != TEST_DATABASE:
+    if database is None or TEST_DATABASE.fullmatch(database) is None:
         raise RuntimeError(
-            f"Core tests run only on {TEST_DATABASE}, DB_DATABASE is {database!r}: use ./scripts/dev.sh test"
+            f"Core tests run only on ai_test or ai_test_<worktree>, DB_DATABASE is {database!r}: "
+            "use ./scripts/dev.sh test"
         )
     engine = create_engine(url)
     yield engine

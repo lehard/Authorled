@@ -35,8 +35,9 @@ updated: 2026-11-05
 
 ## Запуск проверок
 - формат/линт/типы: `./scripts/validate.sh` (тот же гейт в CI), автоформат `./scripts/format.sh`; `git diff --check`
-- тесты: `./scripts/dev.sh test` — создаёт чистую базу `ai_test` в `agentos-db`, готовит её `init.sql`, применяет миграции и запускает `pytest` из `agno/tests/` под ролью `agentos`; моков базы нет
-- миграции в разработке: `./scripts/dev.sh migrate` (контейнер `agentos-migrate`); новая миграция — `alembic revision` из `agno/` с осмысленным именем, проверка на чистой базе через `./scripts/dev.sh test`
+- стенд: запускает, останавливает и сбрасывает только основная папка (`./scripts/dev.sh up|db|stop|reset-db`); из worktree остальные команды `dev.sh` пользуются работающим стендом и своими базами, `.env` worktree — ссылка на `.env` основной папки
+- тесты: `./scripts/dev.sh test` — создаёт чистую тестовую базу в `agentos-db` (`ai_test`, в worktree `ai_test_<worktree>`), готовит её `init.sql`, применяет миграции и запускает `pytest` из `agno/tests/` под ролью `agentos`; моков базы нет
+- миграции в разработке: `./scripts/dev.sh migrate` (на хосте, в базу рабочей копии: `ai`, в worktree `ai_dev_<worktree>`); новая миграция — `alembic revision` из `agno/` с осмысленным именем, проверка на чистой базе через `./scripts/dev.sh test`
 - MCP без модели: `./scripts/mcp_check.sh`; поведение агента — `python -m evals`
 - сборка: `docker compose up -d --build`; sandbox: `docker build --target sandbox --load -t agno-sandbox:local -f agno/Dockerfile .`
 > TODO: CI-проверки методологии появятся с кодом ядра.

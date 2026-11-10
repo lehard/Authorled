@@ -72,7 +72,8 @@ The first build can take a few minutes: Authentik applies its migrations and blu
 one-shot `agentos-migrate` applies the migrations of the product schema `authorled` and then those of the
 billing schema `billing`, before the API starts. If a migration fails, `agentos-migrate` exits non-zero and the API does not start
 (`docker compose logs agentos-migrate`). `./scripts/dev.sh migrate` reruns the migrations alone,
-`./scripts/dev.sh test` runs the core tests on a separate database `ai_test`. When it's ready, open [http://localhost:8000/docs](http://localhost:8000/docs)
+`./scripts/dev.sh test` runs the core tests on a separate test database (`ai_test`, in a worktree
+`ai_test_<worktree>`). When it's ready, open [http://localhost:8000/docs](http://localhost:8000/docs)
 to see the API. Authorization is on in every environment, so API calls need a token from
 Authentik (see [Module auth](#module-auth)); `./scripts/auth_check.sh` checks the chain.
 
@@ -119,19 +120,25 @@ The check should report `9 tools; required tools available`.
 
 ### Develop with the API on the host
 
-For code changes without rebuilding the image, run PostgreSQL, LiteLLM, ClamAV, Phoenix and Authentik in Docker
-and the API on your computer with `--reload` (needs [uv](https://docs.astral.sh/uv/) and a filled
-`.env`). The command also exports the Authentik keys to `auth/jwks/jwks.json` before
-the API starts:
+For code changes without rebuilding the image, run PostgreSQL, LiteLLM, ClamAV, Phoenix, Authentik and Mailpit in Docker
+and the API on your computer with `--reload` (needs [uv](https://docs.astral.sh/uv/), `lsof` and a filled
+`.env`). `up` starts the stand in the main checkout without the `agentos-api` container; `api` needs port 8000 free
+(stop a running `agentos-api` container yourself: `docker compose stop agentos-api`), migrates the database of the
+checkout on the host and exports the Authentik keys to `auth/jwks/jwks.json` before the API starts:
 
 ```sh
+./scripts/dev.sh up
 ./scripts/dev.sh api
 ```
 
-Other commands: `./scripts/dev.sh db` starts only PostgreSQL and waits until it is healthy,
-`stop` stops the services and keeps the data, `psql` opens `psql` in the database,
-`reset-db --yes` deletes the database volume, including the Authentik data. `.env` is needed even
-for `db`: Compose requires the LiteLLM and Authentik settings for every service.
+The stand (Compose project `authorled`) belongs to the main checkout: only there `up`, `db` (starts only PostgreSQL
+and waits until it is healthy), `stop` (stops the services and keeps the data) and `reset-db --yes` (deletes the
+database volume, including the Authentik data) run. `api`, `migrate`, `test`, `seed`, `psql` and `auth-users` work
+with the running stand from the main checkout or a worktree and never start, stop or recreate its services. The main
+checkout uses the databases `ai` and `ai_test`; a worktree uses its own `ai_dev_<worktree>` (`migrate`, `api`, `seed`,
+`psql`) and `ai_test_<worktree>` (`test`), so branches never migrate `ai` and test runs of sessions do not collide.
+In a worktree `.env` must be a link to the `.env` of the main checkout (`ln -sf <main checkout>/.env .env`).
+`.env` is needed even for `db`: Compose requires the LiteLLM and Authentik settings for every service.
 
 ### 2. Connect the UI
 
@@ -441,7 +448,7 @@ They use your model API keys and save results in the database for review in the 
 PostgreSQL must be running, even when you only want to list the tests. The evals import the
 application, so on the host they also need the auth settings in `.env` (`AUTH_ISSUER`,
 `AUTH_FRONTEND_CLIENT_ID`) and `JWT_JWKS_FILE` pointing at the exported keys
-(`auth/jwks/jwks.json`, written by `./scripts/dev.sh api` or
+(`auth/jwks/jwks.json` of the checkout, written by `./scripts/dev.sh api` or
 `docker compose run --rm authentik-jwks-export`) and a running Phoenix with `PHOENIX_URL=http://127.0.0.1:6006`
 (see [Journal of agent runs](#journal-of-agent-runs)); without them they stop with an error naming the
 missing variable or address.
@@ -567,7 +574,7 @@ access to it). Its configuration is code in `auth/` (services in
 `agno/app/auth/` is the only code that reads tokens. The token claims and group names the API relies
 on are the token contract in `openspec/specs/auth`. The API accepts only tokens issued by Authentik, in every environment.
 
-- **Start.** `docker compose up -d --build` (or `./scripts/dev.sh api`) creates the schema and
+- **Start.** `docker compose up -d --build` (or `./scripts/dev.sh up` and `./scripts/dev.sh api`) creates the schema and
   role, starts Authentik, applies the blueprints, exports the public keys to
   `auth/jwks/jwks.json` and only then starts the API. Authentik is on
   [http://localhost:9000](http://localhost:9000); the first administrator is `akadmin` with
@@ -593,7 +600,7 @@ on are the token contract in `openspec/specs/auth`. The API accepts only tokens 
   the code from Mailpit. Production builds do not contain these buttons. The command also opens the
   local sign-up to every address (`allowed_emails: ["*"]`, see «Admin interface»).
 - **Demo stories.** `./scripts/dev.sh seed` loads the stories of `web/src/data/demo.json` into the
-  local database `ai`, a copy for each development user. Run it after `auth-users` on a running,
+  database of the checkout (`ai`, in a worktree `ai_dev_<worktree>`), a copy for each development user. Run it after `auth-users` on a running,
   migrated stand. It refuses, and changes nothing, if a user already has a story with a demo
   title, in the trash too. The `fixtures` data source shows the same file.
 - **Groups.** `screenwriters` and `editors` (authors; they may run only the product agent `coauthor`, scope `agents:coauthor:run`), `admins` (superusers, the only ones in the

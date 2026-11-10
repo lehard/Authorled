@@ -1,6 +1,6 @@
 """Antivirus client (openspec/specs/api/files «Антивирусная проверка»; runtime «Антивирус ClamAV»).
 
-Runs against the clamav service that ./scripts/dev.sh test starts (CLAMAV_HOST, CLAMAV_PORT).
+Runs against the clamav service of the stand that ./scripts/dev.sh test requires (CLAMAV_HOST, CLAMAV_PORT).
 """
 
 import ast

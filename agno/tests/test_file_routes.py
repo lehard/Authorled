@@ -1,4 +1,4 @@
-"""Routes of files (openspec/specs/api/files); the antivirus is the clamav service of ./scripts/dev.sh test."""
+"""Routes of files (openspec/specs/api/files); the antivirus is the clamav service of the stand."""
 
 import io
 from pathlib import Path
