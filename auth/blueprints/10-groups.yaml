@@ -26,3 +26,9 @@ entries:
     id: group-plugins
     identifiers:
       name: plugins
+  # The service account of the Company Routines (sa-routines): its authority is saved in the
+  # Routines declared in agno/app/company.py by scripts/routines_authorize.sh.
+  - model: authentik_core.group
+    id: group-routines
+    identifiers:
+      name: routines

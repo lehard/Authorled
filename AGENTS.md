@@ -283,6 +283,14 @@ releases and this codebase and proposes up to three Backlog Tasks, reusing exist
 proposals. Its instructions prohibit accepting or executing work; `auto_accept=False`.
 Scheduled reviews spend model calls. Verify the saved creator, schedule, authorization
 and run history before relying on them; declarations do not overwrite saved edits.
+On the current pin a Routine declared in `agno/app/company.py` has no owner and no saved
+authority, and every run of it is refused with `403 Insufficient permissions for scheduled
+target`. `scripts/routines_authorize.sh` (app password of the service account `sa-routines`,
+group `routines`, on stdin) saves the authority of `sa-routines` in every declared Routine
+through `PATCH /company/routines/{id}` with the same executor; instructions, cron and executor
+stay. Run it after the first release with a new Routine and whenever a Routine is created
+again; a change of `GROUP_SCOPES` needs no new run. To stop a Routine, pause it
+(`POST /company/routines/{id}/pause`) with a token of `sa-routines`.
 
 Company writes are governed by permission scopes, not record ownership; `user_id`
 records the creator. Task run sessions retain their ownership checks. Manual triggers
