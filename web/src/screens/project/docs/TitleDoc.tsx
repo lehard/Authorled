@@ -1,50 +1,53 @@
 import { useState } from "react";
 
 import type { Script, TitlePage } from "@/data/model";
+import { GrowingTextarea } from "@/design-system";
 import { useAutosave } from "@/screens/shared/useAutosave";
 
 import { useProjectData } from "../ProjectContext";
 import { DocHead } from "./DocHead";
 import { SaveHistory } from "./SaveHistory";
 
-const FIELDS: {
-  key: keyof TitlePage;
-  label: string;
-  place: "mid" | "bottom";
-  className?: string;
-}[] = [
-  {
-    key: "title",
-    label: "Название",
-    place: "mid",
-    className: "text-[22px] font-bold uppercase",
-  },
-  { key: "genre", label: "Жанр или формат", place: "mid" },
-  { key: "author", label: "Автор", place: "mid" },
-  { key: "contacts", label: "Контакты", place: "bottom" },
-  { key: "place", label: "Город, год", place: "bottom" },
-];
+const LABELS: Record<keyof TitlePage, string> = {
+  title: "Название",
+  genre: "Жанр или формат",
+  author: "Автор",
+  contacts: "Контакты",
+  place: "Город, год",
+};
 
-/** «Титульная страница» as a sheet of paper. */
+/**
+ * «Титульная страница» as a sheet of paper, laid out like the first page of the print
+ * (`titleHTML` in editor/exporters/print.ts; web/workspace, «Лист титульной страницы»): the title,
+ * the genre and the author in the middle, the contacts and the place at the bottom on the left.
+ * Every field wraps and grows; Enter starts a new line.
+ */
 export function TitleDoc() {
   const { draft, script } = useProjectData();
   const { save, status } = useAutosave<Script>("scripts", script.id);
   const [page, setPage] = useState(script.titlePage);
 
-  function input(f: (typeof FIELDS)[number]) {
+  function field(
+    key: keyof TitlePage,
+    align: "center" | "left",
+    textClassName = "",
+  ) {
     return (
-      <input
-        key={f.key}
-        aria-label={f.label}
-        placeholder={f.label}
+      <GrowingTextarea
+        aria-label={LABELS[key]}
+        placeholder={LABELS[key]}
         readOnly={draft.locked}
-        value={page[f.key]}
+        value={page[key]}
         onChange={(e) => {
-          const next = { ...page, [f.key]: e.target.value };
+          const next = { ...page, [key]: e.target.value };
           setPage(next);
           save({ titlePage: next });
         }}
-        className={`w-full rounded bg-transparent px-1 py-0.5 outline-none placeholder:text-muted-foreground/60 hover:bg-accent focus:bg-accent ${f.place === "mid" ? "text-center" : ""} ${f.className ?? ""}`}
+        variant="bare"
+        minRows={1}
+        limit="none"
+        className={`rounded px-1 focus-within:bg-accent hover:bg-accent ${align === "center" ? "text-center" : "text-left"} ${textClassName}`}
+        placeholderClassName={`placeholder:text-muted-foreground/60 ${align === "center" ? "text-center" : "text-left"} ${textClassName}`}
       />
     );
   }
@@ -55,11 +58,22 @@ export function TitleDoc() {
         <SaveHistory target={{ draftId: draft.id, part: "fields" }} />
       </DocHead>
       <div className="sheet sheet-title">
-        <div className="my-auto grid gap-3.5">
-          {FIELDS.filter((f) => f.place === "mid").map(input)}
+        {/* The middle stands at a third of the free height, as `.tp-main` of the print does. */}
+        <div className="grow" />
+        <div className="grid">
+          <div className="mb-[2lh]">
+            {field("title", "center", "font-bold uppercase")}
+          </div>
+          <div className="mb-[2lh]">{field("genre", "center")}</div>
+          {page.author.trim() !== "" && (
+            <p className="mb-[0.5lh] text-center">Автор</p>
+          )}
+          {field("author", "center")}
         </div>
-        <div className="flex items-end justify-between gap-4 max-[600px]:flex-col max-[600px]:items-stretch">
-          {FIELDS.filter((f) => f.place === "bottom").map(input)}
+        <div className="grow-[2]" />
+        <div className="grid">
+          {field("contacts", "left")}
+          {field("place", "left")}
         </div>
       </div>
     </>
