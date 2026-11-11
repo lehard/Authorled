@@ -46,6 +46,7 @@ import { useProjectData, type CoauthorRequest } from "../ProjectContext";
 import { ActionLines } from "./ActionLines";
 import { changedResources, firstChangingCalls, toolText } from "./actions";
 import { AnswerPre } from "./ResearchBlock";
+import { hasBrief } from "./researchBrief";
 import { useConfirmations } from "./confirmations";
 import { useAccount } from "@/account/useAccount";
 import { NO_TRAINING_SHORT, offerUrl } from "@/app/legal";
@@ -157,6 +158,8 @@ export function CoauthorChat({
     tone: "error" | "notice";
   } | null>(null);
   const [view, setView] = useState<"messages" | "history">("messages");
+  // The answer whose actions a tap showed on a touch screen.
+  const [revealed, setRevealed] = useState<string | null>(null);
   const [history, setHistory] = useState<Conversation[] | null>(null);
   const feed = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -556,6 +559,16 @@ export function CoauthorChat({
       last.role === "user" ||
       (textOf(last) === "" && callsOf(last).length === 0));
   const changingCalls = firstChangingCalls(messages);
+  // The answer whose actions are always shown: the last finished one with text (web/workspace,
+  // «Оценка ответа соавтора»); the others show them on hover, focus or a tap.
+  const lastAnswer = agent.isRunning
+    ? undefined
+    : messages.findLast(
+        (m) =>
+          m.role === "assistant" &&
+          (changingCalls.get(m.id) ?? []).length === 0 &&
+          textOf(m) !== "",
+      )?.id;
   const sendButton = (
     <Button
       size="icon"
@@ -585,8 +598,20 @@ export function CoauthorChat({
     const runId = runs.runOf.get(m.id);
     const chosen = runId === undefined ? undefined : runs.marks.get(runId);
     if (text === "" && calls.length === 0) return null;
+    const shown = m.id === lastAnswer || revealed === m.id;
+    // Hidden actions keep their place, so nothing moves when they show; a chosen mark stays visible.
+    const hide = (pressed: boolean) =>
+      shown || pressed
+        ? ""
+        : "opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100";
+    const copyable = !hasBrief(text);
     return (
-      <div key={m.id} className="max-w-[92%] self-start">
+      <div
+        key={m.id}
+        className="group max-w-[92%] self-start"
+        // On a touch screen there is no hover: a tap on an answer shows its actions.
+        onClick={keyHints ? undefined : () => setRevealed(m.id)}
+      >
         <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-ai">
           <Sparkles className="size-3.5" />
           Соавтор
@@ -602,43 +627,47 @@ export function CoauthorChat({
           outcomes={runs.outcomes}
           confirmations={confirmations}
         />
-        {!(agent.isRunning && m === last) && text !== "" && (
-          <div className="mt-2 flex flex-wrap items-center gap-1">
-            <Button
-              variant="outline"
-              size="xs"
-              className="rounded-lg text-muted-foreground"
-              onClick={() => void navigator.clipboard.writeText(text)}
-            >
-              <Copy />
-              Скопировать
-            </Button>
-            {runId !== undefined && (
-              <>
+        {!(agent.isRunning && m === last) &&
+          text !== "" &&
+          (copyable || runId !== undefined) && (
+            <div className="mt-2 flex flex-wrap items-center gap-1">
+              {copyable && (
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="xs"
-                  className="rounded-lg text-muted-foreground aria-pressed:bg-ai-subtle aria-pressed:text-ai"
-                  aria-pressed={chosen === "useful"}
-                  onClick={() => void mark(runId, "useful")}
+                  className={`rounded-lg text-muted-foreground ${hide(false)}`}
+                  onClick={() => void navigator.clipboard.writeText(text)}
                 >
-                  <ThumbsUp />
-                  Полезно
+                  <Copy />
+                  Скопировать
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  className="rounded-lg text-muted-foreground aria-pressed:bg-ai-subtle aria-pressed:text-ai"
-                  aria-pressed={chosen === "not_useful"}
-                  onClick={() => void mark(runId, "not_useful")}
-                >
-                  <ThumbsDown />
-                  Не то
-                </Button>
-              </>
-            )}
-          </div>
-        )}
+              )}
+              {runId !== undefined && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    className={`rounded-lg text-muted-foreground aria-pressed:bg-ai-subtle aria-pressed:text-ai ${hide(chosen === "useful")}`}
+                    aria-pressed={chosen === "useful"}
+                    onClick={() => void mark(runId, "useful")}
+                  >
+                    <ThumbsUp />
+                    Полезно
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    className={`rounded-lg text-muted-foreground aria-pressed:bg-ai-subtle aria-pressed:text-ai ${hide(chosen === "not_useful")}`}
+                    aria-pressed={chosen === "not_useful"}
+                    onClick={() => void mark(runId, "not_useful")}
+                  >
+                    <ThumbsDown />
+                    Не то
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
       </div>
     );
   }

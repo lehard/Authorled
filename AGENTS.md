@@ -133,8 +133,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   after it). The co-author never deletes, trashes or decides; the screenplay text changes only by suggestions.
   `agno/skills/<agent_id>/SKILL.md`: an agent's prompt as an Anthropic Agent Skill (`name` equals the id,
   the body is the prompt), loaded by `agents/prompts.py`; restart the API after editing it. A research brief for an outside Deep Research is no tool: the
-  co-author writes it in its answer as a code block marked `research-brief`, which the chat shows with copy, service links
-  and «Сохранить в заметки» (`web/src/screens/project/chat/ResearchBlock.tsx`). The co-author's prompt holds
+  co-author writes it in its answer as a code block marked `research-brief`, which the chat shows as one card with copy and
+  «В заметки» and a line linking Claude and ChatGPT (`web/src/screens/project/chat/ResearchBlock.tsx`). The co-author's prompt holds
   a short help about the service (section «О сервисе «Соавтор»»): a change to a screen it describes updates it too.
   `agno/teams/`: the place for the application's teams; the folder does not exist yet and appears with the first
   registered team (the routing exam builds its teams in `agno/evals/routing/` and does not register them).

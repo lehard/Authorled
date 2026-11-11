@@ -1,11 +1,4 @@
-import {
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Copy,
-  ExternalLink,
-  NotebookPen,
-} from "lucide-react";
+import { Check, Copy, NotebookPen } from "lucide-react";
 import {
   isValidElement,
   useState,
@@ -21,23 +14,20 @@ import { docPath } from "../docRef";
 import { useNoteActions } from "../noteActions";
 
 // A research brief the co-author wrote in its answer as a code block marked `research-brief`
-// (openspec/specs/web/workspace, «Блок задания в чате», «Задание в заметки»). Nothing goes to the
-// services from here: the author copies the text and opens the site, which gets no text in its address.
+// (openspec/specs/web/workspace, «Блок задания в чате», «Задание в заметки»): one card with the topic, copy and
+// «В заметки», a short preview and one line with links. Nothing goes to the services from here: the author copies
+// the text and opens the site, which gets no text in its address.
 
 const MARK = "language-research-brief";
 
-const RESEARCH_SERVICES = [
-  { label: "Открыть Claude", url: "https://claude.ai/new" },
-  { label: "Открыть ChatGPT", url: "https://chatgpt.com/" },
-] as const;
+const LINK = "text-foreground underline underline-offset-2 hover:text-ai";
 
-/** The title of the note: the first line of the brief without its heading marks. */
-function noteTitle(text: string): string {
-  const first = text
+/** The topic of the brief: its first line without the heading marks. */
+function topicOf(text: string): string {
+  return text
     .split("\n", 1)[0]
     .replace(/^#+\s*/, "")
     .trim();
-  return `Исследование: ${first}`;
 }
 
 function ResearchBlock({ text }: { text: string }) {
@@ -48,6 +38,8 @@ function ResearchBlock({ text }: { text: string }) {
   const [saved, setSaved] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const topic = topicOf(text);
+  const body = text.slice(text.indexOf("\n") + 1).trim();
 
   async function copy() {
     setError(null);
@@ -66,7 +58,7 @@ function ResearchBlock({ text }: { text: string }) {
     setError(null);
     setSaving(true);
     try {
-      setSaved(await notes.add(noteTitle(text), text));
+      setSaved(await notes.add(`Исследование: ${topic}`, text));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -75,92 +67,84 @@ function ResearchBlock({ text }: { text: string }) {
   }
 
   return (
-    <div className="my-2 grid gap-2">
+    <div className="my-1 grid gap-1.5">
       <div className="overflow-hidden rounded-lg border border-border bg-paper">
-        <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-1.5 text-caption text-muted-foreground">
-          <span>Задание для Deep Research</span>
+        <div className="flex items-center gap-1 py-1 pr-1 pl-3">
+          <span className="min-w-0 flex-1 truncate text-caption font-medium text-foreground">
+            {topic}
+          </span>
           <Button
-            size="xs"
+            size="icon-xs"
             variant="ghost"
-            className="rounded-lg"
+            aria-label={copied ? "Скопировано" : "Скопировать"}
+            title={copied ? "Скопировано" : "Скопировать"}
             onClick={() => void copy()}
           >
             {copied ? <Check /> : <Copy />}
-            {copied ? "Скопировано" : "Скопировать"}
           </Button>
+          {saved === null ? (
+            <Button
+              size="icon-xs"
+              variant="ghost"
+              aria-label="В заметки"
+              title="В заметки"
+              disabled={saving}
+              onClick={() => void save()}
+            >
+              <NotebookPen />
+            </Button>
+          ) : (
+            <Button size="icon-xs" variant="ghost" asChild>
+              <Link
+                to={docPath(draft, { kind: "note", id: saved })}
+                aria-label="Сохранено в заметки, открыть"
+                title="Сохранено в заметки, открыть"
+                className="text-foreground no-underline"
+              >
+                <Check />
+              </Link>
+            </Button>
+          )}
         </div>
         <pre
-          className={`rounded-none bg-transparent px-3 py-2 font-mono text-caption leading-relaxed whitespace-pre-wrap text-foreground ${open ? "max-h-[28rem] overflow-auto" : "max-h-40 overflow-hidden"}`}
+          className={`rounded-none bg-transparent px-3 pt-0 pb-1 font-mono text-caption leading-snug whitespace-pre-wrap text-muted-foreground ${open ? "max-h-[28rem] overflow-auto" : "max-h-[4.5rem] overflow-hidden"}`}
         >
-          {text}
+          {body}
         </pre>
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="flex w-full items-center gap-1 px-3 pt-1 pb-2 text-caption text-muted-foreground hover:text-foreground"
+          className="w-full px-3 pb-1.5 text-left text-caption text-muted-foreground hover:text-foreground"
         >
-          {open ? (
-            <ChevronUp className="size-3.5" />
-          ) : (
-            <ChevronDown className="size-3.5" />
-          )}
-          {open ? "Свернуть" : "Развернуть целиком"}
+          {open ? "Свернуть" : "Развернуть"}
         </button>
       </div>
-      <div className="flex flex-wrap gap-1.5">
-        {RESEARCH_SERVICES.map((service) => (
-          <Button
-            key={service.url}
-            size="xs"
-            variant="outline"
-            className="rounded-lg"
-            asChild
-          >
-            <a
-              href={service.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              // The answer's Markdown styles links; this one is a button.
-              className="text-foreground no-underline"
-            >
-              <ExternalLink />
-              {service.label}
-            </a>
-          </Button>
-        ))}
-        {saved === null ? (
-          <Button
-            size="xs"
-            variant="outline"
-            className="rounded-lg"
-            disabled={saving}
-            onClick={() => void save()}
-          >
-            <NotebookPen />
-            Сохранить в заметки
-          </Button>
-        ) : (
-          <Button size="xs" variant="ghost" className="rounded-lg" asChild>
-            <Link
-              to={docPath(draft, { kind: "note", id: saved })}
-              className="text-foreground no-underline"
-            >
-              <Check />
-              Сохранено в заметки
-            </Link>
-          </Button>
-        )}
-      </div>
+      <p className="text-caption text-muted-foreground">
+        Вставьте промпт в{" "}
+        <a
+          href="https://claude.ai/new"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={LINK}
+        >
+          Claude
+        </a>{" "}
+        или{" "}
+        <a
+          href="https://chatgpt.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={LINK}
+        >
+          ChatGPT
+        </a>{" "}
+        и используйте Deep Research
+      </p>
       {error !== null && (
         <p role="alert" className="text-caption text-destructive">
           {error}
         </p>
       )}
-      <p className="text-caption text-muted-foreground">
-        В Claude включите Research, в ChatGPT — Deep research, и вставьте
-        задание. Готовый отчёт загрузите в «Заметки». Задание уходит во внешний
-        сервис: там действуют его правила хранения.
-      </p>
     </div>
   );
 }
