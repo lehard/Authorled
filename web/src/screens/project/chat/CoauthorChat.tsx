@@ -599,12 +599,10 @@ export function CoauthorChat({
     const chosen = runId === undefined ? undefined : runs.marks.get(runId);
     if (text === "" && calls.length === 0) return null;
     const shown = m.id === lastAnswer || revealed === m.id;
-    // Hidden actions keep their place, so nothing moves when they show; a chosen mark stays visible.
-    const hide = (pressed: boolean) =>
-      shown || pressed
-        ? ""
-        : "opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100";
     const copyable = !hasBrief(text);
+    // One look for every action of the row; a chosen mark is the same under any answer.
+    const action =
+      "rounded-lg text-muted-foreground hover:text-foreground aria-pressed:bg-ai-subtle aria-pressed:text-ai";
     return (
       <div
         key={m.id}
@@ -630,42 +628,65 @@ export function CoauthorChat({
         {!(agent.isRunning && m === last) &&
           text !== "" &&
           (copyable || runId !== undefined) && (
-            <div className="mt-2 flex flex-wrap items-center gap-1">
-              {copyable && (
-                <Button
-                  variant="outline"
-                  size="xs"
-                  className={`rounded-lg text-muted-foreground ${hide(false)}`}
-                  onClick={() => void navigator.clipboard.writeText(text)}
+            // The row keeps its place, so nothing moves when it shows (web/workspace, «Оценка ответа
+            // соавтора»); while it is hidden, a chosen mark stays as a small icon in its place.
+            <div className="relative mt-2 h-6">
+              {!shown && chosen !== undefined && (
+                <span
+                  role="img"
+                  aria-label={
+                    chosen === "useful"
+                      ? "Отмечено: Полезно"
+                      : "Отмечено: Не то"
+                  }
+                  className="pointer-events-none absolute top-1/2 left-1 -translate-y-1/2 text-ai transition-opacity group-focus-within:opacity-0 group-hover:opacity-0"
                 >
-                  <Copy />
-                  Скопировать
-                </Button>
+                  {chosen === "useful" ? (
+                    <ThumbsUp className="size-3.5" />
+                  ) : (
+                    <ThumbsDown className="size-3.5" />
+                  )}
+                </span>
               )}
-              {runId !== undefined && (
-                <>
+              <div
+                className={`flex items-center gap-0.5 ${shown ? "" : "opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"}`}
+              >
+                {copyable && (
                   <Button
                     variant="ghost"
                     size="xs"
-                    className={`rounded-lg text-muted-foreground aria-pressed:bg-ai-subtle aria-pressed:text-ai ${hide(chosen === "useful")}`}
-                    aria-pressed={chosen === "useful"}
-                    onClick={() => void mark(runId, "useful")}
+                    className={action}
+                    onClick={() => void navigator.clipboard.writeText(text)}
                   >
-                    <ThumbsUp />
-                    Полезно
+                    <Copy />
+                    Скопировать
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="xs"
-                    className={`rounded-lg text-muted-foreground aria-pressed:bg-ai-subtle aria-pressed:text-ai ${hide(chosen === "not_useful")}`}
-                    aria-pressed={chosen === "not_useful"}
-                    onClick={() => void mark(runId, "not_useful")}
-                  >
-                    <ThumbsDown />
-                    Не то
-                  </Button>
-                </>
-              )}
+                )}
+                {runId !== undefined && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className={action}
+                      aria-pressed={chosen === "useful"}
+                      onClick={() => void mark(runId, "useful")}
+                    >
+                      <ThumbsUp />
+                      Полезно
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className={action}
+                      aria-pressed={chosen === "not_useful"}
+                      onClick={() => void mark(runId, "not_useful")}
+                    >
+                      <ThumbsDown />
+                      Не то
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           )}
       </div>
