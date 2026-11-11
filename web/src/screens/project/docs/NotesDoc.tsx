@@ -1,10 +1,11 @@
-import { Plus, Upload } from "lucide-react";
+import { Plus, Telescope, Upload } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 
 import { Button } from "@/components/ui/button";
 import { NameDialog } from "@/screens/shared/NameDialog";
 
+import { RESEARCH_START } from "../chat/checks";
 import { DOC_WORDS, docPath } from "../docRef";
 import { firstLine, useNoteActions } from "../noteActions";
 import { NoteUploadDialog } from "../NoteUploadDialog";
@@ -14,7 +15,7 @@ import { NoteIcon } from "./NoteIcon";
 
 /** «Заметки»: the notes of the story, the same in every draft. */
 export function NotesDoc() {
-  const { project, draft, notes } = useProjectData();
+  const { project, draft, notes, askCoauthor, coauthorBusy } = useProjectData();
   const navigate = useNavigate();
   const actions = useNoteActions(project.id);
   const [adding, setAdding] = useState(false);
@@ -24,6 +25,15 @@ export function NotesDoc() {
   return (
     <>
       <DocHead title={words.group}>
+        <Button
+          variant="outline"
+          className="rounded-full"
+          disabled={coauthorBusy}
+          onClick={() => askCoauthor(RESEARCH_START, "fill")}
+        >
+          <Telescope />
+          Исследование
+        </Button>
         <Button
           variant="outline"
           className="rounded-full"

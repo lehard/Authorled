@@ -15,6 +15,7 @@ import { readOutcome, type Target } from "./outcome";
 export const CHANGING_TOOLS = [
   "create_story_note",
   "save_chat_file_to_notes",
+  "create_research_brief",
   "update_story_note",
   "create_story_document",
   "update_story_document",
@@ -96,6 +97,11 @@ export function describeAction(
       };
     case "save_chat_file_to_notes":
       return { title: "Сохранить файл в заметки", detail: "" };
+    case "create_research_brief":
+      return {
+        title: `Создать задание на исследование «${text(args, "topic").trim()}»`,
+        detail: text(args, "brief"),
+      };
     case "update_story_note": {
       const note = noteName(data, text(args, "note_id"));
       if (text(args, "append") !== "")
@@ -143,9 +149,65 @@ export function describeAction(
   }
 }
 
+/** The top-level JSON objects written one after another in `raw`, as texts. */
+function objects(raw: string): string[] {
+  const found: string[] = [];
+  let depth = 0;
+  let start = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (c === "\\") escaped = true;
+      else if (c === '"') inString = false;
+    } else if (c === '"') inString = true;
+    else if (c === "{") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (c === "}") {
+      depth--;
+      if (depth === 0) found.push(raw.slice(start, i + 1));
+    }
+  }
+  return found;
+}
+
+function sorted(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sorted);
+  if (typeof value === "object" && value !== null)
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([k, v]) => [k, sorted(v)]),
+    );
+  return value;
+}
+
+/**
+ * The arguments of a call twice in a row: Agno 3.1.10 sends a paused call again with its
+ * continuation (keys in another order), and the chat adds those arguments to the same call. Only
+ * equal objects count as one; anything else stays as it came.
+ */
+function once(raw: string): string {
+  const parts = objects(raw);
+  if (parts.length < 2 || parts.join("") !== raw.replace(/^\s+|\s+$/g, ""))
+    return raw;
+  try {
+    const first = JSON.stringify(sorted(JSON.parse(parts[0])));
+    return parts.every((p) => JSON.stringify(sorted(JSON.parse(p))) === first)
+      ? parts[0]
+      : raw;
+  } catch {
+    // A part is not JSON: the arguments are not a repeat.
+    return raw;
+  }
+}
+
 export function parseArgs(raw: string): Args {
   try {
-    const parsed: unknown = JSON.parse(raw);
+    const parsed: unknown = JSON.parse(once(raw));
     return typeof parsed === "object" && parsed !== null
       ? (parsed as Args)
       : {};

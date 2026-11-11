@@ -8,6 +8,14 @@ export type Check = { id: string; label: string; request: string };
 
 export const ABOUT_STORY = "О чём эта история?";
 
+/**
+ * The start of a request for a research brief («Исследовать тему» of the empty conversation and
+ * «Исследование» of the notes, openspec/specs/web/workspace): it goes into the field, the author
+ * adds the topic and sends it.
+ */
+export const RESEARCH_START =
+  "Помоги составить задание на исследование для Deep Research. Тема: ";
+
 export const CHECKS: readonly Check[] = [
   {
     id: "water",

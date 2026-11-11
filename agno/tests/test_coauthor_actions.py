@@ -38,7 +38,7 @@ def _row(**own: Any) -> dict[str, Any]:
 
 def test_release_set_loads() -> None:
     requests = load_set()
-    assert 55 <= len(requests) <= 75
+    assert 55 <= len(requests) <= 80
     assert {r.expect for r in requests} == {*ACTION_TOOLS, "none"}
     assert {r.kind for r in requests if r.expect == "create_story_document"} == {"character", "location", "world"}
     assert any(r.id == "character-vasily" for r in requests)
@@ -161,6 +161,17 @@ def test_change_nobody_asked_for() -> None:
     assert not verdict.action_ok
     assert verdict.extra == ("создана заметка «Брат»",)
     assert not verdict.passed
+
+
+def test_research_brief_note_is_expected() -> None:
+    request = Request("research-1", "tihaya-voda", "Составь задание на исследование", "create_research_brief")
+    call = Call("create_research_brief", {"topic": "Паромщики"}, False, '{"done": "Создано задание"}')
+    changes = Changes(notes_created=("Исследование: Паромщики",))
+    verdict = check(request, ActionRun("research-1", "done", "Готово.", 1.0, (call,), changes))
+    assert verdict.action_ok and verdict.extra == ()
+    assert verdict.passed
+    twice = Changes(notes_created=("Исследование: Паромщики", "Паром"))
+    assert len(check(request, ActionRun("research-1", "done", "Готово.", 1.0, (call,), twice)).extra) == 1
 
 
 def test_open_draft_must_not_change() -> None:

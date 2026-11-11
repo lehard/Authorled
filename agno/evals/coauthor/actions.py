@@ -27,6 +27,8 @@ NEEDS_FILE = frozenset({"save_chat_file_to_notes"})
 ACTION_TOOLS = frozenset(CHANGING - {"suggest_edit"} - NEEDS_FILE)
 DOCUMENT_TOOLS = ("create_story_document", "update_story_document")
 TARGET_TOOLS = ("update_story_document", "update_story_note")
+# The tools whose expected change is one new note: a note or a research brief.
+NOTE_TOOLS = ("create_story_note", "create_research_brief")
 CREATED_KINDS = ("character", "location", "world")
 ROLES: tuple[str, ...] = get_args(Role)
 REFUSAL = "Отказ:"
@@ -263,7 +265,7 @@ def _extra(request: Request, changes: Changes) -> list[str]:
     extra += [f"создан документ «{card.name}» ({card.kind})" for card in created]
     allowed = request.target if request.expect == "update_story_document" else None
     extra += [f"изменён документ «{before}»" for before, _ in changes.updated if before != allowed]
-    notes_created = len(changes.notes_created) - (1 if request.expect == "create_story_note" else 0)
+    notes_created = len(changes.notes_created) - (1 if request.expect in NOTE_TOOLS else 0)
     extra += [f"создана заметка «{title}»" for title in changes.notes_created[: max(notes_created, 0)]]
     allowed = request.target if request.expect == "update_story_note" else None
     extra += [f"изменена заметка «{title}»" for title in changes.notes_updated if title != allowed]
