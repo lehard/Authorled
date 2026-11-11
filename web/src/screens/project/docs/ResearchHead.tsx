@@ -3,40 +3,29 @@ import { useState } from "react";
 import { Link } from "react-router";
 
 import { Button } from "@/components/ui/button";
+import type { NoteResearch } from "@/data/model";
 
 import { useProjectData } from "../ProjectContext";
-import { DownloadButton } from "../docs/NoteOriginal";
 import { docPath } from "../docRef";
-import type { Args } from "./actions";
+import { DownloadButton } from "./NoteOriginal";
 
-// The card of a done research brief (openspec/specs/web/workspace, «Карточка задания на
-// исследование», «Вложения задания на исследование»): the brief comes from the arguments of the
-// call, the note from its result. Nothing goes to the services from here: the author copies the
-// brief and opens the site, which gets no text in its address.
+// The head of a research brief over its text (openspec/specs/web/workspace, «Шапка заметки задания»,
+// «Копирование задания», «Вложения в шапке задания»). Nothing goes to the services from here: the author
+// copies the text of the field and opens the site, which gets no text in its address.
 
-/** The services the card opens, without parameters, and where Deep Research is switched on there. */
+/** The services the head opens, without parameters. */
 const RESEARCH_SERVICES = [
   { label: "Открыть Claude", url: "https://claude.ai/new" },
   { label: "Открыть ChatGPT", url: "https://chatgpt.com/" },
 ] as const;
-const SERVICES_HINT =
-  "В Claude включите Research, в ChatGPT — Deep research, и вставьте задание.";
 
-function noteIds(args: Args): string[] {
-  const ids = args.note_ids;
-  return Array.isArray(ids)
-    ? ids.filter((id): id is string => typeof id === "string")
-    : [];
-}
-
-function Attachments({ args }: { args: Args }) {
+function Attachments({ research }: { research: NoteResearch }) {
   const data = useProjectData();
-  const ids = noteIds(args);
-  if (args.screenplay !== true && ids.length === 0) return null;
+  if (!research.screenplay && research.noteIds.length === 0) return null;
   return (
     <div className="grid gap-1">
       <p className="text-caption font-medium">Приложите к запросу</p>
-      {args.screenplay === true && (
+      {research.screenplay && (
         <div className="flex flex-wrap items-center gap-2 text-caption text-muted-foreground">
           <Link
             to={docPath(data.draft, { kind: "part", part: "text" })}
@@ -47,7 +36,7 @@ function Attachments({ args }: { args: Args }) {
           <span>и сохранить: «⋯» → «Экспорт» → Fountain</span>
         </div>
       )}
-      {ids.map((id) => {
+      {research.noteIds.map((id) => {
         const note = data.notes.find((n) => n.id === id);
         return note?.file == null ? (
           <p key={id} className="text-caption text-muted-foreground">
@@ -69,50 +58,45 @@ function Attachments({ args }: { args: Args }) {
   );
 }
 
-export function ResearchCard({
-  args,
-  noteId,
-  done,
+export function ResearchHead({
+  research,
+  text,
 }: {
-  args: Args;
-  /** The note of the brief, from the result of the call. */
-  noteId: string;
-  /** What was done, as the backend said it. */
-  done: string;
+  research: NoteResearch;
+  /** The text of the field as it is now, with edits not saved yet. */
+  text: string;
 }) {
-  const data = useProjectData();
-  const brief = typeof args.brief === "string" ? args.brief : "";
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function copy() {
     setError(null);
     try {
-      await navigator.clipboard.writeText(brief);
+      await navigator.clipboard.writeText(text);
       setCopied(true);
     } catch (err) {
       console.error("The research brief was not copied:", err);
       setError(
-        "Не удалось скопировать. Откройте заметку и скопируйте текст оттуда.",
+        "Не удалось скопировать. Выделите текст задания и скопируйте его вручную.",
       );
     }
   }
 
   return (
-    <div className="mt-2 grid gap-2 rounded-xl bg-paper p-3 shadow-panel">
-      <Link
-        to={docPath(data.draft, { kind: "note", id: noteId })}
-        className="font-medium text-foreground underline underline-offset-2 hover:text-ai"
-      >
-        {done}
-      </Link>
+    <div className="mx-auto mb-4 grid w-full max-w-[900px] gap-2 rounded-xl bg-paper p-3 shadow-panel">
       <div className="flex flex-wrap gap-1.5">
-        <Button size="xs" onClick={() => void copy()}>
+        <Button size="sm" className="rounded-full" onClick={() => void copy()}>
           {copied ? <Check /> : <Copy />}
           {copied ? "Скопировано" : "Скопировать задание"}
         </Button>
         {RESEARCH_SERVICES.map((service) => (
-          <Button key={service.url} size="xs" variant="outline" asChild>
+          <Button
+            key={service.url}
+            size="sm"
+            variant="outline"
+            className="rounded-full"
+            asChild
+          >
             <a href={service.url} target="_blank" rel="noopener noreferrer">
               <ExternalLink />
               {service.label}
@@ -125,15 +109,14 @@ export function ResearchCard({
           {error}
         </p>
       )}
-      <p className="text-caption text-muted-foreground">{SERVICES_HINT}</p>
-      <Attachments args={args} />
+      <p className="text-caption text-muted-foreground">
+        В Claude включите Research, в ChatGPT — Deep research, и вставьте
+        задание. Готовый отчёт загрузите в «Заметки».
+      </p>
+      <Attachments research={research} />
       <p className="text-caption text-muted-foreground">
         Задание и вложения уходят во внешний сервис: там действуют его правила
         хранения.
-      </p>
-      <p className="text-caption text-muted-foreground">
-        Готовый отчёт загрузите в «Заметки» файлом или вставьте текстом в новую
-        заметку — соавтор будет на него опираться.
       </p>
     </div>
   );

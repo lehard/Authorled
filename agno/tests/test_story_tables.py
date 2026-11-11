@@ -223,6 +223,19 @@ def _note(connection: Connection, project: uuid.UUID, owner: uuid.UUID, file_id:
     ).scalar_one()
 
 
+def test_research_of_a_note_is_an_object_or_null(connection: Connection) -> None:
+    owner = _user(connection)
+    project = _project(connection, owner)
+    plain = _note(connection, project, owner, None)
+    assert connection.execute(select(notes.c.research).where(notes.c.id == plain)).scalar_one() is None
+    brief = {"screenplay": True, "note_ids": [str(plain)]}
+    connection.execute(
+        insert(notes).values(project_id=project, title="Исследование: паром", updated_by=owner, research=brief)
+    )
+    with pytest.raises(IntegrityError, match="ck_notes_research_object"):
+        connection.execute(insert(notes).values(project_id=project, title="Не то", updated_by=owner, research=[1]))
+
+
 def test_original_of_a_note_has_no_session(connection: Connection) -> None:
     owner = _user(connection)
     project = _project(connection, owner)

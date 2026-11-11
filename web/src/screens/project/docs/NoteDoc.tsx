@@ -23,6 +23,7 @@ import { useProjectData } from "../ProjectContext";
 import { DocHead } from "./DocHead";
 import { fileSize, hasOriginalView } from "./noteFile";
 import { NoteIcon } from "./NoteIcon";
+import { ResearchHead } from "./ResearchHead";
 import { DownloadButton, NoteOriginal } from "./NoteOriginal";
 import { useFindInDoc } from "./useFindInDoc";
 
@@ -203,6 +204,9 @@ export function NoteDoc({ id }: { id: string }) {
         </DropdownMenu>
       </DocHead>
       {file !== null && <OriginalLine file={file} />}
+      {note.research !== null && (
+        <ResearchHead research={note.research} text={body} />
+      )}
       {failure !== null && (
         <p
           role="alert"

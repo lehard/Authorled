@@ -333,6 +333,12 @@ def test_research_brief(authors: Any) -> None:
     assert set(found) == {"Эпоха", "Исследование: быт цыган в 70-е"}
     assert found["Исследование: быт цыган в 70-е"]["body"] == brief
     assert found["Исследование: быт цыган в 70-е"]["file"] is None
+    assert found["Исследование: быт цыган в 70-е"]["research"] == {"screenplay": True, "note_ids": [epoch]}
+    assert found["Эпоха"]["research"] is None
+    brief_id = created["target"]["id"]
+    renamed = author.patch(f"/api/v1/notes/{brief_id}", json={"title": "Паром"}, headers={"If-Match": "1"})
+    assert renamed.status_code == 200, renamed.text
+    assert renamed.json()["research"] == {"screenplay": True, "note_ids": [epoch]}
     assert (found["Эпоха"]["body"], found["Эпоха"]["revision"]) == ("Москва, 1913", 1)
     assert author.get(f"/api/v1/documents/{script_id}/text").json()["revision"] == 2
 

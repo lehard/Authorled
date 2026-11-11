@@ -56,6 +56,11 @@ def _undo_coauthor_actions(connection: Connection) -> None:
     )
 
 
+def _undo_note_research(connection: Connection) -> None:
+    """Undo 0016 before a test rewinds the schema to an older revision."""
+    connection.execute(text("ALTER TABLE authorled.notes DROP COLUMN research"))
+
+
 def _undo_note_files(connection: Connection) -> None:
     """Undo 0015 before a test rewinds the schema to an older revision."""
     connection.execute(text("ALTER TABLE authorled.notes DROP COLUMN file_id"))
@@ -93,11 +98,12 @@ def _undo_beta_requests(connection: Connection) -> None:
 
 
 def _drop_subscriptions(connection: Connection) -> None:
-    """Undo 0015, 0014, 0013, 0012, 0011, 0010 and 0009 before a test rewinds the core to an older revision.
+    """Undo 0016, 0015, 0014, 0013, 0012, 0011, 0010 and 0009 before a test rewinds the core to an older revision.
 
     The tables of 0009 live in schema billing after b0001_from_core, so the billing chain is rewound to its base too;
     `_upgrade` brings both chains back to head.
     """
+    _undo_note_research(connection)
     _undo_note_files(connection)
     _undo_story_cover_colors(connection)
     _undo_writing_goals(connection)
@@ -389,6 +395,7 @@ def test_coauthor_actions_migration_keeps_settings_and_comments(
             .returning(users.c.id)
         ).scalar_one()
         story, _, script = create_project(connection, owner, "Маяк")
+        _undo_note_research(connection)
         _undo_note_files(connection)
         _undo_story_cover_colors(connection)
         _undo_writing_goals(connection)
@@ -444,6 +451,7 @@ def test_writing_goals_migration_leaves_goals_empty(
         ).scalar_one()
         connection.execute(insert(user_settings).values(user_id=owner, theme="dark"))
         story, _, _ = create_project(connection, owner, "Маяк")
+        _undo_note_research(connection)
         _undo_note_files(connection)
         _undo_story_cover_colors(connection)
         _undo_writing_goals(connection)
@@ -536,6 +544,7 @@ def test_cover_colors_migration_colours_stories_in_turn(
     """Applied from 0013: each author's stories take the colours in the order of creation, from blue."""
     subjects = [f"test-{uuid.uuid4()}" for _ in range(2)]
     with engine.begin() as connection:
+        _undo_note_research(connection)
         _undo_note_files(connection)
         _undo_story_cover_colors(connection)
         connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0013_writing_goals'"))
@@ -589,6 +598,7 @@ def test_note_files_migration_keeps_notes_and_files(
     """Applied from 0014 on a database with a note and a chat file: notes get no original, files stay."""
     subject = f"test-{uuid.uuid4()}"
     with engine.begin() as connection:
+        _undo_note_research(connection)
         _undo_note_files(connection)
         connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0014_story_cover_colors'"))
         owner = connection.execute(
@@ -622,6 +632,31 @@ def test_note_files_migration_keeps_notes_and_files(
         assert connection.execute(select(notes.c.file_id).where(notes.c.id == note)).scalar_one() is None
         kept = connection.execute(select(files).where(files.c.id == chat_file)).one()
         assert (kept.purpose, kept.name, kept.text_content) == ("chat", "эпоха.txt", "Эпоха")
+        connection.execute(delete(projects).where(projects.c.id == story.id))
+        connection.execute(delete(subscriptions).where(subscriptions.c.user_id == owner))
+        connection.execute(delete(users).where(users.c.id == owner))
+
+
+def test_note_research_migration_leaves_notes_plain(
+    engine: Engine, alembic_config: Config, billing_alembic_config: Config
+) -> None:
+    """Applied from 0015 on a database with a note: the note gets no research, the check refuses a non-object."""
+    subject = f"test-{uuid.uuid4()}"
+    with engine.begin() as connection:
+        _undo_note_research(connection)
+        connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0015_note_files'"))
+        owner = connection.execute(
+            insert(users)
+            .values(auth_subject=subject, email="note-research@authorled.test", display_name="Автор")
+            .returning(users.c.id)
+        ).scalar_one()
+        story, _, _ = create_project(connection, owner, "Маяк")
+        note = connection.execute(
+            insert(notes).values(project_id=story.id, title="Финал", updated_by=owner).returning(notes.c.id)
+        ).scalar_one()
+    _upgrade(alembic_config, billing_alembic_config)
+    with engine.begin() as connection:
+        assert connection.execute(select(notes.c.research).where(notes.c.id == note)).scalar_one() is None
         connection.execute(delete(projects).where(projects.c.id == story.id))
         connection.execute(delete(subscriptions).where(subscriptions.c.user_id == owner))
         connection.execute(delete(users).where(users.c.id == owner))

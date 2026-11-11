@@ -93,6 +93,13 @@ class NoteFileOut(_Out):
     size_bytes: int
 
 
+class NoteResearchOut(_Out):
+    """The attachments of a research brief: the screenplay of the draft and notes of the story."""
+
+    screenplay: bool
+    note_ids: list[uuid.UUID]
+
+
 class NoteOut(_Out):
     id: uuid.UUID
     project_id: uuid.UUID
@@ -103,6 +110,7 @@ class NoteOut(_Out):
     updated_at: datetime
     deleted_at: datetime | None
     file: NoteFileOut | None
+    research: NoteResearchOut | None
 
 
 class TextOut(_Out):
