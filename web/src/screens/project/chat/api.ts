@@ -176,6 +176,8 @@ type RunRow = {
   content?: unknown;
   created_at?: number;
   tools?: ToolRow[] | null;
+  /** `PAUSED`: the run still waits for the author's answer to an action and has no answer of its own. */
+  status?: unknown;
 };
 
 // Agno stores the question with the AG-UI context appended; the chat shows the question only.
@@ -253,8 +255,12 @@ export async function loadConversation(
   ).json()) as RunRow[];
   const runOf = new Map<string, string>();
   const messages = runs.flatMap((r, i): Message[] => {
+    // A run left on the pause keeps Agno's own line as its content, not an answer of the model
+    // (openspec/specs/web/workspace, «Действие без ответа»).
     const answer =
-      typeof r.content === "string" && r.content !== "" ? r.content : null;
+      r.status !== "PAUSED" && typeof r.content === "string" && r.content !== ""
+        ? r.content
+        : null;
     if (answer !== null) {
       if (typeof r.run_id !== "string" || r.run_id === "")
         throw new Error(`Запуск ${i} беседы ${id} пришёл без run_id.`);
