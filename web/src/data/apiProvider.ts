@@ -32,7 +32,6 @@ import type {
   NewThread,
   Note,
   NoteFile,
-  NoteResearch,
   Point,
   Project,
   Role,
@@ -403,18 +402,6 @@ function readNote(body: unknown): Note {
     body: field("заметку", o, "body", isString),
     deletedAt: field("заметку", o, "deleted_at", isTime),
     file: o.file === null ? null : readNoteFile(o.file),
-    research: o.research === null ? null : readNoteResearch(o.research),
-  };
-}
-
-function readNoteResearch(body: unknown): NoteResearch {
-  const what = "задание заметки";
-  const o = shape(what, body);
-  const isIds = (v: unknown): v is string[] =>
-    Array.isArray(v) && v.every(isString);
-  return {
-    screenplay: field(what, o, "screenplay", isBool),
-    noteIds: field(what, o, "note_ids", isIds),
   };
 }
 
@@ -971,7 +958,7 @@ async function create(
     return readNote(
       await request(`/projects/${values.projectId}/notes`, {
         method: "POST",
-        json: { title: values.title },
+        json: { title: values.title, body: values.body },
       }),
     );
   }

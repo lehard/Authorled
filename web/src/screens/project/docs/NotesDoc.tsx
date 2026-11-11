@@ -91,7 +91,7 @@ export function NotesDoc() {
         submitLabel="Добавить"
         emptyError="Введите название."
         onSubmit={async (title) => {
-          const id = await actions.add(title);
+          const id = await actions.add(title, "");
           navigate(docPath(draft, { kind: "note", id }));
         }}
       />

@@ -1,5 +1,5 @@
 import type { Message, ToolCall } from "@ag-ui/client";
-import { Check, CircleAlert, X } from "lucide-react";
+import { Ban, Check, CircleAlert } from "lucide-react";
 import { Link } from "react-router";
 
 import { Button } from "@/components/ui/button";
@@ -27,10 +27,12 @@ export function Line({
   tone,
   children,
 }: {
-  tone: "done" | "muted" | "refused";
+  /** `allowed` and `denied`: the author's answer to a pause whose result the chat did not get. */
+  tone: "done" | "allowed" | "denied" | "refused";
   children: React.ReactNode;
 }) {
-  const Icon = tone === "refused" ? CircleAlert : tone === "done" ? Check : X;
+  const Icon =
+    tone === "refused" ? CircleAlert : tone === "denied" ? Ban : Check;
   return (
     <p
       className={`mt-2 flex items-start gap-1.5 text-caption ${tone === "refused" ? "text-destructive" : "text-muted-foreground"}`}
@@ -136,7 +138,7 @@ export function ActionLines({
     const decision = answers.map(decisionOf).find((d) => d !== null);
     if (decision !== undefined && decision !== null)
       return (
-        <Line key={call.id} tone="muted">
+        <Line key={call.id} tone={decision.accepted ? "allowed" : "denied"}>
           {decision.accepted ? "Разрешено" : "Отклонено"}: {title}
         </Line>
       );

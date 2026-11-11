@@ -65,7 +65,6 @@ const store = {
   notes: FIXTURES.notes.map((note) => ({
     ...structuredClone(note),
     file: null,
-    research: null,
   })),
   // No core here: the id of a script's document is its own id (the co-author does not run on the sample).
   scripts: FIXTURES.scripts.map((s) => ({
@@ -572,10 +571,9 @@ export const fixturesProvider: DataProvider = {
         id: crypto.randomUUID(),
         projectId: values.projectId,
         title: values.title,
-        body: "",
+        body: values.body,
         deletedAt: null,
         file: null,
-        research: null,
       };
     } else if (resource === "points") {
       const values = variables as Pick<Point, "draftId" | "name">;

@@ -461,7 +461,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
         initialKind={adding ?? "char"}
         onSubmit={async (kind, name) => {
           if (kind === "note") {
-            const id = await noteActions.add(name);
+            const id = await noteActions.add(name, "");
             setOpen((s) => new Set(s).add("notes"));
             onNavigate();
             navigate(path({ kind: "note", id }));

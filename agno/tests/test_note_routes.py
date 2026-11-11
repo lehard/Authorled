@@ -17,7 +17,6 @@ def test_create_and_list(authors: Any) -> None:
     story = author.story()
     note = _note(author, story)
     assert (note["title"], note["body"], note["revision"], note["deleted_at"]) == ("Финал", "", 1, None)
-    assert note["research"] is None
     assert author.get(f"/api/v1/projects/{story['project']['id']}/notes").json() == [note]
 
 
