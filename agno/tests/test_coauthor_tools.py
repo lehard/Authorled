@@ -12,13 +12,11 @@ from agno.tools.function import Function
 
 from agents import coauthor_tools as tools
 from agents.coauthor_tools import (
-    BRIEF_MAX_CHARS,
     CHANGING_TOOLS,
     COAUTHOR_TOOLS,
     READING_TOOLS,
     STORY_NOT_FOUND,
     comment_on_screenplay,
-    create_research_brief,
     create_story_document,
     create_story_note,
     list_story_documents,
@@ -309,62 +307,6 @@ def test_chat_file_without_place(authors: Any, monkeypatch: pytest.MonkeyPatch) 
     assert author.get(f"/api/v1/projects/{project_id}/notes").json() == []
 
 
-def _note_with_original(author: Any, project_id: str, name: str = "Эпоха.txt") -> str:
-    uploaded = author.post(
-        f"/api/v1/projects/{project_id}/notes/files", files={"file": (name, "Москва, 1913".encode())}
-    )
-    assert uploaded.status_code == 201, uploaded.text
-    note_id: str = uploaded.json()["id"]
-    return note_id
-
-
-def test_research_brief(authors: Any) -> None:
-    author = authors()
-    project_id, draft_id, script_id = _story_with_vera(author)
-    epoch = _note_with_original(author, project_id)
-    run = _run(author.subject, f"{project_id}:{draft_id}:{uuid.uuid4()}")
-    brief = "Тема: быт цыган в 70-е. Цель: сцена в таборе."
-
-    created = _done(create_research_brief(run, " быт цыган в 70-е ", brief, screenplay=True, note_ids=[epoch]))
-
-    assert created["done"] == "Создано задание на исследование «быт цыган в 70-е»"
-    assert created["target"]["type"] == "note"
-    found = {n["title"]: n for n in author.get(f"/api/v1/projects/{project_id}/notes").json()}
-    assert set(found) == {"Эпоха", "Исследование: быт цыган в 70-е"}
-    assert found["Исследование: быт цыган в 70-е"]["body"] == brief
-    assert found["Исследование: быт цыган в 70-е"]["file"] is None
-    assert found["Исследование: быт цыган в 70-е"]["research"] == {"screenplay": True, "note_ids": [epoch]}
-    assert found["Эпоха"]["research"] is None
-    brief_id = created["target"]["id"]
-    renamed = author.patch(f"/api/v1/notes/{brief_id}", json={"title": "Паром"}, headers={"If-Match": "1"})
-    assert renamed.status_code == 200, renamed.text
-    assert renamed.json()["research"] == {"screenplay": True, "note_ids": [epoch]}
-    assert (found["Эпоха"]["body"], found["Эпоха"]["revision"]) == ("Москва, 1913", 1)
-    assert author.get(f"/api/v1/documents/{script_id}/text").json()["revision"] == 2
-
-
-def test_research_brief_refusals(authors: Any) -> None:
-    author = authors()
-    project_id, draft_id, _ = _story_with_vera(author)
-    other_project, _, _ = _story_with_vera(author)
-    run = _run(author.subject, f"{project_id}:{draft_id}:{uuid.uuid4()}")
-    plain = _done(create_story_note(run, "Финал", "Вера уходит к воде."))["target"]["id"]
-    trashed = _note_with_original(author, project_id, "Старое.txt")
-    assert author.post(f"/api/v1/notes/{trashed}/trash").status_code == 200
-    foreign = _note_with_original(author, other_project)
-
-    assert create_research_brief(run, " ", "Задание") == "Отказ: тема задания пуста."
-    assert create_research_brief(run, "Паром", "  ") == "Отказ: текст задания пуст."
-    too_long = create_research_brief(run, "Паром", "а" * (BRIEF_MAX_CHARS + 1))
-    assert too_long.startswith(f"Отказ: задание длиннее {BRIEF_MAX_CHARS} знаков")
-    without = create_research_brief(run, "Паром", "Задание", note_ids=[plain])
-    assert without.startswith("Отказ: у заметки «Финал» нет оригинала")
-    assert create_research_brief(run, "Паром", "Задание", note_ids=[trashed]) == "Отказ: заметка не найдена."
-    assert create_research_brief(run, "Паром", "Задание", note_ids=[foreign]) == "Отказ: заметка не найдена."
-    notes = author.get(f"/api/v1/projects/{project_id}/notes").json()
-    assert [n["title"] for n in notes if n["deleted_at"] is None] == ["Финал"]
-
-
 def test_note_of_another_story_is_not_found(authors: Any) -> None:
     author = authors()
     project_id, draft_id, _ = _story_with_vera(author)
@@ -461,7 +403,6 @@ def test_no_tool_deletes_trashes_or_decides() -> None:
     assert {tool.__name__ for tool in CHANGING_TOOLS} == {
         "create_story_note",
         "save_chat_file_to_notes",
-        "create_research_brief",
         "update_story_note",
         "create_story_document",
         "update_story_document",

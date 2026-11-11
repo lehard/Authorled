@@ -125,15 +125,16 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 - `agno/app/sandbox.py`: providers, repository URL/branch and checkpoint paths.
 - `agno/agents/`: application agents, including the Claude engineer (Claude Code on DeepSeek) and the co-author
   with its tools (`coauthor_tools.py`: read and search the story of the conversation, propose an edit of the screenplay, and by
-  the author's request change notes (also save a file of the conversation as a note, and write a research brief for an
-  outside Deep Research), documents and comments;
+  the author's request change notes (also save a file of the conversation as a note), documents and comments;
   long notes are read in parts of 20 000 characters; in-process functions that call the core; every changing
   call pauses the run until the chat answers it, the author in the co-author mode `ask`, the chat itself in `auto`;
   the list is static, AgentOS 3.1.10 refuses tools built per run; the document tools type profile fields as strings
   and list the fields of each kind from `FIELD_HINTS` in `core/fields.py`) and its hooks (`coauthor_usage.py`: the limit check before a run, the usage journal
   after it). The co-author never deletes, trashes or decides; the screenplay text changes only by suggestions.
   `agno/skills/<agent_id>/SKILL.md`: an agent's prompt as an Anthropic Agent Skill (`name` equals the id,
-  the body is the prompt), loaded by `agents/prompts.py`; restart the API after editing it. The co-author's prompt holds
+  the body is the prompt), loaded by `agents/prompts.py`; restart the API after editing it. A research brief for an outside Deep Research is no tool: the
+  co-author writes it in its answer as a code block marked `research-brief`, which the chat shows with copy, service links
+  and «Сохранить в заметки» (`web/src/screens/project/chat/ResearchBlock.tsx`). The co-author's prompt holds
   a short help about the service (section «О сервисе «Соавтор»»): a change to a screen it describes updates it too.
   `agno/teams/`: the place for the application's teams; the folder does not exist yet and appears with the first
   registered team (the routing exam builds its teams in `agno/evals/routing/` and does not register them).

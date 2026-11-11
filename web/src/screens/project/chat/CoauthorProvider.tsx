@@ -13,6 +13,9 @@ export function CoauthorProvider({ children }: { children: ReactNode }) {
   const [agent] = useState(createCoauthorAgent);
   const [runOf, setRunOf] = useState<ReadonlyMap<string, string>>(new Map());
   const [marks, setMarks] = useState<ReadonlyMap<string, Mark>>(new Map());
+  const [outcomes, setOutcomes] = useState<ReadonlyMap<string, string>>(
+    new Map(),
+  );
   const runs = useMemo<ChatRuns>(
     () => ({
       runOf,
@@ -30,8 +33,11 @@ export function CoauthorProvider({ children }: { children: ReactNode }) {
           else next.set(runId, mark);
           return next;
         }),
+      outcomes,
+      addOutcome: (callId, content) =>
+        setOutcomes((found) => new Map(found).set(callId, content)),
     }),
-    [runOf, marks],
+    [runOf, marks, outcomes],
   );
   return (
     <CopilotKitProvider

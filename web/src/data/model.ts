@@ -151,20 +151,9 @@ export type Note = {
   deletedAt: string | null;
   /** The original; null for a note written by hand. */
   file: NoteFile | null;
-  /** A research brief of the co-author and its attachments; null for any other note. */
-  research: NoteResearch | null;
 };
-
-/** What makes a note a research brief (openspec/specs/web/workspace, «Шапка заметки задания»). */
-export type NoteResearch = {
-  /** The author attaches the screenplay of the draft. */
-  screenplay: boolean;
-  /** Notes of the story whose originals the author attaches. */
-  noteIds: string[];
-};
-
 /** A new note: it starts without text. */
-export type NewNote = Pick<Note, "projectId" | "title">;
+export type NewNote = Pick<Note, "projectId" | "title" | "body">;
 
 /** A message of a comment thread; `own`: written by the signed-in user (the data source decides). */
 export type CommentMessage = {

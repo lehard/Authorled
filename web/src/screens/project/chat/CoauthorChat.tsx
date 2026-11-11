@@ -44,12 +44,8 @@ import { docPath } from "../docRef";
 import { useNoteActions } from "../noteActions";
 import { useProjectData, type CoauthorRequest } from "../ProjectContext";
 import { ActionLines } from "./ActionLines";
-import {
-  changedResources,
-  doneOf,
-  firstChangingCalls,
-  toolText,
-} from "./actions";
+import { changedResources, firstChangingCalls, toolText } from "./actions";
+import { AnswerPre } from "./ResearchBlock";
 import { useConfirmations } from "./confirmations";
 import { useAccount } from "@/account/useAccount";
 import { NO_TRAINING_SHORT, offerUrl } from "@/app/legal";
@@ -156,10 +152,6 @@ export function CoauthorChat({
   // A turn of the author, from sending to the end of the co-author's answer, including the time
   // a confirmation card waits for the author: no other message goes meanwhile.
   const [busy, setBusy] = useState(false);
-  // Results of the co-author's changing calls in this chat, by call id (ActionLines, `outcomes`).
-  const [outcomes, setOutcomes] = useState<ReadonlyMap<string, string>>(
-    new Map(),
-  );
   const [error, setError] = useState<{
     text: string;
     tone: "error" | "notice";
@@ -241,26 +233,15 @@ export function CoauthorChat({
       // (openspec/specs/web/workspace, «Экраны после действия соавтора»).
       onToolCallResultEvent: ({ event }) => {
         const content = toolText(event.content);
-        setOutcomes((found) => new Map(found).set(event.toolCallId, content));
-        const refreshed = changedResources(content).map((resource) =>
-          invalidate({
+        runs.addOutcome(event.toolCallId, content);
+        for (const resource of changedResources(content))
+          void invalidate({
             resource,
             // The screenplay of the draft is read as one record by the draft's id (useScript):
             // Refine refreshes a detail only by its id.
             ...(resource === "scripts" ? { id: data.draft.id } : {}),
             invalidates: ["list", "many", "detail"],
-          }),
-        );
-        // A research brief opens in the centre once its note is read again (web/workspace,
-        // «Задание открывается после создания»); a conversation from history has no such events.
-        const done = doneOf(content);
-        const name = agent.messages
-          .flatMap((m) => (m.role === "assistant" ? (m.toolCalls ?? []) : []))
-          .find((call) => call.id === event.toolCallId)?.function.name;
-        if (name === "create_research_brief" && done !== null)
-          void Promise.all(refreshed).then(() =>
-            navigate(docPath(openDraft, { kind: "note", id: done.target.id })),
-          );
+          });
       },
       onRunErrorEvent: ({ event }) => {
         // A refusal of the product keeps the backend's message; anything else stays in the
@@ -612,13 +593,13 @@ export function CoauthorChat({
         </div>
         {text !== "" && (
           <div className="chat-md">
-            <Markdown>{text}</Markdown>
+            <Markdown components={{ pre: AnswerPre }}>{text}</Markdown>
           </div>
         )}
         <ActionLines
           calls={calls}
           messages={agent.messages}
-          outcomes={outcomes}
+          outcomes={runs.outcomes}
           confirmations={confirmations}
         />
         {!(agent.isRunning && m === last) && text !== "" && (

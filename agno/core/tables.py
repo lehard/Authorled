@@ -190,13 +190,7 @@ notes = Table(
     # The original of a note made from a file (purpose `note`); it goes only together with the note. No ON DELETE:
     # the check at the end of the statement lets the cascade from the story remove both.
     Column("file_id", Uuid, ForeignKey(f"{SCHEMA}.files.id"), unique=True),
-    # A research brief the co-author wrote (openspec/specs/api/agents, «Задание на исследование»):
-    # {"screenplay": bool, "note_ids": [uuid, ...]}; NULL for any other note. The ids have no keys: a note
-    # deleted for good leaves «Вложения нет» in the brief, not a broken brief.
-    # none_as_null: a note without research stores SQL NULL, not the JSON value null the check refuses.
-    Column("research", JSONB(none_as_null=True)),
     CheckConstraint("title <> ''", name="title_not_empty"),
-    CheckConstraint("research IS NULL OR jsonb_typeof(research) = 'object'", name="research_object"),
     CheckConstraint("revision >= 1", name="revision_positive"),
     Index("ix_notes_project_id", "project_id"),
 )
