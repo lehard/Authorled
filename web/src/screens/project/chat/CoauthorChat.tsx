@@ -44,7 +44,12 @@ import { docPath } from "../docRef";
 import { useNoteActions } from "../noteActions";
 import { useProjectData, type CoauthorRequest } from "../ProjectContext";
 import { ActionLines } from "./ActionLines";
-import { changedResources, firstChangingCalls, toolText } from "./actions";
+import {
+  changedResources,
+  doneOf,
+  firstChangingCalls,
+  toolText,
+} from "./actions";
 import { useConfirmations } from "./confirmations";
 import { useAccount } from "@/account/useAccount";
 import { NO_TRAINING_SHORT, offerUrl } from "@/app/legal";
@@ -237,14 +242,25 @@ export function CoauthorChat({
       onToolCallResultEvent: ({ event }) => {
         const content = toolText(event.content);
         setOutcomes((found) => new Map(found).set(event.toolCallId, content));
-        for (const resource of changedResources(content))
-          void invalidate({
+        const refreshed = changedResources(content).map((resource) =>
+          invalidate({
             resource,
             // The screenplay of the draft is read as one record by the draft's id (useScript):
             // Refine refreshes a detail only by its id.
             ...(resource === "scripts" ? { id: data.draft.id } : {}),
             invalidates: ["list", "many", "detail"],
-          });
+          }),
+        );
+        // A research brief opens in the centre once its note is read again (web/workspace,
+        // «Задание открывается после создания»); a conversation from history has no such events.
+        const done = doneOf(content);
+        const name = agent.messages
+          .flatMap((m) => (m.role === "assistant" ? (m.toolCalls ?? []) : []))
+          .find((call) => call.id === event.toolCallId)?.function.name;
+        if (name === "create_research_brief" && done !== null)
+          void Promise.all(refreshed).then(() =>
+            navigate(docPath(openDraft, { kind: "note", id: done.target.id })),
+          );
       },
       onRunErrorEvent: ({ event }) => {
         // A refusal of the product keeps the backend's message; anything else stays in the

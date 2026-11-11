@@ -18,7 +18,6 @@ import {
 } from "./actions";
 import type { Answer, Confirmations } from "./confirmations";
 import { readOutcome } from "./outcome";
-import { ResearchCard } from "./ResearchCard";
 
 // The changing calls of the co-author under its answer (openspec/specs/web/workspace,
 // «Сделанное соавтором в чате») and the card of a call waiting for the author («Подтверждение
@@ -127,27 +126,11 @@ export function ActionLines({
     const answers = toolMessages(messages, call.id);
     const outcome =
       outcomes.get(call.id) ?? answers.find((c) => decisionOf(c) === null);
-    const args = parseArgs(call.function.arguments);
-    if (outcome !== undefined) {
-      // A done research brief shows its card instead of the line («Карточка задания на исследование»).
-      const done = readOutcome(outcome);
-      if (
-        call.function.name === "create_research_brief" &&
-        done.kind === "done"
-      )
-        return (
-          <ResearchCard
-            key={call.id}
-            args={args}
-            noteId={done.target.id}
-            done={done.done}
-          />
-        );
+    if (outcome !== undefined)
       return <Outcome key={call.id} callId={call.id} content={outcome} />;
-    }
     const { title, detail } = describeAction(
       call.function.name as ToolName,
-      args,
+      parseArgs(call.function.arguments),
       data,
     );
     const decision = answers.map(decisionOf).find((d) => d !== null);

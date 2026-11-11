@@ -33,6 +33,15 @@ class NoteFile:
 
 
 @dataclass(frozen=True)
+class NoteResearch:
+    """What makes a note a research brief (openspec/specs/api/agents, «Задание на исследование»): the attachments
+    the author takes to the outside service, the screenplay of the draft and notes of the story by id."""
+
+    screenplay: bool
+    note_ids: tuple[uuid.UUID, ...]
+
+
+@dataclass(frozen=True)
 class Note:
     id: uuid.UUID
     project_id: uuid.UUID
@@ -44,6 +53,7 @@ class Note:
     updated_at: datetime
     deleted_at: datetime | None
     file: NoteFile | None
+    research: NoteResearch | None
 
 
 _COLUMNS = (
@@ -77,7 +87,20 @@ def _note(row: Any) -> Note:
         updated_at=row.updated_at,
         deleted_at=row.deleted_at,
         file=original,
+        research=None if row.research is None else _research(row.research),
     )
+
+
+def _research(value: Any) -> NoteResearch:
+    """The research of a row; the core writes it, so another shape is a broken row, not input to refuse."""
+    if (
+        not isinstance(value, dict)
+        or set(value) != {"screenplay", "note_ids"}
+        or not isinstance(value["screenplay"], bool)
+        or not isinstance(value["note_ids"], list)
+    ):
+        raise ValueError(f"Признак задания заметки повреждён: {value!r}")
+    return NoteResearch(screenplay=value["screenplay"], note_ids=tuple(uuid.UUID(i) for i in value["note_ids"]))
 
 
 def _title(value: Any) -> str:
@@ -120,6 +143,7 @@ def _insert(
     body: str,
     user_id: uuid.UUID,
     file_id: uuid.UUID | None = None,
+    research: NoteResearch | None = None,
 ) -> Note:
     note_id = connection.execute(
         insert(notes)
@@ -131,6 +155,9 @@ def _insert(
             body=body,
             updated_by=user_id,
             file_id=file_id,
+            research=None
+            if research is None
+            else {"screenplay": research.screenplay, "note_ids": [str(i) for i in research.note_ids]},
         )
         .returning(notes.c.id)
     ).scalar_one()
@@ -140,6 +167,14 @@ def _insert(
 def create_note(connection: Connection, project_id: uuid.UUID, title: Any, body: Any, user_id: uuid.UUID) -> Note:
     ensure_project_open(connection, project_id)
     return _insert(connection, project_id, _title(title), _body(body), user_id)
+
+
+def create_research_note(
+    connection: Connection, project_id: uuid.UUID, title: Any, body: Any, research: NoteResearch, user_id: uuid.UUID
+) -> Note:
+    """A research brief of the co-author: a note with its attachments; the author's routes never set them."""
+    ensure_project_open(connection, project_id)
+    return _insert(connection, project_id, _title(title), _body(body), user_id, research=research)
 
 
 def _count(number: int) -> str:

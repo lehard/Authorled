@@ -49,6 +49,7 @@ def test_columns(connection: Connection) -> None:
         "updated_at",
         "deleted_at",
         "file_id",
+        "research",
     ]
 
 
