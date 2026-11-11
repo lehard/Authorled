@@ -125,7 +125,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 - `agno/app/sandbox.py`: providers, repository URL/branch and checkpoint paths.
 - `agno/agents/`: application agents, including the Claude engineer (Claude Code on DeepSeek) and the co-author
   with its tools (`coauthor_tools.py`: read and search the story of the conversation, propose an edit of the screenplay, and by
-  the author's request change notes (also save a file of the conversation as a note), documents and comments;
+  the author's request change notes (also save a file of the conversation as a note, and write a research brief for an
+  outside Deep Research), documents and comments;
   long notes are read in parts of 20 000 characters; in-process functions that call the core; every changing
   call pauses the run until the chat answers it, the author in the co-author mode `ask`, the chat itself in `auto`;
   the list is static, AgentOS 3.1.10 refuses tools built per run; the document tools type profile fields as strings

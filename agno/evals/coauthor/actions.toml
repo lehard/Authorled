@@ -463,6 +463,38 @@ place = "posledniy-parom"
 message = "посмотри, как сцены ложатся на путешествие героя, и запиши раскладку"
 expect = "create_story_note"
 
+# --- Задание на исследование (цель названа, уточнять нечего) ---
+
+[[request]]
+id = "research-ferrymen"
+place = "posledniy-parom"
+message = "Хочу изучить, как жили и работали паромщики на Волге в 90-е: распорядок, деньги, с кем ссорились. Нужно для сцен на пароме. Составь задание на исследование."
+expect = "create_research_brief"
+
+[[request]]
+id = "research-village-medic"
+place = "tihaya-voda"
+message = "Помоги составить задание на исследование для Deep Research. Тема: как работал фельдшер в деревне в 90-е — для сцены, где Вера идёт в медпункт."
+expect = "create_research_brief"
+
+[[request]]
+id = "research-fishing-slang"
+place = "tihaya-voda"
+message = "мне нужна речь местных рыбаков, словечки и как они говорят о погоде и воде. сделай задание для дип ресёрча, сам не ищи"
+expect = "create_research_brief"
+
+[[request]]
+id = "research-river-police"
+place = "posledniy-parom"
+message = "Разберусь, как устроена речная полиция и что она проверяет на переправе — для сцены проверки на пароме. Подготовь задание для исследования в ChatGPT."
+expect = "create_research_brief"
+
+[[request]]
+id = "research-fact-question"
+place = "tihaya-voda"
+message = "Какие лодочные моторы были в деревнях в конце 90-х?"
+expect = "none"
+
 [[request]]
 id = "layout-unknown-template"
 place = "tihaya-voda"

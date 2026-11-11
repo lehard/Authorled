@@ -16,6 +16,7 @@ import {
   SortAsc,
   Trash2,
   User,
+  Telescope,
   Users,
   type LucideIcon,
   Upload,
@@ -58,6 +59,7 @@ import { NodeMenu, type MenuEntry } from "./NodeMenu";
 import { noteIcon } from "./docs/noteFile";
 import { useNoteActions } from "./noteActions";
 import { NoteUploadDialog } from "./NoteUploadDialog";
+import { RESEARCH_START } from "./chat/checks";
 import { useProjectData } from "./ProjectContext";
 import { StorySearchField, StorySearchResults } from "./StorySearch";
 
@@ -244,6 +246,12 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
           label: "Загрузить файл",
           icon: Upload,
           run: () => setUploading(true),
+        },
+        {
+          label: "Исследование",
+          icon: Telescope,
+          disabled: data.coauthorBusy,
+          run: () => data.askCoauthor(RESEARCH_START, "fill"),
         },
       ],
       kids: data.notes.map((n) => ({

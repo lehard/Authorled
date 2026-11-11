@@ -61,7 +61,7 @@ import {
   threadPrefix,
   type Conversation,
 } from "./api";
-import { ABOUT_STORY, CHECKS } from "./checks";
+import { ABOUT_STORY, CHECKS, RESEARCH_START } from "./checks";
 import { ChecksButton } from "./ChecksMenu";
 import { useChatRuns } from "./chatRuns";
 import {
@@ -755,6 +755,14 @@ export function CoauthorChat({
                 className="mt-4 w-full rounded-2xl bg-paper px-3 py-2 text-left text-foreground hover:shadow-panel"
               >
                 {ABOUT_STORY}
+              </button>
+              {/* Goes into the field, the author adds the topic («Чат с соавтором», «Исследовать тему»). */}
+              <button
+                type="button"
+                onClick={() => data.askCoauthor(RESEARCH_START, "fill")}
+                className="mt-1.5 w-full rounded-2xl bg-paper px-3 py-2 text-left text-foreground hover:shadow-panel"
+              >
+                Исследовать тему
               </button>
               <p className="mt-4 mb-1.5 text-xs font-semibold">
                 Проверки наставника

@@ -2,6 +2,7 @@ import { HttpAgent, type AbstractAgent, type Message } from "@ag-ui/client";
 
 import { activeUser } from "@/auth/userManager";
 
+import { DENY, isChanging } from "./actions";
 import { NO_CONNECTION } from "./runError";
 
 // The co-author agent and the AgentOS API on the frontend's own origin (/os/, dev: Vite proxy).
@@ -160,21 +161,88 @@ export async function renameConversation(
   });
 }
 
+/** A call of a tool as a run of Agno 3.1.10 keeps it (`tools` of `GET /sessions/{id}/runs`). */
+type ToolRow = {
+  tool_call_id?: unknown;
+  tool_name?: unknown;
+  tool_args?: unknown;
+  result?: unknown;
+  confirmed?: unknown;
+};
+
 type RunRow = {
   run_id?: unknown;
   run_input?: string | null;
   content?: unknown;
   created_at?: number;
+  tools?: ToolRow[] | null;
 };
 
 // Agno stores the question with the AG-UI context appended; the chat shows the question only.
 const CONTEXT_TAIL = /\s*<additional context>[\s\S]*<\/additional context>\s*$/;
 
 export type LoadedConversation = {
-  messages: { id: string; role: "user" | "assistant"; content: string }[];
+  messages: Message[];
   /** The run of each answer, by message id: the run a mark of the answer belongs to. */
   runOf: Map<string, string>;
 };
+
+/**
+ * A tool result as Agno 3.1.10 sends it over AG-UI (`to_json_str`, agno/os/interfaces/agui/utils.py):
+ * valid JSON as it is, any other text as a JSON string. A run keeps the result as the tool returned it.
+ */
+function asAgui(result: unknown): string {
+  if (typeof result !== "string") return "";
+  try {
+    JSON.parse(result);
+    return result;
+  } catch {
+    // Not JSON: a refusal of the core in plain text, which AG-UI sends as a JSON string.
+    return JSON.stringify(result);
+  }
+}
+
+/**
+ * The changing calls of a run as the chat got them live (openspec/specs/web/workspace, «Сделанное
+ * соавтором в чате»; design of research-brief, decision 10): one message with the calls before the
+ * answer, and the result or the author's refusal of each call. A call nobody answered is left out.
+ */
+function actionsOf(
+  tools: ToolRow[],
+  messageId: string,
+  run: string,
+): Message[] {
+  const answered = tools.filter(
+    (t) =>
+      typeof t.tool_name === "string" &&
+      isChanging(t.tool_name) &&
+      (t.confirmed === true || t.confirmed === false),
+  );
+  if (answered.length === 0) return [];
+  const calls = answered.map((t) => {
+    if (typeof t.tool_call_id !== "string" || t.tool_call_id === "")
+      throw new Error(`Действие запуска ${run} пришло без tool_call_id.`);
+    return {
+      id: t.tool_call_id,
+      type: "function" as const,
+      function: {
+        name: t.tool_name as string,
+        arguments: JSON.stringify(t.tool_args ?? {}),
+      },
+    };
+  });
+  return [
+    { id: messageId, role: "assistant", content: "", toolCalls: calls },
+    ...answered.map((t, k) => ({
+      id: `${messageId}-r${k}`,
+      role: "tool" as const,
+      toolCallId: calls[k].id,
+      // A refused call has no result; a done one shows what the core answered, as AG-UI
+      // carries it (outcome.ts).
+      content: t.confirmed === false ? JSON.stringify(DENY) : asAgui(t.result),
+    })),
+  ];
+}
 
 /** Messages of a conversation as the chat shows them: each run is a question and an answer. */
 export async function loadConversation(
@@ -184,7 +252,7 @@ export async function loadConversation(
     await osFetch(`${OS}/sessions/${encodeURIComponent(id)}/runs?type=agent`)
   ).json()) as RunRow[];
   const runOf = new Map<string, string>();
-  const messages = runs.flatMap((r, i) => {
+  const messages = runs.flatMap((r, i): Message[] => {
     const answer =
       typeof r.content === "string" && r.content !== "" ? r.content : null;
     if (answer !== null) {
@@ -202,6 +270,7 @@ export async function loadConversation(
             },
           ]
         : []),
+      ...actionsOf(r.tools ?? [], `${id}-c${i}`, `${id} ${i}`),
       ...(answer !== null
         ? [{ id: `${id}-a${i}`, role: "assistant" as const, content: answer }]
         : []),
