@@ -13,6 +13,15 @@ export const MANUSCRIPT_TYPES = ".fountain,.fdx,.starc,.docx,.txt";
 
 export type UploadedFile = { id: string; name: string };
 
+/**
+ * A record of a STARC project the imported file did not have: its screenplay text or a profile
+ * (openspec/specs/api/story-import, «Пропущенное при импорте STARC»). The name is as STARC shows it.
+ */
+export type SkippedRecord = {
+  kind: "screenplay" | "character" | "location";
+  name: string;
+};
+
 export type Upload = {
   projectId: string;
   file: File;
@@ -40,6 +49,9 @@ export const NOTE_FILE_TYPES = ".docx,.pdf,.txt,.md,.fountain,.fdx,.starc";
 /** A new story: its id and the id of «Драфт 1». */
 export type NewStory = { id: string; draftId: string };
 
+/** A new story from a manuscript, with what the file did not have. */
+export type NewStoryFromFile = NewStory & { skipped: SkippedRecord[] };
+
 const quiet = { successNotification: false, errorNotification: false } as const;
 
 export function useStoryFiles() {
@@ -57,15 +69,15 @@ export function useStoryFiles() {
   return {
     upload: (payload: Upload) =>
       run<UploadedFile>({ operation: "upload", payload }),
-    /** Replaces the screenplay by the manuscript; returns the new text. */
+    /** Replaces the screenplay by the manuscript; returns the new text and what the file did not have. */
     importInto: (draftId: string, fileId: string) =>
-      run<{ text: ScreenplayDoc }>({
+      run<{ text: ScreenplayDoc; skipped: SkippedRecord[] }>({
         operation: "import",
         payload: { draftId, fileId },
       }),
     /** A new story from a manuscript. */
     createFromFile: (title: string, file: File, coverColor: CoverColor) =>
-      run<NewStory>({
+      run<NewStoryFromFile>({
         operation: "createFromFile",
         payload: { title, file, coverColor },
       }),

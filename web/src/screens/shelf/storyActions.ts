@@ -1,7 +1,11 @@
 import { useCreate, useGetIdentity, useUpdate } from "@refinedev/core";
 
 import type { Identity } from "@/auth/authProvider";
-import { useStoryFiles, type NewStory } from "@/data/files";
+import {
+  useStoryFiles,
+  type NewStory,
+  type NewStoryFromFile,
+} from "@/data/files";
 import type { CoverColor, NewProject, Script } from "@/data/model";
 
 const quiet = { successNotification: false, errorNotification: false } as const;
@@ -21,10 +25,10 @@ export function useStoryActions() {
     file: File | null,
     template: string | null,
     coverColor: CoverColor,
-  ): Promise<string> {
+  ): Promise<NewStoryFromFile> {
     if (me === undefined)
       throw new Error("Профиль пользователя ещё не загружен.");
-    let story: NewStory;
+    let story: NewStoryFromFile;
     if (file !== null && template !== null)
       throw new Error("История из рукописи создаётся без каркаса.");
     if (file === null) {
@@ -37,7 +41,7 @@ export function useStoryActions() {
         values: project,
         ...quiet,
       });
-      story = data as unknown as NewStory;
+      story = { ...(data as unknown as NewStory), skipped: [] };
     } else {
       story = await files.createFromFile(title, file, coverColor);
     }
@@ -63,7 +67,7 @@ export function useStoryActions() {
       values: script,
       ...quiet,
     });
-    return story.id;
+    return story;
   }
 
   async function renameStory(id: string, title: string) {

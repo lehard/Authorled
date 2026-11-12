@@ -35,6 +35,17 @@ class CreatedProject(BaseModel):
     script_id: uuid.UUID
 
 
+class SkippedOut(_Out):
+    """A record of a STARC project whose document is not in the imported file (openspec/specs/api/story-import)."""
+
+    kind: Literal["screenplay", "character", "location"]
+    name: str
+
+
+class CreatedFromFile(CreatedProject):
+    skipped: list[SkippedOut]
+
+
 class NextCoverColorOut(BaseModel):
     cover_color: str
 
@@ -109,6 +120,10 @@ class TextOut(_Out):
     document_id: uuid.UUID
     content: dict[str, Any]
     revision: int
+
+
+class ImportedTextOut(TextOut):
+    skipped: list[SkippedOut]
 
 
 class VersionOut(_Out):

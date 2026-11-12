@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from tests.starc_sample import SAMPLE as STARC
-from tests.starc_sample import novel, with_text
+from tests.starc_sample import cloud_project, novel, with_text
 
 SAMPLES = Path(__file__).parent / "fixtures" / "import"
 BROKEN_FDX = b'<?xml version="1.0"?><FinalDraft><Content><Paragraph'
@@ -22,6 +22,7 @@ def test_story_from_fountain(authors: Any) -> None:
     text = author.get(f"/api/v1/documents/{created['script_id']}/text").json()["content"]
     uids = [b["attrs"]["uid"] for b in text["content"] if b["type"] == "sceneHeading"]
     assert len(uids) == 2 and len(set(uids)) == 2
+    assert created["skipped"] == []
     tree = author.get(f"/api/v1/drafts/{created['draft_id']}/documents").json()
     assert sorted(d["name"] for d in tree if d["kind"] == "character") == ["Вера", "Миша"]
 
@@ -38,6 +39,38 @@ def test_story_from_starc(authors: Any) -> None:
     tree = author.get(f"/api/v1/drafts/{created['draft_id']}/documents").json()
     assert [d["name"] for d in tree if d["kind"] == "character"] == ["Вера", "Миша", "Олег", "Почтальон"]
     assert [d["name"] for d in tree if d["kind"] == "location"] == ["Кухня", "Озеро", "Маяк"]
+    assert created["skipped"] == []
+
+
+CLOUD_SKIPPED = [{"kind": "location", "name": "КОЛИБА"}, {"kind": "screenplay", "name": "Выбор 2"}]
+
+
+def test_story_from_a_cloud_project_lists_what_the_file_has_not(authors: Any) -> None:
+    author = authors()
+    response = author.post(
+        "/api/v1/projects", data={"title": "Выбор"}, files={"file": ("облако.starc", cloud_project())}
+    )
+    assert response.status_code == 201, response.text
+    created = response.json()
+    assert created["skipped"] == CLOUD_SKIPPED
+    tree = author.get(f"/api/v1/drafts/{created['draft_id']}/documents").json()
+    assert [d["name"] for d in tree if d["kind"] == "location"] == ["Кухня", "Озеро", "Маяк"]
+
+
+def test_import_of_a_cloud_project_lists_what_the_file_has_not(authors: Any) -> None:
+    author = authors()
+    story = author.story()
+    assert "skipped" not in story
+    uploaded = author.post(
+        f"/api/v1/projects/{story['project']['id']}/files",
+        files={"file": ("облако.starc", cloud_project())},
+        data={"purpose": "import"},
+    ).json()
+    imported = author.post(
+        f"/api/v1/drafts/{story['draft_id']}/import", json={"file_id": uploaded["id"]}, headers={"If-Match": "1"}
+    )
+    assert imported.status_code == 200, imported.text
+    assert imported.json()["skipped"] == CLOUD_SKIPPED
 
 
 def test_story_from_starc_keeps_scene_parameters(authors: Any) -> None:
@@ -90,6 +123,7 @@ def test_import_into_a_story(authors: Any) -> None:
     assert author.post(url, json={"file_id": uploaded["id"]}).status_code == 428
     imported = author.post(url, json={"file_id": uploaded["id"]}, headers={"If-Match": "1"})
     assert imported.status_code == 200 and imported.json()["revision"] == 2
+    assert imported.json()["skipped"] == []
     again = author.post(url, json={"file_id": uploaded["id"]}, headers={"If-Match": "1"})
     assert again.status_code == 409
 

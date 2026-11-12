@@ -206,8 +206,14 @@ export function ShelfScreen() {
         open={creating}
         onOpenChange={setCreating}
         onSubmit={async (title, file, template, coverColor) => {
-          const id = await createStory(title, file, template, coverColor);
-          navigate(`/p/${id}/text`);
+          const story = await createStory(title, file, template, coverColor);
+          // Straight to the draft: the redirect of /p/:id would drop the state.
+          void navigate(`/p/${story.id}/d/${story.draftId}/text`, {
+            state:
+              story.skipped.length > 0
+                ? { importSkipped: story.skipped }
+                : undefined,
+          });
         }}
       />
       <NameDialog
