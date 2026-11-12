@@ -32,6 +32,13 @@ export const HERO_CHECK = {
   again: "Показать снова",
 };
 
+/** The epigraph above the vision phrase: the motto of the product (openspec/context/01-product-context.md). */
+export const EPIGRAPH = {
+  quote:
+    "Мы вначале имеем интеллектуальный замысел. И наша задача — опустить его в область сердца, не задерживаясь по дороге в области мозга.",
+  author: "Ингмар Бергман",
+};
+
 export const VISION =
   "Самое приятное — придумывать героев и искать слова — остаётся вам. ИИ держит в памяти каждую сцену и каждого героя, чтобы на седьмом драфте история не поплыла.";
 
