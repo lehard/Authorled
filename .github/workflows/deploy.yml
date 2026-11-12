@@ -178,6 +178,10 @@ jobs:
       - name: Check the site
         run: deploy/check_site.sh "$SITE_ORIGIN"
 
+      # The page manifest of the app and of the site with its own type (openspec/specs/runtime, «Тип манифеста страниц»).
+      - name: Check the manifest type
+        run: deploy/check_manifest.sh "$PUBLIC_URL" "$SITE_ORIGIN"
+
       # The admin interface of Authentik only with the owner's client certificate, its path closed on the
       # Authentik host, default flows closed on the public hosts. The hosts are those of deploy/Caddyfile.
       - name: Check the admin interface
