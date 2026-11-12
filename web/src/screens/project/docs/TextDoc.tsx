@@ -1,11 +1,15 @@
 import { useInvalidate } from "@refinedev/core";
 import { AlignLeft, FileUp, LayoutGrid } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router";
+import { useLocation, useNavigate, useSearchParams } from "react-router";
 
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { MANUSCRIPT_TYPES, useStoryFiles } from "@/data/files";
+import {
+  MANUSCRIPT_TYPES,
+  useStoryFiles,
+  type SkippedRecord,
+} from "@/data/files";
 import { SCRIPT_PARTS } from "@/data/model";
 import { PrintError, type EditorMode } from "@/editor";
 import { toNode } from "@/editor/document.ts";
@@ -22,6 +26,7 @@ import { ActionError, ExportItems } from "./ExportItems";
 import { useEditorComments } from "./useEditorComments";
 import { useEditorSuggestions } from "./useEditorSuggestions";
 import { DocHead } from "./DocHead";
+import { ImportSkipped } from "./ImportSkipped";
 import { SaveHistory } from "./SaveHistory";
 import { SceneBoard } from "./SceneBoard";
 
@@ -75,6 +80,21 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
+  // What the imported file did not have (web/workspace, «Предупреждение о пропущенном при
+  // импорте»): from the import here, or from the shelf once, in the state of the address of a new
+  // story; that state is dropped at once, so a reload or «Назад» does not show it again.
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [skipped, setSkipped] = useState<SkippedRecord[]>(() =>
+    importSkippedOf(location.state),
+  );
+  useEffect(() => {
+    if (importSkippedOf(location.state).length > 0)
+      void navigate(`${location.pathname}${location.search}`, {
+        replace: true,
+        state: null,
+      });
+  }, [location, navigate]);
   const suggestData = useMemo(
     () => ({
       characters: chars.map((c) => c.name),
@@ -117,6 +137,7 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
   // text as an ordinary edit, so undo brings the previous one back. A refusal leaves the text.
   async function importFile(file: File) {
     setError(null);
+    setSkipped([]);
     setImporting(true);
     try {
       const uploaded = await files.upload({
@@ -124,13 +145,17 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
         file,
         purpose: "import",
       });
-      const { text: imported } = await files.importInto(draft.id, uploaded.id);
+      const { text: imported, skipped: missing } = await files.importInto(
+        draft.id,
+        uploaded.id,
+      );
       // The cards may be open by now: then the text of the window takes it.
       if (editor.current === null) setText(imported);
       else editor.current.replace(toNode(imported));
       // New characters and locations of the manuscript.
       for (const resource of ["characters", "locations", "scripts"])
         void invalidate({ resource, invalidates: ["list", "detail"] });
+      setSkipped(missing);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -256,6 +281,9 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
       )}
       <ChecksAtSelection anchor={checksAt} onClose={() => setChecksAt(null)} />
       <ActionError error={error} onClose={() => setError(null)} />
+      {error === null && (
+        <ImportSkipped skipped={skipped} onClose={() => setSkipped([])} />
+      )}
       {comments.dialog}
       <ConfirmDialog
         open={pending !== null}
@@ -277,4 +305,15 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
       />
     </>
   );
+}
+
+/** The list a new story from a manuscript brings in the state of its address (shelf/ShelfScreen). */
+function importSkippedOf(state: unknown): SkippedRecord[] {
+  if (
+    typeof state !== "object" ||
+    state === null ||
+    !("importSkipped" in state)
+  )
+    return [];
+  return (state as { importSkipped: SkippedRecord[] }).importSkipped;
 }

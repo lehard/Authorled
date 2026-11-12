@@ -6,6 +6,10 @@ code of STARC is used. What a fuller sample has to confirm: openspec/context/bac
 
 An element that is not known is refused whole, so nothing unknown is lost silently. Known data the editor has no
 place for is skipped on purpose: see _GROUP_PARTS, _FOLDER_PARTS, _PARAGRAPH_PARTS and _SKIPPED.
+
+A record of the structure whose own document is not in the file at all (a cloud project of STARC saved in part) is
+not in the file: a screenplay without its text, a character or a location without its profile. Such records are not
+imported and are listed in `StarcProject.skipped` for the author; a document that is there but broken is refused.
 """
 
 import colorsys
@@ -17,7 +21,7 @@ from collections.abc import Iterator
 from contextlib import closing
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from core.errors import Invalid
 from core.importers.screenplay import Paragraph, Run, title_case
@@ -82,10 +86,19 @@ class Named:
 
 
 @dataclass(frozen=True)
+class Skipped:
+    """A record of the structure whose document is not in the file; the name is as STARC shows it."""
+
+    kind: Literal["screenplay", "character", "location"]
+    name: str
+
+
+@dataclass(frozen=True)
 class StarcProject:
     paragraphs: list[Paragraph]
     characters: list[Named]
     locations: list[Named]
+    skipped: list[Skipped]
 
 
 def _text(element: ElementTree.Element) -> str:
@@ -116,10 +129,23 @@ def _items(parent: ElementTree.Element) -> Iterator[ElementTree.Element]:
             yield from _items(item)
 
 
+def _in_file(connection: sqlite3.Connection, item: ElementTree.Element) -> bool:
+    """Whether the file has any document of this record of the structure."""
+    row = connection.execute("SELECT 1 FROM documents WHERE uuid = ?", (item.get("uuid"),)).fetchone()
+    return row is not None
+
+
 def _cast(
-    connection: sqlite3.Connection, items: list[ElementTree.Element], kind: str, document_type: int
+    connection: sqlite3.Connection,
+    items: list[ElementTree.Element],
+    kind: Literal["character", "location"],
+    document_type: int,
+    skipped: list[Skipped],
 ) -> list[Named]:
-    """Names and roles of the project; names in capitals like cues get the title case of cast_from_text."""
+    """Names and roles of the project; names in capitals like cues get the title case of cast_from_text.
+
+    A record without its profile in the file goes to `skipped`.
+    """
     found = []
     for item in items:
         if item.get("type") != MIME + kind:
@@ -127,6 +153,9 @@ def _cast(
         name = (item.get("name") or "").strip()
         if not name:
             raise Invalid(f"В проекте STARC есть документ «{kind}» без имени.")
+        if not _in_file(connection, item):
+            skipped.append(Skipped(kind, name))
+            continue
         row = connection.execute(
             "SELECT content FROM documents WHERE uuid = ? AND type = ?", (item.get("uuid"), document_type)
         ).fetchone()
@@ -251,12 +280,17 @@ def _walk(parent: ElementTree.Element, out: list[Paragraph]) -> None:
             out.append(_paragraph(element))
 
 
-def _paragraphs(connection: sqlite3.Connection, screenplay: ElementTree.Element) -> list[Paragraph]:
+def _text_item(screenplay: ElementTree.Element) -> ElementTree.Element:
     texts = [item for item in screenplay.iterfind("item") if item.get("type") == MIME + "screenplay/text"]
     if len(texts) != 1:
         raise Invalid("У сценария в файле STARC должен быть ровно один текст.")
+    return texts[0]
+
+
+def _paragraphs(connection: sqlite3.Connection, screenplay: ElementTree.Element) -> list[Paragraph]:
     row = connection.execute(
-        "SELECT content FROM documents WHERE uuid = ? AND type = ?", (texts[0].get("uuid"), SCREENPLAY_TEXT)
+        "SELECT content FROM documents WHERE uuid = ? AND type = ?",
+        (_text_item(screenplay).get("uuid"), SCREENPLAY_TEXT),
     ).fetchone()
     if row is None:
         raise Invalid("В файле STARC нет текста сценария.")
@@ -275,16 +309,29 @@ def _project(connection: sqlite3.Connection) -> StarcProject:
     if len(rows) != 1:
         raise Invalid("Это не проект STARC: нужен ровно один документ структуры.")
     items = list(_items(_xml(rows[0][0], "structure")))
-    screenplays = [item for item in items if item.get("type") == MIME + "screenplay"]
+    skipped: list[Skipped] = []
+    screenplays = []
+    for item in items:
+        if item.get("type") != MIME + "screenplay":
+            continue
+        if _in_file(connection, _text_item(item)):
+            screenplays.append(item)
+            continue
+        name = (item.get("name") or "").strip()
+        if not name:
+            raise Invalid("В проекте STARC есть сценарий без имени.")
+        skipped.append(Skipped("screenplay", name))
     if not screenplays:
         raise Invalid("В файле нет сценария.")
     if len(screenplays) > 1:
         raise Invalid("В файле несколько сценариев, а импортировать можно ровно один.")
-    return StarcProject(
-        _paragraphs(connection, screenplays[0]),
-        _cast(connection, items, "character", CHARACTER),
-        _cast(connection, items, "location", LOCATION),
-    )
+    paragraphs = _paragraphs(connection, screenplays[0])
+    characters = _cast(connection, items, "character", CHARACTER, skipped)
+    locations = _cast(connection, items, "location", LOCATION, skipped)
+    # The author reads the list in the order of the navigator of STARC.
+    order = {(item.get("type"), (item.get("name") or "").strip()): index for index, item in enumerate(items)}
+    skipped.sort(key=lambda record: order[(MIME + record.kind, record.name)])
+    return StarcProject(paragraphs, characters, locations, skipped)
 
 
 def parse_starc(data: bytes) -> StarcProject:

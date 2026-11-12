@@ -22,12 +22,15 @@ from app.api.body import (
 )
 from app.api.problems import Problem
 from app.api.schemas import (
+    CreatedFromFile,
     CreatedProject,
     DocumentOut,
     DraftOut,
+    ImportedTextOut,
     ListedProjectOut,
     NextCoverColorOut,
     ProjectOut,
+    SkippedOut,
     StoryTemplateOut,
     TextOut,
 )
@@ -109,20 +112,26 @@ def _create_project(principal: Principal, body: dict[str, Any]) -> CreatedProjec
     return CreatedProject(project=ProjectOut.model_validate(project), draft_id=draft_id, script_id=script_id)
 
 
-def _create_project_from_file(principal: Principal, values: dict[str, str], name: str, data: bytes) -> CreatedProject:
+def _create_project_from_file(principal: Principal, values: dict[str, str], name: str, data: bytes) -> CreatedFromFile:
     with get_engine().begin() as connection:
         owner = caller_id(connection, principal)
-        project, draft_id, script_id = imports.create_project_from_file(
+        project, draft_id, script_id, skipped = imports.create_project_from_file(
             connection, owner, values.get("title"), name, data, values.get("cover_color", stories.NEXT_COLOR)
         )
-    return CreatedProject(project=ProjectOut.model_validate(project), draft_id=draft_id, script_id=script_id)
+    return CreatedFromFile(
+        project=ProjectOut.model_validate(project),
+        draft_id=draft_id,
+        script_id=script_id,
+        skipped=[SkippedOut.model_validate(record) for record in skipped],
+    )
 
 
 @router.post(
     "/projects",
     status_code=201,
-    response_model=CreatedProject,
-    summary="Create a story: JSON with a title, or multipart with a title and a manuscript file to import",
+    response_model=CreatedFromFile | CreatedProject,
+    summary="Create a story: JSON with a title, or multipart with a title and a manuscript file to import; "
+    "an import also lists what the file did not have (skipped)",
     openapi_extra={
         "requestBody": {
             "required": True,
@@ -160,7 +169,9 @@ def _create_project_from_file(principal: Principal, values: dict[str, str], name
         }
     },
 )
-async def create_project(request: Request, principal: Principal = Depends(current_principal)) -> CreatedProject:
+async def create_project(
+    request: Request, principal: Principal = Depends(current_principal)
+) -> CreatedFromFile | CreatedProject:
     if is_multipart(request):
         # `template` is read only to refuse it by name: a story from a manuscript starts from its text.
         values, name, data = await read_upload(request, {"title", "template", "cover_color"})
@@ -340,7 +351,7 @@ async def create_documents(
     return await run_in_threadpool(_create_documents, principal, found, items)
 
 
-def _import(principal: Principal, draft_id: uuid.UUID, revision: int, body: dict[str, Any]) -> TextOut:
+def _import(principal: Principal, draft_id: uuid.UUID, revision: int, body: dict[str, Any]) -> ImportedTextOut:
     unknown = set(body) - {"file_id"}
     if unknown:
         raise Problem(422, "Unprocessable Content", f"Поле «{sorted(unknown)[0]}» здесь не принимается.")
@@ -349,17 +360,22 @@ def _import(principal: Principal, draft_id: uuid.UUID, revision: int, body: dict
         raise Problem(422, "Unprocessable Content", "Поле «file_id»: нужен id загруженного файла.")
     with get_engine().begin() as connection:
         user = caller_id(connection, principal)
-        return TextOut.model_validate(imports.import_into(connection, draft_id, parse_id(raw), revision, user))
+        imported = imports.import_into(connection, draft_id, parse_id(raw), revision, user)
+    return ImportedTextOut(
+        **TextOut.model_validate(imported.text).model_dump(),
+        skipped=[SkippedOut.model_validate(record) for record in imported.skipped],
+    )
 
 
 @router.post(
     "/drafts/{draft_id}/import",
-    response_model=TextOut,
-    summary="Replace the screenplay text of a draft by an uploaded manuscript, based on the text revision (If-Match)",
+    response_model=ImportedTextOut,
+    summary="Replace the screenplay text of a draft by an uploaded manuscript, based on the text revision (If-Match); "
+    "the answer lists what the file did not have (skipped)",
 )
 async def import_file(
     draft_id: str, request: Request, response: Response, principal: Principal = Depends(current_principal)
-) -> TextOut:
+) -> ImportedTextOut:
     body = await read_object(request)
     found = await run_in_threadpool(_draft_id, principal, draft_id)
     text = await run_in_threadpool(_import, principal, found, if_match(request), body)
