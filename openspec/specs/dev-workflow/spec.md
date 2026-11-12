@@ -18,6 +18,19 @@
 - WHEN сессия коммитит свою работу
 - THEN она MUST коммитить только свои файлы по путям и MUST NOT откатывать, прятать или коммитить чужие
 
+### Requirement: Apply начинается со свежего main
+Перед первой задачей `/opsx:apply` сессия MUST в своём worktree выполнить `git fetch origin` и `git merge origin/main` (не rebase), чтобы работа шла от актуального `main`. При конфликте сессия MUST остановиться и спросить владельца. Основную папку для этого сессия MUST NOT трогать.
+
+#### Scenario: Main ушёл вперёд
+- GIVEN после создания worktree в `origin/main` влиты другие PR
+- WHEN владелец запускает `/opsx:apply`
+- THEN сессия MUST влить `origin/main` в свою ветку до первой задачи
+
+#### Scenario: Конфликт перед apply
+- GIVEN `git merge origin/main` в ветке сессии дал конфликт
+- WHEN сессия готовит apply
+- THEN она MUST остановиться и спросить владельца, MUST NOT начинать задачи
+
 ### Requirement: Изменение доводит одна сессия
 Одно изменение OpenSpec MUST проходить apply, verify, archive и слияние в одной ветке и одном PR. Отдельные ветки и PR только для verify или archive MUST NOT создаваться. Проверка на сервере после релиза MUST идти отдельным PR от `origin/main`, потому что выполнима только после релиза.
 
