@@ -155,6 +155,12 @@ else
 fi
 
 echo ""
+echo -e "${DIM}> check_brand${NC}"
+if ! "${REPO_ROOT}/scripts/check_brand.sh"; then
+  failed=1
+fi
+
+echo ""
 echo -e "${DIM}> check_web_tokens${NC}"
 if ! "${WEB_DIR}/scripts/check_web_tokens.sh"; then
   failed=1

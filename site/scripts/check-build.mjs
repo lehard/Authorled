@@ -29,9 +29,38 @@ for (const file of [
   "sitemap.xml",
   "robots.txt",
   "og.jpg",
+  // Page icons and the mark (openspec/specs/web/brand).
   "favicon.svg",
+  "favicon.ico",
+  "apple-touch-icon.png",
+  "manifest.webmanifest",
+  "icon-192.png",
+  "icon-512.png",
+  "icon-maskable-512.png",
+  "brand-mark.svg",
 ]) {
   if (!fs.existsSync(path.join(dist, file))) fail(`missing ${file}`);
+}
+
+// Every built page links the page icons (openspec/specs/web/brand, «Значки страницы сайта»).
+const ICON_LINKS = [
+  'href="/favicon.svg"',
+  'href="/favicon.ico"',
+  'href="/apple-touch-icon.png"',
+  'href="/manifest.webmanifest"',
+];
+const htmlPages = (dir) =>
+  fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) return htmlPages(full);
+    return entry.name.endsWith(".html") ? [full] : [];
+  });
+for (const page of htmlPages(dist)) {
+  const html = fs.readFileSync(page, "utf8");
+  for (const link of ICON_LINKS) {
+    if (!html.includes(link))
+      fail(`${path.relative(dist, page)} has no icon link ${link}`);
+  }
 }
 if (problems.length === 0) {
   const home = read("index.html");

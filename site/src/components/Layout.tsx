@@ -15,13 +15,7 @@ function BrandMark() {
       href="/"
       className="flex items-center gap-2 rounded-full title-3 text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
     >
-      <span
-        aria-hidden="true"
-        className="grid size-7 place-items-center rounded-full bg-primary caption-3 text-primary-foreground"
-        style={{ fontFamily: "var(--font-heading)" }}
-      >
-        С
-      </span>
+      <img src="/brand-mark.svg" alt="" width={28} height={28} />
       Соавтор
     </a>
   );
