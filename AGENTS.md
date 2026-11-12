@@ -360,7 +360,9 @@ historical sessions, notes and Company work; migrate saved references deliberate
 
 `./scripts/validate.sh` checks formatting, lint and types, the boundaries of the modules `auth` and billing, that the
 migrations of the core and of billing have one head each,
-and for `web/` also builds the app and checks design tokens and their contrast; CI uses the same command.
+and for `web/` also builds the app and checks design tokens and their contrast, and that the copies of the mark and
+page icons in `web/public/` and `site/public/` equal their source `docs/brand/` (`scripts/check_brand.sh`, openspec/specs/web/brand);
+CI uses the same command.
 `./scripts/dev.sh test` runs pytest for the core on real PostgreSQL (not in CI yet).
 Also run `git diff --check`. Keep evals in `agno/evals/__main__.py` and `agno/evals/cases.py`, using
 Agno's `criteria` and `expected_tool_calls`. Do not add a bundled regression suite or

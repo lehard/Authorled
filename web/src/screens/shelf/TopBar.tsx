@@ -9,10 +9,7 @@ export function TopBar() {
         to="/"
         className="font-heading flex items-center gap-2.5 text-[19px]"
       >
-        <span
-          className="inline-block size-7 rounded-lg bg-primary"
-          aria-hidden
-        />
+        <img src="/brand-mark.svg" alt="" width={28} height={28} />
         Соавтор
       </Link>
       <span className="flex-1" />
