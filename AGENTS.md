@@ -66,6 +66,9 @@ The flow from discussion to code:
    Do not start them on your own; when a request needs code and no active change covers it,
    say so and point to the intent. Inside a command the user started, follow its skill; keep
    `/opsx:apply` within `tasks.md` and ask the user to run `/opsx:update` when the plan must change.
+   Before the first task of `/opsx:apply`, in the session's worktree, run `git fetch origin` and
+   `git merge origin/main` (not rebase), so the work starts from the current `main`; on a conflict
+   stop and ask. Do not pull in the main checkout for this.
 4. Finish in the same session, without a separate command of the user, once every task of
    `tasks.md` is checked. This rule is the user's standing permission to commit, push and merge
    in this step:
