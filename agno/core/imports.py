@@ -18,7 +18,7 @@ from core.importers.fdx import parse_fdx
 from core.importers.fountain import parse_fountain
 from core.importers.plain import parse_docx, parse_txt, text_of_txt
 from core.importers.screenplay import Paragraph, build_doc, cast_from_text, places_from_text
-from core.importers.starc import Named, parse_starc
+from core.importers.starc import Named, Skipped, parse_starc
 from core.projects import NEXT_COLOR, Project, create_project
 from core.tables import documents
 from core.texts import Doc, Text, put_text, screenplay_id
@@ -26,17 +26,29 @@ from core.texts import Doc, Text, put_text, screenplay_id
 
 @dataclass(frozen=True)
 class Manuscript:
-    """The text, and the characters and locations a project file names apart from its text (STARC)."""
+    """The text, and the characters and locations a project file names apart from its text (STARC).
+
+    `skipped`: records of a STARC project whose documents are not in the file, for the author to see.
+    """
 
     doc: Doc
     characters: list[Named] = field(default_factory=list)
     locations: list[Named] = field(default_factory=list)
+    skipped: list[Skipped] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class Imported:
+    """The new text of the screenplay and what the file did not have (core/importers/starc.py)."""
+
+    text: Text
+    skipped: list[Skipped]
 
 
 def parse_manuscript(extension: str, data: bytes) -> Manuscript:
     if extension == ".starc":
         project = parse_starc(data)
-        return Manuscript(build_doc(project.paragraphs), project.characters, project.locations)
+        return Manuscript(build_doc(project.paragraphs), project.characters, project.locations, project.skipped)
     parsers = {
         ".fountain": lambda: parse_fountain(text_of_txt(data)),
         ".fdx": lambda: parse_fdx(data),
@@ -84,7 +96,7 @@ def _add_cast_and_places(
 
 def import_into(
     connection: Connection, draft_id: uuid.UUID, file_id: uuid.UUID, expected_revision: int, user_id: uuid.UUID
-) -> Text:
+) -> Imported:
     """Replace the screenplay text of a draft by the manuscript if its revision is still `expected_revision`."""
     draft = draft_row(connection, draft_id)
     ensure_writable(connection, draft)
@@ -92,13 +104,16 @@ def import_into(
     script_id = screenplay_id(connection, draft_id)
     text = put_text(connection, script_id, expected_revision, manuscript.doc, user_id, "import")
     _add_cast_and_places(connection, draft_id, manuscript, user_id)
-    return text
+    return Imported(text, manuscript.skipped)
 
 
 def create_project_from_file(
     connection: Connection, owner_id: uuid.UUID, title: Any, name: str, data: bytes, cover_color: Any = NEXT_COLOR
-) -> tuple[Project, uuid.UUID, uuid.UUID]:
-    """A new story whose screenplay is the manuscript; the file is checked and parsed before anything is written."""
+) -> tuple[Project, uuid.UUID, uuid.UUID, list[Skipped]]:
+    """A new story whose screenplay is the manuscript; the file is checked and parsed before anything is written.
+
+    The last item: records of a STARC project the file did not have.
+    """
     checked = check_upload(name, "import", data)
     manuscript = parse_manuscript(checked.format.extension, checked.data)
     project, draft_id, script_id = create_project(
@@ -106,4 +121,4 @@ def create_project_from_file(
     )
     store_file(connection, project.id, owner_id, "import", None, checked)
     _add_cast_and_places(connection, draft_id, manuscript, owner_id)
-    return project, draft_id, script_id
+    return project, draft_id, script_id, manuscript.skipped

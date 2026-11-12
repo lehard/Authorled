@@ -152,8 +152,9 @@ def test_import_into_a_story(connection: Connection) -> None:
     stored = upload_file(
         connection, project.id, owner, "manuscript.txt", "import", None, (SAMPLES / "manuscript.txt").read_bytes()
     )
-    text = import_into(connection, draft, stored.id, 1, owner)
-    assert text.revision == 2
+    imported = import_into(connection, draft, stored.id, 1, owner)
+    assert imported.text.revision == 2
+    assert imported.skipped == []
     (snapshot,) = [v for v in list_versions(connection, script_id, "text") if v.reason == "import"]
     assert snapshot.content["content"][0]["type"] == "sceneHeading"
     assert _types(get_text(connection, script_id).content)[0] == "sceneHeading"

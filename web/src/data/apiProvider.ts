@@ -16,7 +16,7 @@ import {
   isConflict,
   type ApiRequest,
 } from "./apiClient";
-import type { FileOperation, UploadedFile } from "./files";
+import type { FileOperation, SkippedRecord, UploadedFile } from "./files";
 import type {
   Character,
   CommentMessage,
@@ -104,6 +104,25 @@ const isFlagOrNull = (v: unknown): v is boolean | null =>
 const isObject = (v: unknown): v is Json =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 const isArray = (v: unknown): v is unknown[] => Array.isArray(v);
+
+const SKIPPED_KINDS: readonly string[] = [
+  "screenplay",
+  "character",
+  "location",
+];
+const isSkippedKind = (v: unknown): v is SkippedRecord["kind"] =>
+  isString(v) && SKIPPED_KINDS.includes(v);
+
+/** What an imported file did not have (openspec/specs/api/story-import, «Пропущенное при импорте STARC»). */
+function readSkipped(what: string, o: Json): SkippedRecord[] {
+  return field(what, o, "skipped", isArray).map((raw) => {
+    const record = shape("пропущенную запись", raw);
+    return {
+      kind: field("пропущенную запись", record, "kind", isSkippedKind),
+      name: field("пропущенную запись", record, "name", isString),
+    };
+  });
+}
 
 /** An optional text field of a document: absent means not filled (openspec/specs/api/stories). */
 function text(what: string, fields: Json, key: string): string {
@@ -1285,14 +1304,14 @@ async function operation(
       const { draftId, fileId } = op.payload;
       const sid = await scriptId(draftId);
       return inTurn(textKey(sid), async () => {
-        const t = readText(
-          await revised(textKey(sid), `/drafts/${draftId}/import`, {
-            method: "POST",
-            json: { file_id: fileId },
-          }),
-        );
+        const body = await revised(textKey(sid), `/drafts/${draftId}/import`, {
+          method: "POST",
+          json: { file_id: fileId },
+        });
+        const t = readText(body);
+        const skipped = readSkipped("импорт", shape("импорт", body));
         remember(textKey(sid), t.revision);
-        return { text: t.content };
+        return { text: t.content, skipped };
       });
     }
     case "noteFromUpload": {
@@ -1342,8 +1361,9 @@ async function operation(
       );
       const project = readProject(o.project);
       const draftId = field("новую историю", o, "draft_id", isString);
+      const skipped = readSkipped("новую историю", o);
       await tree(draftId);
-      return { id: project.id, draftId };
+      return { id: project.id, draftId, skipped };
     }
     default:
       throw new Error(

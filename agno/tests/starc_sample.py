@@ -61,3 +61,54 @@ def with_role(name: str, role: str) -> bytes:
 def novel() -> bytes:
     """A project without a screenplay."""
     return edited(STRUCTURE, 'document/screenplay"', 'document/novel"')
+
+
+FIRST_SCREENPLAY = '<item uuid="{20a46ee4'
+SECOND_TEXT_ID = "{00000000-0000-0000-0000-000000000011}"
+# A screenplay of a cloud project of STARC whose documents the file does not have: only its record in the structure.
+CLOUD_SCREENPLAY = (
+    '<item uuid="{00000000-0000-0000-0000-000000000010}" type="application/x-starc/document/screenplay" name="Выбор 2">'
+    f'<item uuid="{SECOND_TEXT_ID}" type="application/x-starc/document/screenplay/text" name="Сценарий"/></item>'
+)
+# A location whose profile the file does not have, before «МАЯК».
+CLOUD_LOCATION = (
+    '<item uuid="{00000000-0000-0000-0000-000000000020}" type="application/x-starc/document/location" name="КОЛИБА"/>'
+)
+LIGHTHOUSE = '<item uuid="{51f2c6e7'
+
+
+def _with_structure(*changes: tuple[str, str]) -> bytes:
+    """The sample whose structure has these replacements."""
+    with tempfile.TemporaryDirectory() as folder:
+        path = Path(folder) / "copy.starc"
+        path.write_bytes(SAMPLE.read_bytes())
+        with closing(sqlite3.connect(path)) as database:
+            (content,) = database.execute("SELECT content FROM documents WHERE type = ?", (STRUCTURE,)).fetchone()
+            text = content.decode()
+            for old, new in changes:
+                assert old in text, old
+                text = text.replace(old, new)
+            database.execute("UPDATE documents SET content = ? WHERE type = ?", (text.encode(), STRUCTURE))
+            database.commit()
+        return path.read_bytes()
+
+
+def cloud_project() -> bytes:
+    """The sample with a second screenplay and a location that are only records of the structure."""
+    return _with_structure(
+        (FIRST_SCREENPLAY, CLOUD_SCREENPLAY + FIRST_SCREENPLAY), (LIGHTHOUSE, CLOUD_LOCATION + LIGHTHOUSE)
+    )
+
+
+def with_second_text(data: bytes) -> bytes:
+    """`data` where the text of «Выбор 2» is in the file: a copy of the text of the first screenplay."""
+    with tempfile.TemporaryDirectory() as folder:
+        path = Path(folder) / "copy.starc"
+        path.write_bytes(data)
+        with closing(sqlite3.connect(path)) as database:
+            database.execute(
+                "INSERT INTO documents (uuid, type, content) SELECT ?, type, content FROM documents WHERE type = ?",
+                (SECOND_TEXT_ID, TEXT),
+            )
+            database.commit()
+        return path.read_bytes()

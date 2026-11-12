@@ -6,12 +6,23 @@ from sqlalchemy import Connection
 from core.documents import list_documents
 from core.errors import Invalid
 from core.files import file_text, upload_file
-from core.importers.starc import parse_starc
+from core.importers.starc import Skipped, parse_starc
 from core.imports import import_into, parse_manuscript
 from core.projects import create_project
 from core.texts import ELEMENT_NAMES, get_text
 from core.users import get_or_create_user
-from tests.starc_sample import SAMPLE, STRUCTURE, TEXT, edited, novel, run_sql, with_role, with_text
+from tests.starc_sample import (
+    SAMPLE,
+    STRUCTURE,
+    TEXT,
+    cloud_project,
+    edited,
+    novel,
+    run_sql,
+    with_role,
+    with_second_text,
+    with_text,
+)
 
 TRASH_END = 'type="application/x-starc/document/recycle-bin" name="Корзина"'
 SECOND_SCREENPLAY = (
@@ -163,6 +174,29 @@ def test_the_trash_is_not_imported() -> None:
     assert [c.name for c in project.characters] == ["Вера", "Миша", "Олег"]
 
 
+def test_records_not_in_the_file_are_skipped() -> None:
+    project = parse_starc(cloud_project())
+    assert project.paragraphs == parse_starc(SAMPLE.read_bytes()).paragraphs
+    assert [c.name for c in project.characters] == ["Вера", "Миша", "Олег"]
+    assert [p.name for p in project.locations] == ["Кухня", "Озеро", "Маяк"]
+    assert project.skipped == [Skipped("location", "КОЛИБА"), Skipped("screenplay", "Выбор 2")]
+
+
+def test_a_full_file_skips_nothing() -> None:
+    assert parse_starc(SAMPLE.read_bytes()).skipped == []
+
+
+def test_a_screenplay_in_the_trash_is_not_skipped() -> None:
+    inside = (
+        f'{TRASH_END} draft_name="" color="" draft_color="" visible="true">'
+        '<item uuid="{00000000-0000-0000-0000-000000000003}" type="application/x-starc/document/screenplay" '
+        'name="Удалённый"><item uuid="{00000000-0000-0000-0000-000000000004}" '
+        'type="application/x-starc/document/screenplay/text"/></item></item'
+    )
+    old = f'{TRASH_END} draft_name="Текущий драфт" color="" draft_color="" visible="true"/'
+    assert parse_starc(edited(STRUCTURE, old, inside)).skipped == []
+
+
 @pytest.mark.parametrize(
     ("data", "reason"),
     [
@@ -170,14 +204,13 @@ def test_the_trash_is_not_imported() -> None:
         (SAMPLE.read_bytes()[:3000], "не читается"),
         (run_sql("DROP TABLE documents"), "таблицы документов"),
         (run_sql("DELETE FROM documents WHERE type = 1"), "документ структуры"),
-        (run_sql("DELETE FROM documents WHERE type = 10104"), "нет текста сценария"),
+        (run_sql("DELETE FROM documents WHERE type = 10104"), "нет сценария"),
+        (run_sql("UPDATE documents SET type = 10103 WHERE type = 10104"), "нет текста сценария"),
         (run_sql("UPDATE documents SET content = NULL WHERE type = 10104"), "пуст"),
         (run_sql("UPDATE documents SET content = CAST('<document' AS BLOB) WHERE type = 10104"), "XML"),
         (novel(), "нет сценария"),
-        (
-            edited(STRUCTURE, '<item uuid="{d88395d6', f'{SECOND_SCREENPLAY}<item uuid="{{d88395d6'),
-            "несколько сценариев",
-        ),
+        (with_second_text(cloud_project()), "несколько сценариев"),
+        (edited(STRUCTURE, '<item uuid="{d88395d6', f'{SECOND_SCREENPLAY}<item uuid="{{d88395d6'), "ровно один текст"),
         (edited(STRUCTURE, 'document/screenplay/text"', 'document/screenplay/other"'), "ровно один текст"),
         (edited(STRUCTURE, 'name="ОЛЕГ"', 'name=" "'), "без имени"),
         (edited(TEXT, "<action><v><![CDATA[Стук в дверь.]]></v></action>", "<chorus><v/></chorus>"), "chorus"),
@@ -225,6 +258,17 @@ def test_import_into_a_story(connection: Connection) -> None:
         ("location", "Озеро", "episodic"),
         ("location", "Маяк", "episodic"),
     ]
+
+
+def test_import_of_a_cloud_project(connection: Connection) -> None:
+    owner = get_or_create_user(connection, "s1", "writer@authorled.test", "Сценарист").id
+    project, draft, script_id = create_project(connection, owner, "Тихая вода")
+    stored = upload_file(connection, project.id, owner, "p.starc", "import", None, cloud_project())
+    imported = import_into(connection, draft, stored.id, 1, owner)
+    assert imported.skipped == [Skipped("location", "КОЛИБА"), Skipped("screenplay", "Выбор 2")]
+    assert get_text(connection, script_id).content["content"][0]["type"] == "sceneHeading"
+    names = [d.name for d in list_documents(connection, draft) if d.kind == "location"]
+    assert "Колиба" not in names and "Маяк" in names
 
 
 def test_main_character_who_does_not_speak(connection: Connection) -> None:
