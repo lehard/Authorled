@@ -317,33 +317,43 @@ export const PROFILE: Record<EntityKind, ProfileSection[]> = {
   ],
 };
 
-export const ROLES: Record<"char" | "loc", { value: Role; label: string }[]> = {
+/** Roles in the order of the groups of a list; `group` names the group of the list (web/workspace). */
+export const ROLES: Record<
+  "char" | "loc",
+  { value: Role; label: string; group: string }[]
+> = {
   char: [
     {
       value: "main",
       label: "Главный",
+      group: "Главные",
     },
     {
       value: "secondary",
       label: "Второстепенный",
+      group: "Второстепенные",
     },
     {
       value: "episodic",
       label: "Эпизодический",
+      group: "Эпизодические",
     },
   ],
   loc: [
     {
       value: "main",
       label: "Основная",
+      group: "Основные",
     },
     {
       value: "secondary",
       label: "Второстепенная",
+      group: "Второстепенные",
     },
     {
       value: "episodic",
       label: "Эпизодическая",
+      group: "Эпизодические",
     },
   ],
 };
