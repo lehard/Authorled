@@ -29,6 +29,8 @@
 #                                       password AUTH_DEV_WRITER_TOKEN of writer, and open its
 #                                       sign-up to every address
 #      ./scripts/dev.sh seed            Load the demo stories for these two users into the database of this checkout
+#      ./scripts/dev.sh sources <args>  The library of sources (python -m sources: convert, check, load, remove,
+#                                       list) on the host with the database of this checkout
 #
 #    Needs Docker with Compose, git and a filled .env (compose.yaml requires the
 #    LiteLLM, DeepSeek, GigaChat and Authentik settings for every service). `api`, `migrate`, `test` and
@@ -45,7 +47,7 @@ STAND_PROJECT=authorled
 STAND_SERVICES=(agentos-db litellm clamav phoenix authentik-server authentik-worker mailpit)
 
 usage() {
-    echo 'Usage: ./scripts/dev.sh up | db | api | migrate | test | stop | reset-db --yes | psql | auth-users | seed'
+    echo 'Usage: ./scripts/dev.sh up | db | api | migrate | test | stop | reset-db --yes | psql | auth-users | seed | sources <args>'
     echo '  up            main checkout: start agentos-db, litellm, clamav, phoenix, Authentik and mailpit (not agentos-api)'
     echo '                and wait until healthy'
     echo '  db            main checkout: start agentos-db and wait until healthy'
@@ -62,6 +64,8 @@ usage() {
     echo '                app password of writer AUTH_DEV_WRITER_TOKEN) and open its sign-up to everyone'
     echo '  seed          load the demo stories for the development users into the database of this checkout;'
     echo '                refuses if they are there'
+    echo '  sources       the library of sources on the host with the database of this checkout:'
+    echo '                convert <file> <canon> [--force] | check <canon> | load <canon> | remove <slug> | list'
     echo 'Databases: ai and ai_test in the main checkout, ai_dev_<worktree> and ai_test_<worktree> in a worktree.'
 }
 
@@ -169,6 +173,9 @@ case "${command}" in
     -h|--help) usage; exit 0 ;;
     up|db|api|migrate|test|stop|psql|auth-users|seed)
         [[ $# -eq 1 ]] || { usage >&2; exit 2; }
+        ;;
+    sources)
+        [[ $# -ge 2 ]] || { usage >&2; exit 2; }
         ;;
     reset-db)
         [[ $# -le 2 ]] || { usage >&2; exit 2; }
@@ -370,5 +377,29 @@ print("DEMO_USERS " + json.dumps([{"subject": u.uid, "email": u.email, "name": u
         export_db_env "${dev_db}"
         cd agno
         exec uv run --no-project --with-requirements requirements.txt python -m demo <<< "${people}"
+        ;;
+    sources)
+        # The library of sources (openspec/specs/sources/library, «Команды владельца»): the local stand only, like
+        # seed. Paths stay relative to the repository root: the command runs here with agno/ on PYTHONPATH.
+        runtime_env="${RUNTIME_ENV:-$(sed -n 's/^RUNTIME_ENV=//p' .env | tail -n 1)}"
+        if [[ -n "${runtime_env}" && "${runtime_env}" != "dev" ]]; then
+            fail "sources is for the local stand only; RUNTIME_ENV is ${runtime_env}. On the server use ./scripts/sources.sh."
+        fi
+        require_uv
+        check_db_name "${dev_db}"
+        read_agentos_password
+        for service in agentos-db litellm clamav; do
+            require_healthy "${service}" sources
+        done
+        db_found="$(compose exec -T agentos-db psql -U ai -d ai -v ON_ERROR_STOP=1 -tA -v db="${dev_db}" <<'SQL'
+SELECT count(*) FROM pg_database WHERE datname = :'db';
+SQL
+)" || fail "checking the database ${dev_db} in agentos-db failed (its error is above)."
+        [[ "${db_found}" == "1" ]] || fail "database ${dev_db} does not exist: run ./scripts/dev.sh migrate first."
+        export_db_env "${dev_db}"
+        export LITELLM_URL=http://127.0.0.1:4000 CLAMAV_HOST=127.0.0.1 CLAMAV_PORT=3310
+        shift
+        exec env PYTHONPATH="$(pwd)/agno" uv run --no-project --env-file "$(pwd)/.env" \
+            --with-requirements agno/requirements.txt python -m sources "$@"
         ;;
 esac

@@ -126,8 +126,24 @@ class _CheckedEmbedder(OpenAIEmbedder):
             _check_dimensions(embedding)
         return embeddings, usage
 
+    def embed_batch(self, texts: list[str]) -> list[list[float]]:
+        """Vectors of the texts in one request, in their order; any failure raises.
 
-def embedder() -> OpenAIEmbedder:
+        Agno's batch methods fall back to single calls and pad what failed, so the library of sources
+        (sources/__main__.py) uses this one instead.
+        """
+        response = self.client.embeddings.create(
+            input=texts, model=self.id, encoding_format=self.encoding_format, dimensions=EMBEDDING_DIMENSIONS
+        )
+        vectors = [entry.embedding for entry in sorted(response.data, key=lambda entry: entry.index)]
+        if len(vectors) != len(texts):
+            raise RuntimeError(f"Embedding model returned {len(vectors)} vectors for {len(texts)} texts")
+        for vector in vectors:
+            _check_dimensions(vector)
+        return vectors
+
+
+def embedder() -> _CheckedEmbedder:
     """Embeddings through the proxy's OpenAI-compatible /v1/embeddings (alias from EMBEDDINGS_MODEL)."""
     return _CheckedEmbedder(
         id=embeddings_model(),

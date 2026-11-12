@@ -590,6 +590,46 @@ in the running API container:
 `local` instead of `prod` runs the same commands on the local stand. A new plan or price is a change of the data file
 and a release; there are no limits of individual users.
 
+### Library of sources
+
+The co-author grounds its advice on storytelling in books on drama: it searches the library by meaning and words and
+shows the author a checked quotation of at most 300 characters with its reference (openspec/specs/sources/library).
+Each book is its canon, one Markdown file `<slug>.md` with a YAML front matter (`title`, `authors`, `language` `ru` or
+`en`; optional `original_year`, `edition_year`, `translator`, `translation_year`, `original_title`) and the text under
+headings of the book's structure, diagrams as `mermaid` blocks, meaningful illustrations as `[Иллюстрация: …]`. The
+canon and the book files live outside the repository; every command takes the folder explicitly. The library has its
+own tables in schema `authorled` and is never registered as AgentOS knowledge, so its full text is not served anywhere.
+
+On the Mac, with the local stand running (`convert` scans the file with its ClamAV):
+
+```sh
+brew install pandoc djvulibre && brew install --cask calibre    # converters of convert
+./scripts/dev.sh sources convert ~/books/Impro.epub ~/canon     # draft in ~/canon/drafts/impro.md
+# finish the draft: header, chapters as headings, mermaid, illustrations; then move it to ~/canon/
+./scripts/dev.sh sources check ~/canon                          # every book of the top level, no model calls
+./scripts/dev.sh sources load ~/canon                           # vectors through the proxy, one book at a time
+./scripts/dev.sh sources list
+./scripts/dev.sh sources remove impro
+```
+
+`convert` reads EPUB, FB2, DOCX, RTF, ODT, HTML, TXT and Markdown with pandoc, MOBI and AZW3 through calibre, PDF and
+DjVu with a text layer; scans without text are refused. `load` checks the whole canon before it spends the model and
+replaces a book loaded before; books removed from the folder stay until `remove`.
+
+On the server the API container sees `/srv/authorled/sources` read-only at `/sources` (`compose.prod.yaml`; Compose
+creates the folder for root if it is missing). Once, as root, give the folder to `deploy`; then copy the canon there
+as `deploy` and load it from `/srv/authorled/app`:
+
+```sh
+ssh authorled 'mkdir -p /srv/authorled/sources && chown deploy: /srv/authorled/sources'
+rsync -av ~/canon/*.md authorled-deploy:/srv/authorled/sources/
+ssh authorled-deploy 'cd /srv/authorled/app && ./scripts/sources.sh load'
+ssh authorled-deploy 'cd /srv/authorled/app && ./scripts/sources.sh list'
+```
+
+Keep `/srv/authorled/sources` in the backups with `/srv/authorled/backups`. A change of `EMBEDDINGS_MODEL` makes the
+search refuse until every book is loaded again.
+
 ## Module auth
 
 Authentication and authorization are a module of this repository: [Authentik](https://goauthentik.io)

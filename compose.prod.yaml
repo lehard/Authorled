@@ -28,6 +28,14 @@ services:
         source: ./auth/jwks
         target: /app/auth/jwks
         read_only: true
+      # The canon of the library of sources, outside git (openspec/specs/sources/library, «Команды владельца»);
+      # ./scripts/sources.sh loads it from /sources. Read-only: the API never writes the canon.
+      - type: bind
+        source: /srv/authorled/sources
+        target: /sources
+        read_only: true
+        bind:
+          create_host_path: true
     # AgentCore sandbox checkpoints need a persistent /data mount, which
     # agno/app/sandbox.py refuses to run without (agno/docs/sandboxes.md). Add this named
     # volume to the list above before enabling agentcore_sandbox(),

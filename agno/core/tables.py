@@ -3,10 +3,12 @@
 Migrations in `migrations/versions/` create these tables; tests compare this description with the database.
 """
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
     Column,
+    Computed,
     Date,
     DateTime,
     ForeignKey,
@@ -22,7 +24,7 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, REGCONFIG, TSVECTOR
 
 SCHEMA = "authorled"
 
@@ -412,5 +414,62 @@ writing_progress = Table(
     CheckConstraint(
         f"date_bin('{WRITING_PERIOD}', period_start, TIMESTAMPTZ '{WRITING_EPOCH}') = period_start",
         name="period_on_boundary",
+    ),
+)
+
+
+# Languages of the books of the library of sources and the text search configuration of each
+# (openspec/specs/sources/library).
+SOURCE_LANGUAGES = {"ru": "russian", "en": "english"}
+# Size of the vectors of the library: the same as the embedding models of the proxy (app/settings.py).
+SOURCE_VECTOR_DIMENSIONS = 1024
+
+# Books of the library of sources, one per file of the canon (openspec/specs/core/database). Not data of an author: no
+# links to users or stories. `embedding_model` is the alias the vectors of the book were computed with.
+source_books = Table(
+    "source_books",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=text("gen_random_uuid()")),
+    Column("slug", Text, nullable=False),
+    Column("title", Text, nullable=False),
+    Column("authors", ARRAY(Text), nullable=False),
+    Column("language", Text, nullable=False),
+    Column("original_year", Integer),
+    Column("edition_year", Integer),
+    Column("translator", Text),
+    Column("translation_year", Integer),
+    Column("original_title", Text),
+    Column("embedding_model", Text, nullable=False),
+    Column("loaded_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    UniqueConstraint("slug", name="uq_source_books_slug"),
+    CheckConstraint("slug <> ''", name="slug_not_empty"),
+    CheckConstraint("title <> ''", name="title_not_empty"),
+    CheckConstraint("cardinality(authors) > 0", name="authors_not_empty"),
+    CheckConstraint("language IN ('ru', 'en')", name="language_known"),
+    CheckConstraint("embedding_model <> ''", name="embedding_model_not_empty"),
+)
+
+# Pieces of a book of the library: the text of one section at most, with the path of its headings, the vector of its
+# meaning and the words of its text in the language of the book (openspec/specs/core/database).
+source_fragments = Table(
+    "source_fragments",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=text("gen_random_uuid()")),
+    Column("book_id", Uuid, ForeignKey(source_books.c.id, ondelete="CASCADE"), nullable=False),
+    Column("position", Integer, nullable=False),
+    Column("path", ARRAY(Text), nullable=False),
+    Column("content", Text, nullable=False),
+    Column("ts_config", REGCONFIG, nullable=False),
+    Column("tsv", TSVECTOR, Computed("to_tsvector(ts_config, content)", persisted=True)),
+    Column("embedding", Vector(SOURCE_VECTOR_DIMENSIONS), nullable=False),
+    UniqueConstraint("book_id", "position", name="uq_source_fragments_book_id_position"),
+    CheckConstraint("position >= 0", name="position_not_negative"),
+    CheckConstraint("content <> ''", name="content_not_empty"),
+    Index("ix_source_fragments_tsv", "tsv", postgresql_using="gin"),
+    Index(
+        "ix_source_fragments_embedding",
+        "embedding",
+        postgresql_using="hnsw",
+        postgresql_ops={"embedding": "vector_cosine_ops"},
     ),
 )

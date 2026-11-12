@@ -9,6 +9,7 @@ from typing import Any
 import pytest
 from agno.run import RunContext
 from agno.tools.function import Function
+from sqlalchemy import select
 
 from agents import coauthor_tools as tools
 from agents.coauthor_tools import (
@@ -17,6 +18,7 @@ from agents.coauthor_tools import (
     COAUTHOR_TOOLS,
     READING_TOOLS,
     STORY_NOT_FOUND,
+    cite_source,
     comment_on_screenplay,
     create_research_brief,
     create_story_document,
@@ -29,6 +31,7 @@ from agents.coauthor_tools import (
     read_story_document,
     read_story_note,
     save_chat_file_to_notes,
+    search_sources,
     search_story,
     suggest_edit,
     update_story_document,
@@ -36,6 +39,8 @@ from agents.coauthor_tools import (
 )
 from app.auth import run_principal
 from core.fields import FIELD_HINTS
+from core.sources import parse_canon, remove_book, save_book
+from core.tables import source_books, source_fragments
 
 SCENE = {"type": "sceneHeading", "attrs": {"uid": "s3"}, "content": [{"type": "text", "text": "НАТ. ОЗЕРО — ДЕНЬ"}]}
 ACTION = {"type": "action", "content": [{"type": "text", "text": "Вера молчит."}]}
@@ -476,6 +481,7 @@ def test_every_change_waits_for_an_answer() -> None:
     }
     assert {name for name, waiting in waits.items() if waiting} == {tool.__name__ for tool in CHANGING_TOOLS}
     assert waits["suggest_edit"] is False and waits["read_screenplay"] is False and waits["search_story"] is False
+    assert waits["search_sources"] is False and waits["cite_source"] is False
     assert len(waits) == len(READING_TOOLS) + len(CHANGING_TOOLS)
 
 
@@ -518,3 +524,65 @@ def test_templates_are_those_of_the_core(authors: Any) -> None:
 def test_templates_without_story() -> None:
     answer = list_story_templates(_run("someone", "not-a-draft"))
     assert answer.startswith("Отказ:")
+
+
+# --- the library of sources (openspec/specs/sources/library, «Проверка цитаты»; api/agents, «Инструменты соавтора»)
+
+SOURCE_CANON = """---
+title: Образец о драме
+authors: [Тестовый Автор]
+language: ru
+edition_year: 2020
+---
+
+# Глава 1
+
+Сцена без развязки кажется оборванной: зритель ждёт, чем закончится начатое.
+"""
+
+
+def test_cite_a_source(authors: Any, engine: Any) -> None:
+    author = authors()
+    project_id, draft_id, _ = _story_with_vera(author)
+    run = _run(author.subject, f"{project_id}:{draft_id}:{uuid.uuid4()}")
+    book = parse_canon("test-cite-source.md", SOURCE_CANON)
+    with engine.begin() as connection:
+        save_book(connection, book, [[1.0] + [0.0] * 1023], "giga-embeddings")
+        piece = connection.execute(
+            select(source_fragments.c.id)
+            .join(source_books, source_books.c.id == source_fragments.c.book_id)
+            .where(source_books.c.slug == "test-cite-source")
+        ).scalar_one()
+    try:
+        assert cite_source(run, str(piece), "Сцена без развязки  кажется оборванной") == (
+            "> «Сцена без развязки кажется оборванной»\n>\n> — Тестовый Автор, «Образец о драме», 2020, Глава 1"
+        )
+        assert cite_source(run, str(piece), "герой должен страдать").startswith("Отказ: Цитаты нет в источнике")
+        assert "длиннее 300 знаков" in cite_source(run, str(piece), "а" * 301)
+        assert cite_source(run, "not-an-id", "Сцена") == "Отказ: куска библиотеки с таким id нет."
+        assert cite_source(_run(author.subject, "no-story"), str(piece), "Сцена").startswith("Отказ")
+    finally:
+        with engine.begin() as connection:
+            remove_book(connection, "test-cite-source")
+
+
+def test_search_sources_refusals(authors: Any) -> None:
+    author = authors()
+    project_id, draft_id, _ = _story_with_vera(author)
+    run = _run(author.subject, f"{project_id}:{draft_id}:{uuid.uuid4()}")
+    assert search_sources(run, "  ") == "Отказ: пустой запрос к библиотеке."
+    assert search_sources(_run(author.subject, "no-story"), "развязка").startswith("Отказ: беседа не относится")
+
+
+def test_search_sources_failure_is_a_refusal(authors: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A failed embedding model is a refusal, not «nothing found» (api/agents, «Сбой поиска по библиотеке»)."""
+    author = authors()
+    project_id, draft_id, _ = _story_with_vera(author)
+    run = _run(author.subject, f"{project_id}:{draft_id}:{uuid.uuid4()}")
+
+    class Broken:
+        def embed_batch(self, texts: list[str]) -> list[list[float]]:
+            raise RuntimeError("proxy is down")
+
+    monkeypatch.setattr(tools, "embedder", lambda: Broken())
+    assert search_sources(run, "развязка") == tools.SOURCES_FAILED

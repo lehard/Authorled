@@ -272,7 +272,9 @@ pathable==0.6.0
 pendulum==3.3.0
     # via cel-python
 pgvector==0.5.1
-    # via agno
+    # via
+    #   agentos-docker (agno/pyproject.toml)
+    #   agno
 platformdirs==4.13.5
     # via fastmcp-slim
 prompt-toolkit==3.0.53
@@ -341,6 +343,7 @@ pytz==2026.5
     # via agno
 pyyaml==6.0.3
     # via
+    #   agentos-docker (agno/pyproject.toml)
     #   agno
     #   cel-python
     #   fastmcp-slim
