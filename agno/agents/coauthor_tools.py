@@ -11,6 +11,7 @@ a done change is JSON with `done` for the model and `target` for the chat, which
 """
 
 import json
+import logging
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -21,8 +22,9 @@ from agno.tools.function import Function
 
 import billing
 from app.auth import can_access_project, run_principal
+from app.settings import embedder, embeddings_model
 from core import documents as docs
-from core import notes, review, search, story_templates, texts
+from core import notes, review, search, sources, story_templates, texts
 from core.engine import get_engine
 from core.errors import Conflict, Invalid, Locked, NotFound, TooLarge
 from core.fields import FIELD_HINTS, Role, field_guide
@@ -30,7 +32,10 @@ from core.files import file_text as stored_file_text
 from core.files import get_file
 from core.users import active_user_id
 
+log = logging.getLogger(__name__)
+
 STORY_NOT_FOUND = "Отказ: история не найдена."
+SOURCES_FAILED = "Отказ: поиск по библиотеке не удался; не ссылайся на книги библиотеки в этом ответе."
 # One part of a note the co-author reads at a time: the same as the open document in the chat context
 # (web/src/screens/project/chat/docContext.ts, MAX_CHARS).
 NOTE_PART_CHARS = 20_000
@@ -225,6 +230,75 @@ def search_story(run_context: RunContext, query: str) -> str:
         draft = _draft(run_context)
         with get_engine().connect() as connection:
             return _found(search.search_draft(connection, draft.id, query))
+
+    return _answer(work)
+
+
+def _found_sources(query: str, found: list[sources.Found]) -> str:
+    if not found:
+        return f"В библиотеке ничего не нашлось по запросу «{query}»; не ссылайся на её книги."
+    out = [f"Найдено в библиотеке по запросу «{query}»:"]
+    for item in found:
+        language = "английский" if item.meta.language == "en" else "русский"
+        out.append(f"\n--- id {item.fragment_id}; {item.reference}; язык: {language}\n{item.content}")
+    out.append(
+        f"\nЦитируй автору только через cite_source, не длиннее {sources.QUOTE_MAX_CHARS} знаков, "
+        "и не пересказывай куски близко к тексту."
+    )
+    return "\n".join(out)
+
+
+def search_sources(run_context: RunContext, query: str) -> str:
+    """Поиск по библиотеке книг о драматургии и сценарном мастерстве: по смыслу и по словам.
+
+    Ищи здесь, когда автор спрашивает о драматургии, структуре, конфликте, характере, сцене или приёмах
+    и когда обосновываешь свой совет. Возвращает до 5 кусков книг: id куска, ссылку на книгу и место
+    в ней, язык и текст. Показывать автору цитату можно только через cite_source.
+
+    Args:
+        query: о чём ищешь, своими словами, например «как статус персонажа меняется в сцене».
+    """
+
+    def work() -> Any:
+        _draft(run_context)
+        if not query.strip():
+            raise Refusal("Отказ: пустой запрос к библиотеке.")
+        try:
+            vector = embedder().embed_batch([query])[0]
+            with get_engine().connect() as connection:
+                found = sources.search(connection, query, vector, embeddings_model())
+        except Invalid:
+            raise
+        except Exception as error:
+            # The text of the query stays out of the log (openspec/specs/sources/library, «Закрытость полного текста»).
+            log.error("Search of the library of sources failed: %s", type(error).__name__)
+            raise Refusal(SOURCES_FAILED) from error
+        return _found_sources(query, found)
+
+    return _answer(work)
+
+
+def cite_source(run_context: RunContext, fragment_id: str, quote: str) -> str:
+    """Проверить цитату из книги библиотеки и получить её со ссылкой.
+
+    Цитата должна дословно стоять в куске fragment_id из search_sources и быть не длиннее 300 знаков.
+    Ответ — готовый блок цитаты со ссылкой: вставь его автору как есть. Отказ значит, что этот текст
+    нельзя подавать как цитату.
+
+    Args:
+        fragment_id: id куска из search_sources.
+        quote: точный текст из этого куска, на языке книги.
+    """
+
+    def work() -> Any:
+        _draft(run_context)
+        try:
+            piece = uuid.UUID(fragment_id)
+        except ValueError as error:
+            raise Refusal("Отказ: куска библиотеки с таким id нет.") from error
+        with get_engine().connect() as connection:
+            citation = sources.cite(connection, piece, quote)
+        return f"> «{citation.quote}»\n>\n> — {citation.reference}"
 
     return _answer(work)
 
@@ -543,6 +617,8 @@ READING_TOOLS: list[Callable[..., str]] = [
     list_story_notes,
     read_story_note,
     list_story_templates,
+    search_sources,
+    cite_source,
     suggest_edit,
 ]
 

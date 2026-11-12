@@ -18,7 +18,11 @@ dependencies = [
   # OTLP export of agent spans to Phoenix (openspec/specs/agent-tracing); same line as opentelemetry-sdk.
   "opentelemetry-exporter-otlp-proto-http==1.45.1",
   "parallel-web",
+  # Vectors of the library of sources in the core tables (core/sources.py); the same pin agno[pgvector] brings.
+  "pgvector==0.5.1",
   "python-dotenv",
+  # Front matter of the canon of the library of sources (core/sources.py).
+  "pyyaml==6.0.3",
 ]
 
 [project.optional-dependencies]
@@ -29,7 +33,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["admin*", "agents*", "app*", "billing*", "core*", "db*", "demo*", "evals*", "teams*"]
+include = ["admin*", "agents*", "app*", "billing*", "core*", "db*", "demo*", "evals*", "sources*", "teams*"]
 namespaces = false
 
 [tool.pytest.ini_options]

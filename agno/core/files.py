@@ -120,7 +120,8 @@ def paragraphs_of_page(text: str) -> str:
     return out
 
 
-def _text_of_pdf(data: bytes) -> str:
+def pdf_text(data: bytes) -> str:
+    """Text of a PDF by paragraphs; a PDF without text is refused (also the library of sources, sources/convert.py)."""
     try:
         reader = PdfReader(io.BytesIO(data))
         pages = [paragraphs_of_page(page.extract_text() or "") for page in reader.pages]
@@ -142,7 +143,7 @@ def extract_text(format: Format, data: bytes) -> str:
         case ".docx":
             return text_of_docx(data)
         case ".pdf":
-            return _text_of_pdf(data)
+            return pdf_text(data)
         case ".txt" | ".md":
             return text_of_txt(data)
         case ".fountain":
