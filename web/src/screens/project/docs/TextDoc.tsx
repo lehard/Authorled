@@ -281,9 +281,7 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
       )}
       <ChecksAtSelection anchor={checksAt} onClose={() => setChecksAt(null)} />
       <ActionError error={error} onClose={() => setError(null)} />
-      {error === null && (
-        <ImportSkipped skipped={skipped} onClose={() => setSkipped([])} />
-      )}
+      <ImportSkipped skipped={skipped} onClose={() => setSkipped([])} />
       {comments.dialog}
       <ConfirmDialog
         open={pending !== null}
