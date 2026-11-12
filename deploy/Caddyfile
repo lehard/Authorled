@@ -36,6 +36,10 @@ app.soavtor.app {
 	handle {
 		# Only here: encode appends -gzip to ETag, and the API sends the revision in ETag.
 		encode gzip
+		# The page manifest has its own type (openspec/specs/runtime, «Тип манифеста страниц»): Go takes types
+		# from /usr/share/mime/globs2 of the server, which has no .webmanifest. The deferred header wins.
+		@manifest path *.webmanifest
+		header @manifest >Content-Type application/manifest+json
 		root * /srv/authorled/web/current
 		try_files {path} /index.html
 		file_server
@@ -82,6 +86,10 @@ soavtor.app {
 
 	handle {
 		encode gzip
+		# The page manifest has its own type (openspec/specs/runtime, «Тип манифеста страниц»): Go takes types
+		# from /usr/share/mime/globs2 of the server, which has no .webmanifest. The deferred header wins.
+		@manifest path *.webmanifest
+		header @manifest >Content-Type application/manifest+json
 		root * /srv/authorled/site/current
 		file_server
 	}
