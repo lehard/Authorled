@@ -25,8 +25,8 @@ export function useNoteActions(projectId: string) {
   const reload = () => invalidate({ resource: "notes", invalidates: ["list"] });
 
   return {
-    async add(title: string): Promise<string> {
-      const values: NewNote = { projectId, title };
+    async add(title: string, body: string): Promise<string> {
+      const values: NewNote = { projectId, title, body };
       const { data } = await create({ resource: "notes", values, ...quiet });
       return String(data.id);
     },

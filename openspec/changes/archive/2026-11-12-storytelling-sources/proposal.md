@@ -34,7 +34,7 @@
 
 ## Scope
 
-- `agno/core/sources.py` (+ таблицы в `agno/core/tables.py`, миграция `agno/migrations/versions/0016_sources.py`): разбор и проверка канона, нарезка, запись и удаление книги, поиск по векторам и словам, проверка цитаты. Ядро получает векторы готовыми и не зовёт модель.
+- `agno/core/sources.py` (+ таблицы в `agno/core/tables.py`, миграция `agno/migrations/versions/0018_sources.py`): разбор и проверка канона, нарезка, запись и удаление книги, поиск по векторам и словам, проверка цитаты. Ядро получает векторы готовыми и не зовёт модель.
 - `agno/sources/`: команда `python -m sources convert|check|load|remove|list`, конвертеры форматов, вызов эмбеддингов через `app.settings.embedder()`.
 - `agno/app/settings.py`: проверка размерности и у пакетного расчёта векторов.
 - `agno/agents/coauthor_tools.py`, `agno/skills/coauthor/SKILL.md`: два инструмента и правила цитирования.

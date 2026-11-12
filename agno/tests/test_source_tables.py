@@ -98,11 +98,11 @@ def test_vector_of_another_size_is_refused(connection: Connection) -> None:
 def test_sources_migration_keeps_stories(
     engine: Engine, alembic_config: Config, billing_alembic_config: Config
 ) -> None:
-    """Applied from 0015 on a database with a story and a note: they stay, the tables of the library are empty."""
+    """Applied from 0017 on a database with a story and a note: they stay, the tables of the library are empty."""
     subject = f"test-{uuid.uuid4()}"
     with engine.begin() as connection:
         connection.execute(text("DROP TABLE authorled.source_fragments, authorled.source_books"))
-        connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0015_note_files'"))
+        connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0017_drop_note_research'"))
         owner = connection.execute(
             insert(users)
             .values(auth_subject=subject, email="sources@authorled.test", display_name="Автор")

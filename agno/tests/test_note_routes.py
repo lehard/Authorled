@@ -35,6 +35,18 @@ def test_create_checks(authors: Any) -> None:
     assert author.post(url, json=["Финал"]).status_code == 422
 
 
+def test_author_does_not_set_research(authors: Any) -> None:
+    author = authors()
+    story = author.story()
+    url = f"/api/v1/projects/{story['project']['id']}/notes"
+    brief = {"screenplay": True, "note_ids": []}
+    assert author.post(url, json={"title": "Исследование: паром", "research": brief}).status_code == 422
+    note = _note(author, story)
+    changed = author.patch(f"/api/v1/notes/{note['id']}", json={"research": brief}, headers={"If-Match": "1"})
+    assert changed.status_code == 422
+    assert author.get(url).json() == [note]
+
+
 def test_edit_with_if_match(authors: Any) -> None:
     author = authors()
     note = _note(author, author.story())

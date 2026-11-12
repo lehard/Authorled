@@ -9,7 +9,7 @@
 - **pgvector.** Расширение `vector` создаёт `agno/db/init.sql` в схеме `public`. Python-пакет `pgvector==0.5.1` стоит транзитивно через `agno[pgvector]`.
 - **Поиск Agno.** `PgVector.search`, `vector_search`, `keyword_search` и `hybrid_search` в Agno 3.1.10 ловят любое исключение и возвращают `[]`. Полнотекстовая часть берёт один `content_language` на всю таблицу. Поэтому выбран вариант А: своя таблица в ядре (решение владельца 2026-11-12).
 - **Ядро не зависит от Agno** (`agno/core/`). В нём уже есть `core/files._text_of_pdf` (pypdf, абзацы из строк, отказ на PDF без текста), `core/clamav.scan` (INSTREAM, `CLAMAV_HOST`/`CLAMAV_PORT` обязательны) и `markdown-it-py` (`core/prose.py`).
-- **Миграции.** Последняя миграция ядра — `0015_note_files`. Тесты сверяют `core/tables.py` с базой (`test_migrations.py`).
+- **Миграции.** Последняя миграция ядра — `0017_drop_note_research` (при слиянии с main 2026-11-12 миграция стала `0018_sources`; было `0015_note_files`). Тесты сверяют `core/tables.py` с базой (`test_migrations.py`).
 - **Команды.** Есть два образца: `python -m demo` — на хосте через `dev.sh seed` с базой checkout'а, `python -m admin` — в контейнере через `scripts/usage.sh local|prod`.
 - **Инструменты соавтора** — статический список `READING_TOOLS` и `CHANGING_TOOLS` в `agents/coauthor_tools.py`. Отказ возвращается текстом «Отказ: …» через `_answer`.
 - **Первые книги** (папка владельца на Google Drive): EPUB «Поэтики» и четыре английские книги, уже в Markdown, без шапки.
@@ -197,7 +197,7 @@
 
 ## Migration Plan
 
-1. Миграция `0016_sources` создаёт пустые таблицы; данные историй не трогаются. Отката нет, как у остальных миграций ядра: только вперёд.
+1. Миграция `0018_sources` создаёт пустые таблицы; данные историй не трогаются. Отката нет, как у остальных миграций ядра: только вперёд.
 2. После релиза — только с подтверждения владельца:
    - создать `/srv/authorled/sources`;
    - скопировать канон;

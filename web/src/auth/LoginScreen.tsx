@@ -441,10 +441,7 @@ export function LoginScreen() {
     <main className="grid min-h-dvh place-items-center px-4 py-6">
       <div className="w-full max-w-[440px]">
         <div className="font-heading mb-5 flex items-center justify-center gap-2.5 text-[19px]">
-          <span
-            className="inline-block size-7 rounded-lg bg-primary"
-            aria-hidden
-          />
+          <img src="/brand-mark.svg" alt="" width={28} height={28} />
           Соавтор
         </div>
         <div className="rounded-[22px] bg-paper px-6 py-7 text-paper-foreground shadow-paper sm:px-8">

@@ -365,7 +365,8 @@ tag with `./scripts/validate.sh`, builds the frontend and the product site (`sit
 server and runs `deploy/deploy.sh`: database copy, code of the tag, `up -d --build`, the new frontend and
 site, Caddy reload. Then it checks the public `/os/health`, that `/os/agents` refuses a request without a
 token, and the site with `deploy/check_site.sh` (the home page, the policies, the offer, the pricing, a 404 and an empty beta request
-that the API refuses), and the admin interface with `deploy/check_admin.sh` (`admin.soavtor.app` refuses a
+that the API refuses), that `/manifest.webmanifest` of the app and of the site has the type
+`application/manifest+json` with `deploy/check_manifest.sh`, and the admin interface with `deploy/check_admin.sh` (`admin.soavtor.app` refuses a
 connection without the owner's client certificate, `/if/admin/` on `auth.soavtor.app` and default flows of
 Authentik answer 404). The release stops before any change if `/etc/authorled/admin-client-ca.pem` is missing,
 Caddy cannot read it (the directory needs `751`, the file `644`), or

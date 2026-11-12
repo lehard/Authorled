@@ -3,7 +3,7 @@
 ## 1. Зависимости и таблицы
 
 - [x] 1.1 Объявить в `agno/pyproject.toml` `pgvector==0.5.1` и `pyyaml==6.0.3` (те же версии, что уже стоят транзитивно) и перегенерировать `agno/requirements.txt` через `./agno/scripts/generate_requirements.sh`. Проверить, что в `requirements.txt` эти версии не изменились и другие пакеты не сдвинулись (`git diff agno/requirements.txt`).
-- [x] 1.2 Добавить `source_books` и `source_fragments` в `agno/core/tables.py` и написать вручную миграцию `agno/migrations/versions/0016_sources.py` (design, решение 2):
+- [x] 1.2 Добавить `source_books` и `source_fragments` в `agno/core/tables.py` и написать вручную миграцию `agno/migrations/versions/0018_sources.py` (design, решение 2):
   - тип `public.vector(1024)`;
   - check на язык и на непустые `authors` и `content`;
   - уникальность `slug` и (`book_id`, `position`);

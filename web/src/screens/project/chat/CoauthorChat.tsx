@@ -45,6 +45,8 @@ import { useNoteActions } from "../noteActions";
 import { useProjectData, type CoauthorRequest } from "../ProjectContext";
 import { ActionLines } from "./ActionLines";
 import { changedResources, firstChangingCalls, toolText } from "./actions";
+import { AnswerPre } from "./ResearchBlock";
+import { hasBrief } from "./researchBrief";
 import { useConfirmations } from "./confirmations";
 import { useAccount } from "@/account/useAccount";
 import { NO_TRAINING_SHORT, offerUrl } from "@/app/legal";
@@ -151,15 +153,13 @@ export function CoauthorChat({
   // A turn of the author, from sending to the end of the co-author's answer, including the time
   // a confirmation card waits for the author: no other message goes meanwhile.
   const [busy, setBusy] = useState(false);
-  // Results of the co-author's changing calls in this chat, by call id (ActionLines, `outcomes`).
-  const [outcomes, setOutcomes] = useState<ReadonlyMap<string, string>>(
-    new Map(),
-  );
   const [error, setError] = useState<{
     text: string;
     tone: "error" | "notice";
   } | null>(null);
   const [view, setView] = useState<"messages" | "history">("messages");
+  // The answer whose actions a tap showed on a touch screen.
+  const [revealed, setRevealed] = useState<string | null>(null);
   const [history, setHistory] = useState<Conversation[] | null>(null);
   const feed = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -236,7 +236,7 @@ export function CoauthorChat({
       // (openspec/specs/web/workspace, «Экраны после действия соавтора»).
       onToolCallResultEvent: ({ event }) => {
         const content = toolText(event.content);
-        setOutcomes((found) => new Map(found).set(event.toolCallId, content));
+        runs.addOutcome(event.toolCallId, content);
         for (const resource of changedResources(content))
           void invalidate({
             resource,
@@ -559,6 +559,16 @@ export function CoauthorChat({
       last.role === "user" ||
       (textOf(last) === "" && callsOf(last).length === 0));
   const changingCalls = firstChangingCalls(messages);
+  // The answer whose actions are always shown: the last finished one with text (web/workspace,
+  // «Оценка ответа соавтора»); the others show them on hover, focus or a tap.
+  const lastAnswer = agent.isRunning
+    ? undefined
+    : messages.findLast(
+        (m) =>
+          m.role === "assistant" &&
+          (changingCalls.get(m.id) ?? []).length === 0 &&
+          textOf(m) !== "",
+      )?.id;
   const sendButton = (
     <Button
       size="icon"
@@ -588,60 +598,97 @@ export function CoauthorChat({
     const runId = runs.runOf.get(m.id);
     const chosen = runId === undefined ? undefined : runs.marks.get(runId);
     if (text === "" && calls.length === 0) return null;
+    const shown = m.id === lastAnswer || revealed === m.id;
+    const copyable = !hasBrief(text);
+    // One look for every action of the row; a chosen mark is the same under any answer.
+    const action =
+      "rounded-lg text-muted-foreground hover:text-foreground aria-pressed:bg-ai-subtle aria-pressed:text-ai";
     return (
-      <div key={m.id} className="max-w-[92%] self-start">
+      <div
+        key={m.id}
+        className="group max-w-[92%] self-start"
+        // On a touch screen there is no hover: a tap on an answer shows its actions.
+        onClick={keyHints ? undefined : () => setRevealed(m.id)}
+      >
         <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-ai">
           <Sparkles className="size-3.5" />
           Соавтор
         </div>
         {text !== "" && (
           <div className="chat-md">
-            <Markdown>{text}</Markdown>
+            <Markdown components={{ pre: AnswerPre }}>{text}</Markdown>
           </div>
         )}
         <ActionLines
           calls={calls}
           messages={agent.messages}
-          outcomes={outcomes}
+          outcomes={runs.outcomes}
           confirmations={confirmations}
         />
-        {!(agent.isRunning && m === last) && text !== "" && (
-          <div className="mt-2 flex flex-wrap items-center gap-1">
-            <Button
-              variant="outline"
-              size="xs"
-              className="rounded-lg text-muted-foreground"
-              onClick={() => void navigator.clipboard.writeText(text)}
-            >
-              <Copy />
-              Скопировать
-            </Button>
-            {runId !== undefined && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  className="rounded-lg text-muted-foreground aria-pressed:bg-ai-subtle aria-pressed:text-ai"
-                  aria-pressed={chosen === "useful"}
-                  onClick={() => void mark(runId, "useful")}
+        {!(agent.isRunning && m === last) &&
+          text !== "" &&
+          (copyable || runId !== undefined) && (
+            // The row keeps its place, so nothing moves when it shows (web/workspace, «Оценка ответа
+            // соавтора»); while it is hidden, a chosen mark stays as a small icon in its place.
+            <div className="relative mt-2 h-6">
+              {!shown && chosen !== undefined && (
+                <span
+                  role="img"
+                  aria-label={
+                    chosen === "useful"
+                      ? "Отмечено: Полезно"
+                      : "Отмечено: Не то"
+                  }
+                  className="pointer-events-none absolute top-1/2 left-1 -translate-y-1/2 text-ai transition-opacity group-focus-within:opacity-0 group-hover:opacity-0"
                 >
-                  <ThumbsUp />
-                  Полезно
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  className="rounded-lg text-muted-foreground aria-pressed:bg-ai-subtle aria-pressed:text-ai"
-                  aria-pressed={chosen === "not_useful"}
-                  onClick={() => void mark(runId, "not_useful")}
-                >
-                  <ThumbsDown />
-                  Не то
-                </Button>
-              </>
-            )}
-          </div>
-        )}
+                  {chosen === "useful" ? (
+                    <ThumbsUp className="size-3.5" />
+                  ) : (
+                    <ThumbsDown className="size-3.5" />
+                  )}
+                </span>
+              )}
+              <div
+                className={`flex items-center gap-0.5 ${shown ? "" : "opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"}`}
+              >
+                {copyable && (
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    className={action}
+                    onClick={() => void navigator.clipboard.writeText(text)}
+                  >
+                    <Copy />
+                    Скопировать
+                  </Button>
+                )}
+                {runId !== undefined && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className={action}
+                      aria-pressed={chosen === "useful"}
+                      onClick={() => void mark(runId, "useful")}
+                    >
+                      <ThumbsUp />
+                      Полезно
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className={action}
+                      aria-pressed={chosen === "not_useful"}
+                      onClick={() => void mark(runId, "not_useful")}
+                    >
+                      <ThumbsDown />
+                      Не то
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
       </div>
     );
   }

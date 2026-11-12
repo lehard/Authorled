@@ -1,5 +1,5 @@
 """Tools of the co-author: it reads the draft of the conversation, proposes edits of the screenplay and, by the
-author's request, changes notes (also from a file of the conversation, and research briefs), documents and comments
+author's request, changes notes (also from a file of the conversation), documents and comments
 (openspec/specs/api/agents, «Инструменты соавтора», «Действия соавтора», «Комментарий соавтором»).
 
 The draft comes only from the conversation (session id `<projectId>:<draftId>:<uuid>`), the caller only from the run;
@@ -39,9 +39,6 @@ SOURCES_FAILED = "Отказ: поиск по библиотеке не удал
 # One part of a note the co-author reads at a time: the same as the open document in the chat context
 # (web/src/screens/project/chat/docContext.ts, MAX_CHARS).
 NOTE_PART_CHARS = 20_000
-# The longest research brief: enough for a good one, too short for the screenplay pasted whole
-# (openspec/specs/api/agents, «Задание на исследование»).
-BRIEF_MAX_CHARS = 8_000
 
 
 class Refusal(Exception):
@@ -479,53 +476,6 @@ def save_chat_file_to_notes(run_context: RunContext, file_id: str) -> str:
     return _answer(work)
 
 
-def create_research_brief(
-    run_context: RunContext, topic: str, brief: str, screenplay: bool = False, note_ids: list[str] | None = None
-) -> str:
-    """Создать задание на исследование: заметку «Исследование: <тема>», текст которой — только задание для
-    внешнего Deep Research (Claude, ChatGPT). Автор сам копирует его в сервис и приносит отчёт в заметки.
-    Только когда автор просит изучить тему вне истории (быт, профессия, эпоха, место).
-
-    Задание на русском, понятное без нашей истории: тема и для чего материал автору; короткий контекст истории
-    (эпоха, место, жанр, несколько строк о героях, которых касается тема); конкретные вопросы и что не нужно;
-    формат отчёта — разделы по вопросам, источники у утверждений, пометка «не проверено» у слабых сведений,
-    клише по теме, которых стоит избегать, детали для сцены. Сцены и тексты заметок целиком не вставляй.
-    Не длиннее 8 000 знаков.
-
-    Args:
-        topic: тема коротко, без слова «Исследование».
-        brief: текст задания целиком.
-        screenplay: true, только если без текста сценария исследование не сделать.
-        note_ids: id заметок с оригиналом (`file` в list_story_notes), которые автору нужно приложить.
-    """
-
-    def work() -> Any:
-        draft = _draft(run_context)
-        if not topic.strip():
-            raise Refusal("Отказ: тема задания пуста.")
-        if not brief.strip():
-            raise Refusal("Отказ: текст задания пуст.")
-        if len(brief) > BRIEF_MAX_CHARS:
-            raise Refusal(
-                f"Отказ: задание длиннее {BRIEF_MAX_CHARS} знаков ({len(brief)}). Сократи контекст и не вставляй "
-                "сцены и заметки целиком."
-            )
-        with get_engine().begin() as connection:
-            for note_id in note_ids or []:
-                attached = _note_of_story(connection, draft.project_id, note_id)
-                if attached.file is None:
-                    raise Refusal(
-                        f"Отказ: у заметки «{attached.title}» нет оригинала, приложить нечего. Перенеси нужное из "
-                        "неё в текст задания."
-                    )
-            note = notes.create_note(
-                connection, draft.project_id, f"Исследование: {topic.strip()}", brief, _caller(connection, run_context)
-            )
-        return _done(f"Создано задание на исследование «{topic.strip()}»", "note", note.id)
-
-    return _answer(work)
-
-
 def update_story_note(
     run_context: RunContext, note_id: str, title: str | None = None, body: str | None = None, append: str | None = None
 ) -> str:
@@ -677,7 +627,6 @@ READING_TOOLS: list[Callable[..., str]] = [
 CHANGING_TOOLS: list[Callable[..., str]] = [
     create_story_note,
     save_chat_file_to_notes,
-    create_research_brief,
     update_story_note,
     create_story_document,
     update_story_document,

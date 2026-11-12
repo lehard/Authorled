@@ -571,7 +571,7 @@ export const fixturesProvider: DataProvider = {
         id: crypto.randomUUID(),
         projectId: values.projectId,
         title: values.title,
-        body: "",
+        body: values.body,
         deletedAt: null,
         file: null,
       };

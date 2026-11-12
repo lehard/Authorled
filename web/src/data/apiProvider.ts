@@ -958,7 +958,7 @@ async function create(
     return readNote(
       await request(`/projects/${values.projectId}/notes`, {
         method: "POST",
-        json: { title: values.title },
+        json: { title: values.title, body: values.body },
       }),
     );
   }

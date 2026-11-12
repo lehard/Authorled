@@ -1,5 +1,5 @@
 import type { Message, ToolCall } from "@ag-ui/client";
-import { Check, CircleAlert, X } from "lucide-react";
+import { Ban, Check, CircleAlert } from "lucide-react";
 import { Link } from "react-router";
 
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,6 @@ import {
 } from "./actions";
 import type { Answer, Confirmations } from "./confirmations";
 import { readOutcome } from "./outcome";
-import { ResearchCard } from "./ResearchCard";
 
 // The changing calls of the co-author under its answer (openspec/specs/web/workspace,
 // «Сделанное соавтором в чате») and the card of a call waiting for the author («Подтверждение
@@ -28,10 +27,12 @@ export function Line({
   tone,
   children,
 }: {
-  tone: "done" | "muted" | "refused";
+  /** `allowed` and `denied`: the author's answer to a pause whose result the chat did not get. */
+  tone: "done" | "allowed" | "denied" | "refused";
   children: React.ReactNode;
 }) {
-  const Icon = tone === "refused" ? CircleAlert : tone === "done" ? Check : X;
+  const Icon =
+    tone === "refused" ? CircleAlert : tone === "denied" ? Ban : Check;
   return (
     <p
       className={`mt-2 flex items-start gap-1.5 text-caption ${tone === "refused" ? "text-destructive" : "text-muted-foreground"}`}
@@ -127,33 +128,17 @@ export function ActionLines({
     const answers = toolMessages(messages, call.id);
     const outcome =
       outcomes.get(call.id) ?? answers.find((c) => decisionOf(c) === null);
-    const args = parseArgs(call.function.arguments);
-    if (outcome !== undefined) {
-      // A done research brief shows its card instead of the line («Карточка задания на исследование»).
-      const done = readOutcome(outcome);
-      if (
-        call.function.name === "create_research_brief" &&
-        done.kind === "done"
-      )
-        return (
-          <ResearchCard
-            key={call.id}
-            args={args}
-            noteId={done.target.id}
-            done={done.done}
-          />
-        );
+    if (outcome !== undefined)
       return <Outcome key={call.id} callId={call.id} content={outcome} />;
-    }
     const { title, detail } = describeAction(
       call.function.name as ToolName,
-      args,
+      parseArgs(call.function.arguments),
       data,
     );
     const decision = answers.map(decisionOf).find((d) => d !== null);
     if (decision !== undefined && decision !== null)
       return (
-        <Line key={call.id} tone="muted">
+        <Line key={call.id} tone={decision.accepted ? "allowed" : "denied"}>
           {decision.accepted ? "Разрешено" : "Отклонено"}: {title}
         </Line>
       );

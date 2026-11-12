@@ -1,7 +1,7 @@
 """The library of sources: books of the canon and their pieces with vectors (openspec/specs/core/database).
 
-Revision ID: 0016_sources
-Revises: 0015_note_files
+Revision ID: 0018_sources
+Revises: 0017_drop_note_research
 Create Date: 2026-11-12
 """
 
@@ -12,8 +12,8 @@ from alembic import op
 from pgvector.sqlalchemy import Vector
 from sqlalchemy.dialects import postgresql
 
-revision: str = "0016_sources"
-down_revision: str | None = "0015_note_files"
+revision: str = "0018_sources"
+down_revision: str | None = "0017_drop_note_research"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

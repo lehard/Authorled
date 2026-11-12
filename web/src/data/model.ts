@@ -152,9 +152,8 @@ export type Note = {
   /** The original; null for a note written by hand. */
   file: NoteFile | null;
 };
-
 /** A new note: it starts without text. */
-export type NewNote = Pick<Note, "projectId" | "title">;
+export type NewNote = Pick<Note, "projectId" | "title" | "body">;
 
 /** A message of a comment thread; `own`: written by the signed-in user (the data source decides). */
 export type CommentMessage = {

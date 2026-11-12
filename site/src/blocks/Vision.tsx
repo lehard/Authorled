@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { VISION, VISION_CARD } from "../content/copy";
+import { EPIGRAPH, VISION, VISION_CARD } from "../content/copy";
 import { KOLYA } from "../content/demo";
 import { prefersReducedMotion, useInView } from "../motion/hooks";
 
@@ -82,6 +82,14 @@ export function Vision() {
       aria-labelledby="vision-title"
       className="px-4 py-24 sm:px-6 sm:py-32"
     >
+      <figure className="mx-auto mb-12 flex w-full max-w-6xl flex-col gap-2">
+        <blockquote className="max-w-[560px] body-6 text-muted-foreground">
+          «{EPIGRAPH.quote}»
+        </blockquote>
+        <figcaption className="caption-1 text-muted-foreground">
+          {EPIGRAPH.author}
+        </figcaption>
+      </figure>
       <div className="mx-auto grid w-full max-w-6xl items-end gap-10 lg:grid-cols-[1fr_auto]">
         <p
           id="vision-title"

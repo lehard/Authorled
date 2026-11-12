@@ -14,6 +14,13 @@ export type ChatRuns = {
   reset: (runOf: Map<string, string>, marks: Map<string, Mark>) => void;
   addRun: (messageId: string, runId: string) => void;
   setMark: (runId: string, mark: Mark | null) => void;
+  /**
+   * Results of the co-author's changing calls as the backend sent them live, by call id. They live here,
+   * with the agent, so a chat made anew (the column becomes the sheet) still shows what was done
+   * (openspec/specs/web/workspace, «Сделанное соавтором в чате»).
+   */
+  outcomes: ReadonlyMap<string, string>;
+  addOutcome: (callId: string, content: string) => void;
 };
 
 export const ChatRunsContext = createContext<ChatRuns | null>(null);
