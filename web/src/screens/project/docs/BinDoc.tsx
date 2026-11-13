@@ -57,7 +57,7 @@ export function BinDoc() {
         <Button
           variant="outline"
           className="rounded-full"
-          disabled={data.draft.locked}
+          disabled={data.readOnly || !data.can.owner}
           onClick={() => setConfirm("all")}
         >
           Очистить корзину
@@ -90,21 +90,26 @@ export function BinDoc() {
           </span>
           <h2 className="text-heading-2">{trashName(current)}</h2>
           <p>{summary(current)}</p>
+          {/* Restoring changes the story; deleting for good is the owner's (web/workspace, «Экран истории по роли»). */}
           <div className="flex flex-wrap gap-2">
-            <Button
-              className="rounded-full"
-              onClick={() => void actions.restore(current)}
-            >
-              <RotateCcw />
-              Восстановить
-            </Button>
-            <Button
-              variant="ghost"
-              className="rounded-full text-destructive"
-              onClick={() => setConfirm(current)}
-            >
-              Удалить навсегда
-            </Button>
+            {data.can.edit && (
+              <Button
+                className="rounded-full"
+                onClick={() => void actions.restore(current)}
+              >
+                <RotateCcw />
+                Восстановить
+              </Button>
+            )}
+            {data.can.owner && (
+              <Button
+                variant="ghost"
+                className="rounded-full text-destructive"
+                onClick={() => setConfirm(current)}
+              >
+                Удалить навсегда
+              </Button>
+            )}
           </div>
         </div>
       </div>

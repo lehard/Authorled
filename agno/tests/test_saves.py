@@ -160,7 +160,7 @@ def test_rollback_keeps_marks_of_live_review_and_drops_decided_suggestions(conne
     )
     open_one = create_suggestion(connection, script, "s1", "Вера", "Аня", "", "x:y:z")
     decided = create_suggestion(connection, script, "s1", "Вера", "Оля", "", "x:y:z")
-    decide(connection, decided.id, "rejected")
+    decide(connection, decided.id, "rejected", owner)
     thread = uuid.uuid4()
     create_thread(connection, script, thread, "Вера", "Да", owner, "")
     marked = _doc(

@@ -65,11 +65,20 @@ class StoredFile:
     purpose: str
     session_id: str | None
     created_at: datetime
+    uploaded_by: uuid.UUID
 
 
 def _stored(row: Row[Any]) -> StoredFile:
     return StoredFile(
-        row.id, row.project_id, row.name, row.media_type, row.size_bytes, row.purpose, row.session_id, row.created_at
+        row.id,
+        row.project_id,
+        row.name,
+        row.media_type,
+        row.size_bytes,
+        row.purpose,
+        row.session_id,
+        row.created_at,
+        row.uploaded_by,
     )
 
 

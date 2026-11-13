@@ -6,20 +6,35 @@ import { activeUser } from "@/auth/userManager";
 
 const API = "/os/api/v1";
 
-/** A refused or failed request; `statusCode` is null when the server did not answer. */
+/** Who saved the revision a refused save was not based on (openspec/specs/api/stories, «Кто сохранил при конфликте»). */
+export type SavedBy = { name: string; me: boolean };
+
+/**
+ * A refused or failed request; `statusCode` is null when the server did not answer. `savedBy` is
+ * set only for a save refused because the record has a newer revision.
+ */
 export class HttpError extends Error {
   readonly statusCode: number | null;
+  readonly savedBy: SavedBy | null;
 
-  constructor(message: string, statusCode: number | null) {
+  constructor(
+    message: string,
+    statusCode: number | null,
+    savedBy: SavedBy | null = null,
+  ) {
     super(message);
     this.name = "HttpError";
     this.statusCode = statusCode;
+    this.savedBy = savedBy;
   }
 }
 
-/** Whether a failed request was refused by the core because the record has a newer revision. */
-export const isConflict = (e: unknown): e is HttpError =>
-  e instanceof HttpError && e.statusCode === 409;
+/**
+ * Whether a failed request was refused by the core because the record has a newer revision. Other
+ * refusals with 409 (a locked draft, the trash) are not conflicts: their reason is shown as it is.
+ */
+export const isConflict = (e: unknown): e is HttpError & { savedBy: SavedBy } =>
+  e instanceof HttpError && e.statusCode === 409 && e.savedBy !== null;
 
 function describe(status: number, detail: string | null): string {
   if (status === 401) return "Вход истёк. Войдите снова.";
@@ -114,15 +129,57 @@ async function respond(path: string, request: ApiRequest): Promise<Response> {
       null,
     );
   }
+  return checked(response);
+}
+
+async function checked(response: Response): Promise<Response> {
   if (!response.ok) {
     let detail: string | null = null;
+    let savedBy: SavedBy | null = null;
     if (response.headers.get("content-type") === "application/problem+json") {
-      const problem = (await response.json()) as { detail?: unknown };
+      const problem = (await response.json()) as {
+        detail?: unknown;
+        saved_by?: unknown;
+        saved_by_me?: unknown;
+      };
       if (typeof problem.detail === "string") detail = problem.detail;
+      if (
+        typeof problem.saved_by === "string" &&
+        typeof problem.saved_by_me === "boolean"
+      )
+        savedBy = { name: problem.saved_by, me: problem.saved_by_me };
     }
-    throw new HttpError(describe(response.status, detail), response.status);
+    throw new HttpError(
+      describe(response.status, detail),
+      response.status,
+      savedBy,
+    );
   }
   return response;
+}
+
+/**
+ * A request without the token of a user, to the only product route that takes none for a reader:
+ * the text of a draft by the key of its link «почитать» (openspec/specs/api/story-sharing).
+ */
+export async function publicRequest(
+  path: string,
+  json: unknown,
+): Promise<unknown> {
+  let response: Response;
+  try {
+    response = await fetch(`${API}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(json),
+    });
+  } catch (e) {
+    throw new HttpError(
+      `Нет связи с сервером. Проверьте интернет и попробуйте ещё раз (${e instanceof Error ? e.message : String(e)}).`,
+      null,
+    );
+  }
+  return (await checked(response)).json();
 }
 
 async function send(path: string, request: ApiRequest): Promise<ApiResponse> {

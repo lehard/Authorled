@@ -3,7 +3,8 @@ author's request, changes notes (also from a file of the conversation), document
 (openspec/specs/api/agents, «Инструменты соавтора», «Действия соавтора», «Комментарий соавтором»).
 
 The draft comes only from the conversation (session id `<projectId>:<draftId>:<uuid>`), the caller only from the run;
-access goes through the auth module, as in the product routes. The screenplay text changes only through suggestions,
+access goes through the auth module and the caller's role in the story, as in the product routes: a reviewer reads,
+suggests and comments, a co-author and the owner also change. The screenplay text changes only through suggestions,
 which the author accepts or rejects; nothing is deleted, trashed or decided here. The changing tools (CHANGING_TOOLS)
 pause the run until the chat answers: the author in the mode `ask`, the chat itself in the
 mode `auto` (COAUTHOR_TOOLS). A refusal is returned as text, so the model sees the reason;
@@ -24,7 +25,7 @@ import billing
 from app.auth import can_access_project, run_principal
 from app.settings import embedder, embeddings_model
 from core import documents as docs
-from core import notes, review, search, sources, story_templates, texts
+from core import members, notes, review, search, sources, story_templates, texts
 from core.engine import get_engine
 from core.errors import Conflict, Invalid, Locked, NotFound, TooLarge
 from core.fields import FIELD_HINTS, Role, field_guide
@@ -45,15 +46,23 @@ class Refusal(Exception):
     """A reason the tool gives the model instead of data."""
 
 
-def _draft(run_context: RunContext) -> docs.Draft:
-    """The draft of the conversation, if the caller owns its story and the draft is outside the trash."""
+def _draft(run_context: RunContext, need: members.Need) -> docs.Draft:
+    """The draft of the conversation, if the caller's role in its story allows `need` and the draft is outside the
+    trash (openspec/specs/api/agents, «Соавтор по роли спрашивающего»)."""
     parts = (run_context.session_id or "").split(":")
     try:
         project_id, draft_id = uuid.UUID(parts[0]), uuid.UUID(parts[1])
     except (ValueError, IndexError) as error:
         raise Refusal("Отказ: беседа не относится к драфту истории, читать нечего.") from error
-    if len(parts) != 3 or not can_access_project(run_principal(run_context), str(project_id)):
+    principal = run_principal(run_context)
+    if len(parts) != 3 or not can_access_project(principal, str(project_id)):
         raise Refusal(STORY_NOT_FOUND)
+    with get_engine().connect() as connection:
+        role = members.role_of_subject(connection, principal.user_id, project_id)
+    if role is None:
+        raise Refusal(STORY_NOT_FOUND)
+    if not members.allows(role, need):
+        raise Refusal(f"Отказ: {members.refusal(role, need)} Скажи об этом автору, не повторяй вызов.")
     with get_engine().connect() as connection:
         draft = docs.draft_row(connection, draft_id)
         if draft.project_id != project_id:
@@ -90,7 +99,7 @@ def list_story_documents(run_context: RunContext) -> str:
     """
 
     def work() -> Any:
-        draft = _draft(run_context)
+        draft = _draft(run_context, "read")
         with get_engine().connect() as connection:
             return [
                 {"id": d.id, "kind": d.kind, "name": d.name, "role": d.role, "summary": d.summary}
@@ -109,7 +118,7 @@ def read_story_document(run_context: RunContext, document_id: str) -> str:
     """
 
     def work() -> Any:
-        draft = _draft(run_context)
+        draft = _draft(run_context, "read")
         with get_engine().connect() as connection:
             document = _document_of_draft(connection, draft.id, document_id)
         return {
@@ -139,7 +148,7 @@ def read_screenplay(run_context: RunContext, scene_uid: str = "") -> str:
     """
 
     def work() -> Any:
-        draft = _draft(run_context)
+        draft = _draft(run_context, "read")
         with get_engine().connect() as connection:
             content = texts.get_text(connection, texts.screenplay_id(connection, draft.id)).content
         found = texts.scenes(content)
@@ -168,7 +177,7 @@ def list_story_templates(run_context: RunContext) -> str:
     """
 
     def work() -> Any:
-        _draft(run_context)
+        _draft(run_context, "read")
         out: list[str] = []
         for found in story_templates.templates():
             out.append(f"Каркас «{found.name}» (id {found.id}): {found.description}")
@@ -227,7 +236,7 @@ def search_story(run_context: RunContext, query: str) -> str:
     """
 
     def work() -> Any:
-        draft = _draft(run_context)
+        draft = _draft(run_context, "read")
         with get_engine().connect() as connection:
             return _found(search.search_draft(connection, draft.id, query))
 
@@ -260,7 +269,7 @@ def search_sources(run_context: RunContext, query: str) -> str:
     """
 
     def work() -> Any:
-        _draft(run_context)
+        _draft(run_context, "read")
         if not query.strip():
             raise Refusal("Отказ: пустой запрос к библиотеке.")
         try:
@@ -291,7 +300,7 @@ def cite_source(run_context: RunContext, fragment_id: str, quote: str) -> str:
     """
 
     def work() -> Any:
-        _draft(run_context)
+        _draft(run_context, "read")
         try:
             piece = uuid.UUID(fragment_id)
         except ValueError as error:
@@ -311,7 +320,7 @@ def read_chat_file(run_context: RunContext, file_id: str) -> str:
     """
 
     def work() -> Any:
-        project_id = _draft(run_context).project_id
+        project_id = _draft(run_context, "read").project_id
         try:
             found = uuid.UUID(file_id)
         except ValueError as error:
@@ -336,7 +345,7 @@ def suggest_edit(run_context: RunContext, scene_uid: str, quote: str, text: str,
     """
 
     def work() -> Any:
-        draft = _draft(run_context)
+        draft = _draft(run_context, "review")
         with get_engine().begin() as connection:
             suggestion = review.create_suggestion(
                 connection,
@@ -384,7 +393,7 @@ def list_story_notes(run_context: RunContext) -> str:
     """
 
     def work() -> Any:
-        draft = _draft(run_context)
+        draft = _draft(run_context, "read")
         with get_engine().connect() as connection:
             return [
                 {
@@ -411,7 +420,7 @@ def read_story_note(run_context: RunContext, note_id: str, part: int = 1) -> str
     """
 
     def work() -> Any:
-        draft = _draft(run_context)
+        draft = _draft(run_context, "read")
         with get_engine().connect() as connection:
             note = _note_of_story(connection, draft.project_id, note_id)
         parts = max(1, -(-len(note.body) // NOTE_PART_CHARS))
@@ -438,7 +447,7 @@ def create_story_note(run_context: RunContext, title: str, body: str = "") -> st
     """
 
     def work() -> Any:
-        draft = _draft(run_context)
+        draft = _draft(run_context, "edit")
         with get_engine().begin() as connection:
             note = notes.create_note(connection, draft.project_id, title, body, _caller(connection, run_context))
         return _done(f"Создана заметка «{note.title}»", "note", note.id)
@@ -455,7 +464,7 @@ def save_chat_file_to_notes(run_context: RunContext, file_id: str) -> str:
     """
 
     def work() -> Any:
-        draft = _draft(run_context)
+        draft = _draft(run_context, "edit")
         try:
             found = uuid.UUID(file_id)
         except ValueError as error:
@@ -463,10 +472,12 @@ def save_chat_file_to_notes(run_context: RunContext, file_id: str) -> str:
         with get_engine().connect() as connection:
             stored = get_file(connection, found)
             user = _caller(connection, run_context)
+            # The place of the originals is that of the story's owner, whoever saves the file.
+            owner = members.owner_of(connection, draft.project_id)
         if stored.project_id != draft.project_id or stored.session_id != run_context.session_id:
             raise Refusal("Отказ: файл не найден в этой беседе.")
         try:
-            place = billing.storage_limit(user, datetime.now(UTC))
+            place = billing.storage_limit(owner, datetime.now(UTC))
         except billing.SubscriptionEnded as error:
             raise Refusal("Отказ: подписка закончилась, файлы в заметки не сохраняются.") from error
         with get_engine().begin() as connection:
@@ -489,7 +500,7 @@ def update_story_note(
     """
 
     def work() -> Any:
-        draft = _draft(run_context)
+        draft = _draft(run_context, "edit")
         changes = {
             key: value for key, value in (("title", title), ("body", body), ("append", append)) if value is not None
         }
@@ -525,7 +536,7 @@ def create_story_document(
     """
 
     def work() -> Any:
-        draft = _draft(run_context)
+        draft = _draft(run_context, "edit")
         item: dict[str, Any] = {"kind": kind, "name": name, "summary": summary, "fields": fields or {}}
         if role is not None:
             item["role"] = role
@@ -561,7 +572,7 @@ def update_story_document(
     """
 
     def work() -> Any:
-        draft = _draft(run_context)
+        draft = _draft(run_context, "edit")
         changes = {
             key: value
             for key, value in (("name", name), ("role", role), ("summary", summary), ("fields", fields))
@@ -597,7 +608,7 @@ def comment_on_screenplay(run_context: RunContext, scene_uid: str, quote: str, t
     """
 
     def work() -> Any:
-        draft = _draft(run_context)
+        draft = _draft(run_context, "review")
         with get_engine().begin() as connection:
             thread = review.create_coauthor_thread(
                 connection, texts.screenplay_id(connection, draft.id), scene_uid, quote, text

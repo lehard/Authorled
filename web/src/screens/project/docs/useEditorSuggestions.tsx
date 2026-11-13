@@ -26,10 +26,12 @@ export function useEditorSuggestions(
   editor: RefObject<ScreenplayEditorHandle | null>,
   /** A suggestion card opens: another card of the editor closes. */
   onOpened: () => void,
-  /** «Обсудить в чате»: shows the chat where it is hidden. */
-  openChat: () => void,
-  /** A locked draft: suggestions are only read, no mark is put in the text. */
+  /** «Обсудить в чате»: shows the chat where it is hidden; null without a chat (a reader). */
+  openChat: (() => void) | null,
+  /** A locked draft or a role without the right to edit: no decision. */
   readOnly: boolean,
+  /** Anchored suggestions get their marks: not in a locked draft; a reviewer's window does not save them. */
+  placeMarks: boolean,
 ) {
   const { suggestions } = useSuggestions(draftId);
   const { mutateAsync: update } = useUpdate();
@@ -52,11 +54,11 @@ export function useEditorSuggestions(
     open.map((s) => ({ id: s.id, sceneUid: s.sceneUid, quote: s.quote })),
   );
   useEffect(() => {
-    if (readOnly) return;
+    if (!placeMarks) return;
     if (editor.current === null)
       throw new Error("Редактор сценария ещё не открыт");
     editor.current.placeSuggestions(JSON.parse(anchors) as SuggestionAnchor[]);
-  }, [editor, anchors, readOnly]);
+  }, [editor, anchors, placeMarks]);
   // A closed card gives its gap back to the text, whichever way it closed.
   useEffect(() => {
     if (active === null) spot.release();
@@ -128,11 +130,15 @@ export function useEditorSuggestions(
           error={error}
           readOnly={readOnly}
           onClose={close}
-          onDiscuss={() => {
-            setActive(null);
-            view().selectSuggestion(current.id);
-            openChat();
-          }}
+          onDiscuss={
+            openChat === null
+              ? undefined
+              : () => {
+                  setActive(null);
+                  view().selectSuggestion(current.id);
+                  openChat();
+                }
+          }
           onDecide={(accept) => decide(current, accept)}
         />
       ),

@@ -8,7 +8,16 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.auth import MissingIdentityClaim
-from core.errors import Conflict, Forbidden, Invalid, NotFound, PreconditionRequired, ScannerUnavailable, TooLarge
+from core.errors import (
+    Conflict,
+    Forbidden,
+    Invalid,
+    NotFound,
+    PreconditionRequired,
+    RevisionConflict,
+    ScannerUnavailable,
+    TooLarge,
+)
 from core.users import AccountDeleted, AccountNotFound
 
 PROBLEM_JSON = "application/problem+json"
@@ -17,19 +26,34 @@ PROBLEM_JSON = "application/problem+json"
 class Problem(Exception):
     """A refusal of a product route with its HTTP status and a reason for a person."""
 
-    def __init__(self, status: int, title: str, detail: str, headers: dict[str, str] | None = None) -> None:
+    def __init__(
+        self,
+        status: int,
+        title: str,
+        detail: str,
+        headers: dict[str, str] | None = None,
+        extra: dict[str, object] | None = None,
+    ) -> None:
         super().__init__(detail)
         self.status = status
         self.title = title
         self.detail = detail
         self.headers = headers or {}
+        # Extension members of the problem (RFC 9457, 3.2), such as who saved the current revision.
+        self.extra = extra or {}
 
 
 def problem_response(problem: Problem) -> JSONResponse:
     # no-store: browsers keep a 410 without this header forever and show it to the next user.
     return JSONResponse(
         status_code=problem.status,
-        content={"type": "about:blank", "title": problem.title, "status": problem.status, "detail": problem.detail},
+        content={
+            "type": "about:blank",
+            "title": problem.title,
+            "status": problem.status,
+            "detail": problem.detail,
+            **problem.extra,
+        },
         media_type=PROBLEM_JSON,
         headers={**problem.headers, "Cache-Control": "no-store"},
     )
@@ -61,7 +85,10 @@ _CORE: dict[type[Exception], tuple[int, str]] = {
 
 async def _on_core(_: Request, exc: Exception) -> JSONResponse:
     status, title = next(answer for kind, answer in _CORE.items() if isinstance(exc, kind))
-    return problem_response(Problem(status, title, str(exc)))
+    extra: dict[str, object] = {}
+    if isinstance(exc, RevisionConflict):
+        extra = {"saved_by": exc.saved_by, "saved_by_me": exc.saved_by_me}
+    return problem_response(Problem(status, title, str(exc), extra=extra))
 
 
 async def _on_account_not_found(_: Request, exc: Exception) -> JSONResponse:

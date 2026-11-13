@@ -11,7 +11,7 @@ from sqlalchemy.exc import DataError, IntegrityError, StatementError
 
 from core.projects import create_project
 from core.tables import SCHEMA, notes, projects, source_books, source_fragments, users
-from tests.test_migrations import _upgrade
+from tests.test_migrations import _undo_story_sharing, _upgrade
 
 VECTOR = [0.0] * 1023 + [1.0]
 
@@ -101,6 +101,7 @@ def test_sources_migration_keeps_stories(
     """Applied from 0017 on a database with a story and a note: they stay, the tables of the library are empty."""
     subject = f"test-{uuid.uuid4()}"
     with engine.begin() as connection:
+        _undo_story_sharing(connection)
         connection.execute(text("DROP TABLE authorled.source_fragments, authorled.source_books"))
         connection.execute(text("UPDATE authorled.alembic_version SET version_num = '0017_drop_note_research'"))
         owner = connection.execute(

@@ -31,6 +31,7 @@ const REASONS: Record<VersionReason, string> = {
   import: "Перед импортом",
   restore: "Перед откатом",
   coauthor: "Перед правкой соавтора",
+  conflict: "Конфликт сохранения",
 };
 
 const when = new Intl.DateTimeFormat("ru", {
@@ -73,7 +74,7 @@ function Preview({ version }: { version: VersionContent }) {
 }
 
 function Versions({ target }: { target: VersionTarget }) {
-  const { draft, openFresh } = useProjectData();
+  const { openFresh, readOnly } = useProjectData();
   const { versions, query } = useVersions(target);
   const { restoreVersion } = useSaveActions();
   const [chosen, setChosen] = useState<string | null>(null);
@@ -132,7 +133,7 @@ function Versions({ target }: { target: VersionTarget }) {
           <Preview version={version} />
           <Button
             className="justify-self-start rounded-full"
-            disabled={draft.locked}
+            disabled={readOnly}
             onClick={() => void restore(chosen)}
           >
             Восстановить

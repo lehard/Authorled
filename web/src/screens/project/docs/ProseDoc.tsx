@@ -37,7 +37,7 @@ export function ProseDoc({ part }: { part: "logline" | "synopsis" }) {
 /** «Логлайн»: prose on a sheet of paper; paragraphs are separated by an empty line. */
 function LoglineDoc() {
   const part = "logline";
-  const { draft, script } = useProjectData();
+  const { draft, script, readOnly } = useProjectData();
   const { save, status } = useAutosave<Script>("scripts", script.id);
   const [text, setText] = useState(script[part]);
   // The co-author may write the logline while it is open: its text shows without a reload, and what
@@ -55,7 +55,7 @@ function LoglineDoc() {
           aria-label={SCRIPT_PARTS[part]}
           data-field={part}
           placeholder={PLACEHOLDER[part]}
-          readOnly={draft.locked}
+          readOnly={readOnly}
           value={text}
           onChange={(e) => {
             setText(e.target.value);
@@ -79,7 +79,7 @@ function LoglineDoc() {
  */
 function SynopsisDoc() {
   const part = "synopsis";
-  const { draft, script, project } = useProjectData();
+  const { draft, script, project, readOnly } = useProjectData();
   const { save, status } = useAutosave<Script>("scripts", script.id);
   const [text, setText] = useState(script[part]);
   const [error, setError] = useState<string | null>(null);
@@ -130,7 +130,7 @@ function SynopsisDoc() {
           setText(markdown);
           save({ [part]: markdown });
         }}
-        readOnly={draft.locked}
+        readOnly={readOnly}
         title={project.title}
         field={part}
         label={SCRIPT_PARTS[part]}

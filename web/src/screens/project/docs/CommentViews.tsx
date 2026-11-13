@@ -208,6 +208,7 @@ export function ThreadCard({
   onDeleteReply,
   onDeleteThread,
   onResolve,
+  manage,
   onHeight,
 }: {
   style: CSSProperties;
@@ -226,6 +227,8 @@ export function ThreadCard({
   onDeleteReply: (t: CommentThread, id: string) => void;
   onDeleteThread: (t: CommentThread) => void;
   onResolve: (t: CommentThread, resolved: boolean) => void;
+  /** The owner or a co-author: resolve, reopen and delete any thread; a reviewer deletes only their own. */
+  manage: boolean;
 }) {
   const card = useRef<HTMLElement>(null);
   useCardDismiss(card, onClose);
@@ -290,7 +293,7 @@ export function ThreadCard({
             onSubmit={(text) => onReply(thread, text)}
           />
           <div className="flex flex-wrap gap-1.5 border-t border-border pt-2.5">
-            {thread.resolved ? (
+            {!manage ? null : thread.resolved ? (
               <Button
                 variant="outline"
                 size="sm"
@@ -309,14 +312,16 @@ export function ThreadCard({
                 Решено
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-destructive"
-              onClick={() => onDeleteThread(thread)}
-            >
-              Удалить пометку
-            </Button>
+            {(manage || thread.own) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive"
+                onClick={() => onDeleteThread(thread)}
+              >
+                Удалить пометку
+              </Button>
+            )}
           </div>
         </>
       )}

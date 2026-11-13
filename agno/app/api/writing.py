@@ -21,6 +21,6 @@ router = APIRouter(prefix="/api/v1", tags=["Writing"])
 def get_writing(draft_id: str, tz: str | None = None, principal: Principal = Depends(current_principal)) -> WritingOut:
     found = parse_id(draft_id)
     with get_engine().connect() as connection:
-        require_project(principal, drafts.project_of_draft(connection, found))
+        require_project(principal, drafts.project_of_draft(connection, found), "read")
         user = caller_id(connection, principal)
         return WritingOut.model_validate(writing.statistics(connection, user, found, tz))

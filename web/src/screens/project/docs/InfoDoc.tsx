@@ -23,7 +23,7 @@ import { WritingBlock } from "./WritingBlock";
  * open draft, which its lock closes, and the block «Письмо» with the writing goals.
  */
 export function InfoDoc() {
-  const { project, draft, script, text } = useProjectData();
+  const { project, draft, script, text, readOnly } = useProjectData();
   const story = useAutosave<Project>("projects", project.id);
   const parts = useAutosave<Script>("scripts", script.id);
   const [title, setTitle] = useState(project.title);
@@ -81,7 +81,7 @@ export function InfoDoc() {
               }}
             />
           </div>
-          <fieldset disabled={draft.locked} className="grid gap-2">
+          <fieldset disabled={readOnly} className="grid gap-2">
             <legend className="mb-1.5 text-caption text-muted-foreground">
               Части сценария в навигаторе
             </legend>

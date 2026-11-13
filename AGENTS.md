@@ -17,7 +17,8 @@ generic manager behavior belongs in Agno. `CLAUDE.md` links to this file.
   `base_app`: with it Agno drops its error handlers for its own routes. Every other API surface stays
   with Agno; today the own routes are `/api/v1/me`, the story routes (stories, documents, texts,
   drafts, notes, comments, suggestions, saves, files, import, search), the writing statistics of a draft
-  (`/api/v1/drafts/{id}/writing`) and the marks of the co-author's answers (`/api/v1/coauthor-feedback`).
+  (`/api/v1/drafts/{id}/writing`), the marks of the co-author's answers (`/api/v1/coauthor-feedback`) and the
+  sharing of a story (participants, invitations, the link «почитать», presence).
 - Check framework behavior against the Agno version pinned in `agno/pyproject.toml`.
   Do not bypass framework rejections or add compatibility adapters to this template.
 - Keep the starter lean. Add abstractions, tests and infrastructure only for a concrete
@@ -107,9 +108,10 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 - `agno/app/main.py`: AgentOS registration, shared database, OS Manager, Company and queue.
 - `agno/app/api/`: own product routes (`me.py`; `stories.py`, `notes.py`, `review.py`, `saves.py`, `files.py`, `search.py` for stories;
   `writing.py` for the writing statistics of a draft; `feedback.py` for the marks «Полезно» and «Не то» of the
-  co-author's answers) and their
+  co-author's answers; `sharing.py` for participants, invitations, the link «почитать» and presence) and their
   `application/problem+json` errors, handled only for the product's own exception types (`Problem`, `core/errors.py`).
-  `body.py`: JSON body, `If-Match`, the caller and the project access check every story route does first.
+  `body.py`: JSON body, `If-Match`, the caller and the check of the caller's role in the story (`require_project`
+  with what the route needs: `read`, `review`, `edit` or `owner`; `core/members.py`) every story route does first.
 - `agno/app/auth/` and `auth/`: the auth module. `agno/app/auth/` is the only code that reads JWT
   or claims (other code uses `Principal`, `current_principal`, `run_principal` for agent tools, `Identity`,
   `current_identity`, `can_access_project` and, for the co-author eval on the local stand, `dev_writer_caller`; the core registers the project access source in `app/main.py`);
@@ -145,7 +147,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
 - `agno/core/`: the product core, independent of Agno: `connection.py` (database URL from `DB_*`),
   `tables.py` (tables of schema `authorled`: users and settings, stories, drafts, documents, texts, notes, snapshots and points, review, files,
   requests for the beta and the journal of written words),
-  `engine.py` (the core's own connection pool), `users.py` (account operations), `projects.py`, `drafts.py`,
+  `engine.py` (the core's own connection pool), `users.py` (account operations), `members.py` (roles of participants
+  and invitations), `read_links.py` (the link «почитать»), `presence.py` (who edits a screenplay now), `projects.py`, `drafts.py`,
   `documents.py`, `fields.py`, `texts.py`, `notes.py`, `snapshots.py`, `saves.py`, `review.py`, `files.py`, `search.py`, `imports.py` and
   `importers/` (stories, their equal drafts and the documents of a draft, the editor text with revisions, notes of a story, snapshots
   of a document and points of a draft, comments and suggestions, uploads, search of a draft and its story, manuscript import;
@@ -197,7 +200,8 @@ workflows in `.agents/skills/`; `.claude/skills` links to that directory.
   policy, pricing on `/legal/offer/`, `/legal/privacy/`, `/pricing/`) are rendered from `docs/legal/*.md`. It imports the tokens and fonts of
   `web/src/design-system` (so its build needs `web/node_modules`) and takes `SITE_ORIGIN` and `SITE_APP_URL` from
   `.env`. Its beta request form posts to `/os/api/v1/beta-requests` on its own origin: the route `app/api/beta.py`,
-  the only product route without a token (`PUBLIC_ROUTES` in `app/auth/authorization.py`), stores requests in the
+  one of the two product routes without a token (`PUBLIC_ROUTES` in `app/auth/authorization.py`; the other reads a
+  draft by its link «почитать», `app/api/sharing.py`), stores requests in the
   core (`core/beta_requests.py`); `./scripts/usage.sh local|prod beta-requests` lists them. A release deploys it to
   `soavtor.app` (`deploy/Caddyfile`: static files, of the API only the beta request route; `deploy/check_site.sh`
   checks it); the sign-in screen of `web/` links to it through `SITE_ORIGIN`. Landing skills: `landing-page-design`, `copywriting`, `unslop`; motion — `design-to-motion` (existing frames), `stageshow` (faux UI); Russian copy — `chukovsky`.

@@ -2,7 +2,9 @@
 
 The place of a thread or a suggestion is a mark in the text; the threads, messages and suggestions live here,
 apart from the text. The co-author creates suggestions and comment threads (its tools) anchored by a scene and
-a quote; the browser places their marks. The author decides on suggestions and resolves threads.
+a quote; the browser places their marks. A participant without the right to edit the text (a reviewer) anchors
+threads and suggestions the same way. The owner or a co-author of the story decides on suggestions and resolves
+threads (openspec/specs/api/story-sharing, «Права ролей»).
 """
 
 import uuid
@@ -11,6 +13,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import Connection, Row, delete, func, insert, select, update
+from sqlalchemy.orm import aliased
 
 from core.documents import Document, document_row, ensure_open
 from core.errors import Conflict, Forbidden, Invalid, NotFound
@@ -53,9 +56,15 @@ class Suggestion:
     text: str
     why: str
     status: str
-    session_id: str
+    # The conversation of a suggestion of the co-author; none for a participant's one.
+    session_id: str | None
     created_at: datetime
     decided_at: datetime | None
+    author_kind: str
+    author_id: uuid.UUID | None
+    author_name: str
+    decided_by: uuid.UUID | None
+    decided_by_name: str | None
 
 
 def _body(value: object) -> str:
@@ -146,15 +155,26 @@ def create_thread(
     body: object,
     author_id: uuid.UUID,
     author_role: str,
+    scene_uid: object = None,
 ) -> Thread:
-    """A thread on a fragment; its id is the id of the comment mark the client puts in the text."""
+    """A thread on a fragment; its id is the id of the comment mark in the text.
+
+    Without `scene_uid` the client puts the mark in the text itself; with it the thread is anchored by the scene and
+    the quote, and the screen of a participant who may edit the text places the mark, as for the co-author.
+    """
     ensure_open(connection, _screenplay(connection, document_id))
     if not isinstance(quote, str) or not quote:
         raise Invalid("Цитата фрагмента не может быть пустой.", "quote")
+    if scene_uid is not None:
+        if not isinstance(scene_uid, str) or not scene_uid:
+            raise Invalid("Поле «scene_uid»: нужен uid сцены цитаты.", "scene_uid")
+        _scene_of_quote(connection, document_id, scene_uid, quote)
     text = _body(body)
     if connection.execute(select(comment_threads.c.id).where(comment_threads.c.id == thread_id)).one_or_none():
         raise Conflict(f"Ветка {thread_id} уже есть.")
-    connection.execute(insert(comment_threads).values(id=thread_id, document_id=document_id, quote=quote))
+    connection.execute(
+        insert(comment_threads).values(id=thread_id, document_id=document_id, quote=quote, scene_uid=scene_uid)
+    )
     connection.execute(
         insert(comment_messages).values(
             created_at=func.clock_timestamp(),
@@ -244,11 +264,20 @@ def _own_message(connection: Connection, thread_id: uuid.UUID, message_id: uuid.
 
 
 def _removable_message(
-    connection: Connection, thread_id: uuid.UUID, message_id: uuid.UUID, author_id: uuid.UUID
+    connection: Connection,
+    thread_id: uuid.UUID,
+    message_id: uuid.UUID,
+    author_id: uuid.UUID,
+    may_remove_coauthor: bool,
 ) -> None:
-    """An own message, or one of the co-author: it works for the author, who removes its thread like their own."""
+    """An own message, or one of the co-author when the caller may edit the story: the co-author works for its owner
+    and co-authors, who remove its thread like their own."""
     kind, owner = _message_author(connection, thread_id, message_id)
-    if kind != "coauthor" and owner != author_id:
+    if kind == "coauthor":
+        if not may_remove_coauthor:
+            raise Forbidden("Сообщение соавтора удаляют владелец и соавторы истории.")
+        return
+    if owner != author_id:
         raise Forbidden("Менять и удалять можно только свои сообщения.")
 
 
@@ -264,12 +293,19 @@ def edit_message(
     return get_thread(connection, thread_id)
 
 
-def delete_message(connection: Connection, thread_id: uuid.UUID, message_id: uuid.UUID, author_id: uuid.UUID) -> bool:
+def delete_message(
+    connection: Connection,
+    thread_id: uuid.UUID,
+    message_id: uuid.UUID,
+    author_id: uuid.UUID,
+    *,
+    may_remove_coauthor: bool,
+) -> bool:
     """Delete an own message or one of the co-author; deleting the first message deletes the whole thread.
 
     True when the thread is gone.
     """
-    _removable_message(connection, thread_id, message_id, author_id)
+    _removable_message(connection, thread_id, message_id, author_id, may_remove_coauthor)
     first = connection.execute(
         select(comment_messages.c.id)
         .where(comment_messages.c.thread_id == thread_id)
@@ -295,8 +331,45 @@ def set_resolved(connection: Connection, thread_id: uuid.UUID, resolved: object,
     return get_thread(connection, thread_id)
 
 
+_author = aliased(users)
+_decider = aliased(users)
+
+
+def _suggestions() -> Any:
+    """Suggestions with the names of their author and of who decided."""
+    return (
+        select(
+            suggestions,
+            _author.c.display_name.label("author_display_name"),
+            _decider.c.display_name.label("decided_by_name"),
+        )
+        .outerjoin(_author, _author.c.id == suggestions.c.author_id)
+        .outerjoin(_decider, _decider.c.id == suggestions.c.decided_by)
+    )
+
+
 def _suggestion(row: Row[Any]) -> Suggestion:
-    return Suggestion(**row._mapping)
+    return Suggestion(
+        id=row.id,
+        document_id=row.document_id,
+        scene_uid=row.scene_uid,
+        quote=row.quote,
+        text=row.text,
+        why=row.why,
+        status=row.status,
+        session_id=row.session_id,
+        created_at=row.created_at,
+        decided_at=row.decided_at,
+        author_kind=row.author_kind,
+        author_id=row.author_id,
+        author_name=COAUTHOR_NAME if row.author_kind == "coauthor" else row.author_display_name,
+        decided_by=row.decided_by,
+        decided_by_name=row.decided_by_name,
+    )
+
+
+def _suggestion_by_id(connection: Connection, suggestion_id: uuid.UUID) -> Suggestion:
+    return _suggestion(connection.execute(_suggestions().where(suggestions.c.id == suggestion_id)).one())
 
 
 def create_suggestion(
@@ -314,7 +387,7 @@ def create_suggestion(
     """
     ensure_open(connection, _screenplay(connection, document_id))
     _scene_of_quote(connection, document_id, scene_uid, quote)
-    row = connection.execute(
+    suggestion_id = connection.execute(
         insert(suggestions)
         .values(
             document_id=document_id,
@@ -323,15 +396,58 @@ def create_suggestion(
             text=text,
             why=why,
             session_id=session_id,
+            author_kind="coauthor",
         )
-        .returning(suggestions)
-    ).one()
-    return _suggestion(row)
+        .returning(suggestions.c.id)
+    ).scalar_one()
+    return _suggestion_by_id(connection, suggestion_id)
+
+
+def create_user_suggestion(
+    connection: Connection,
+    document_id: uuid.UUID,
+    suggestion_id: uuid.UUID,
+    scene_uid: object,
+    quote: object,
+    text: object,
+    why: object,
+    author_id: uuid.UUID,
+) -> Suggestion:
+    """A participant's suggestion (openspec/specs/api/review, «Предложение правки от участника»): anchored like the
+    co-author's, its id is the id of the future mark; the saved text does not change."""
+    ensure_open(connection, _screenplay(connection, document_id))
+    if not isinstance(scene_uid, str) or not scene_uid:
+        raise Invalid("Поле «scene_uid»: нужен uid сцены цитаты.", "scene_uid")
+    if not isinstance(quote, str) or not quote:
+        raise Invalid("Цитата не может быть пустой.", "quote")
+    if not isinstance(text, str) or not text.strip():
+        raise Invalid("Предлагаемый текст не может быть пустым.", "text")
+    if not isinstance(why, str):
+        raise Invalid("Поле «why» должно быть строкой.", "why")
+    try:
+        _scene_of_quote(connection, document_id, scene_uid, quote)
+    except NotFound as error:
+        raise Invalid(str(error), "scene_uid") from error
+    if connection.execute(select(suggestions.c.id).where(suggestions.c.id == suggestion_id)).one_or_none():
+        raise Conflict(f"Предложение {suggestion_id} уже есть.")
+    connection.execute(
+        insert(suggestions).values(
+            id=suggestion_id,
+            document_id=document_id,
+            scene_uid=scene_uid,
+            quote=quote,
+            text=text,
+            why=why.strip(),
+            author_kind="user",
+            author_id=author_id,
+        )
+    )
+    return _suggestion_by_id(connection, suggestion_id)
 
 
 def list_suggestions(connection: Connection, document_id: uuid.UUID, status: str | None) -> list[Suggestion]:
     _screenplay(connection, document_id)
-    query = select(suggestions).where(suggestions.c.document_id == document_id)
+    query = _suggestions().where(suggestions.c.document_id == document_id)
     if status is not None:
         if status not in SUGGESTION_STATUSES:
             raise Invalid(f"Статус должен быть одним из: {', '.join(SUGGESTION_STATUSES)}.", "status")
@@ -340,8 +456,9 @@ def list_suggestions(connection: Connection, document_id: uuid.UUID, status: str
     return [_suggestion(row) for row in rows]
 
 
-def decide(connection: Connection, suggestion_id: uuid.UUID, status: object) -> Suggestion:
-    """The author's decision, once; the accepted text is saved by the client through the text route.
+def decide(connection: Connection, suggestion_id: uuid.UUID, status: object, user_id: uuid.UUID) -> Suggestion:
+    """The decision of the owner or a co-author, once; the accepted text is saved by the client through the text
+    route.
 
     The text as it stands before an accepted edit becomes a snapshot.
     """
@@ -359,10 +476,9 @@ def decide(connection: Connection, suggestion_id: uuid.UUID, status: object) -> 
     ensure_open(connection, document_row(connection, current.document_id))
     if status == "accepted":
         keep_text(connection, current.document_id, "suggestion")
-    row = connection.execute(
+    connection.execute(
         update(suggestions)
         .where(suggestions.c.id == suggestion_id)
-        .values(status=status, decided_at=func.now())
-        .returning(suggestions)
-    ).one()
-    return _suggestion(row)
+        .values(status=status, decided_at=func.now(), decided_by=user_id)
+    )
+    return _suggestion_by_id(connection, suggestion_id)

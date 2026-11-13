@@ -15,7 +15,7 @@ from agno.agent import Agent
 
 import billing
 from agents.coauthor_tools import COAUTHOR_TOOLS
-from agents.coauthor_usage import check_usage_limit, record_usage
+from agents.coauthor_usage import check_usage_limit, record_usage, refuse_reader
 from agents.prompts import agent_prompt
 from app.settings import default_model
 from db import get_postgres_db
@@ -35,7 +35,7 @@ coauthor = Agent(
     db=get_postgres_db(),
     instructions=agent_prompt(COAUTHOR_ID),
     tools=COAUTHOR_TOOLS,
-    pre_hooks=[check_usage_limit],
+    pre_hooks=[refuse_reader, check_usage_limit],
     post_hooks=[record_usage],
     markdown=True,
     add_history_to_context=True,

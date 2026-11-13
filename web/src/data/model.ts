@@ -47,6 +47,24 @@ export function coverPattern(id: string): CoverPattern {
   return COVER_PATTERNS[hash % COVER_PATTERNS.length];
 }
 
+/** The role of the signed-in user in a story (openspec/specs/api/story-sharing, «Роли в истории»). */
+export type StoryRole = "owner" | "coauthor" | "reviewer" | "reader";
+export const STORY_ROLES: Record<StoryRole, string> = {
+  owner: "Владелец",
+  coauthor: "Соавтор",
+  reviewer: "Рецензент",
+  reader: "Читатель",
+};
+
+/** What a role may do; the core checks it again on every request. */
+export function rights(role: StoryRole) {
+  return {
+    review: role !== "reader",
+    edit: role === "owner" || role === "coauthor",
+    owner: role === "owner",
+  };
+}
+
 export type Project = {
   id: string;
   title: string;
@@ -62,6 +80,9 @@ export type Project = {
   wordGoal: number | null;
   /** Deadline of the goal, `YYYY-MM-DD`; only with a goal. */
   goalDeadline: string | null;
+  /** The role of the signed-in user and the name of the owner of the story. */
+  role: StoryRole;
+  ownerName: string;
 };
 
 /** A new story: its title and, without a manuscript, the structure template it starts from. */
@@ -183,12 +204,17 @@ export type CommentThread = CommentMessage & {
   resolved: boolean;
 };
 
-/** A new thread: `id` is the id of its `comment` mark in the text. */
+/**
+ * A new thread: `id` is the id of its `comment` mark in the text. A reviewer, who cannot save the
+ * text, anchors it by the scene of the quote (`sceneUid`); the screen of the owner or a co-author
+ * puts the mark in the text.
+ */
 export type NewThread = {
   id: string;
   draftId: string;
   quote: string;
   text: string;
+  sceneUid?: string;
 };
 
 /** A new reply of resource `comment-replies`; `meta.threadId` names its thread. */
@@ -216,7 +242,16 @@ export type Suggestion = {
   status: "open" | "accepted" | "rejected";
   /** ISO time of the author's decision. */
   decidedAt: string | null;
+  /** Who suggests: the co-author or a participant by name. */
+  authorKind: "coauthor" | "user";
+  authorName: string;
 };
+
+/** A suggestion of a participant, anchored like the co-author's; `id` is the id of its future mark. */
+export type NewSuggestion = Pick<
+  Suggestion,
+  "id" | "draftId" | "sceneUid" | "quote" | "text" | "why"
+>;
 
 /**
  * A draft of a story: a parallel version that owns its screenplay, cards, review and
@@ -239,7 +274,7 @@ export type NewDraft = { projectId: string; name: string; baseId: string };
 
 export type VersionPart = "text" | "fields";
 export type VersionReason =
-  "auto" | "suggestion" | "import" | "restore" | "coauthor";
+  "auto" | "suggestion" | "import" | "restore" | "coauthor" | "conflict";
 
 /** What a history belongs to: a part of the screenplay of a draft, or a card. */
 export type VersionTarget =
@@ -276,3 +311,24 @@ export const ENTITY_RESOURCE = {
   loc: "locations",
   world: "worlds",
 } as const satisfies Record<EntityKind, string>;
+
+/** A participant of a story: its owner or one with a role (openspec/specs/api/story-sharing). */
+export type Member = {
+  userId: string;
+  name: string;
+  email: string;
+  role: StoryRole;
+};
+
+/** An invitation of an e-mail into a story, waiting for its sign-in; no letter is sent. */
+export type Invitation = { id: string; email: string; role: StoryRole };
+
+/** The link «почитать» of a draft: its key opens the screenplay of the draft without signing in. */
+export type ReadLink = { draftId: string; key: string };
+
+/** What the link «почитать» shows: the titles and the screenplay of one draft. */
+export type SharedText = {
+  storyTitle: string;
+  draftName: string;
+  text: ScreenplayDoc;
+};

@@ -14,6 +14,8 @@ from starlette.datastructures import UploadFile
 
 from app.api.problems import Problem
 from app.auth import Principal, can_access_project
+from core import members
+from core.engine import get_engine
 from core.projects import user_id_of
 from core.tables import MAX_FILE_BYTES
 
@@ -76,10 +78,21 @@ def parse_id(value: str) -> uuid.UUID:
         raise Problem(404, "Not Found", NOT_FOUND) from error
 
 
-def require_project(principal: Principal, project_id: uuid.UUID) -> None:
-    """Only the owner reaches a story; a missing and someone else's story look the same."""
+def require_project(principal: Principal, project_id: uuid.UUID, need: members.Need) -> members.Role:
+    """The caller's role in the story, which must allow `need` (openspec/specs/api/story-sharing, «Права ролей»).
+
+    Without a role the story is not found: a missing and someone else's story look the same. A role that is too
+    small is refused with 403 naming it.
+    """
     if not can_access_project(principal, str(project_id)):
         raise Problem(404, "Not Found", NOT_FOUND)
+    with get_engine().connect() as connection:
+        role = members.role_of_subject(connection, principal.user_id, project_id)
+    if role is None:
+        raise Problem(404, "Not Found", NOT_FOUND)
+    if not members.allows(role, need):
+        raise Problem(403, "Forbidden", members.refusal(role, need))
+    return role
 
 
 def caller_id(connection: Connection, principal: Principal) -> uuid.UUID:

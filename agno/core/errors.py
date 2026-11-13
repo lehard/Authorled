@@ -9,6 +9,24 @@ class Conflict(Exception):
     """The record is in a state that refuses the operation: an old revision, the trash, a repeat."""
 
 
+class RevisionConflict(Conflict):
+    """The save is based on an older revision (openspec/specs/api/stories, «Кто сохранил при конфликте»).
+
+    Names who saved the current revision and carries the refused state of the part (`text` or `fields`), so the
+    route keeps it as a snapshot `conflict` after the refused transaction is rolled back; `content` is None when
+    the refused change had nothing to keep (only the position).
+    """
+
+    def __init__(
+        self, detail: str, saved_by: str, saved_by_me: bool, part: str, content: dict[str, object] | None
+    ) -> None:
+        super().__init__(detail)
+        self.saved_by = saved_by
+        self.saved_by_me = saved_by_me
+        self.part = part
+        self.content = content
+
+
 class Locked(Conflict):
     """Nothing in a locked draft changes."""
 

@@ -27,7 +27,10 @@ import { docToFDX } from "./exporters/fdx.ts";
 import { docToFountain } from "./exporters/fountain.ts";
 import { printScreenplay, type TitlePage } from "./exporters/print.ts";
 import { screenplayKeymap, setElement } from "./keymaps/index.ts";
-import { createBubbleMenuPlugin } from "./plugins/bubbleMenu.ts";
+import {
+  createBubbleMenuPlugin,
+  type ReviewRequests,
+} from "./plugins/bubbleMenu.ts";
 import {
   cardGapKey,
   cardGapStatePlugin,
@@ -150,6 +153,11 @@ export type ScreenplayEditorOptions = {
    * no such button. It stays in a read-only text.
    */
   onCoauthorRequest?: (anchor: DOMRect) => void;
+  /**
+   * «Комментировать» and «Предложить правку» of a reviewer in a read-only text; the screen takes
+   * the scene and the words of the selection by `reviewAnchor`.
+   */
+  onReviewRequest?: ReviewRequests;
   /** A click on an open comment's place. */
   onCommentOpen?: (id: string) => void;
   /** A click on an open co-author suggestion. */
@@ -220,6 +228,7 @@ export class ScreenplayEditorView {
       createBubbleMenuPlugin(
         options.onCommentRequest,
         options.onCoauthorRequest,
+        options.onReviewRequest,
       ),
       cardGapStatePlugin,
       cardGapPlugin,
@@ -488,6 +497,40 @@ export class ScreenplayEditorView {
     this.view.focus();
   }
 
+  /**
+   * The scene and the exact words selected in the text by the page's selection, for the anchor of a
+   * reviewer's comment or suggestion (openspec/specs/api/review): «paragraph» when the selection
+   * leaves one paragraph or has no scene above it, null without a selection in the text.
+   */
+  reviewAnchor(): { sceneUid: string; quote: string } | "paragraph" | null {
+    const selection = this.view.dom.ownerDocument.getSelection();
+    if (
+      selection === null ||
+      selection.isCollapsed ||
+      selection.rangeCount === 0
+    )
+      return null;
+    const range = selection.getRangeAt(0);
+    if (!this.view.dom.contains(range.commonAncestorContainer)) return null;
+    const from = this.view.posAtDOM(range.startContainer, range.startOffset);
+    const to = this.view.posAtDOM(range.endContainer, range.endOffset);
+    const doc = this.view.state.doc;
+    const start = doc.resolve(from);
+    if (!start.parent.isTextblock || !start.sameParent(doc.resolve(to)))
+      return "paragraph";
+    const quote = doc.textBetween(from, to);
+    if (quote.trim() === "") return null;
+    const index = start.index(0);
+    let sceneUid: string | null = null;
+    for (let i = index; i >= 0 && sceneUid === null; i--) {
+      const node = doc.child(i);
+      if (node.type.name === "sceneHeading")
+        sceneUid = typeof node.attrs.uid === "string" ? node.attrs.uid : null;
+      else if (node.type.name === "act" || node.type.name === "sequence") break;
+    }
+    return sceneUid === null ? "paragraph" : { sceneUid, quote };
+  }
+
   /** Marks the selection as the place of thread `id`; false when nothing shown is selected. */
   addComment(id: string): boolean {
     return addComment(id)(this.view.state, this.view.dispatch);
@@ -723,5 +766,6 @@ export type { SuggestData } from "./plugins/suggest.ts";
 export type { CommentsMeta } from "./plugins/comments.ts";
 export type { SuggestionsMeta } from "./plugins/suggestions.ts";
 export type { SuggestionAnchor } from "./anchors.ts";
+export type { ReviewRequests } from "./plugins/bubbleMenu.ts";
 export { PrintError } from "./exporters/print.ts";
 export type { TitlePage } from "./exporters/print.ts";

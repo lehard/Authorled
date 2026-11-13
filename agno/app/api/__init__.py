@@ -19,6 +19,8 @@ from app.api.problems import install_problem_handlers
 from app.api.review import router as review_router
 from app.api.saves import router as saves_router
 from app.api.search import router as search_router
+from app.api.sharing import public_router as read_link_router
+from app.api.sharing import router as sharing_router
 from app.api.stories import router as stories_router
 from app.api.writing import router as writing_router
 
@@ -42,6 +44,8 @@ def attach_api(app: FastAPI) -> None:
     app.include_router(beta_router)
     app.include_router(feedback_router)
     app.include_router(writing_router)
+    app.include_router(sharing_router)
+    app.include_router(read_link_router)
     ours = routes[start:]
     del routes[start:]
     root_mount = next((i for i, route in enumerate(routes) if isinstance(route, Mount) and route.path == ""), None)

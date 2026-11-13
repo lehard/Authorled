@@ -24,7 +24,7 @@ const LABELS: Record<keyof TitlePage, string> = {
  * Every field wraps and grows; Enter starts a new line.
  */
 export function TitleDoc() {
-  const { draft, script } = useProjectData();
+  const { draft, script, readOnly } = useProjectData();
   const { save, status } = useAutosave<Script>("scripts", script.id);
   const [page, setPage] = useState(script.titlePage);
   const placeWidth = Math.max(
@@ -39,7 +39,7 @@ export function TitleDoc() {
       <GrowingTextarea
         aria-label={LABELS[key]}
         placeholder={LABELS[key]}
-        readOnly={draft.locked}
+        readOnly={readOnly}
         value={page[key]}
         onChange={(e) => {
           const next = { ...page, [key]: e.target.value };

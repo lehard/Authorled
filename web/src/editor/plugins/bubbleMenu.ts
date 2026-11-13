@@ -18,6 +18,19 @@ export const bubbleMenuKey = new PluginKey("bubbleMenu");
 const COMMENT_ICON =
   '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/><path d="M12 8v6"/><path d="M9 11h6"/></svg>';
 
+// lucide «pencil-line», «Предложить правку» of a reviewer.
+const SUGGEST_ICON =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg>';
+
+/**
+ * «Комментировать» and «Предложить правку» of a reviewer, who reads the text and cannot change it
+ * (openspec/specs/web/workspace, «Комментарий и предложение рецензента»).
+ */
+export type ReviewRequests = {
+  onComment: () => void;
+  onSuggest: () => void;
+};
+
 // lucide «sparkles», the icon of the co-author.
 const COAUTHOR_ICON =
   '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/></svg>';
@@ -125,6 +138,7 @@ const ITEMS: (Item | "sep")[] = [
 export function createBubbleMenuPlugin(
   onComment?: () => void,
   onCoauthor?: (anchor: DOMRect) => void,
+  review?: ReviewRequests,
 ): Plugin {
   let coauthorButton: HTMLButtonElement | null = null;
   const items: (Item | "sep")[] = [
@@ -162,6 +176,33 @@ export function createBubbleMenuPlugin(
             active: () => false,
           } satisfies Item,
         ]),
+    // The review of a reviewer only reads the selection: it stays in a read-only text.
+    ...(review === undefined
+      ? []
+      : [
+          {
+            label: "Комментировать",
+            className: "pw-review-button",
+            html: COMMENT_ICON,
+            run: () => {
+              review.onComment();
+              return true;
+            },
+            active: () => false,
+            reads: true,
+          } satisfies Item,
+          {
+            label: "Предложить правку",
+            className: "pw-review-button",
+            html: SUGGEST_ICON,
+            run: () => {
+              review.onSuggest();
+              return true;
+            },
+            active: () => false,
+            reads: true,
+          } satisfies Item,
+        ]),
   ];
   return new Plugin({
     key: bubbleMenuKey,
@@ -196,10 +237,11 @@ export function createBubbleMenuPlugin(
         });
         menu.appendChild(btn);
         buttons.push([btn, item]);
-        if (item.reads) {
+        if (item.className === "pw-coauthor-button") {
           btn.setAttribute("aria-haspopup", "menu");
           coauthorButton = btn;
-        } else writing.push(btn);
+        }
+        if (!item.reads) writing.push(btn);
       }
       const parent = editorView.dom.parentElement;
       if (parent === null) throw new Error("Редактор не вставлен в страницу");
@@ -226,7 +268,10 @@ export function createBubbleMenuPlugin(
       function update(view: EditorView) {
         if (!view.editable) {
           // A read-only text has no selection of the editor: the page's one is read instead.
-          const range = onCoauthor === undefined ? null : readSelection(view);
+          const range =
+            onCoauthor === undefined && review === undefined
+              ? null
+              : readSelection(view);
           if (range === null) {
             menu.style.display = "none";
             return;
