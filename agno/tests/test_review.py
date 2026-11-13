@@ -92,7 +92,7 @@ def test_locked_draft_refuses_review(connection: Connection) -> None:
     with pytest.raises(Locked):
         create_thread(connection, script_id, uuid.uuid4(), "Вера", "Да", author, "")
     with pytest.raises(Locked):
-        decide(connection, suggestion.id, "accepted")
+        decide(connection, suggestion.id, "accepted", author)
     assert [t.id for t in list_threads(connection, script_id)] == [thread.id]
 
 
@@ -100,7 +100,7 @@ def test_accepting_keeps_the_text_as_a_snapshot(connection: Connection) -> None:
     _, script_id, author = _story(connection)
     before = get_text(connection, script_id).content
     accepted = create_suggestion(connection, script_id, "s3", "Вера молчит", "Вера плачет", "", "x:y:z")
-    decide(connection, accepted.id, "accepted")
+    decide(connection, accepted.id, "accepted", author)
     (version,) = [v for v in list_versions(connection, script_id, "text") if v.reason == "suggestion"]
     assert version.content == before
 
@@ -109,7 +109,7 @@ def test_rejecting_keeps_no_snapshot(connection: Connection) -> None:
     _, script_id, author = _story(connection)
     rejected = create_suggestion(connection, script_id, "s3", "Вера молчит", "Вера плачет", "", "x:y:z")
     versions = len(list_versions(connection, script_id, "text"))
-    decide(connection, rejected.id, "rejected")
+    decide(connection, rejected.id, "rejected", author)
     assert len(list_versions(connection, script_id, "text")) == versions
 
 
@@ -138,8 +138,8 @@ def test_deleting_the_first_message_deletes_the_thread(connection: Connection) -
     thread = create_thread(connection, script_id, uuid.uuid4(), "Вера", "Первое", author, "")
     add_reply(connection, thread.id, "Второе", author, "")
     thread = add_reply(connection, thread.id, "Третье", author, "")
-    assert delete_message(connection, thread.id, thread.messages[1].id, author) is False
-    assert delete_message(connection, thread.id, thread.messages[0].id, author) is True
+    assert delete_message(connection, thread.id, thread.messages[1].id, author, may_remove_coauthor=True) is False
+    assert delete_message(connection, thread.id, thread.messages[0].id, author, may_remove_coauthor=True) is True
     assert list_threads(connection, script_id) == []
 
 
@@ -209,19 +209,21 @@ def test_message_of_the_coauthor_is_not_edited_but_removed(connection: Connectio
     message = thread.messages[0]
     with pytest.raises(Forbidden):
         edit_message(connection, thread.id, message.id, "Другое", author)
-    assert delete_message(connection, thread.id, message.id, author) is True
+    assert delete_message(connection, thread.id, message.id, author, may_remove_coauthor=True) is True
     assert list_threads(connection, script_id) == []
 
 
 def test_filter_and_decide_once(connection: Connection) -> None:
-    _, script_id, _ = _story(connection)
+    _, script_id, author = _story(connection)
     first = create_suggestion(connection, script_id, "s3", "Вера молчит", "Вера отворачивается", "", SESSION)
     second = create_suggestion(connection, script_id, "s3", "молчит", "кричит", "", SESSION)
-    decide(connection, second.id, "rejected")
+    decide(connection, second.id, "rejected", author)
     assert [s.id for s in list_suggestions(connection, script_id, "open")] == [first.id]
-    accepted = decide(connection, first.id, "accepted")
+    accepted = decide(connection, first.id, "accepted", author)
     assert accepted.decided_at is not None
+    assert accepted.decided_by == author
+    assert (accepted.author_kind, accepted.author_name, accepted.session_id) == ("coauthor", "Соавтор", SESSION)
     with pytest.raises(Conflict):
-        decide(connection, first.id, "rejected")
+        decide(connection, first.id, "rejected", author)
     with pytest.raises(Invalid):
         list_suggestions(connection, script_id, "maybe")

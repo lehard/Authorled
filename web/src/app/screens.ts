@@ -12,3 +12,9 @@ export const showcaseScreen = lazyScreen(
   () => import("@/showcase/Showcase").then((m) => m.Showcase),
   "Открываем витрину…",
 );
+
+export const readScreen = lazyScreen(
+  "страница чтения",
+  () => import("@/screens/read/ReadScreen").then((m) => m.ReadScreen),
+  "Открываем сценарий…",
+);

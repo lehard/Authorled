@@ -257,8 +257,6 @@ def update_document(
     """
     document = document_row(connection, document_id, for_update=True)
     ensure_open(connection, document)
-    if document.revision != expected_revision:
-        raise Conflict(f"Документ изменился: ревизия {document.revision}, а не {expected_revision}.")
     unknown = set(changes) - {"name", "role", "summary", "fields", "position"}
     if unknown:
         name = sorted(unknown)[0]
@@ -276,6 +274,16 @@ def update_document(
         values["summary"] = _summary(changes["summary"])
     if "fields" in changes:
         values["fields"] = merge_fields(document.kind, document.fields, changes["fields"])
+    if document.revision != expected_revision:
+        # The refused state: the saved fields with the changes passed, so the participant's edit is not lost.
+        raise snapshots.revision_conflict(
+            connection,
+            f"Документ изменился: ревизия {document.revision}, а не {expected_revision}.",
+            document.updated_by,
+            user_id,
+            "fields",
+            {**fields_state(document), **values} if values else None,
+        )
     if "position" in changes:
         position = changes["position"]
         group = [
@@ -332,7 +340,14 @@ def restore_fields(
     document = document_row(connection, document_id, for_update=True)
     ensure_open(connection, document)
     if document.revision != expected_revision:
-        raise Conflict(f"Документ изменился: ревизия {document.revision}, а не {expected_revision}.")
+        raise snapshots.revision_conflict(
+            connection,
+            f"Документ изменился: ревизия {document.revision}, а не {expected_revision}.",
+            document.updated_by,
+            user_id,
+            "fields",
+            None,
+        )
     snapshots.keep(
         connection, document_id, "fields", fields_state(document), document.updated_by, document.updated_at, "restore"
     )

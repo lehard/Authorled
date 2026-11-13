@@ -251,7 +251,14 @@ def put_text(
     doc = validate_text(content)
     current = text_row(connection, document_id, for_update=True)
     if current.revision != expected_revision:
-        raise Conflict(f"Текст изменился: ревизия {current.revision}, а не {expected_revision}.")
+        raise snapshots.revision_conflict(
+            connection,
+            f"Текст изменился: ревизия {current.revision}, а не {expected_revision}.",
+            current.updated_by,
+            user_id,
+            "text",
+            doc,
+        )
     snapshots.keep(connection, document_id, "text", current.content, current.updated_by, current.updated_at, reason)
     text = write_text(connection, document_id, doc, user_id)
     touch_draft(connection, document.draft_id)

@@ -20,14 +20,18 @@ import {
 import type {
   CommentThread,
   Entity,
+  Invitation,
+  Member,
   NewDraft,
   NewNote,
   NewProject,
   CoverOperation,
   NewReply,
+  NewSuggestion,
   NewThread,
   Point,
   Project,
+  SharedText,
   Script,
   VersionPart,
   VersionReason,
@@ -36,6 +40,7 @@ import type {
 import { nextCoverColor } from "./model";
 import type { SaveOperation } from "./saves";
 import type { SearchOperation } from "./search";
+import type { Members, SharingOperation } from "./sharing";
 import type { Writing, WritingOperation } from "./writing";
 
 // Data source `fixtures` (openspec/specs/web/workspace, «Источник данных»): sample data of
@@ -71,9 +76,80 @@ const store = {
     ...structuredClone(s),
     documentId: s.id,
   })),
+  suggestions: FIXTURES.suggestions.map((s) => ({
+    ...structuredClone(s),
+    authorKind: "coauthor",
+    authorName: "Соавтор",
+  })),
   versions: [],
   points: [],
 } as unknown as Record<Resource, Row[]>;
+
+// Stories of the sample are the signed-in user's own; the first one has a participant and an invitation
+// waiting, and its first draft a link «почитать» with the key `demo` (openspec/specs/api/story-sharing).
+const SAMPLE_PROJECT = FIXTURES.projects[0].id;
+const participants = new Map<string, Member[]>([
+  [
+    SAMPLE_PROJECT,
+    [
+      {
+        userId: "sample-anya",
+        name: "Аня Котова",
+        email: "anya@example.ru",
+        role: "reviewer",
+      },
+    ],
+  ],
+]);
+const invitations = new Map<string, Invitation[]>([
+  [
+    SAMPLE_PROJECT,
+    [{ id: "sample-invitation", email: "boris@example.ru", role: "reader" }],
+  ],
+]);
+const links = new Map<string, string>([
+  [
+    String(
+      FIXTURES.drafts.find((d) => d.projectId === SAMPLE_PROJECT)?.id ??
+        missing("драфта у первой истории примера"),
+    ),
+    "demo",
+  ],
+]);
+
+function missing(what: string): never {
+  throw new Error(`В данных примера нет ${what}.`);
+}
+
+async function members(projectId: string): Promise<Members> {
+  find("projects", projectId);
+  const { name, email } = await signedIn();
+  return {
+    members: [
+      { userId: "me", name, email, role: "owner" },
+      ...(participants.get(projectId) ?? []),
+    ],
+    invitations: invitations.get(projectId) ?? [],
+  };
+}
+
+function sharedText(key: string): SharedText {
+  const draftId = [...links].find(([, k]) => k === key)?.[0];
+  if (draftId === undefined)
+    throw Object.assign(new Error("Ссылка не работает."), { statusCode: 404 });
+  const draft = find("drafts", draftId);
+  const script = find("scripts", draftId) as unknown as Script;
+  return {
+    storyTitle: String(find("projects", String(draft.projectId)).title),
+    draftName: String(draft.name),
+    text: stripMarks(script.text, ["comment", "suggestion"]),
+  };
+}
+
+/** The text of a draft of the sample by the key of its link (the page `/read/:key`). */
+export function openFixtureLink(key: string): SharedText {
+  return structuredClone(sharedText(key));
+}
 
 /** Import and chat files need the core (design of story-data-web, decision 7). */
 /** Search of a story needs the core (design of project-search, decision 6). */
@@ -395,6 +471,8 @@ async function out<T>(resource: string, row: Row): Promise<T> {
         (d) => d.projectId === row.id && d.deletedAt === null,
       ).length,
       openDraftId: openDraftId(row.id),
+      role: "owner",
+      ownerName: (await signedIn()).name,
     };
     return project as unknown as T;
   }
@@ -542,6 +620,16 @@ export const fixturesProvider: DataProvider = {
       return {
         data: { ...(await out<Project>("projects", row)), draftId } as never,
       };
+    } else if (resource === "suggestions") {
+      const values = variables as NewSuggestion;
+      row = {
+        ...values,
+        at: now(),
+        status: "open",
+        decidedAt: null,
+        authorKind: "user",
+        authorName: (await signedIn()).name,
+      };
     } else if (resource === "comments") {
       const values = variables as NewThread;
       row = {
@@ -657,8 +745,75 @@ export const fixturesProvider: DataProvider = {
 
   custom: async ({ meta, payload }) => {
     const op = { operation: meta?.operation, payload } as
-      CoverOperation | SaveOperation | SearchOperation | WritingOperation;
+      | CoverOperation
+      | SaveOperation
+      | SearchOperation
+      | SharingOperation
+      | WritingOperation;
     switch (op.operation) {
+      case "members":
+        return { data: (await members(op.payload.projectId)) as never };
+      case "invite": {
+        const invitation: Invitation = {
+          id: crypto.randomUUID(),
+          email: op.payload.email.trim().toLowerCase(),
+          role: op.payload.role,
+        };
+        const list = invitations.get(op.payload.projectId) ?? [];
+        if (list.some((i) => i.email === invitation.email))
+          throw Object.assign(
+            new Error(`${invitation.email} уже приглашена в историю.`),
+            { statusCode: 409 },
+          );
+        invitations.set(op.payload.projectId, [...list, invitation]);
+        return { data: invitation as never };
+      }
+      case "revokeInvitation":
+        for (const [id, list] of invitations)
+          invitations.set(
+            id,
+            list.filter((i) => i.id !== op.payload.id),
+          );
+        break;
+      case "setMemberRole":
+        participants.set(
+          op.payload.projectId,
+          (participants.get(op.payload.projectId) ?? []).map((m) =>
+            m.userId === op.payload.userId
+              ? { ...m, role: op.payload.role }
+              : m,
+          ),
+        );
+        break;
+      case "removeMember":
+        participants.set(
+          op.payload.projectId,
+          (participants.get(op.payload.projectId) ?? []).filter(
+            (m) => m.userId !== op.payload.userId,
+          ),
+        );
+        break;
+      case "readLink": {
+        const key = links.get(op.payload.draftId);
+        return {
+          data: {
+            link:
+              key === undefined ? null : { draftId: op.payload.draftId, key },
+          } as never,
+        };
+      }
+      case "createReadLink": {
+        find("drafts", op.payload.draftId);
+        const key = links.get(op.payload.draftId) ?? crypto.randomUUID();
+        links.set(op.payload.draftId, key);
+        return { data: { draftId: op.payload.draftId, key } as never };
+      }
+      case "removeReadLink":
+        links.delete(op.payload.draftId);
+        break;
+      case "presence":
+        // The sample has one user: nobody else edits.
+        return { data: { editing: [] } as never };
       case "nextCoverColor":
         // The core's rule over the stories of the sample: the colour after the last one created.
         return {

@@ -15,7 +15,8 @@ from sqlalchemy import Connection, delete, func, insert, select, update
 from core.documents import ensure_project_open
 from core.errors import Conflict, Invalid, NotFound, TooLarge
 from core.files import CheckedFile, checked_of_stored, extract_text, file_bytes, file_format, get_file, store_file
-from core.tables import files, notes, users
+from core.snapshots import revision_conflict
+from core.tables import files, notes, projects, users
 
 # The longest text of a note made from a file: longer ones slow the screen and fill the co-author's context.
 MAX_FILE_TEXT_CHARS = 500_000
@@ -153,10 +154,11 @@ def _megabytes(size: int) -> str:
 def create_note_from_file(
     connection: Connection, project_id: uuid.UUID, user_id: uuid.UUID, checked: CheckedFile, limit_bytes: int
 ) -> Note:
-    """A note with the file as its original and the file's text, if the text fits and the user's place does.
+    """A note with the file as its original and the file's text, if the text fits and the owner's place does.
 
-    The place is the originals of notes of all the user's stories, the trash included; `limit_bytes` comes from the
-    user's plan. The user's row stays locked to the end of the transaction, so two uploads cannot both fit.
+    The place is the originals of notes of all the stories of the story's owner, the trash included, whoever uploaded
+    them (openspec/specs/api/stories, «Место для оригиналов заметок»); `limit_bytes` comes from the owner's plan. The
+    owner's row stays locked to the end of the transaction, so two uploads cannot both fit.
     """
     ensure_project_open(connection, project_id)
     title = checked.name.rsplit(".", 1)[0].strip()
@@ -168,11 +170,12 @@ def create_note_from_file(
             "Загрузите часть файла.",
             "file",
         )
-    connection.execute(select(users.c.id).where(users.c.id == user_id).with_for_update()).one()
+    owner = connection.execute(select(projects.c.owner_id).where(projects.c.id == project_id)).scalar_one()
+    connection.execute(select(users.c.id).where(users.c.id == owner).with_for_update()).one()
     used = connection.execute(
-        select(func.coalesce(func.sum(files.c.size_bytes), 0)).where(
-            files.c.purpose == "note", files.c.uploaded_by == user_id
-        )
+        select(func.coalesce(func.sum(files.c.size_bytes), 0))
+        .join(projects, projects.c.id == files.c.project_id)
+        .where(files.c.purpose == "note", projects.c.owner_id == owner)
     ).scalar_one()
     if used + len(checked.data) > limit_bytes:
         raise TooLarge(
@@ -203,7 +206,14 @@ def update_note(
     if note.deleted_at is not None:
         raise Conflict("Заметка в корзине: сначала восстановите её.")
     if note.revision != expected_revision:
-        raise Conflict(f"Заметка изменилась: ревизия {note.revision}, а не {expected_revision}.")
+        raise revision_conflict(
+            connection,
+            f"Заметка изменилась: ревизия {note.revision}, а не {expected_revision}.",
+            note.updated_by,
+            user_id,
+            "fields",
+            None,
+        )
     unknown = set(changes) - {"title", "body"}
     if unknown:
         name = sorted(unknown)[0]
@@ -223,14 +233,23 @@ def update_note(
     return note_row(connection, note_id)
 
 
-def _changeable_original(connection: Connection, note_id: uuid.UUID, expected_revision: int) -> NoteFile:
+def _changeable_original(
+    connection: Connection, note_id: uuid.UUID, expected_revision: int, user_id: uuid.UUID
+) -> NoteFile:
     """The original of a note the author may act on now: the note and its story are open, the revision holds."""
     note = note_row(connection, note_id, for_update=True)
     ensure_project_open(connection, note.project_id)
     if note.deleted_at is not None:
         raise Conflict("Заметка в корзине: сначала восстановите её.")
     if note.revision != expected_revision:
-        raise Conflict(f"Заметка изменилась: ревизия {note.revision}, а не {expected_revision}.")
+        raise revision_conflict(
+            connection,
+            f"Заметка изменилась: ревизия {note.revision}, а не {expected_revision}.",
+            note.updated_by,
+            user_id,
+            "fields",
+            None,
+        )
     if note.file is None:
         raise Conflict("У заметки нет оригинала.")
     return note.file
@@ -241,7 +260,7 @@ def remove_note_file(connection: Connection, note_id: uuid.UUID, expected_revisi
 
     The place of the user's plan frees with the row of the file: the place is the sum of the originals.
     """
-    original = _changeable_original(connection, note_id, expected_revision)
+    original = _changeable_original(connection, note_id, expected_revision, user_id)
     connection.execute(
         update(notes)
         .where(notes.c.id == note_id)
@@ -257,7 +276,7 @@ def note_text_from_file(connection: Connection, note_id: uuid.UUID, expected_rev
     The text comes from the bytes by the current rules of extraction, not from the text stored on upload, so an old
     note gets the current rules; the stored text of the file stays as the file was uploaded.
     """
-    original = _changeable_original(connection, note_id, expected_revision)
+    original = _changeable_original(connection, note_id, expected_revision, user_id)
     data = file_bytes(connection, original.id)
     text = extract_text(file_format(original.name, "note", data), data)
     if len(text) > MAX_FILE_TEXT_CHARS:

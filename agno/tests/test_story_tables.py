@@ -176,6 +176,7 @@ def test_decision_needs_its_time(connection: Connection) -> None:
                 why="",
                 status="accepted",
                 session_id=f"{project}:1",
+                author_kind="coauthor",
             )
         )
 
@@ -333,7 +334,13 @@ def test_story_deletion_cascades(connection: Connection) -> None:
     )
     connection.execute(
         insert(suggestions).values(
-            document_id=script, scene_uid="s1", quote="Вера", text="Вера Андреевна", why="", session_id=f"{project}:1"
+            document_id=script,
+            scene_uid="s1",
+            quote="Вера",
+            text="Вера Андреевна",
+            why="",
+            session_id=f"{project}:1",
+            author_kind="coauthor",
         )
     )
     file_id = connection.execute(

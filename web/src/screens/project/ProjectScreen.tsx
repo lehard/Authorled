@@ -25,7 +25,13 @@ import {
   useScript,
   useSuggestions,
 } from "@/data/hooks";
-import type { Character, Location, Script, World } from "@/data/model";
+import {
+  rights,
+  type Character,
+  type Location,
+  type Script,
+  type World,
+} from "@/data/model";
 import { useSaveActions } from "@/data/saves";
 import type { ScreenplayDoc } from "@/editor/document.ts";
 import { useAutosave } from "@/screens/shared/useAutosave";
@@ -192,9 +198,12 @@ export function ProjectScreen() {
       return <MessageScreen loading title="Открываем заметку…" />;
     return <NotFoundScreen />;
   }
+  const can = rights(project.role);
   const base = {
     project,
     draft,
+    can,
+    readOnly: draft.locked || !can.edit,
     script,
     chars: chars.items,
     locs: locs.items,
@@ -210,10 +219,14 @@ export function ProjectScreen() {
     },
   };
   const openChat = () => {
+    if (!rights(project.role).review)
+      throw new Error("У читателя истории нет чата с соавтором.");
     if (narrow) setChatOpen(true);
     else foldChat(false);
   };
-  const coauthorBusy = chatBlocked || coauthorRequest !== null;
+  // A reader has no chat with the co-author (web/workspace, «Экран истории по роли»): nothing asks it.
+  const hasChat = rights(project.role).review;
+  const coauthorBusy = !hasChat || chatBlocked || coauthorRequest !== null;
   const chatRequest = {
     request: coauthorRequest,
     onRequestTaken: (id: string) =>
@@ -227,7 +240,9 @@ export function ProjectScreen() {
     text: working?.id === script.id ? working.text : script.text,
     setText: (text) => {
       setWorking({ id: script.id, text });
-      saveText({ text });
+      // A role without the right to edit keeps the marks of its review in the window only: the
+      // screen of the owner or a co-author puts them in the saved text.
+      if (can.edit) saveText({ text });
     },
     textStatus,
     currentScene,
@@ -280,17 +295,19 @@ export function ProjectScreen() {
             <main className="min-h-0 flex-1 overflow-auto [--account-space:0px]">
               <DocView />
             </main>
-            <button
-              type="button"
-              onClick={() => setChatOpen(true)}
-              className="flex h-12 items-center gap-2 rounded-t-panel bg-panel px-4 text-left shadow-panel"
-            >
-              <Sparkles className="size-4 text-ai" />
-              <b>Соавтор</b>
-              <small className="truncate text-xs text-muted-foreground">
-                Видит: {title}
-              </small>
-            </button>
+            {hasChat && (
+              <button
+                type="button"
+                onClick={() => setChatOpen(true)}
+                className="flex h-12 items-center gap-2 rounded-t-panel bg-panel px-4 text-left shadow-panel"
+              >
+                <Sparkles className="size-4 text-ai" />
+                <b>Соавтор</b>
+                <small className="truncate text-xs text-muted-foreground">
+                  Видит: {title}
+                </small>
+              </button>
+            )}
             <Sheet open={navOpen} onOpenChange={setNavOpen}>
               <SheetContent
                 side="left"
@@ -303,33 +320,37 @@ export function ProjectScreen() {
                 {navigator}
               </SheetContent>
             </Sheet>
-            <Sheet open={chatOpen} onOpenChange={setChatOpen}>
-              <SheetContent
-                side="bottom"
-                showCloseButton={false}
-                className="gap-0 rounded-t-panel border-0 bg-panel p-0 data-[side=bottom]:h-[70vh]"
-              >
-                <SheetTitle className="sr-only">Соавтор</SheetTitle>
-                <SheetDescription className="sr-only">
-                  Чат с соавтором
-                </SheetDescription>
-                <CoauthorChat
-                  key={draft.id}
-                  sees={title}
-                  selection={selection}
-                  clearSelection={clearSelection}
-                  {...chatRequest}
-                  onClose={() => setChatOpen(false)}
-                />
-              </SheetContent>
-            </Sheet>
+            {hasChat && (
+              <Sheet open={chatOpen} onOpenChange={setChatOpen}>
+                <SheetContent
+                  side="bottom"
+                  showCloseButton={false}
+                  className="gap-0 rounded-t-panel border-0 bg-panel p-0 data-[side=bottom]:h-[70vh]"
+                >
+                  <SheetTitle className="sr-only">Соавтор</SheetTitle>
+                  <SheetDescription className="sr-only">
+                    Чат с соавтором
+                  </SheetDescription>
+                  <CoauthorChat
+                    key={draft.id}
+                    sees={title}
+                    selection={selection}
+                    clearSelection={clearSelection}
+                    {...chatRequest}
+                    onClose={() => setChatOpen(false)}
+                  />
+                </SheetContent>
+              </Sheet>
+            )}
           </div>
         ) : (
           <div
             className={
-              chatFolded
-                ? "grid h-dvh grid-cols-[240px_minmax(0,1fr)_48px] gap-3 p-3 min-[1241px]:grid-cols-[284px_minmax(0,1fr)_48px]"
-                : "grid h-dvh grid-cols-[240px_minmax(0,1fr)_320px] gap-3 p-3 min-[1241px]:grid-cols-[284px_minmax(0,1fr)_360px]"
+              !hasChat
+                ? "grid h-dvh grid-cols-[240px_minmax(0,1fr)] gap-3 p-3 min-[1241px]:grid-cols-[284px_minmax(0,1fr)]"
+                : chatFolded
+                  ? "grid h-dvh grid-cols-[240px_minmax(0,1fr)_48px] gap-3 p-3 min-[1241px]:grid-cols-[284px_minmax(0,1fr)_48px]"
+                  : "grid h-dvh grid-cols-[240px_minmax(0,1fr)_320px] gap-3 p-3 min-[1241px]:grid-cols-[284px_minmax(0,1fr)_360px]"
             }
           >
             <aside className="min-h-0 overflow-hidden rounded-panel bg-panel shadow-panel">
@@ -344,38 +365,40 @@ export function ProjectScreen() {
               </div>
               <DocView />
             </main>
-            <aside className="min-h-0 overflow-hidden rounded-panel bg-panel shadow-panel">
-              {chatFolded && (
-                <TooltipProvider delayDuration={300}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="h-full w-full items-start rounded-panel pt-4"
-                        aria-label="Открыть соавтора"
-                        onClick={() => foldChat(false)}
-                      >
-                        <Sparkles className="size-5 text-ai" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="left">
-                      Открыть соавтора
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-              {/* Hidden, not unmounted: the conversation, the typed text and a running answer stay. */}
-              <div hidden={chatFolded} className="h-full">
-                <CoauthorChat
-                  key={draft.id}
-                  sees={title}
-                  selection={selection}
-                  clearSelection={clearSelection}
-                  {...chatRequest}
-                  onCollapse={() => foldChat(true)}
-                />
-              </div>
-            </aside>
+            {hasChat && (
+              <aside className="min-h-0 overflow-hidden rounded-panel bg-panel shadow-panel">
+                {chatFolded && (
+                  <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="h-full w-full items-start rounded-panel pt-4"
+                          aria-label="Открыть соавтора"
+                          onClick={() => foldChat(false)}
+                        >
+                          <Sparkles className="size-5 text-ai" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        Открыть соавтора
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                {/* Hidden, not unmounted: the conversation, the typed text and a running answer stay. */}
+                <div hidden={chatFolded} className="h-full">
+                  <CoauthorChat
+                    key={draft.id}
+                    sees={title}
+                    selection={selection}
+                    clearSelection={clearSelection}
+                    {...chatRequest}
+                    onCollapse={() => foldChat(true)}
+                  />
+                </div>
+              </aside>
+            )}
           </div>
         )}
       </CoauthorProvider>

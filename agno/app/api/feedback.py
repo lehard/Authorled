@@ -116,7 +116,7 @@ async def delete_feedback(run_id: str, principal: Principal = Depends(current_pr
 
 def _of_session(principal: Principal, session_id: str) -> list[SessionFeedbackOut]:
     project_id = feedback.session_project(session_id)
-    require_project(principal, project_id)
+    require_project(principal, project_id, "read")
     with get_engine().connect() as connection:
         user = caller_id(connection, principal)
         marks = feedback.session_feedback(connection, user, session_id)

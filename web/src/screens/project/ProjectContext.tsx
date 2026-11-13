@@ -33,6 +33,16 @@ export type ProjectData = {
   project: Project;
   /** The open draft: everything else here belongs to it. */
   draft: Draft;
+  /**
+   * What the role of the signed-in user lets the screens offer (openspec/specs/web/workspace,
+   * «Экран истории по роли»): the core checks it again on every request.
+   */
+  can: { review: boolean; edit: boolean; owner: boolean };
+  /**
+   * The documents and the text of the draft open read-only: a locked draft, or a role without the
+   * right to edit. Notes follow the role only: a locked draft keeps them open.
+   */
+  readOnly: boolean;
   script: Script;
   chars: Character[];
   locs: Location[];

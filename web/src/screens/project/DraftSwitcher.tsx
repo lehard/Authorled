@@ -44,7 +44,7 @@ function forkLabel(name: string): string {
 /** Drafts of a story at the top of the navigator (openspec/specs/web/workspace, «Переключатель драфтов»). */
 export function DraftSwitcher({ onNavigate }: { onNavigate: () => void }) {
   const data = useProjectData();
-  const { draft, drafts } = data;
+  const { draft, drafts, can } = data;
   const navigate = useNavigate();
   const actions = useDraftActions(data);
   const { mutateAsync: create } = useCreate();
@@ -131,58 +131,64 @@ export function DraftSwitcher({ onNavigate }: { onNavigate: () => void }) {
                 {d.id === draft.id && <Check aria-label="Открыт" />}
               </DropdownMenuItem>
             ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => setDrafting(true)}>
-              <Plus />
-              Новый драфт
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-              aria-label="Действия с драфтом"
-            >
-              <MoreVertical />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-auto">
-            <DropdownMenuItem onSelect={() => setRenaming(true)}>
-              <Pencil />
-              Переименовать
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() => attempt(actions.lock(draft.id, !draft.locked))}
-            >
-              {draft.locked ? <LockOpen /> : <Lock />}
-              {draft.locked ? "Разрешить правку" : "Запретить правку"}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => setSaving(true)}>
-              <Save />
-              Сохранить точку
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setListing(true)}>
-              <History />
-              Точки драфта
-            </DropdownMenuItem>
-            {drafts.length > 1 && (
+            {can.edit && (
               <>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant="destructive"
-                  onSelect={() => attempt(removeOpen())}
-                >
-                  <Trash2 />
-                  Удалить в корзину
+                <DropdownMenuItem onSelect={() => setDrafting(true)}>
+                  <Plus />
+                  Новый драфт
                 </DropdownMenuItem>
               </>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
+        {can.edit && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                aria-label="Действия с драфтом"
+              >
+                <MoreVertical />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-auto">
+              <DropdownMenuItem onSelect={() => setRenaming(true)}>
+                <Pencil />
+                Переименовать
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => attempt(actions.lock(draft.id, !draft.locked))}
+              >
+                {draft.locked ? <LockOpen /> : <Lock />}
+                {draft.locked ? "Разрешить правку" : "Запретить правку"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => setSaving(true)}>
+                <Save />
+                Сохранить точку
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setListing(true)}>
+                <History />
+                Точки драфта
+              </DropdownMenuItem>
+              {drafts.length > 1 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onSelect={() => attempt(removeOpen())}
+                  >
+                    <Trash2 />
+                    Удалить в корзину
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
       {error !== null && (
         <p role="alert" className="px-2 pt-1 text-caption text-destructive">

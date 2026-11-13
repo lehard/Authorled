@@ -1,4 +1,4 @@
-import { useInvalidate } from "@refinedev/core";
+import { useCreate, useInvalidate } from "@refinedev/core";
 import { AlignLeft, FileUp, LayoutGrid } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
@@ -11,6 +11,7 @@ import {
   type SkippedRecord,
 } from "@/data/files";
 import { SCRIPT_PARTS } from "@/data/model";
+import { usePresence } from "@/data/sharing";
 import { PrintError, type EditorMode } from "@/editor";
 import { toNode } from "@/editor/document.ts";
 import {
@@ -27,6 +28,11 @@ import { useEditorComments } from "./useEditorComments";
 import { useEditorSuggestions } from "./useEditorSuggestions";
 import { DocHead } from "./DocHead";
 import { ImportSkipped } from "./ImportSkipped";
+import {
+  ReviewDialog,
+  type ReviewDraft,
+  type ReviewKind,
+} from "./ReviewDialog";
 import { SaveHistory } from "./SaveHistory";
 import { SceneBoard } from "./SceneBoard";
 
@@ -47,6 +53,8 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
     textStatus,
     setCurrentScene,
     openChat,
+    readOnly,
+    can,
   } = data;
   const editor = useRef<ScreenplayEditorHandle>(null);
   // One card at a time: a comment thread or a co-author suggestion.
@@ -59,15 +67,68 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
         throw new Error("Предложения соавтора ещё не подключены");
       closeSuggestion.current();
     },
-    draft.locked,
+    draft.locked || !can.review,
+    can.edit,
+    !draft.locked,
   );
   const suggestions = useEditorSuggestions(
     draft.id,
     editor,
     () => comments.close(),
-    openChat,
-    draft.locked,
+    can.review ? openChat : null,
+    readOnly,
+    !draft.locked,
   );
+  // Who else edits this screenplay now (web/workspace, «Сейчас правит»): only while it is open
+  // for editing here, in the text view.
+  const presence = usePresence(draft.id, !readOnly);
+  // A reviewer's comment or suggestion on the words selected in the read-only text.
+  const { mutateAsync: createReview } = useCreate();
+  const [review, setReview] = useState<
+    (ReviewDraft & { sceneUid: string }) | null
+  >(null);
+  const reviewer = can.review && !can.edit && !draft.locked;
+  function startReview(kind: ReviewKind) {
+    const anchor = editor.current?.reviewAnchor() ?? null;
+    if (anchor === null) return;
+    if (anchor === "paragraph") {
+      setError("Выделите фрагмент внутри одного абзаца сцены.");
+      return;
+    }
+    setError(null);
+    setReview({ kind, ...anchor });
+  }
+  async function submitReview(words: string, why: string) {
+    if (review === null) throw new Error("Нет выделенного фрагмента.");
+    const id = crypto.randomUUID();
+    if (review.kind === "comment")
+      await createReview({
+        resource: "comments",
+        values: {
+          id,
+          draftId: draft.id,
+          quote: review.quote,
+          text: words,
+          sceneUid: review.sceneUid,
+        },
+        successNotification: false,
+        errorNotification: false,
+      });
+    else
+      await createReview({
+        resource: "suggestions",
+        values: {
+          id,
+          draftId: draft.id,
+          sceneUid: review.sceneUid,
+          quote: review.quote,
+          text: words,
+          why,
+        },
+        successNotification: false,
+        errorNotification: false,
+      });
+  }
   useEffect(() => {
     closeSuggestion.current = suggestions.close;
   });
@@ -231,6 +292,22 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
           if (file !== undefined) setPending(file);
         }}
       />
+      {presence.others.length > 0 && (
+        <p
+          role="status"
+          className="mx-auto mb-2 w-fit rounded-full bg-panel px-3 py-1 text-caption shadow-panel"
+        >
+          Сейчас правит {presence.others.join(", ")}
+        </p>
+      )}
+      {presence.error !== null && (
+        <p
+          role="alert"
+          className="mx-auto mb-2 w-fit text-caption text-destructive"
+        >
+          Не удалось узнать, кто ещё правит: {presence.error}
+        </p>
+      )}
       {view === "cards" ? (
         <SceneBoard mode={mode} onOpen={(n) => show("text", n)} />
       ) : (
@@ -239,13 +316,21 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
           ref={editor}
           mode={mode}
           doc={text}
-          readOnly={draft.locked}
+          readOnly={readOnly}
           onChange={setText}
           suggestData={suggestData}
           onScene={setCurrentScene}
           comments={comments.comments}
           suggestions={suggestions.suggestions}
-          onCoauthorRequest={setChecksAt}
+          onCoauthorRequest={can.review ? setChecksAt : undefined}
+          onReviewRequest={
+            reviewer
+              ? {
+                  onComment: () => startReview("comment"),
+                  onSuggest: () => startReview("suggestion"),
+                }
+              : undefined
+          }
           tools={
             <>
               {suggestions.tools}
@@ -262,7 +347,7 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
             mode === "outline" ? undefined : (
               <>
                 <DropdownMenuItem
-                  disabled={importing || draft.locked}
+                  disabled={importing || readOnly}
                   onSelect={() => fileInput.current?.click()}
                 >
                   <FileUp />
@@ -283,6 +368,11 @@ export function TextDoc({ mode }: { mode: EditorMode }) {
       <ActionError error={error} onClose={() => setError(null)} />
       <ImportSkipped skipped={skipped} onClose={() => setSkipped([])} />
       {comments.dialog}
+      <ReviewDialog
+        review={review}
+        onClose={() => setReview(null)}
+        onSubmit={submitReview}
+      />
       <ConfirmDialog
         open={pending !== null}
         onOpenChange={(open) => {

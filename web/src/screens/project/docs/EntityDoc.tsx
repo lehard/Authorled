@@ -61,7 +61,7 @@ export function EntityDoc({ kind, id }: { kind: EntityKind; id: string }) {
 }
 
 function EntityForm({ kind, record }: { kind: EntityKind; record: Entity }) {
-  const { draft } = useProjectData();
+  const { draft, readOnly } = useProjectData();
   const navigate = useNavigate();
   const actions = useEntityActions(draft.id);
   const { save, status } = useAutosave<Entity>(
@@ -100,7 +100,7 @@ function EntityForm({ kind, record }: { kind: EntityKind; record: Entity }) {
           <DropdownMenuContent align="end" className="w-auto">
             <DropdownMenuItem
               variant="destructive"
-              disabled={draft.locked}
+              disabled={readOnly}
               onSelect={() =>
                 void actions
                   .trash(kind, record.id, true)
@@ -116,7 +116,7 @@ function EntityForm({ kind, record }: { kind: EntityKind; record: Entity }) {
         </DropdownMenu>
       </DocHead>
       <fieldset
-        disabled={draft.locked}
+        disabled={readOnly}
         className="mx-auto grid max-w-[900px] gap-4"
       >
         <FieldCard>

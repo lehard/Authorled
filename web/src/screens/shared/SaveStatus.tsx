@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import type { SavedBy } from "@/data/apiClient";
 
 import { editText, type SaveStatus as Status } from "./useAutosave";
 
@@ -13,7 +14,7 @@ export function SaveStatus({
   onFresh: () => void;
 }) {
   if (typeof status === "object" && "conflict" in status)
-    return <Conflict edit={status.conflict} onFresh={onFresh} />;
+    return <Conflict edit={status.conflict} by={status.by} onFresh={onFresh} />;
   if (typeof status === "object") {
     return (
       <span role="alert" className="text-caption text-destructive">
@@ -30,9 +31,11 @@ export function SaveStatus({
 
 function Conflict({
   edit,
+  by,
   onFresh,
 }: {
   edit: Record<string, unknown>;
+  by: SavedBy;
   onFresh: () => void;
 }) {
   const [copied, setCopied] = useState<string | null>(null);
@@ -41,7 +44,9 @@ function Conflict({
       role="alert"
       className="flex flex-wrap items-center gap-2 text-caption text-destructive"
     >
-      История изменилась в другой вкладке
+      {by.me
+        ? "История изменилась в другой вкладке"
+        : `${by.name} сохранил(а) свою версию`}
       <Button size="xs" variant="outline" onClick={onFresh}>
         Открыть свежую версию
       </Button>

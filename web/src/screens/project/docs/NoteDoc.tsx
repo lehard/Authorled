@@ -52,7 +52,7 @@ const FOR_COAUTHOR =
 
 /** A note: title in the heading, plain text on a sheet; a note from a file shows its original too. */
 export function NoteDoc({ id }: { id: string }) {
-  const { project, draft, notes } = useProjectData();
+  const { project, draft, notes, can } = useProjectData();
   const note = notes.find((n) => n.id === id);
   if (note === undefined) throw new Error(`Нет заметки ${id}.`);
   const navigate = useNavigate();
@@ -77,7 +77,9 @@ export function NoteDoc({ id }: { id: string }) {
     if (!editing) setEditing(true);
     if (tab !== "text") setTab("text");
   }
-  const reading = file !== null && body.length > READ_ONLY_CHARS && !editing;
+  // A role without the right to edit reads the note (web/workspace, «Экран истории по роли»).
+  const reading =
+    !can.edit || (file !== null && body.length > READ_ONLY_CHARS && !editing);
   const [confirm, setConfirm] = useState<"file" | "text" | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
 
@@ -99,7 +101,7 @@ export function NoteDoc({ id }: { id: string }) {
             {reading &&
               " Длинный материал открыт для чтения: правка такого текста идёт медленно."}
           </span>
-          {reading && (
+          {reading && can.edit && (
             <Button
               variant="outline"
               size="sm"
@@ -144,63 +146,69 @@ export function NoteDoc({ id }: { id: string }) {
   return (
     <>
       <DocHead
-        title={words.one}
+        title={can.edit ? words.one : note.title}
         status={status}
-        edit={{
-          value: title,
-          label: words.nameLabel,
-          name: "title",
-          onChange: (v) => {
-            setTitle(v);
-            // An empty title is not saved: the navigator always needs a name.
-            if (v.trim() !== "") save({ title: v.trim() });
-          },
-          onBlur: () => {
-            if (title.trim() === "") setTitle(note.title);
-          },
-        }}
-      >
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-              aria-label="Действия с заметкой"
-            >
-              <MoreHorizontal />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-auto">
-            {file !== null && (
-              <>
-                <DropdownMenuItem onSelect={() => setConfirm("text")}>
-                  <RotateCcw />
-                  Вернуть текст из оригинала
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  variant="destructive"
-                  onSelect={() => setConfirm("file")}
-                >
-                  <FileX />
-                  Удалить оригинал, оставить текст
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
-            )}
-            <DropdownMenuItem
-              variant="destructive"
-              onSelect={() =>
-                void actions
-                  .trash(id, true)
-                  .then(() => navigate(docPath(draft, { kind: "notes" })))
+        edit={
+          !can.edit
+            ? undefined
+            : {
+                value: title,
+                label: words.nameLabel,
+                name: "title",
+                onChange: (v) => {
+                  setTitle(v);
+                  // An empty title is not saved: the navigator always needs a name.
+                  if (v.trim() !== "") save({ title: v.trim() });
+                },
+                onBlur: () => {
+                  if (title.trim() === "") setTitle(note.title);
+                },
               }
-            >
-              <Trash2 />
-              Удалить в корзину
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        }
+      >
+        {can.edit && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                aria-label="Действия с заметкой"
+              >
+                <MoreHorizontal />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-auto">
+              {file !== null && (
+                <>
+                  <DropdownMenuItem onSelect={() => setConfirm("text")}>
+                    <RotateCcw />
+                    Вернуть текст из оригинала
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onSelect={() => setConfirm("file")}
+                  >
+                    <FileX />
+                    Удалить оригинал, оставить текст
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              <DropdownMenuItem
+                variant="destructive"
+                onSelect={() =>
+                  void actions
+                    .trash(id, true)
+                    .then(() => navigate(docPath(draft, { kind: "notes" })))
+                }
+              >
+                <Trash2 />
+                Удалить в корзину
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </DocHead>
       {file !== null && <OriginalLine file={file} />}
       {failure !== null && (

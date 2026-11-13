@@ -1,20 +1,20 @@
 import { useUpdate } from "@refinedev/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { isConflict } from "@/data/apiClient";
+import { isConflict, type SavedBy } from "@/data/apiClient";
 import { paragraphs, type ScreenplayDoc } from "@/editor/document.ts";
 
 /**
- * `conflict`: the core refused the save because the record has a newer revision (another tab);
- * the unsaved edit waits there until the author opens the fresh version or copies it
- * (openspec/specs/web/workspace, «Конфликт правок»).
+ * `conflict`: the core refused the save because the record has a newer revision (another tab, or
+ * another participant: `by`); the unsaved edit waits there until the author opens the fresh version
+ * or copies it (openspec/specs/web/workspace, «Конфликт правок»).
  */
 export type SaveStatus =
   | "idle"
   | "saving"
   | "saved"
   | { error: string }
-  | { conflict: Record<string, unknown> };
+  | { conflict: Record<string, unknown>; by: SavedBy };
 
 const DELAY_MS = 600;
 
@@ -46,6 +46,8 @@ export function useAutosave<T extends object>(resource: string, id: string) {
   const sending = useRef(0);
   // The edit the core refused, with what was typed after it.
   const conflict = useRef<Partial<T> | null>(null);
+  // Who saved the revision the refused edit was not based on.
+  const conflictBy = useRef<SavedBy | null>(null);
 
   const flush = useCallback(async () => {
     timer.current = null;
@@ -72,6 +74,12 @@ export function useAutosave<T extends object>(resource: string, id: string) {
       sending.current -= 1;
       // A save that was already on its way after a conflict joins the waiting edit.
       if (isConflict(e) || conflict.current !== null) {
+        if (isConflict(e)) conflictBy.current = e.savedBy;
+        if (conflictBy.current === null)
+          throw new Error(
+            "Конфликт правок без того, кто сохранил свою версию.",
+            { cause: e },
+          );
         if (timer.current !== null) window.clearTimeout(timer.current);
         timer.current = null;
         conflict.current = {
@@ -80,7 +88,10 @@ export function useAutosave<T extends object>(resource: string, id: string) {
           ...pending.current,
         };
         pending.current = {};
-        setStatus({ conflict: { ...conflict.current } });
+        setStatus({
+          conflict: { ...conflict.current },
+          by: conflictBy.current,
+        });
         return;
       }
       setStatus({ error: e instanceof Error ? e.message : String(e) });
@@ -90,8 +101,15 @@ export function useAutosave<T extends object>(resource: string, id: string) {
   const save = useCallback(
     (patch: Partial<T>) => {
       if (conflict.current !== null) {
+        if (conflictBy.current === null)
+          throw new Error(
+            "Конфликт правок без того, кто сохранил свою версию.",
+          );
         conflict.current = { ...conflict.current, ...patch };
-        setStatus({ conflict: { ...conflict.current } });
+        setStatus({
+          conflict: { ...conflict.current },
+          by: conflictBy.current,
+        });
         return;
       }
       pending.current = { ...pending.current, ...patch };
@@ -108,6 +126,7 @@ export function useAutosave<T extends object>(resource: string, id: string) {
     timer.current = null;
     pending.current = {};
     conflict.current = null;
+    conflictBy.current = null;
     setStatus("idle");
   }, []);
 

@@ -42,40 +42,47 @@ export function SuggestionCard({
   /** A locked draft: no decision. */
   readOnly: boolean;
   onClose: () => void;
-  onDiscuss: () => void;
+  /** «Обсудить в чате»; none without a chat. */
+  onDiscuss?: () => void;
   onDecide: (accept: boolean) => void;
 }) {
+  const from =
+    suggestion.authorKind === "coauthor"
+      ? "Предложение соавтора"
+      : `Предложение: ${suggestion.authorName}`;
   const card = useRef<HTMLElement>(null);
   useCardDismiss(card, onClose);
   useCardHeight(card, onHeight);
   return (
     <section
       ref={card}
-      aria-label="Предложение соавтора"
+      aria-label={from}
       style={style}
       className="absolute z-[9] grid gap-3 rounded-2xl bg-paper py-3 pr-3 pl-4 text-paper-foreground shadow-paper before:absolute before:top-3 before:bottom-3 before:left-0 before:w-[3px] before:rounded-full before:bg-ai"
     >
       <header className="-mb-1 flex items-center gap-1.5 text-caption text-muted-foreground">
         <Sparkles className="size-4 text-ai" />
         <span className="flex-1">
-          Предложение соавтора ·{" "}
+          {from} ·{" "}
           <span className="whitespace-nowrap">
             {commentTime(suggestion.at)}
           </span>
         </span>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label="Обсудить в чате"
-              onClick={onDiscuss}
-            >
-              <MessageSquare />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Обсудить в чате</TooltipContent>
-        </Tooltip>
+        {onDiscuss !== undefined && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                aria-label="Обсудить в чате"
+                onClick={onDiscuss}
+              >
+                <MessageSquare />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Обсудить в чате</TooltipContent>
+          </Tooltip>
+        )}
         <Button
           variant="ghost"
           size="icon-xs"

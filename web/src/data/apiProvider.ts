@@ -14,6 +14,7 @@ import {
   apiRequest,
   HttpError,
   isConflict,
+  publicRequest,
   type ApiRequest,
 } from "./apiClient";
 import type { FileOperation, SkippedRecord, UploadedFile } from "./files";
@@ -24,18 +25,24 @@ import type {
   Draft,
   Entity,
   EntityKind,
+  Invitation,
   Location,
+  Member,
   NewDraft,
   NewNote,
   NewProject,
   NewReply,
+  NewSuggestion,
   NewThread,
   Note,
   NoteFile,
   Point,
   Project,
+  ReadLink,
   Role,
   Script,
+  SharedText,
+  StoryRole,
   StoryTemplate,
   Suggestion,
   TitlePage,
@@ -45,6 +52,7 @@ import type {
   World,
 } from "./model";
 import { isCoverColor, type CoverOperation } from "./model";
+import type { SharingOperation } from "./sharing";
 import type { SaveOperation } from "./saves";
 import type {
   EntityHit,
@@ -173,7 +181,19 @@ function readDoc(body: unknown): Doc {
   };
 }
 
-type SavedProject = Omit<Project, "draftsCount" | "openDraftId">;
+type SavedProject = Omit<
+  Project,
+  "draftsCount" | "openDraftId" | "role" | "ownerName"
+>;
+
+const STORY_ROLES: readonly string[] = [
+  "owner",
+  "coauthor",
+  "reviewer",
+  "reader",
+];
+const isStoryRole = (v: unknown): v is StoryRole =>
+  isString(v) && STORY_ROLES.includes(v);
 
 function readProject(body: unknown): SavedProject {
   const o = shape("историю", body);
@@ -196,7 +216,57 @@ function readListedProject(body: unknown): Project {
     ...readProject(o),
     draftsCount: field("историю", o, "drafts_count", isNumber),
     openDraftId: field("историю", o, "open_draft_id", isString),
+    role: field("историю", o, "role", isStoryRole),
+    ownerName: field("историю", o, "owner_name", isString),
   };
+}
+
+/** Participants of a story; the invitations come to its owner only (openspec/specs/api/story-sharing). */
+function readMembers(body: unknown): {
+  members: Member[];
+  invitations: Invitation[];
+} {
+  const what = "участников истории";
+  const o = shape(what, body);
+  return {
+    members: field(what, o, "members", isArray).map((raw) => {
+      const m = shape(what, raw);
+      return {
+        userId: field(what, m, "user_id", isString),
+        name: field(what, m, "name", isString),
+        email: field(what, m, "email", isString),
+        role: field(what, m, "role", isStoryRole),
+      };
+    }),
+    invitations: field(what, o, "invitations", isArray).map(readInvitation),
+  };
+}
+
+function readInvitation(body: unknown): Invitation {
+  const o = shape("приглашение", body);
+  return {
+    id: field("приглашение", o, "id", isString),
+    email: field("приглашение", o, "email", isString),
+    role: field("приглашение", o, "role", isStoryRole),
+  };
+}
+
+function readLink(body: unknown): ReadLink {
+  const o = shape("ссылку «почитать»", body);
+  return {
+    draftId: field("ссылку «почитать»", o, "draft_id", isString),
+    key: field("ссылку «почитать»", o, "key", isString),
+  };
+}
+
+/** A link «почитать» that is off is no error for the screen: the draft simply has none. */
+async function linkOf(draftId: string): Promise<ReadLink | null> {
+  try {
+    return readLink(await request(`/drafts/${draftId}/read-link`));
+  } catch (e) {
+    if (e instanceof HttpError && e.statusCode === 404) return null;
+    throw e;
+  }
 }
 
 /** The writing statistics of a draft (openspec/specs/api/writing). */
@@ -667,6 +737,13 @@ function toSuggestion(draftId: string, body: unknown): Suggestion {
     text: field(what, o, "text", isString),
     status: status as Suggestion["status"],
     decidedAt: field(what, o, "decided_at", isTime),
+    authorKind: field(
+      what,
+      o,
+      "author_kind",
+      (v): v is Suggestion["authorKind"] => v === "coauthor" || v === "user",
+    ),
+    authorName: field(what, o, "author_name", isString),
   };
 }
 
@@ -997,7 +1074,31 @@ async function create(
       values.draftId,
       await request(`/documents/${sid}/comments`, {
         method: "POST",
-        json: { id: values.id, quote: values.quote, body: values.text },
+        json: {
+          id: values.id,
+          quote: values.quote,
+          body: values.text,
+          ...(values.sceneUid === undefined
+            ? {}
+            : { scene_uid: values.sceneUid }),
+        },
+      }),
+    );
+  }
+  if (resource === "suggestions") {
+    const values = variables as NewSuggestion;
+    const sid = await scriptId(values.draftId);
+    return toSuggestion(
+      values.draftId,
+      await request(`/documents/${sid}/suggestions`, {
+        method: "POST",
+        json: {
+          id: values.id,
+          scene_uid: values.sceneUid,
+          quote: values.quote,
+          text: values.text,
+          why: values.why,
+        },
       }),
     );
   }
@@ -1248,9 +1349,64 @@ async function operation(
     | FileOperation
     | SaveOperation
     | SearchOperation
+    | SharingOperation
     | WritingOperation,
 ): Promise<unknown> {
   switch (op.operation) {
+    case "members":
+      return readMembers(
+        await request(`/projects/${op.payload.projectId}/members`),
+      );
+    case "invite":
+      return readInvitation(
+        await request(`/projects/${op.payload.projectId}/invitations`, {
+          method: "POST",
+          json: { email: op.payload.email, role: op.payload.role },
+        }),
+      );
+    case "revokeInvitation":
+      await request(`/invitations/${op.payload.id}`, { method: "DELETE" });
+      return {};
+    case "setMemberRole":
+      await request(
+        `/projects/${op.payload.projectId}/members/${op.payload.userId}`,
+        { method: "PATCH", json: { role: op.payload.role } },
+      );
+      return {};
+    case "removeMember":
+      await request(
+        `/projects/${op.payload.projectId}/members/${op.payload.userId}`,
+        { method: "DELETE" },
+      );
+      return {};
+    case "readLink":
+      return { link: await linkOf(op.payload.draftId) };
+    case "createReadLink":
+      return readLink(
+        await request(`/drafts/${op.payload.draftId}/read-link`, {
+          method: "PUT",
+        }),
+      );
+    case "removeReadLink":
+      await request(`/drafts/${op.payload.draftId}/read-link`, {
+        method: "DELETE",
+      });
+      return {};
+    case "presence": {
+      const o = shape(
+        "присутствие",
+        await request(`/drafts/${op.payload.draftId}/presence`, {
+          method: "PUT",
+        }),
+      );
+      return {
+        editing: field("присутствие", o, "editing", isArray).map((n) => {
+          if (!isString(n))
+            throw new Error("Сервер вернул имя участника не строкой.");
+          return n;
+        }),
+      };
+    }
     case "nextCoverColor":
       return {
         coverColor: field(
@@ -1406,6 +1562,21 @@ export const apiProvider: DataProvider = {
       | FileOperation
       | SaveOperation
       | SearchOperation
+      | SharingOperation
       | WritingOperation)) as never,
   }),
 };
+
+/**
+ * The text of a draft by the key of its link «почитать», without signing in
+ * (openspec/specs/api/story-sharing, «Чтение по ссылке»).
+ */
+export async function openReadLink(key: string): Promise<SharedText> {
+  const what = "текст по ссылке";
+  const o = shape(what, await publicRequest("/read-links/open", { key }));
+  return {
+    storyTitle: field(what, o, "story_title", isString),
+    draftName: field(what, o, "draft_name", isString),
+    text: field(what, o, "content", isObject) as ScreenplayDoc,
+  };
+}

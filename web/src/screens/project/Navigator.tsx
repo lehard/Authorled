@@ -54,6 +54,7 @@ import {
 } from "./docRef";
 import { emptyTrashText, trashItems, useTrashActions } from "./draftActions";
 import { DraftSwitcher } from "./DraftSwitcher";
+import { ShareDialog } from "./ShareDialog";
 import { useEntityActions } from "./entityActions";
 import { NodeMenu, type MenuEntry } from "./NodeMenu";
 import { noteIcon } from "./docs/noteFile";
@@ -97,7 +98,7 @@ type Row = {
 /** Navigator of a story (openspec/specs/web/workspace, «Навигатор»). */
 export function Navigator({ onNavigate }: { onNavigate: () => void }) {
   const data = useProjectData();
-  const { project, draft, script, docSegment } = data;
+  const { project, draft, script, docSegment, readOnly } = data;
   const navigate = useNavigate();
   const actions = useEntityActions(draft.id);
   const trashActions = useTrashActions(data);
@@ -164,7 +165,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
         {
           label: ENTITY_WORDS[kind].add,
           icon: Plus,
-          disabled: draft.locked,
+          disabled: readOnly,
           run: () => setAdding(kind),
         },
         ...(kind === "world"
@@ -176,7 +177,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
                     ? "Найти всех персонажей в тексте"
                     : "Найти все локации в тексте",
                 icon: ScanSearch,
-                disabled: draft.locked,
+                disabled: readOnly,
                 run: () => void harvest(kind),
               },
             ]),
@@ -201,7 +202,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
             label: "Удалить",
             icon: Trash2,
             danger: true,
-            disabled: draft.locked,
+            disabled: readOnly,
             run: () => void remove(kind, x),
           },
         ],
@@ -240,17 +241,19 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
         {
           label: DOC_WORDS.note.add,
           icon: Plus,
+          disabled: !data.can.edit,
           run: () => setAdding("note"),
         },
         {
           label: "Загрузить файл",
           icon: Upload,
+          disabled: !data.can.edit,
           run: () => setUploading(true),
         },
         {
           label: "Исследование",
           icon: Telescope,
-          disabled: data.coauthorBusy,
+          disabled: data.coauthorBusy || !data.can.edit,
           run: () => data.askCoauthor(RESEARCH_START, "fill"),
         },
       ],
@@ -268,6 +271,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
             label: "Удалить",
             icon: Trash2,
             danger: true,
+            disabled: !data.can.edit,
             run: () => void removeNote(n.id),
           },
         ],
@@ -283,7 +287,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
         {
           label: "Очистить корзину",
           danger: true,
-          disabled: trashed.length === 0 || draft.locked,
+          disabled: trashed.length === 0 || readOnly || !data.can.owner,
           run: () => setEmptying(true),
         },
       ],
@@ -415,6 +419,7 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
         </span>
       </Link>
       <DraftSwitcher onNavigate={onNavigate} />
+      <ShareDialog />
       {notice !== null && (
         <p
           role="status"
@@ -445,19 +450,21 @@ export function Navigator({ onNavigate }: { onNavigate: () => void }) {
           partPath={path({ kind: "part", part: mode })}
         />
       )}
-      <button
-        type="button"
-        onClick={() => setAdding(draft.locked ? "note" : "char")}
-        className="mx-2.5 mt-1.5 mb-3 flex items-center gap-2 rounded-full px-3 py-2.5 font-semibold text-primary hover:bg-accent"
-      >
-        <Plus className="size-4" />
-        Добавить документ
-      </button>
+      {data.can.edit && (
+        <button
+          type="button"
+          onClick={() => setAdding(readOnly ? "note" : "char")}
+          className="mx-2.5 mt-1.5 mb-3 flex items-center gap-2 rounded-full px-3 py-2.5 font-semibold text-primary hover:bg-accent"
+        >
+          <Plus className="size-4" />
+          Добавить документ
+        </button>
+      )}
 
       <AddDocumentDialog
         open={adding !== null}
         onOpenChange={(o) => !o && setAdding(null)}
-        kinds={draft.locked ? ["note"] : ["char", "loc", "world", "note"]}
+        kinds={readOnly ? ["note"] : ["char", "loc", "world", "note"]}
         initialKind={adding ?? "char"}
         onSubmit={async (kind, name) => {
           if (kind === "note") {
@@ -516,7 +523,8 @@ function SceneList({
   onNavigate: () => void;
   partPath: string;
 }) {
-  const { text, setText, docSegment, currentScene, draft } = useProjectData();
+  const { text, setText, docSegment, currentScene, readOnly } =
+    useProjectData();
   const [dropAt, setDropAt] = useState<number | null>(null);
   const list = scenes(text);
   const target = (at: number) => ({
@@ -582,7 +590,7 @@ function SceneList({
               <Link
                 to={`${partPath}?scene=${s.number}`}
                 onClick={onNavigate}
-                draggable={!draft.locked}
+                draggable={!readOnly}
                 onDragStart={(e) => {
                   e.dataTransfer.setData(DRAG_TYPE, String(s.number));
                   e.dataTransfer.effectAllowed = "move";

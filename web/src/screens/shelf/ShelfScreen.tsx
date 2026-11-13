@@ -1,4 +1,4 @@
-import { MoreHorizontal, Palette, Plus, Trash2 } from "lucide-react";
+import { LogOut, MoreHorizontal, Palette, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
@@ -20,8 +20,13 @@ import {
   COVER_COLORS,
   coverPattern,
   isCoverColor,
+  rights,
+  STORY_ROLES,
   type Project,
 } from "@/data/model";
+import { useAccount } from "@/account/useAccount";
+import { useSharingActions } from "@/data/sharing";
+import { ConfirmDialog } from "@/screens/shared/ConfirmDialog";
 import { NameDialog } from "@/screens/shared/NameDialog";
 import { DataErrorScreen } from "@/screens/system/DataErrorScreen";
 import { MessageScreen } from "@/screens/system/MessageScreen";
@@ -59,6 +64,11 @@ export function ShelfScreen() {
     useStoryActions();
   const [creating, setCreating] = useState(false);
   const [renaming, setRenaming] = useState<Project | null>(null);
+  // Leaving a story of someone else (web/workspace, «Чужая история на полке»).
+  const [leaving, setLeaving] = useState<Project | null>(null);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
+  const { data: account } = useAccount();
+  const sharing = useSharingActions();
   // The stories are on screen: the story window loads in the background, so opening a story
   // does not wait for it (openspec/specs/web/app, «Фоновая подгрузка окна истории»).
   const shown = query.isSuccess && trashQuery.isSuccess;
@@ -110,6 +120,8 @@ export function ShelfScreen() {
                     {p.title}
                   </b>
                   <small className="text-caption text-muted-foreground">
+                    {p.role !== "owner" &&
+                      `${STORY_ROLES[p.role]} · история ${p.ownerName} · `}
                     Полный метр · изменено{" "}
                     {updated.format(new Date(p.updatedAt))}
                     {p.draftsCount > 1 && ` · ${draftsLabel(p.draftsCount)}`}
@@ -133,43 +145,64 @@ export function ShelfScreen() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-auto">
-                  <DropdownMenuItem onSelect={() => setRenaming(p)}>
-                    Переименовать
-                  </DropdownMenuItem>
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>
-                      <Palette />
-                      Цвет обложки
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
-                      <DropdownMenuRadioGroup
-                        value={p.coverColor}
-                        onValueChange={(value) => {
-                          if (!isCoverColor(value))
-                            throw new Error(`Нет цвета обложки «${value}».`);
-                          void setCoverColor(p.id, value);
-                        }}
-                      >
-                        {Object.entries(COVER_COLORS).map(([color, label]) => (
-                          <DropdownMenuRadioItem key={color} value={color}>
-                            <span
-                              className="cover-swatch"
-                              data-cover={color}
-                              aria-hidden
-                            />
-                            {label}
-                          </DropdownMenuRadioItem>
-                        ))}
-                      </DropdownMenuRadioGroup>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onSelect={() => void trashStory(p.id, true)}
-                  >
-                    <Trash2 />
-                    Удалить в корзину
-                  </DropdownMenuItem>
+                  {rights(p.role).edit && (
+                    <>
+                      <DropdownMenuItem onSelect={() => setRenaming(p)}>
+                        Переименовать
+                      </DropdownMenuItem>
+                      <DropdownMenuSub>
+                        <DropdownMenuSubTrigger>
+                          <Palette />
+                          Цвет обложки
+                        </DropdownMenuSubTrigger>
+                        <DropdownMenuSubContent>
+                          <DropdownMenuRadioGroup
+                            value={p.coverColor}
+                            onValueChange={(value) => {
+                              if (!isCoverColor(value))
+                                throw new Error(
+                                  `Нет цвета обложки «${value}».`,
+                                );
+                              void setCoverColor(p.id, value);
+                            }}
+                          >
+                            {Object.entries(COVER_COLORS).map(
+                              ([color, label]) => (
+                                <DropdownMenuRadioItem
+                                  key={color}
+                                  value={color}
+                                >
+                                  <span
+                                    className="cover-swatch"
+                                    data-cover={color}
+                                    aria-hidden
+                                  />
+                                  {label}
+                                </DropdownMenuRadioItem>
+                              ),
+                            )}
+                          </DropdownMenuRadioGroup>
+                        </DropdownMenuSubContent>
+                      </DropdownMenuSub>
+                    </>
+                  )}
+                  {p.role === "owner" ? (
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onSelect={() => void trashStory(p.id, true)}
+                    >
+                      <Trash2 />
+                      Удалить в корзину
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onSelect={() => setLeaving(p)}
+                    >
+                      <LogOut />
+                      Выйти из истории
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -214,6 +247,34 @@ export function ShelfScreen() {
                 ? { importSkipped: story.skipped }
                 : undefined,
           });
+        }}
+      />
+      {leaveError !== null && (
+        <p
+          role="alert"
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-panel px-4 py-2 text-caption text-destructive shadow-panel"
+        >
+          {leaveError}
+        </p>
+      )}
+      <ConfirmDialog
+        open={leaving !== null}
+        onOpenChange={(open) => !open && setLeaving(null)}
+        title="Выйти из истории?"
+        text={`История «${leaving?.title ?? ""}» пропадёт с вашей полки. Вернуться можно только по новому приглашению владельца.`}
+        actionLabel="Выйти"
+        onConfirm={() => {
+          if (leaving === null) throw new Error("Нет истории для выхода.");
+          if (account === undefined)
+            throw new Error("Аккаунт ещё не загрузился.");
+          const story = leaving;
+          setLeaving(null);
+          setLeaveError(null);
+          sharing
+            .leaveAs(story.id, account.email)
+            .catch((e: unknown) =>
+              setLeaveError(e instanceof Error ? e.message : String(e)),
+            );
         }}
       />
       <NameDialog

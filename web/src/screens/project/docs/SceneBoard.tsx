@@ -73,7 +73,7 @@ export function SceneBoard({
   mode: EditorMode;
   onOpen: (scene: number) => void;
 }) {
-  const { text, setText, draft } = useProjectData();
+  const { text, setText, readOnly } = useProjectData();
   const [chosen, setChosen] = useState<number | null>(null);
   const [dropAt, setDropAt] = useState<number | null>(null);
   const list = scenes(text);
@@ -102,7 +102,7 @@ export function SceneBoard({
   return (
     <div className="mx-auto grid max-w-[1000px] gap-4 min-[1100px]:grid-cols-[minmax(0,1fr)_300px]">
       <div className="grid content-start gap-4">
-        <fieldset disabled={draft.locked} className="flex gap-2">
+        <fieldset disabled={readOnly} className="flex gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -151,7 +151,7 @@ export function SceneBoard({
                   <button
                     key={s.index}
                     type="button"
-                    draggable={!draft.locked}
+                    draggable={!readOnly}
                     onDragStart={(e) => {
                       e.dataTransfer.setData(DRAG_TYPE, String(s.number));
                       e.dataTransfer.effectAllowed = "move";
@@ -261,7 +261,7 @@ function ScenePanel({
   canMove: (dir: -1 | 1) => boolean;
   onDelete: () => void;
 }) {
-  const { text, setText, draft } = useProjectData();
+  const { text, setText, readOnly } = useProjectData();
   const n = scene.number;
   // Beats are edited as lines; an empty line stays on screen while the author types.
   const [beats, setBeats] = useState(scene.beats.join("\n"));
@@ -293,7 +293,7 @@ function ScenePanel({
           <X />
         </Button>
       </header>
-      <fieldset disabled={draft.locked} className="contents">
+      <fieldset disabled={readOnly} className="contents">
         <Field
           label="Название"
           hint="Видно на карточке и в навигаторе, в тексте не печатается."
@@ -449,7 +449,7 @@ function ScenePanel({
       <Button
         variant="ghost"
         className="text-destructive"
-        disabled={draft.locked}
+        disabled={readOnly}
         onClick={() => setDeleting(true)}
       >
         <Trash2 />

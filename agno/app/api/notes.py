@@ -1,7 +1,8 @@
 """Notes of a story: /api/v1 (openspec/specs/api/stories, «Заметки истории» … «Текст заметки из оригинала»).
 
 Like the other story routes, every route first finds the story and checks the caller's access to it; a missing and
-someone else's note both answer 404. A note from a file takes its place from the plan of the caller (billing).
+someone else's note both answer 404, a role too small for the route 403. A note from a file takes its place from the
+plan of the story's owner (billing), whoever uploads it.
 """
 
 import uuid
@@ -16,23 +17,24 @@ from app.api.body import caller_id, if_match, parse_id, read_object, read_upload
 from app.api.problems import Problem
 from app.api.schemas import NoteOut
 from app.auth import Principal, current_principal
-from core import files, notes
+from core import files, members, notes
 from core.engine import get_engine
+from core.members import Need
 
 router = APIRouter(prefix="/api/v1", tags=["Notes"])
 
 
-def _project_id(principal: Principal, raw: str) -> uuid.UUID:
+def _project_id(principal: Principal, raw: str, need: Need) -> uuid.UUID:
     project_id = parse_id(raw)
-    require_project(principal, project_id)
+    require_project(principal, project_id, need)
     return project_id
 
 
-def _note_id(principal: Principal, raw: str) -> uuid.UUID:
+def _note_id(principal: Principal, raw: str, need: Need) -> uuid.UUID:
     note_id = parse_id(raw)
     with get_engine().connect() as connection:
         project_id = notes.project_of_note(connection, note_id)
-    require_project(principal, project_id)
+    require_project(principal, project_id, need)
     return note_id
 
 
@@ -42,13 +44,13 @@ def _note_id(principal: Principal, raw: str) -> uuid.UUID:
     summary="The notes of a story with their texts, the trash included",
 )
 def list_notes(project_id: str, principal: Principal = Depends(current_principal)) -> list[NoteOut]:
-    found = _project_id(principal, project_id)
+    found = _project_id(principal, project_id, "read")
     with get_engine().connect() as connection:
         return [NoteOut.model_validate(n) for n in notes.list_notes(connection, found)]
 
 
 def storage_place(user_id: uuid.UUID) -> int:
-    """Bytes for the originals of notes by the caller's plan; an ended subscription gives none."""
+    """Bytes for the originals of notes by the plan of the story's owner; an ended subscription gives none."""
     try:
         return billing.storage_limit(user_id, datetime.now(UTC))
     except billing.SubscriptionEnded as error:
@@ -59,7 +61,8 @@ def _note_from_upload(principal: Principal, project_id: uuid.UUID, name: str, da
     checked = files.check_upload(name, "note", data)
     with get_engine().connect() as connection:
         user = caller_id(connection, principal)
-    place = storage_place(user)
+        owner = members.owner_of(connection, project_id)
+    place = storage_place(owner)
     with get_engine().begin() as connection:
         return NoteOut.model_validate(notes.create_note_from_file(connection, project_id, user, checked, place))
 
@@ -87,7 +90,7 @@ def _note_from_upload(principal: Principal, project_id: uuid.UUID, name: str, da
 async def note_from_upload(
     project_id: str, request: Request, principal: Principal = Depends(current_principal)
 ) -> NoteOut:
-    found = await run_in_threadpool(_project_id, principal, project_id)
+    found = await run_in_threadpool(_project_id, principal, project_id, "edit")
     _, name, data = await read_upload(request, set())
     return await run_in_threadpool(_note_from_upload, principal, found, name, data)
 
@@ -109,7 +112,7 @@ def _create_note(principal: Principal, project_id: uuid.UUID, body: dict[str, An
 )
 async def create_note(project_id: str, request: Request, principal: Principal = Depends(current_principal)) -> NoteOut:
     body = await read_object(request)
-    found = await run_in_threadpool(_project_id, principal, project_id)
+    found = await run_in_threadpool(_project_id, principal, project_id, "edit")
     return await run_in_threadpool(_create_note, principal, found, body)
 
 
@@ -124,7 +127,7 @@ async def update_note(
     note_id: str, request: Request, response: Response, principal: Principal = Depends(current_principal)
 ) -> NoteOut:
     body = await read_object(request)
-    found = await run_in_threadpool(_note_id, principal, note_id)
+    found = await run_in_threadpool(_note_id, principal, note_id, "edit")
     note = await run_in_threadpool(_update_note, principal, found, if_match(request), body)
     response.headers["ETag"] = f'"{note.revision}"'
     return note
@@ -132,21 +135,21 @@ async def update_note(
 
 @router.post("/notes/{note_id}/trash", response_model=NoteOut, summary="Move a note to the trash")
 def trash_note(note_id: str, principal: Principal = Depends(current_principal)) -> NoteOut:
-    found = _note_id(principal, note_id)
+    found = _note_id(principal, note_id, "edit")
     with get_engine().begin() as connection:
         return NoteOut.model_validate(notes.trash_note(connection, found))
 
 
 @router.post("/notes/{note_id}/restore", response_model=NoteOut, summary="Restore a note from the trash")
 def restore_note(note_id: str, principal: Principal = Depends(current_principal)) -> NoteOut:
-    found = _note_id(principal, note_id)
+    found = _note_id(principal, note_id, "edit")
     with get_engine().begin() as connection:
         return NoteOut.model_validate(notes.restore_note(connection, found))
 
 
 @router.delete("/notes/{note_id}", status_code=204, summary="Delete a note from the trash for good")
 def delete_note(note_id: str, principal: Principal = Depends(current_principal)) -> Response:
-    found = _note_id(principal, note_id)
+    found = _note_id(principal, note_id, "owner")
     with get_engine().begin() as connection:
         notes.delete_note(connection, found)
     return Response(status_code=204)
@@ -160,7 +163,7 @@ def delete_note(note_id: str, principal: Principal = Depends(current_principal))
 def remove_note_file(
     note_id: str, request: Request, response: Response, principal: Principal = Depends(current_principal)
 ) -> NoteOut:
-    found = _note_id(principal, note_id)
+    found = _note_id(principal, note_id, "owner")
     revision = if_match(request)
     with get_engine().begin() as connection:
         user = caller_id(connection, principal)
@@ -177,7 +180,7 @@ def remove_note_file(
 def note_text_from_file(
     note_id: str, request: Request, response: Response, principal: Principal = Depends(current_principal)
 ) -> NoteOut:
-    found = _note_id(principal, note_id)
+    found = _note_id(principal, note_id, "edit")
     revision = if_match(request)
     with get_engine().begin() as connection:
         user = caller_id(connection, principal)

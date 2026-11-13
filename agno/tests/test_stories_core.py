@@ -21,13 +21,13 @@ from core.documents import (
 from core.drafts import empty_trash
 from core.errors import Conflict, Invalid, Locked
 from core.fields import FIELD_HINTS, FIELDS, field_guide, merge_fields, validate_fields
+from core.members import role_of_subject
 from core.projects import (
     ProjectAccess,
     create_project,
     delete_project,
     list_projects,
     next_cover_color,
-    owns_project,
     project_row,
     restore_project,
     trash_project,
@@ -418,9 +418,9 @@ def test_trash_of_the_story(connection: Connection) -> None:
 def test_owner_only(connection: Connection) -> None:
     project, _, _ = create_project(connection, _owner(connection, "a"), "Маяк")
     _owner(connection, "b")
-    assert owns_project(connection, "a", project.id)
-    assert not owns_project(connection, "b", project.id)
-    assert not owns_project(connection, "a", uuid.uuid4())
+    assert role_of_subject(connection, "a", project.id) == "owner"
+    assert role_of_subject(connection, "b", project.id) is None
+    assert role_of_subject(connection, "a", uuid.uuid4()) is None
 
 
 def test_account_is_needed(connection: Connection) -> None:

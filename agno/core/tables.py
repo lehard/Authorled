@@ -83,7 +83,8 @@ user_settings = Table(
     CheckConstraint(f"daily_word_goal BETWEEN 1 AND {MAX_WORD_GOAL}", name="daily_word_goal_range"),
 )
 
-# Stories of the authors (openspec/specs/api/stories). MVP: one format, the feature film; one owner.
+# Stories of the authors (openspec/specs/api/stories). MVP: one format, the feature film; one owner, who may add
+# participants (`project_members`).
 # Colours of a story's cover in the order new stories take them (openspec/specs/api/stories).
 COVER_COLORS = ("blue", "teal", "amber", "crimson", "plum", "graphite")
 
@@ -212,7 +213,7 @@ screenplay_texts = Table(
 )
 
 VERSION_PARTS = ("text", "fields")
-VERSION_REASONS = ("auto", "suggestion", "import", "restore", "coauthor")
+VERSION_REASONS = ("auto", "suggestion", "import", "restore", "coauthor", "conflict")
 
 # A snapshot of a part of a document as it was: `saved_by` and `saved_at` tell who saved that state,
 # `created_at` when the snapshot was taken. Full copies, no diffs (design of story-drafts-and-saves).
@@ -228,7 +229,9 @@ document_versions = Table(
     Column("saved_at", DateTime(timezone=True), nullable=False),
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     CheckConstraint("part IN ('text', 'fields')", name="part_known"),
-    CheckConstraint("reason IN ('auto', 'suggestion', 'import', 'restore', 'coauthor')", name="reason_known"),
+    CheckConstraint(
+        "reason IN ('auto', 'suggestion', 'import', 'restore', 'coauthor', 'conflict')", name="reason_known"
+    ),
     CheckConstraint("jsonb_typeof(content) = 'object'", name="content_object"),
     Index("ix_document_versions_document_id_part_created_at", "document_id", "part", "created_at"),
 )
@@ -260,6 +263,58 @@ draft_opens = Table(
     Column("project_id", Uuid, ForeignKey(projects.c.id, ondelete="CASCADE"), primary_key=True),
     Column("draft_id", Uuid, ForeignKey(drafts.c.id, ondelete="CASCADE"), nullable=False),
     Column("opened_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+)
+
+MEMBER_ROLES = ("coauthor", "reviewer", "reader")
+
+# Participants of a story besides its owner (openspec/specs/api/story-sharing): one role each, on the whole story.
+project_members = Table(
+    "project_members",
+    metadata,
+    Column("project_id", Uuid, ForeignKey(projects.c.id, ondelete="CASCADE"), primary_key=True),
+    Column("user_id", Uuid, ForeignKey(users.c.id, ondelete="RESTRICT"), primary_key=True),
+    Column("role", Text, nullable=False),
+    Column("added_by", Uuid, ForeignKey(users.c.id, ondelete="RESTRICT"), nullable=False),
+    Column("added_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    CheckConstraint("role IN ('coauthor', 'reviewer', 'reader')", name="role_known"),
+    Index("ix_project_members_user_id", "user_id"),
+)
+
+# An invitation of an e-mail into a story; it becomes participation when a user with this e-mail signs in.
+project_invitations = Table(
+    "project_invitations",
+    metadata,
+    Column("id", Uuid, primary_key=True, server_default=text("gen_random_uuid()")),
+    Column("project_id", Uuid, ForeignKey(projects.c.id, ondelete="CASCADE"), nullable=False),
+    Column("email", Text, nullable=False),
+    Column("role", Text, nullable=False),
+    Column("invited_by", Uuid, ForeignKey(users.c.id, ondelete="RESTRICT"), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    CheckConstraint("email <> '' AND email = lower(email)", name="email_lower"),
+    CheckConstraint("role IN ('coauthor', 'reviewer', 'reader')", name="role_known"),
+    UniqueConstraint("project_id", "email"),
+    Index("ix_project_invitations_email", "email"),
+)
+
+# The link «почитать» of a draft: its key opens the screenplay of the draft without signing in.
+draft_read_links = Table(
+    "draft_read_links",
+    metadata,
+    Column("draft_id", Uuid, ForeignKey(drafts.c.id, ondelete="CASCADE"), primary_key=True),
+    Column("key", Text, nullable=False),
+    Column("created_by", Uuid, ForeignKey(users.c.id, ondelete="RESTRICT"), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    CheckConstraint("key <> ''", name="key_not_empty"),
+    UniqueConstraint("key"),
+)
+
+# Who edits the screenplay of a draft now: one mark per user, renewed while the text is open for editing.
+draft_presence = Table(
+    "draft_presence",
+    metadata,
+    Column("draft_id", Uuid, ForeignKey(drafts.c.id, ondelete="CASCADE"), primary_key=True),
+    Column("user_id", Uuid, ForeignKey(users.c.id, ondelete="CASCADE"), primary_key=True),
+    Column("seen_at", DateTime(timezone=True), nullable=False),
 )
 
 # A comment thread on a fragment; its id is the id of the `comment` mark in the text.
@@ -300,7 +355,10 @@ comment_messages = Table(
 
 SUGGESTION_STATUSES = ("open", "accepted", "rejected")
 
-# A co-author suggestion, anchored by the scene uid and an exact quote; the browser places its mark.
+SUGGESTION_AUTHORS = ("coauthor", "user")
+
+# A suggestion of the co-author or of a participant, anchored by the scene uid and an exact quote; the browser
+# places its mark.
 suggestions = Table(
     "suggestions",
     metadata,
@@ -311,15 +369,22 @@ suggestions = Table(
     Column("text", Text, nullable=False),
     Column("why", Text, nullable=False),
     Column("status", Text, nullable=False, server_default="open"),
-    # The Agno session (conversation) the suggestion came from.
-    Column("session_id", Text, nullable=False),
+    # The Agno session (conversation) a suggestion of the co-author came from; none for a participant's one.
+    Column("session_id", Text),
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     Column("decided_at", DateTime(timezone=True)),
+    # `coauthor`: the co-author, who is no user; `user`: a participant, `author_id` names them.
+    Column("author_kind", Text, nullable=False),
+    Column("author_id", Uuid, ForeignKey(users.c.id, ondelete="RESTRICT")),
+    Column("decided_by", Uuid, ForeignKey(users.c.id, ondelete="RESTRICT")),
     CheckConstraint("scene_uid <> ''", name="scene_uid_not_empty"),
     CheckConstraint("quote <> ''", name="quote_not_empty"),
     CheckConstraint("session_id <> ''", name="session_id_not_empty"),
     CheckConstraint("status IN ('open', 'accepted', 'rejected')", name="status_known"),
     CheckConstraint("(status = 'open') = (decided_at IS NULL)", name="decided_when_closed"),
+    CheckConstraint("author_kind IN ('coauthor', 'user')", name="author_kind_known"),
+    CheckConstraint("(author_kind = 'user') = (author_id IS NOT NULL)", name="author_of_kind"),
+    CheckConstraint("(author_kind = 'coauthor') = (session_id IS NOT NULL)", name="session_of_coauthor"),
     Index("ix_suggestions_document_id", "document_id"),
 )
 

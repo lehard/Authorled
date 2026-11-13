@@ -14,22 +14,24 @@ from app.api.notes import storage_place
 from app.api.problems import Problem
 from app.api.schemas import FileOut, NoteOut
 from app.auth import Principal, current_principal
-from core import files, notes
+from core import files, members, notes
 from core.engine import get_engine
+from core.members import Need
 
 router = APIRouter(prefix="/api/v1", tags=["Files"])
 
 
-def _file(principal: Principal, raw: str) -> uuid.UUID:
+def _file(principal: Principal, raw: str, need: Need) -> uuid.UUID:
     file_id = parse_id(raw)
     with get_engine().connect() as connection:
-        require_project(principal, files.get_file(connection, file_id).project_id)
+        project_id = files.get_file(connection, file_id).project_id
+    require_project(principal, project_id, need)
     return file_id
 
 
-def _project(principal: Principal, raw: str) -> uuid.UUID:
+def _project(principal: Principal, raw: str, need: Need) -> uuid.UUID:
     project_id = parse_id(raw)
-    require_project(principal, project_id)
+    require_project(principal, project_id, need)
     return project_id
 
 
@@ -68,25 +70,28 @@ def _upload(
     },
 )
 async def upload(project_id: str, request: Request, principal: Principal = Depends(current_principal)) -> FileOut:
-    found = await run_in_threadpool(_project, principal, project_id)
+    # A file of a conversation needs the chat (a reviewer has one); a manuscript to import needs the right to edit.
+    found = await run_in_threadpool(_project, principal, project_id, "review")
     values, name, data = await read_upload(request, {"purpose", "session_id"})
     purpose = values.get("purpose")
     if purpose is None:
         raise Problem(422, "Unprocessable Content", "Поле «purpose» должно быть chat или import.")
+    if purpose != "chat":
+        await run_in_threadpool(require_project, principal, found, "edit")
     session_id = values.get("session_id")
     return await run_in_threadpool(_upload, principal, found, name, purpose, session_id or None, data)
 
 
 @router.get("/files/{file_id}", response_model=FileOut, summary="Metadata of a file")
 def get_file(file_id: str, principal: Principal = Depends(current_principal)) -> FileOut:
-    found = _file(principal, file_id)
+    found = _file(principal, file_id, "read")
     with get_engine().connect() as connection:
         return FileOut.model_validate(files.get_file(connection, found))
 
 
 @router.get("/files/{file_id}/content", summary="The bytes of a file as uploaded")
 def get_content(file_id: str, principal: Principal = Depends(current_principal)) -> Response:
-    found = _file(principal, file_id)
+    found = _file(principal, file_id, "read")
     with get_engine().connect() as connection:
         stored = files.get_file(connection, found)
         data = files.file_bytes(connection, found)
@@ -101,17 +106,27 @@ def get_content(file_id: str, principal: Principal = Depends(current_principal))
     summary="A note from a file of a conversation, with a copy of the file as its original",
 )
 def note_from_chat_file(file_id: str, principal: Principal = Depends(current_principal)) -> NoteOut:
-    found = _file(principal, file_id)
+    found = _file(principal, file_id, "edit")
     with get_engine().connect() as connection:
         user = caller_id(connection, principal)
-    place = storage_place(user)
+        owner = members.owner_of(connection, files.get_file(connection, found).project_id)
+    place = storage_place(owner)
     with get_engine().begin() as connection:
         return NoteOut.model_validate(notes.create_note_from_chat_file(connection, found, user, place))
 
 
 @router.delete("/files/{file_id}", status_code=204, summary="Delete a file for good")
 def delete_file(file_id: str, principal: Principal = Depends(current_principal)) -> Response:
-    found = _file(principal, file_id)
+    # The right to edit, or the one who attached the file to their conversation.
+    file_id_found = parse_id(file_id)
+    with get_engine().connect() as connection:
+        stored = files.get_file(connection, file_id_found)
+        user = caller_id(connection, principal)
+    role = require_project(principal, stored.project_id, "review")
+    own_chat_file = stored.purpose == "chat" and stored.uploaded_by == user
+    if not members.allows(role, "edit") and not own_chat_file:
+        raise Problem(403, "Forbidden", members.refusal(role, "edit"))
+    found = file_id_found
     with get_engine().begin() as connection:
         files.delete_file(connection, found)
     return Response(status_code=204)

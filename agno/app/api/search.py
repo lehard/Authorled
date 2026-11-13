@@ -25,7 +25,7 @@ router = APIRouter(prefix="/api/v1", tags=["Search"])
 def search_draft(draft_id: str, request: Request, principal: Principal = Depends(current_principal)) -> SearchOut:
     found = parse_id(draft_id)
     with get_engine().connect() as connection:
-        require_project(principal, drafts.project_of_draft(connection, found))
+        require_project(principal, drafts.project_of_draft(connection, found), "read")
         query = request.query_params.get("q")
         if query is None:
             raise Invalid("Нет параметра q: введите, что искать.", "q")

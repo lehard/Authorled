@@ -17,35 +17,38 @@ from core import saves
 from core.documents import project_of_document
 from core.drafts import project_of_draft
 from core.engine import get_engine
+from core.members import Need
 
 router = APIRouter(prefix="/api/v1", tags=["Saves"])
 
 
-def _document_id(principal: Principal, raw: str) -> uuid.UUID:
+def _document_id(principal: Principal, raw: str, need: Need) -> uuid.UUID:
     document_id = parse_id(raw)
     with get_engine().connect() as connection:
-        require_project(principal, project_of_document(connection, document_id))
+        require_project(principal, project_of_document(connection, document_id), need)
     return document_id
 
 
-def _version_id(principal: Principal, raw: str) -> uuid.UUID:
+def _version_id(principal: Principal, raw: str, need: Need) -> uuid.UUID:
     version_id = parse_id(raw)
     with get_engine().connect() as connection:
-        require_project(principal, project_of_document(connection, saves.document_of_version(connection, version_id)))
+        require_project(
+            principal, project_of_document(connection, saves.document_of_version(connection, version_id)), need
+        )
     return version_id
 
 
-def _draft_id(principal: Principal, raw: str) -> uuid.UUID:
+def _draft_id(principal: Principal, raw: str, need: Need) -> uuid.UUID:
     draft_id = parse_id(raw)
     with get_engine().connect() as connection:
-        require_project(principal, project_of_draft(connection, draft_id))
+        require_project(principal, project_of_draft(connection, draft_id), need)
     return draft_id
 
 
-def _point_id(principal: Principal, raw: str) -> uuid.UUID:
+def _point_id(principal: Principal, raw: str, need: Need) -> uuid.UUID:
     point_id = parse_id(raw)
     with get_engine().connect() as connection:
-        require_project(principal, project_of_draft(connection, saves.draft_of_point(connection, point_id)))
+        require_project(principal, project_of_draft(connection, saves.draft_of_point(connection, point_id)), need)
     return point_id
 
 
@@ -55,14 +58,14 @@ def _point_id(principal: Principal, raw: str) -> uuid.UUID:
     summary="Snapshots of the text or the fields of a document, newest first",
 )
 def list_versions(document_id: str, part: str, principal: Principal = Depends(current_principal)) -> list[VersionOut]:
-    found = _document_id(principal, document_id)
+    found = _document_id(principal, document_id, "read")
     with get_engine().connect() as connection:
         return [VersionOut.model_validate(v) for v in saves.list_versions(connection, found, part)]
 
 
 @router.get("/versions/{version_id}", response_model=VersionContentOut, summary="A snapshot with its content")
 def get_version(version_id: str, principal: Principal = Depends(current_principal)) -> VersionContentOut:
-    found = _version_id(principal, version_id)
+    found = _version_id(principal, version_id, "read")
     with get_engine().connect() as connection:
         return VersionContentOut.model_validate(saves.get_version(connection, found))
 
@@ -81,13 +84,13 @@ def _restore_version(principal: Principal, version_id: uuid.UUID, revision: int)
 async def restore_version(
     version_id: str, request: Request, principal: Principal = Depends(current_principal)
 ) -> RestoredOut:
-    found = await run_in_threadpool(_version_id, principal, version_id)
+    found = await run_in_threadpool(_version_id, principal, version_id, "edit")
     return await run_in_threadpool(_restore_version, principal, found, if_match(request))
 
 
 @router.get("/drafts/{draft_id}/points", response_model=list[PointOut], summary="Points of a draft, newest first")
 def list_points(draft_id: str, principal: Principal = Depends(current_principal)) -> list[PointOut]:
-    found = _draft_id(principal, draft_id)
+    found = _draft_id(principal, draft_id, "read")
     with get_engine().connect() as connection:
         return [PointOut.model_validate(p) for p in saves.list_points(connection, found)]
 
@@ -109,7 +112,7 @@ def _create_point(principal: Principal, draft_id: uuid.UUID, body: dict[str, Any
 )
 async def create_point(draft_id: str, request: Request, principal: Principal = Depends(current_principal)) -> PointOut:
     body = await read_object(request)
-    found = await run_in_threadpool(_draft_id, principal, draft_id)
+    found = await run_in_threadpool(_draft_id, principal, draft_id, "edit")
     return await run_in_threadpool(_create_point, principal, found, body)
 
 
@@ -119,6 +122,6 @@ async def create_point(draft_id: str, request: Request, principal: Principal = D
     summary="Return a whole draft to a point; the answer is the automatic point of the state before",
 )
 def restore_point(point_id: str, principal: Principal = Depends(current_principal)) -> PointOut:
-    found = _point_id(principal, point_id)
+    found = _point_id(principal, point_id, "edit")
     with get_engine().begin() as connection:
         return PointOut.model_validate(saves.restore_point(connection, found, caller_id(connection, principal)))

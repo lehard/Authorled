@@ -27,6 +27,9 @@ class ProjectOut(_Out):
 class ListedProjectOut(ProjectOut):
     drafts_count: int
     open_draft_id: uuid.UUID
+    # The caller's role in the story and the name of its owner (openspec/specs/api/story-sharing).
+    role: str
+    owner_name: str
 
 
 class CreatedProject(BaseModel):
@@ -186,9 +189,12 @@ class SuggestionOut(_Out):
     text: str
     why: str
     status: str
-    session_id: str
+    author_kind: str
+    author_name: str
+    session_id: str | None
     created_at: datetime
     decided_at: datetime | None
+    decided_by_name: str | None
 
 
 class FileOut(_Out):
@@ -265,3 +271,47 @@ class WritingOut(_Out):
     daily_goal: int | None
     days: list[WritingDayOut]
     story: StoryGoalOut
+
+
+class MemberOut(_Out):
+    """A participant of a story: its owner or one with a role (openspec/specs/api/story-sharing)."""
+
+    user_id: uuid.UUID
+    name: str
+    email: str
+    role: str
+    added_at: datetime
+
+
+class InvitationOut(_Out):
+    id: uuid.UUID
+    email: str
+    role: str
+    created_at: datetime
+
+
+class MembersOut(BaseModel):
+    """Participants of a story; the invitations waiting are given to the owner only, to others an empty list."""
+
+    members: list[MemberOut]
+    invitations: list[InvitationOut]
+
+
+class ReadLinkOut(_Out):
+    draft_id: uuid.UUID
+    key: str
+    created_at: datetime
+
+
+class SharedTextOut(_Out):
+    """What the link «почитать» shows: the titles and the screenplay of one draft, nothing else."""
+
+    story_title: str
+    draft_name: str
+    content: dict[str, Any]
+
+
+class PresenceOut(BaseModel):
+    """Names of the other participants editing the screenplay of the draft now."""
+
+    editing: list[str]

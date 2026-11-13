@@ -26,7 +26,10 @@ export type FixtureThread = Omit<CommentThread, "own" | "replies"> & {
 };
 
 export const FIXTURES = demo as unknown as {
-  projects: Omit<Project, "draftsCount" | "openDraftId">[];
+  projects: Omit<
+    Project,
+    "draftsCount" | "openDraftId" | "role" | "ownerName"
+  >[];
   // The sample has no core: a script's document id is given when the store is filled.
   scripts: Omit<Script, "documentId">[];
   characters: Character[];
@@ -35,7 +38,8 @@ export const FIXTURES = demo as unknown as {
   /** Sample notes have no originals: files need the core. */
   notes: Omit<Note, "file">[];
   comments: FixtureThread[];
-  suggestions: Suggestion[];
+  // Suggestions of the sample are the co-author's: who suggests is given when the store is filled.
+  suggestions: Omit<Suggestion, "authorKind" | "authorName">[];
   drafts: Draft[];
 };
 

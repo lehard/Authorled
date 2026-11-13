@@ -1,7 +1,7 @@
 """Stories of the authors and who may open them (openspec/specs/api/stories).
 
-MVP: a story has one owner, the user who created it; nobody else sees it. The trash keeps a story until its
-author deletes it for good; there is no expiry.
+A story has one owner, the user who created it, and may have participants with roles (core/members.py,
+openspec/specs/api/story-sharing). The trash keeps a story until its owner deletes it for good; there is no expiry.
 """
 
 import re
@@ -12,11 +12,11 @@ from typing import Any, Protocol
 
 from sqlalchemy import Connection, delete, func, insert, select, update
 
-from core import drafts
+from core import drafts, members
 from core.engine import get_engine
 from core.errors import Conflict, Invalid, NotFound
 from core.fields import SCRIPT_NAME
-from core.tables import COVER_COLORS, documents, projects, users
+from core.tables import COVER_COLORS, documents, project_members, projects, users
 from core.texts import add_text, new_screenplay
 from core.users import AccountDeleted, AccountNotFound
 from core.writing import GOAL_RULE, is_goal
@@ -39,10 +39,12 @@ class Project:
 
 @dataclass(frozen=True)
 class ListedProject(Project):
-    """A story on the shelf of its owner."""
+    """A story on the shelf of the caller: their own or one they take part in."""
 
     drafts_count: int
     open_draft_id: uuid.UUID
+    role: members.Role
+    owner_name: str
 
 
 def _project(row: Any) -> Project:
@@ -72,24 +74,16 @@ def user_id_of(connection: Connection, subject: str) -> uuid.UUID:
     return row.id
 
 
-def owns_project(connection: Connection, subject: str, project_id: uuid.UUID) -> bool:
-    return (
-        connection.execute(
-            select(projects.c.id)
-            .join(users, users.c.id == projects.c.owner_id)
-            .where(projects.c.id == project_id, users.c.auth_subject == subject, users.c.deleted_at.is_(None))
-        ).one_or_none()
-        is not None
-    )
-
-
 class _Caller(Protocol):
     @property
     def user_id(self) -> str: ...
 
 
 class ProjectAccess:
-    """Source of project access for the auth module (can_access_project): only the owner, the trash included."""
+    """Source of project access for the auth module (can_access_project): any role in the story.
+
+    What each role may do the routes check with `members.role_of_subject`; a story in the trash is its owner's only.
+    """
 
     def can_access(self, principal: _Caller, project_id: str) -> bool:
         try:
@@ -97,7 +91,7 @@ class ProjectAccess:
         except ValueError:
             return False
         with get_engine().connect() as connection:
-            return owns_project(connection, principal.user_id, project_uuid)
+            return members.role_of_subject(connection, principal.user_id, project_uuid) is not None
 
 
 def _title(value: Any) -> str:
@@ -159,10 +153,22 @@ def project_row(connection: Connection, project_id: uuid.UUID, for_update: bool 
     return _project(row)
 
 
-def list_projects(connection: Connection, owner_id: uuid.UUID, trash: bool) -> list[ListedProject]:
-    deleted = projects.c.deleted_at.is_not(None) if trash else projects.c.deleted_at.is_(None)
+def list_projects(connection: Connection, user_id: uuid.UUID, trash: bool) -> list[ListedProject]:
+    """The caller's stories and, outside the trash, the stories they take part in, newest change first."""
+    role = (
+        select(project_members.c.role)
+        .where(project_members.c.project_id == projects.c.id, project_members.c.user_id == user_id)
+        .scalar_subquery()
+    )
+    if trash:
+        visible = (projects.c.owner_id == user_id) & projects.c.deleted_at.is_not(None)
+    else:
+        visible = projects.c.deleted_at.is_(None) & ((projects.c.owner_id == user_id) | role.is_not(None))
     rows = connection.execute(
-        select(projects).where(projects.c.owner_id == owner_id, deleted).order_by(projects.c.updated_at.desc())
+        select(projects, role.label("member_role"), users.c.display_name.label("owner_name"))
+        .join(users, users.c.id == projects.c.owner_id)
+        .where(visible)
+        .order_by(projects.c.updated_at.desc())
     ).all()
     return [
         ListedProject(
@@ -177,7 +183,9 @@ def list_projects(connection: Connection, owner_id: uuid.UUID, trash: bool) -> l
             row.updated_at,
             row.deleted_at,
             drafts.count_drafts(connection, row.id),
-            drafts.open_draft_id(connection, owner_id, row.id),
+            drafts.open_draft_id(connection, user_id, row.id),
+            "owner" if row.owner_id == user_id else row.member_role,
+            row.owner_name,
         )
         for row in rows
     ]

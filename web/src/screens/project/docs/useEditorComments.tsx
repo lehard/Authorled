@@ -34,8 +34,15 @@ export function useEditorComments(
   editor: RefObject<ScreenplayEditorHandle | null>,
   /** A thread card opens: another card of the editor closes. */
   onOpened: () => void,
-  /** A locked draft: threads are only read. */
+  /** A locked draft or a reader: threads are only read. */
   readOnly: boolean,
+  /** The owner or a co-author: threads are resolved and reopened (web/workspace, «Экран истории по роли»). */
+  manage: boolean,
+  /**
+   * Anchored threads get their marks: not in a locked draft. A reviewer's window keeps them on the
+   * screen only, it does not save the text.
+   */
+  placeMarks: boolean,
 ) {
   const { threads } = useComments(draftId);
   const invalidate = useInvalidate();
@@ -64,11 +71,11 @@ export function useEditorComments(
       .map((t) => ({ id: t.id, sceneUid: t.sceneUid, quote: t.quote })),
   );
   useEffect(() => {
-    if (readOnly) return;
+    if (!placeMarks) return;
     if (editor.current === null)
       throw new Error("Редактор сценария ещё не открыт");
     editor.current.placeComments(JSON.parse(anchors) as SuggestionAnchor[]);
-  }, [editor, anchors, readOnly]);
+  }, [editor, anchors, placeMarks]);
 
   // A closed card gives its gap back to the text, whichever way it closed.
   useEffect(() => {
@@ -187,6 +194,7 @@ export function useEditorComments(
         onHeight={spot.fit}
         thread={thread}
         readOnly={readOnly}
+        manage={manage}
         quote={quotes.get(active)}
         error={error}
         onClose={close}

@@ -1,4 +1,9 @@
-import { SCRIPT_PARTS, type Entity, type EntityKind } from "@/data/model";
+import {
+  SCRIPT_PARTS,
+  STORY_ROLES,
+  type Entity,
+  type EntityKind,
+} from "@/data/model";
 import { PROFILE, ROLES } from "@/data/profiles";
 import { paragraphs } from "@/editor/document.ts";
 import { ELEMENTS, OUTLINE_TYPES } from "@/editor/elements.ts";
@@ -114,6 +119,8 @@ export function coauthorContext(data: ProjectData, selection: string): string {
       : text;
   return [
     `История: «${data.project.title}» (полнометражный сценарий), драфт «${data.draft.name}».`,
+    // The role of who asks: the tools refuse by it, the model should not offer what it cannot do.
+    `Роль спрашивающего в истории: ${STORY_ROLES[data.project.role].toLowerCase()}.`,
     `Открыт документ: ${title}.`,
     "Содержимое документа:",
     cut === "" ? "(пусто)" : cut,

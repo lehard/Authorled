@@ -24,21 +24,23 @@ export function LockBanner() {
         />
         Драфт <b>«{data.draft.name}»</b>: правка запрещена
       </span>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="rounded-full"
-        onClick={() => {
-          setError(null);
-          actions
-            .lock(data.draft.id, false)
-            .catch((e: unknown) =>
-              setError(e instanceof Error ? e.message : String(e)),
-            );
-        }}
-      >
-        Разрешить правку
-      </Button>
+      {data.can.edit && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="rounded-full"
+          onClick={() => {
+            setError(null);
+            actions
+              .lock(data.draft.id, false)
+              .catch((e: unknown) =>
+                setError(e instanceof Error ? e.message : String(e)),
+              );
+          }}
+        >
+          Разрешить правку
+        </Button>
+      )}
       {error !== null && (
         <p role="alert" className="w-full text-caption text-destructive">
           {error}

@@ -41,10 +41,11 @@ def product_app() -> FastAPI:
 class Author:
     """A signed-in author: every request carries their claims."""
 
-    def __init__(self, client: TestClient, subject: str, groups: list[str]) -> None:
+    def __init__(self, client: TestClient, subject: str, groups: list[str], name: str = "Анна Петрова") -> None:
         self.client = client
         self.subject = subject
-        claims = {"sub": subject, "groups": groups, "email": f"{subject}@example.com", "name": "Анна Петрова"}
+        self.email = f"{subject}@example.com"
+        claims = {"sub": subject, "groups": groups, "email": self.email, "name": name}
         self.headers = {"X-Test-Claims": json.dumps(claims)}
 
     def request(self, method: str, url: str, **kwargs: Any) -> Any:
@@ -83,10 +84,10 @@ def authors(client: TestClient, engine: Engine) -> Iterator[Any]:
     """Make authors with accounts (GET /api/v1/me); the routes commit, so their rows go afterwards."""
     made: list[str] = []
 
-    def make(groups: list[str] | None = None, account: bool = True) -> Author:
+    def make(groups: list[str] | None = None, account: bool = True, name: str = "Анна Петрова") -> Author:
         subject = f"test-{uuid.uuid4()}"
         made.append(subject)
-        author = Author(client, subject, groups if groups is not None else ["screenwriters"])
+        author = Author(client, subject, groups if groups is not None else ["screenwriters"], name)
         if account:
             assert author.get("/api/v1/me").status_code == 200
         return author

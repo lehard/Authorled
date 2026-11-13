@@ -63,6 +63,7 @@ import {
   type ScreenplayDoc,
   type SuggestData,
   type SuggestionAnchor,
+  type ReviewRequests,
   type TitlePage,
 } from "./index.ts";
 import "./styles.css";
@@ -90,6 +91,8 @@ export type ScreenplayEditorHandle = {
   placeSuggestions(anchors: SuggestionAnchor[]): void;
   /** Marks co-author comments without a place by their anchors (web/workspace, «Комментарий соавтора по якорю»). */
   placeComments(anchors: SuggestionAnchor[]): void;
+  /** The scene and the words of the page's selection, for a reviewer's comment or suggestion. */
+  reviewAnchor(): { sceneUid: string; quote: string } | "paragraph" | null;
   acceptSuggestion(id: string, text: string): boolean;
   rejectSuggestion(id: string): boolean;
   suggestionAnchor(id: string): CommentAnchor | null;
@@ -143,6 +146,7 @@ export function ScreenplayEditor({
   menu,
   overlay,
   onCoauthorRequest,
+  onReviewRequest,
   ref,
 }: {
   /** Fixed for the life of the component: give the component a new `key` to switch. */
@@ -168,6 +172,11 @@ export function ScreenplayEditor({
    * component whether it is given.
    */
   onCoauthorRequest?: (anchor: DOMRect) => void;
+  /**
+   * «Комментировать» and «Предложить правку» of a reviewer in a read-only text; fixed for the life
+   * of the component whether they are given.
+   */
+  onReviewRequest?: ReviewRequests;
   ref?: Ref<ScreenplayEditorHandle>;
 }) {
   const host = useRef<HTMLDivElement>(null);
@@ -185,6 +194,7 @@ export function ScreenplayEditor({
     comments,
     suggestions,
     onCoauthorRequest,
+    onReviewRequest,
   });
   // Texts this editor has reported: a saved copy coming back is an echo, not a change from
   // outside, even when the author has typed on since (an older echo must not undo typing).
@@ -198,6 +208,7 @@ export function ScreenplayEditor({
       comments,
       suggestions,
       onCoauthorRequest,
+      onReviewRequest,
     };
   });
 
@@ -227,6 +238,13 @@ export function ScreenplayEditor({
         latest.current.onCoauthorRequest === undefined
           ? undefined
           : (anchor) => latest.current.onCoauthorRequest?.(anchor),
+      onReviewRequest:
+        latest.current.onReviewRequest === undefined
+          ? undefined
+          : {
+              onComment: () => latest.current.onReviewRequest?.onComment(),
+              onSuggest: () => latest.current.onReviewRequest?.onSuggest(),
+            },
       onCommentOpen: (id) => latest.current.comments?.onOpen(id),
       onSuggestionOpen: (id) => latest.current.suggestions?.onOpen(id),
       onFindRequest: () => {
@@ -346,6 +364,7 @@ export function ScreenplayEditor({
       scrollToComment: (id) => view().scrollToComment(id),
       placeSuggestions: (anchors) => view().placeSuggestions(anchors),
       placeComments: (anchors) => view().placeComments(anchors),
+      reviewAnchor: () => view().reviewAnchor(),
       acceptSuggestion: (id, text) => view().acceptSuggestion(id, text),
       rejectSuggestion: (id) => view().rejectSuggestion(id),
       suggestionAnchor: (id) => view().suggestionAnchor(id),

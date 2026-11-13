@@ -62,7 +62,7 @@ GROUP_SCOPES: dict[str, tuple[str, ...]] = {
 # Passing excluded paths replaces that list, so it is repeated here; a test compares it with the pinned Agno.
 AGNO_DEFAULT_EXCLUDED_ROUTES = ("/", "/health", "/info", "/docs", "/redoc", "/openapi.json", "/docs/oauth2-redirect")
 # Product routes without a token, each exactly, never a pattern (openspec/specs/auth, «Маршруты без токена»).
-PUBLIC_ROUTES = ("/api/v1/beta-requests",)
+PUBLIC_ROUTES = ("/api/v1/beta-requests", "/api/v1/read-links/open")
 EXCLUDED_ROUTES = (*AGNO_DEFAULT_EXCLUDED_ROUTES, *PUBLIC_ROUTES)
 
 

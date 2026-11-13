@@ -25,6 +25,7 @@ from agno.utils.log import log_exception
 import billing
 from app.auth import run_principal
 from billing import LimitReached, ModelUsage, NoTokens, RunUsage, SubscriptionEnded
+from core import members
 from core.engine import get_engine
 from core.users import active_user_id
 
@@ -32,6 +33,7 @@ LIMIT_REACHED = "usage_limit_reached"
 CHECK_FAILED = "usage_check_failed"
 RECORD_FAILED = "usage_record_failed"
 SUBSCRIPTION_ENDED = "subscription_ended"
+READER = "reader_has_no_chat"
 
 # Moscow keeps UTC+3 all year: the date the author sees in the message.
 MOSCOW = timezone(timedelta(hours=3), "MSK")
@@ -124,6 +126,28 @@ def _user_id(subject: str) -> uuid.UUID:
     """The user of the core for the token subject; a missing or deleted account is an error."""
     with get_engine().begin() as connection:
         return active_user_id(connection, subject)
+
+
+def refuse_reader(run_context: RunContext) -> None:
+    """Pre-hook before the limit: a reader of the story of the conversation has no chat, the run stops before the
+    model and records nothing (openspec/specs/api/agents, «Без чата у читателя»).
+
+    A conversation outside a draft of a story is left to the tools, which refuse it themselves.
+    """
+    parts = (run_context.session_id or "").split(":")
+    try:
+        project_id = uuid.UUID(parts[0])
+    except ValueError:
+        return
+    subject = run_principal(run_context).user_id
+    with get_engine().connect() as connection:
+        role = members.role_of_subject(connection, subject, project_id)
+    if role == "reader":
+        raise InputCheckError(
+            "У читателя истории нет чата с соавтором.",
+            check_trigger=CheckTrigger.INPUT_NOT_ALLOWED,
+            additional_data={"reason": READER},
+        )
 
 
 def check_usage_limit(run_context: RunContext, session: AgentSession) -> None:

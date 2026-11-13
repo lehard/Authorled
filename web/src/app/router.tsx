@@ -10,7 +10,7 @@ import { NotFoundScreen } from "@/screens/system/NotFoundScreen";
 
 import type { DataSource } from "./config";
 import { RefineRoot, RequireAuth } from "./RefineRoot";
-import { projectScreen, showcaseScreen } from "./screens";
+import { projectScreen, readScreen, showcaseScreen } from "./screens";
 
 // Addresses of the screens (openspec/specs/web/workspace, «Адреса экранов»).
 export function createRouter(dataSource: DataSource) {
@@ -21,6 +21,11 @@ export function createRouter(dataSource: DataSource) {
         { path: "/showcase", element: <showcaseScreen.Screen /> },
         { path: "/login", element: <LoginScreen /> },
         { path: "/auth/callback", element: <CallbackScreen /> },
+        // The link «почитать» opens without signing in (openspec/specs/web/workspace, «Вход»).
+        {
+          path: "/read/:key",
+          element: <readScreen.Screen />,
+        },
         {
           element: <RequireAuth dataSource={dataSource} />,
           children: [

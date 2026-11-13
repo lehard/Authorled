@@ -159,7 +159,7 @@ const when = new Intl.DateTimeFormat("ru", {
 });
 
 function PointList({ onOpenChange }: Pick<Open, "onOpenChange">) {
-  const { draft, openFresh } = useProjectData();
+  const { draft, openFresh, readOnly } = useProjectData();
   const { points, query } = usePoints(draft.id);
   const { restorePoint } = useSaveActions();
   const [asking, setAsking] = useState<Point | null>(null);
@@ -210,7 +210,7 @@ function PointList({ onOpenChange }: Pick<Open, "onOpenChange">) {
               variant="outline"
               size="sm"
               className="rounded-full"
-              disabled={draft.locked}
+              disabled={readOnly}
               onClick={() => setAsking(p)}
             >
               Вернуться

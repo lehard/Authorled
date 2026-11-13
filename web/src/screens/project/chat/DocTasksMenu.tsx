@@ -20,8 +20,8 @@ type Part = "logline" | "synopsis";
  * start of «Под заявку» into the chat's field.
  */
 function useDocTasks(part: Part) {
-  const { askCoauthor, coauthorBusy, draft } = useProjectData();
-  const tasks = DOC_TASKS[part].filter((t) => !(draft.locked && t.writes));
+  const { askCoauthor, coauthorBusy, readOnly } = useProjectData();
+  const tasks = DOC_TASKS[part].filter((t) => !(readOnly && t.writes));
   const run = (task: DocTask) =>
     askCoauthor(task.request, task.fill ? "fill" : "send");
   return { tasks, busy: coauthorBusy, run };
@@ -80,9 +80,9 @@ export function DocTasksButton({ part }: { part: Part }) {
  * whom they ask. The sheet shows it only while its text is empty. The row lets clicks through to the field; only the buttons catch them.
  */
 export function DocSheetTasks({ part }: { part: Part }) {
-  const { draft } = useProjectData();
+  const { readOnly } = useProjectData();
   const { tasks, busy, run } = useDocTasks(part);
-  if (draft.locked) return null;
+  if (readOnly) return null;
   return (
     <div className="sheet-tasks">
       <span className="inline-flex items-center gap-1.5 font-sans text-sm text-muted-foreground">
